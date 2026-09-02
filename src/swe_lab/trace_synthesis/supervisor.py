@@ -175,11 +175,10 @@ class NeverSpeak:
   """A policy that consults nothing and never speaks.
 
   For plumbing: it exercises the channel, the pump and the record without a
-  model behind them. It is **not** the paired control — the arm the treatment
-  is compared against has to run *the same* supervisor with speech disabled, or
-  the arms differ by the judge calls, their latency and their cost as well as
-  by the corrections. That arm is `SpeakWhenOffTrack` with a budget of zero,
-  which judges every boundary and has nothing left to spend.
+  model behind them. It is **not** the paired control — that arm is
+  `SpeakWhenOffTrack` with a budget of zero, which judges every boundary and
+  has nothing left to spend. Why it has to be that one and not this one is
+  stated once, at :data:`swe_lab.workflow.definitions.CONTROL_BUDGET`.
   """
 
   @property
@@ -263,10 +262,10 @@ class Writer(Protocol):
 class WouldHaveSpoken:
   """A deviation the judge found, recorded whether or not speech followed.
 
-  This is what the control arm produces. ``SpeakWhenOffTrack(budget=0)`` judges
+  This is what the control arm produces: ``SpeakWhenOffTrack(budget=0)`` judges
   every boundary and speaks at none, so its markers are the points at which the
-  treatment arm would have intervened — which is what lets the two arms be
-  compared at matched deviation points rather than only at their endpoints.
+  treatment arm would have intervened. What that buys a comparison is stated
+  once, at :data:`swe_lab.workflow.definitions.CONTROL_BUDGET`.
 
   Attributes:
     cursor: Where the deviation was found.
@@ -334,9 +333,10 @@ class SpeakWhenOffTrack:
      supervisor records a gap. Never a retry.
 
   The cost of that order is stated rather than hidden: the judge runs on every
-  boundary even after the budget is spent, so a treatment run and a control run
-  pay the same judge calls. That is what makes the two arms differ by the
-  corrections alone.
+  boundary even after the budget is spent, so a ``budget=0`` policy still pays
+  for a judge it can never act on. Why that cost is worth paying — what the two
+  supervised definitions are and are not matched on — is stated once, at
+  :data:`swe_lab.workflow.definitions.CONTROL_BUDGET`.
 
   The criterion is a constructor argument rather than a field on
   :class:`Observation`, so it never travels the channel the actor's records

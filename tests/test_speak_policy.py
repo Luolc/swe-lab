@@ -194,7 +194,8 @@ def test_budget_zero_speaks_nothing_and_still_marks_every_deviation() -> None:
   """The marker is recorded before the budget is consulted.
 
   So the control arm judges every boundary and records where it would have
-  spoken, which is what makes the arms comparable at matched deviation points.
+  spoken; what that buys is stated once, at
+  `workflow.definitions.CONTROL_BUDGET`.
   """
   speaker, _, _ = policy(OFF_TRACK, budget=0)
   spoken = [speaker.consider(observation(index)) for index in range(1, 6)]

@@ -53,15 +53,10 @@ deviation is `SpeakWhenOffTrack`, built by `supervising_policy` over a
 the *same* policy on the same criterion and differ in one number: the control's
 budget is zero. The budget gates speech and never gates judgement
 ([task 05 §4.4](task-05-supervisor-the-component.md)), so both arms consult the
-judge at every boundary and record what they would have said. **The judging
-side is matched; the writing side is not, and cannot be** — a writer call is
-what a delivered correction *is*, so the treatment pays for the ones it makes
-and the control pays for none. That asymmetry is the treatment. What a control
-must not do is differ in the work that precedes the decision, which is what a
-policy consulting no judge would have done: it would move the per-boundary
-model calls, their latency and their cost between the arms, and a paired
-comparison would credit that to the corrections. `SpeakAt` remains a knob for
-tests — a run whose utterances are scheduled cannot satisfy acceptance point 3.
+judge at every boundary and record what they would have said. What the arms are
+and are not matched on is stated once, beside the two definitions, at
+`workflow.definitions.CONTROL_BUDGET` — read it there rather than here.
+`SpeakAt` remains a knob for tests — a run whose utterances are scheduled cannot satisfy acceptance point 3.
 
 ### Stage 3 — reading the live stream
 

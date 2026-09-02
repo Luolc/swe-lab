@@ -136,7 +136,9 @@ SUPERVISOR_BUDGET = 3
 # pays for the ones it makes and the control for none. That difference is the
 # treatment itself. A policy that returned early instead, consulting no judge
 # at all, would move the per-boundary calls too, and a paired comparison would
-# credit that to the corrections.
+# credit that to the corrections. **This is the one statement of how the arms
+# differ**; the other sites point here rather than repeating it, because a
+# repeated claim is one that goes stale in four places without failing in any.
 CONTROL_BUDGET = 0
 
 
@@ -145,13 +147,11 @@ def _supervised_rollout(supervision_factory: SupervisionFactory) -> WorkflowDef:
 
   The treatment arm and its control are given the same harness, the same flags
   and the same invocation script, so nothing about the actor's environment
-  distinguishes them: what the actor receives differs by the corrections alone.
-  The supervision side is matched where a control has to match — the judging
-  work that precedes each decision — and not on the writing side, where a call
-  is what a delivered correction *is*. That is why this is a function of the
-  supervision rather than a flag on :data:`ROLLOUT`: a boolean would hide the
-  difference between the arms inside a parameter instead of leaving it in two
-  readable definitions.
+  distinguishes them; how their supervision sides differ is stated once, at
+  :data:`CONTROL_BUDGET`. That is why this is a function of the supervision
+  rather than a flag on :data:`ROLLOUT`: a boolean would hide the difference
+  between the arms inside a parameter instead of leaving it in two readable
+  definitions.
 
   Args:
     supervision_factory: What watches the actor, given the task text.

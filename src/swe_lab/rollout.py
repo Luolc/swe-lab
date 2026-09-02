@@ -148,7 +148,9 @@ class CodingAgentTask(Task):
       recorder, and the declaration stays reusable.
     supervision_factory: Builds the observer that watches the actor's live
       stream and may speak to it, given the task text. ``None`` runs the actor
-      unsupervised, which is the default and the control arm. A factory for the
+      unsupervised, which is the default — and is *not* the paired control,
+      which is supervised with a zero speaking budget
+      (:data:`swe_lab.workflow.definitions.CONTROL_BUDGET`). A factory for the
       same reason ``proxy_factory`` is one, and it hands back an *observer*
       because the sandbox lifecycle already brackets the action — nothing here
       needs to know what supervision is made of.
