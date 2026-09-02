@@ -53,6 +53,14 @@ See ``CodingAgentTask.proxy_factory``: a factory rather than a recorder,
 because a task is executed as many times as it is invoked.
 """
 
+type SupervisionFactory = Callable[[str], SandboxObserver]
+"""Builds one run's supervision, given the task text.
+
+See ``CodingAgentTask.supervision_factory``. An observer, because the sandbox
+lifecycle already brackets the action — which keeps this module free of any
+knowledge of what a supervisor is.
+"""
+
 
 def instance_prompt(
     sb: SandboxFs, instance: TaskInstance[Any]
@@ -138,6 +146,12 @@ class CodingAgentTask(Task):
       executed any number of times — a registered definition is executed once
       per instance — while a recorder is single-use. One execution, one
       recorder, and the declaration stays reusable.
+    supervision_factory: Builds the observer that watches the actor's live
+      stream and may speak to it, given the task text. ``None`` runs the actor
+      unsupervised, which is the default and the control arm. A factory for the
+      same reason ``proxy_factory`` is one, and it hands back an *observer*
+      because the sandbox lifecycle already brackets the action — nothing here
+      needs to know what supervision is made of.
   """
 
   harness: Harness
@@ -156,6 +170,29 @@ class CodingAgentTask(Task):
   verify_result: bool = True
   env: Mapping[str, str] | None = None
   proxy_factory: ProxyFactory | None = None
+  supervision_factory: SupervisionFactory | None = None
+
+  def __post_init__(self) -> None:
+    """Refuse a supervised run the actor could not hear.
+
+    Supervision on a harness with no live channel is not a degraded run, it is
+    a silent one: the corrections are written, nothing reads them, and the
+    result is indistinguishable from an unsupervised rollout — including in
+    the record. Refused where the two are composed, which is the first place
+    both are known.
+
+    Raises:
+      ValueError: A supervisor is configured on a harness that cannot receive
+        a correction mid-run.
+    """
+    if self.supervision_factory is not None and not (
+        self.harness.accepts_corrections
+    ):
+      raise ValueError(
+          f"supervision needs a harness that accepts corrections;"
+          f" {type(self.harness).__name__} does not (for claude_code, that is"
+          " correction_channel=True)"
+      )
 
   @override
   def mounts(self, instance: TaskInstance[Any]) -> Mounts:
@@ -231,8 +268,15 @@ class CodingAgentTask(Task):
         if self.verify_result
         else None
     )
+    supervision = (
+        self.supervision_factory(instance.prompt())
+        if self.supervision_factory is not None
+        else None
+    )
     return tuple(
-        o for o in (purge, *from_harness, diff, verify) if o is not None
+        o
+        for o in (purge, *from_harness, supervision, diff, verify)
+        if o is not None
     )
 
   @override

@@ -312,3 +312,40 @@ attributable to the close rather than a coincidence of timing.
 
 So `claude` exits on FIFO EOF as it does on a closed pipe, and §2.3's
 termination design stands on a measurement rather than an assumption.
+
+## 9. The wiring: who runs the supervisor while `run()` blocks
+
+§2 chose option (ii) — the supervisor beside the action rather than inside the
+harness — and left open which seam holds it. It is the **sandbox lifecycle**,
+not a wrapper around the action: `after_create` fires before the body and
+`before_destroy` after it, which is exactly the bracket a host-side component
+needs, and it means a supervised run and an unsupervised one execute the same
+harness call path. `SupervisedRun` (`trace_synthesis/channel.py`) is that
+observer; `CodingAgentTask.supervision_factory` is where a composition supplies
+one.
+
+Four things the wiring settles:
+
+- **Who ends the run.** §8.2 measured that the actor waits after answering, so
+  the close is the termination mechanism and something must decide when. It
+  closes at **the first turn boundary the supervisor lets pass in silence** — a
+  `result` event for which the policy said nothing. Under the control policy
+  that is the actor's first result, which is what makes a control arm behave
+  like an ordinary rollout.
+- **A dead pump ends the run too**, and the metric is what keeps that ending
+  attributable. Leaving the channel open would spend the wall clock and reach
+  the outside as the actor's timeout, which is §8.1's first wrong answer.
+- **The supervisor's account is a declared output**
+  (`supervisor.jsonl`, one row per event consumed). Attachment is invisible from
+  the actor's side: a supervisor that read everything and one that read nothing
+  produce the same rollout, so the artifact is the only evidence the run was
+  watched at all.
+- **The bind mount is a requirement, not an assumption.** The channel has no
+  transport, so a sandbox that does not expose a host workspace is refused
+  before the actor starts rather than producing a run whose corrections went
+  nowhere.
+
+The composition refuses a supervisor on a harness that cannot receive one
+(`Harness.accepts_corrections`). That combination is not a degraded run but a
+silent one — corrections written, nothing reading them, and a record identical
+to an unsupervised rollout.

@@ -9,15 +9,17 @@ thing feeding the supervisor dies.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 import json
 from pathlib import Path
 import shlex
+import time
 from typing import Any, final
 
 from etils import epath
 import pytest
 
+from swe_lab.conversation.model import TextBlock
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     CORRECTION_DONE_NAME,
@@ -25,7 +27,9 @@ from swe_lab.harnesses.claude_code.constants import (
     CORRECTION_FIFO_NAME,
     CORRECTION_PROMPT_NAME,
     CORRECTION_UNCLEAN_NAME,
+    EVENT_STREAM_NAME,
 )
+from swe_lab.harnesses.claude_code.harness import user_event_line
 from swe_lab.rollout import (
     CodingAgentTask,
     rollout_outcome,
@@ -36,12 +40,14 @@ from swe_lab.sandbox import RunResult, RunStatus, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
 from swe_lab.trace_synthesis.channel import (
     CorrectionChannel,
-    CorrectionChannelObserver,
     stream_events,
+    SupervisedRun,
+    SUPERVISOR_LOG_NAME,
     SupervisorPump,
 )
 from swe_lab.trace_synthesis.supervisor import (
     Intervention,
+    INTERVENTION_TAG,
     Observation,
     Supervisor,
 )
@@ -281,25 +287,62 @@ def _attempt_with(metrics: Mapping[str, float]) -> AttemptResult:
   )
 
 
-def _observer(
-    tmp_path: Path,
-) -> tuple[CorrectionChannelObserver, SupervisorPump, CorrectionChannel]:
-  channel = CorrectionChannel(workspace=epath.Path(tmp_path))
-  pump = SupervisorPump(
-      supervisor=_supervisor(channel, _SpeaksOnce()),
-      channel=channel,
-      events_path=epath.Path(tmp_path) / "events.jsonl",
+def _supervised(tmp_path: Path, policy: Any = None) -> SupervisedRun:
+  """Start a supervised run over ``tmp_path``, as the engine would.
+
+  Args:
+    tmp_path: The workspace, standing in for the bind mount.
+    policy: The policy to drive it with; one that speaks once by default.
+
+  Returns:
+    The started observer. Every caller must reach ``before_destroy``, which is
+    what stops its thread.
+  """
+  run = SupervisedRun(
+      policy_factory=lambda: policy if policy is not None else _SpeaksOnce(),
+      task="solve it",
+      poll_interval=0.01,
   )
-  return CorrectionChannelObserver(pump=pump, channel=channel), pump, channel
+  run.after_create(_fs(tmp_path))
+  return run
 
 
-def test_a_supervised_run_that_stayed_supervised_reports_nothing(
+def _result_event() -> str:
+  return json.dumps({"type": "result", "subtype": "success"})
+
+
+def _wait_until(condition: Callable[[], bool]) -> None:
+  """Block until ``condition`` holds, or fail the test.
+
+  The observer polls on its own thread, so a test asserting on what that
+  thread did has to wait for it. Bounded, and failing the wait *is* the
+  finding: the thing under test never happened.
+
+  Args:
+    condition: What the thread is expected to bring about.
+
+  Raises:
+    AssertionError: The condition never held within the bound.
+  """
+  deadline = time.monotonic() + 10.0
+  while time.monotonic() < deadline:
+    if condition():
+      return
+    time.sleep(0.01)
+  raise AssertionError("the supervising thread never got there")
+
+
+def test_a_supervised_run_that_stayed_supervised_reports_no_metric(
     tmp_path: Path,
 ):
   # The metric is an event: a healthy run leaves no key rather than a zero, so
-  # a reader cannot mistake "supervised throughout" for "never measured".
-  observer, _, _ = _observer(tmp_path)
-  assert observer.before_destroy(_fs(tmp_path)) is None
+  # a reader cannot mistake "supervised throughout" for "never measured". The
+  # account is contributed either way — it is the evidence the run was watched.
+  run = _supervised(tmp_path)
+  contribution = run.before_destroy(_fs(tmp_path))
+  assert contribution is not None
+  assert contribution.metrics == {}
+  assert SUPERVISOR_LOG_NAME in contribution.inline_artifacts
 
 
 def test_a_dead_pump_produces_the_metric_that_changes_the_outcome_word(
@@ -312,10 +355,13 @@ def test_a_dead_pump_produces_the_metric_that_changes_the_outcome_word(
   a producer and no consumer, so the two halves are asserted together: the
   observer emits it, and the classifier acts on it.
   """
-  observer, pump, _ = _observer(tmp_path)
-  pump.failure = RuntimeError("the judge went away")
+  run = _supervised(tmp_path, policy=_Raises())
+  # A raising policy is caught by the supervisor, so the pump is failed the way
+  # a run fails it: from outside, by the thing it reads.
+  assert run.pump is not None
+  run.pump.failure = RuntimeError("the judge went away")
 
-  contribution = observer.before_destroy(_fs(tmp_path))
+  contribution = run.before_destroy(_fs(tmp_path))
   assert contribution is not None
   assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
 
@@ -329,9 +375,86 @@ def test_a_dead_pump_produces_the_metric_that_changes_the_outcome_word(
 def test_a_channel_that_closed_on_its_own_produces_it_too(tmp_path: Path):
   # The other way the same fact is reached: the relay's marker survived, so the
   # write end closed without anyone deciding the run was over.
-  observer, _, _ = _observer(tmp_path)
+  run = _supervised(tmp_path)
   (epath.Path(tmp_path) / CORRECTION_UNCLEAN_NAME).touch()
-  contribution = observer.before_destroy(_fs(tmp_path))
+  contribution = run.before_destroy(_fs(tmp_path))
+  assert contribution is not None
+  assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+
+
+def test_the_supervisors_account_of_the_run_is_persisted(tmp_path: Path):
+  """Point 1 of task 01: the run leaves the supervisor's own artifact.
+
+  Attachment is not observable from the actor's side — a supervisor that read
+  nothing and one that read everything produce the same rollout. This artifact
+  is the difference, so it is declared as an output rather than written as a
+  side effect.
+  """
+  run = _supervised(tmp_path)
+  assert [s.name for s in run.output_schema()] == [SUPERVISOR_LOG_NAME]
+  events = epath.Path(tmp_path) / EVENT_STREAM_NAME
+  _ = events.write_text(_assistant_event("editing the parser") + "\n")
+
+  contribution = run.before_destroy(_fs(tmp_path))
+  assert contribution is not None
+  rows = [
+      json.loads(line)
+      for line in contribution.inline_artifacts[SUPERVISOR_LOG_NAME]
+      .decode()
+      .splitlines()
+  ]
+  # One row per event consumed, and the row that spoke names the policy that
+  # produced the utterance — the field acceptance point 3 reads.
+  assert [row["kind"] for row in rows] == ["spoke"]
+  assert rows[0]["policy"] == "speaks-once"
+  assert rows[0]["text"] == "look at the failing test"
+
+
+def test_the_run_ends_when_the_supervisor_lets_a_turn_boundary_pass(
+    tmp_path: Path,
+):
+  """Under a live channel somebody has to decide the run is over.
+
+  The actor does not exit when it finishes answering — it waits for more input
+  — so a run with nobody to close the channel burns its whole wall clock and
+  reaches the outside as the actor's timeout. The moment chosen is the first
+  turn boundary the supervisor passes in silence.
+  """
+  events = epath.Path(tmp_path) / EVENT_STREAM_NAME
+  run = _supervised(tmp_path)
+  sentinel = epath.Path(tmp_path) / CORRECTION_DROP_NAME / CORRECTION_DONE_NAME
+
+  # The first result is answered rather than let pass: the policy speaks, so
+  # the run continues.
+  _ = events.write_text(_result_event() + "\n")
+  _wait_until(lambda: bool(run.pump and run.pump.interventions))
+  assert not sentinel.exists()
+
+  # The second is let pass, and that is the end of the run.
+  with events.open("a") as handle:
+    _ = handle.write(_result_event() + "\n")
+  _wait_until(sentinel.exists)
+
+  contribution = run.before_destroy(_fs(tmp_path))
+  assert contribution is not None
+  assert contribution.metrics == {}  # a deliberate close is not a failure
+
+
+def test_a_pump_that_died_still_ends_the_run(tmp_path: Path):
+  """Neither of the two obvious answers, for the reason task 16 §8.1 gives.
+
+  Leaving the channel open charges our breakage to the actor as a spent wall
+  clock; closing it silently renders a system failure as an ordinary early
+  finish. So it closes **and** reports, and the metric is what keeps the
+  ending attributable.
+  """
+  run = _supervised(tmp_path, policy=_Raises())
+  assert run.pump is not None
+  run.pump.failure = RuntimeError("the judge went away")
+  sentinel = epath.Path(tmp_path) / CORRECTION_DROP_NAME / CORRECTION_DONE_NAME
+  _wait_until(sentinel.exists)
+
+  contribution = run.before_destroy(_fs(tmp_path))
   assert contribution is not None
   assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
 
@@ -434,3 +557,53 @@ def test_the_channel_works_in_a_real_container(tmp_path: Path):
     )
     _ = sandbox.run_script("clean.sh", timeout=30.0)
     sandbox.down()
+
+
+def test_an_interjection_survives_conversion_into_the_trace():
+  """Point 6 of task 01: delivered is not the same as recorded.
+
+  A correction that reaches the actor and is then dropped by conversion passes
+  every earlier check — the channel worked, the actor answered — and leaves no
+  evidence that anything was said. So the conversion is asserted over the very
+  bytes the channel writes, rather than over a hand-written approximation.
+  """
+  from swe_lab.harnesses.claude_code.convert import proxy_log_to_conversation
+
+  spoken = Intervention(text="the failing test names the parser")
+  # What the relay appends to the actor's stdin, unpacked back to the text the
+  # wire carries. Going through `user_event_line` is the point: a change to
+  # either end of that shape breaks this test rather than passing it.
+  wire_text = json.loads(user_event_line(spoken.rendered()))["message"][
+      "content"
+  ][0]["text"]
+  record = {
+      "request": {
+          "body": {
+              "model": "claude-sonnet-5",
+              "messages": [
+                  {
+                      "role": "user",
+                      "content": [{"type": "text", "text": wire_text}],
+                  }
+              ],
+          }
+      },
+      "response": {
+          "status": 200,
+          "message": {
+              "role": "assistant",
+              "content": [{"type": "text", "text": "looking at it now"}],
+          },
+      },
+      "complete": True,
+  }
+
+  conversation = proxy_log_to_conversation(json.dumps(record) + "\n")
+  rendered = "\n".join(
+      block.text
+      for message in conversation.messages
+      for block in message.content
+      if isinstance(block, TextBlock)
+  )
+  assert f"<{INTERVENTION_TAG}>" in rendered
+  assert spoken.text in rendered

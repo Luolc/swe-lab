@@ -200,6 +200,20 @@ class Harness(ConversationProducer, ABC):
     ...
 
   @property
+  def accepts_corrections(self) -> bool:
+    """Whether the actor can be told something while it is still running.
+
+    A capability, asked of the contract rather than of a concrete class, so a
+    composition can refuse a supervised run on a harness that would silently
+    drop what the supervisor says. Most agents are handed one prompt and are
+    unreachable until they stop, which is why the default is ``False``.
+
+    Returns:
+      Whether a correction delivered mid-run reaches the actor.
+    """
+    return False
+
+  @property
   @abstractmethod
   def name(self) -> str:
     """Short snake_case identifier for this harness (e.g. ``claude_code``).
