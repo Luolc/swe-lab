@@ -149,17 +149,23 @@ class NativeTranscriptObserver(SandboxObserver):
     self._report["config_dir"] = self.config_dir
     try:
       result = sb.run_command(command, timeout=_COPY_TIMEOUT_S)
+      self._report["exit_code"] = result.exit_code
+      self._report["members"] = len(result.stdout.split())
+      # Both, not just the status: a command can report success and leave no
+      # file, and claiming an artifact that is not there fails the collect
+      # step — which would turn a missing diagnostic into a failed run.
+      #
+      # The check is inside the `try` with the command it validates, not after
+      # it. Outside, a sandbox that cannot answer `exists` would raise through
+      # `before_destroy`, and the run would end with neither the archive nor
+      # the report saying why — the unreadable absence this module exists to
+      # prevent, produced by the module itself.
+      archived = result.exit_code == 0 and sb.exists(TRANSCRIPT_FILENAME)
     except Exception as error:  # noqa: BLE001 — collection never fails a run
       _logger.exception("could not archive the native transcript")
       self._report["archived"] = False
       self._report["error"] = repr(error)
       return False
-    self._report["exit_code"] = result.exit_code
-    self._report["members"] = len(result.stdout.split())
-    # Both, not just the status: a command can report success and leave no
-    # file, and claiming an artifact that is not there fails the collect step —
-    # which would turn a missing diagnostic into a failed run.
-    archived = result.exit_code == 0 and sb.exists(TRANSCRIPT_FILENAME)
     self._report["archived"] = archived
     if not archived:
       # The ordinary case is a run whose actor wrote nothing there, and `tar`

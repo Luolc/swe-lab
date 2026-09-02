@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import override
 
 from etils import epath
 
@@ -131,6 +132,52 @@ def test_a_command_that_reports_success_without_a_file_is_not_believed(
   assert contribution is not None
   assert contribution.artifacts == {}
   assert report_of(contribution)["archived"] is False
+
+
+def test_a_sandbox_that_cannot_answer_exists_still_leaves_a_report(
+    tmp_path: Path,
+):
+  """The validation is inside the `try`, with the command it validates.
+
+  Attack: `tar` succeeds and the workspace check then raises. Outside the
+  `try`, that propagates through `before_destroy`, and the run ends with
+  neither the archive nor a report saying why — this module producing, by
+  itself, the unreadable absence it exists to prevent. Found in review of this
+  PR, by a mutant that made `exists` raise after a successful command.
+  """
+
+  class CannotAnswer(FakeSandbox):
+    """A sandbox whose file check fails after the command succeeded."""
+
+    @override
+    def exists(self, name: str) -> bool:
+      """Fail the check.
+
+      Args:
+        name: Ignored.
+
+      Returns:
+        Never returns.
+
+      Raises:
+        RuntimeError: Always.
+      """
+      del name
+      raise RuntimeError("workspace is unreachable")
+
+  sb = CannotAnswer(
+      spec=SPEC,
+      workspace=epath.Path(tmp_path),
+      run_results=[ExecResult(0, "projects/\n", "")],
+  )
+
+  contribution = NativeTranscriptObserver().before_destroy(sb)
+
+  assert contribution is not None
+  assert contribution.artifacts == {}
+  report = report_of(contribution)
+  assert report["archived"] is False
+  assert "workspace is unreachable" in str(report["error"])
 
 
 def test_collecting_the_record_never_fails_the_run(tmp_path: Path):
