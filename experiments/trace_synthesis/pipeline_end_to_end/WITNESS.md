@@ -123,25 +123,50 @@ events                   170
 result events            1
 events carrying a time   90
 actor last stamped event 2026-09-02T07:26:19.485Z
+last stamped line        169
+run_ts                   20260902-072316
+backend                  host
+instance_id              instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb
 supervisor first row     2026-09-02T07:23:35.650499+00:00
 supervisor last row      2026-09-02T07:42:14.572388+00:00
 supervisor span s        1118.9  (measured; both ends are supervisor rows)
+s per boundary           6.58  (measured; 1118.9 s / 170 rows)
+lapses / boundaries      9.4%  (denominator 170 rows)
 rollout wall s           1124.47  (measured; claude_code.wall_seconds)
 overlap with actor s     163.8  (at least)
 tail after actor s       955.1  (at most)
-tail / rollout wall      0.849  (at most; denominator 1124.47 s)
-tail / supervisor span   0.854  (at most; denominator 1118.9 s)
+tail / rollout wall      84.9%  (at most; denominator 1124.47 s)
+tail / supervisor span   85.4%  (at most; denominator 1118.9 s)
+wall - actor duration s  956.9  (at most)
+the two bounds differ by 1.8  s
 proxy records            33
 requests carrying it     24
 occurrences              63
 in the final message     3
 in any response          0
+carried in history       60
 native transcript report {"archived": true, "config_dir": "/agent-home/.claude", "exit_code": 0, "members": 3}
 archive members          3
 transcript files         1
+transcript member        projects/-app/f4ddae90-a7d2-440a-9e56-36e8a90c08ce.jsonl
 transcript lines         122
-lines carrying it        3
+lines carrying it        3  lines 32, 51, 57
 their types              attachment
+conversation messages    73
+carrying it              3  msg[19], msg[29], msg[32]
+their roles              system
+verifier flagged         ["suspicious_git"]
+verifier high_confidence []
+verifier suspicious_git  4 commands
+  git show --stat HEAD
+  git log --all --oneline
+  git show 5f7d8d190 --stat
+  git show 5f7d8d190 -- openlibrary/core/models.py
+integrity base_sha       5f7d8d190e2f0d837545e582fd5db99aae51a979
+integrity purged         True
+integrity future_commits 3172 -> 0
+integrity solution_reach True -> False
+integrity violations     []
 metric agent_complete             1.0
 metric claude_code.exit_code      0.0
 metric claude_code.timed_out      0.0
@@ -150,12 +175,20 @@ metric supervision.boundaries     170.0
 metric supervision.corrections    3.0
 metric supervision.lapses         16.0
 metric patch_is_empty             0.0
+metric verifier.flagged           1.0
 metric supervision.unhealthy      False
 metric unit_test.required         25.0
 metric unit_test.passed           9.0
 metric unit_test.missing          16.0
 metric unit_test.resolved         0.0
+actor version            2.1.212 (Claude Code)
+actor model              claude-sonnet-5
+patch base_ref           64501d9b938bd7986b36dd2cd4fdb7af930b2750
+rollout outcome          patch_produced
 patch.diff bytes         3107
+supervisor.jsonl bytes   27340
+claude_code.proxy_log.jsonl bytes 3064215
+corpus files             122
 ```
 
 Three of these lines are worth reading twice, because each is a coordinate that
@@ -213,11 +246,6 @@ diff <(cd "$RUN_TREE" && find . -type f -exec sha256sum {} \; | sort -k2) \
 products* (`HF_TOKEN` is documented for `pipelines/related_files/traces.py` and
 `datasets/deepswe/build_parquet.py --upload`); a run's corpus is not one of
 those and is deliberately not uploaded.
-
-**A planned destination exists**, and where it stands is stated once, in the
-horizontal component's [task index](../../../docs/horizontal/plans/README.md)
-(tasks 12 and 13) — read it there, not here. What that changes for this file:
-machine-local is not a stopgap standing in for a decision nobody made.
 
 What follows is the rule's own fallback, and it is the whole reason this file
 exists: **the numbers above are rederivable only with the corpus in hand.** The
