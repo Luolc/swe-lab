@@ -40,6 +40,10 @@ CONTAINER = "swe-lab-sandbox-fold-check"
 PORT = 20111
 TARGET = "https://openrouter.ai/api"
 WORKDIR = "/tmp/fold-check"
+# Mirrors the shipped harness: the config dir is pinned so the image cannot
+# inject agent instructions, and IS_SANDBOX signals the throwaway container to
+# builds that otherwise refuse --dangerously-skip-permissions as root.
+AGENT_HOME = "/agent-home"
 OUT = pathlib.Path(os.environ.get("FOLD_CHECK_OUT", "/home/ubuntu/dev/swe-lab-artifacts/sandbox_fold_check"))
 
 
@@ -119,20 +123,30 @@ def main() -> int:
     )
 
   OUT.mkdir(parents=True, exist_ok=True)
-  key = os.environ.get("ANTHROPIC_API_KEY") or ""
-  if not key:
-    raise RuntimeError("ANTHROPIC_API_KEY unset (set it from the key pool)")
+  # The pool is read and selected from *here*, by the code that already knows
+  # how: no shell splitting, and the value never reaches a command line. It is
+  # handed to the container by name (`docker exec -e ANTHROPIC_API_KEY`).
+  supervisor = load(
+      ROOT / "experiments/trace_synthesis/steered_rerun/supervisor.py",
+      "steered_supervisor",
+  )
+  index, key = supervisor.openrouter_key(0)
+  os.environ["ANTHROPIC_API_KEY"] = key
+  log(f"actor credential: pool index {index}, {supervisor.key_fingerprint(key)}")
 
   _ = run("docker", "rm", "-f", CONTAINER, check=False)
   _ = run(
       "docker", "run", "-d", "--name", CONTAINER,
       "--label", "swe-lab-instance=sandbox-fold-check",
-      IMAGE, "sleep", "infinity",
+      # The instance images declare ENTRYPOINT ["/bin/bash"], so a bare
+      # `sleep infinity` is read as the name of a script to run and the
+      # container exits immediately.
+      "--entrypoint", "/bin/sh", IMAGE, "-c", "sleep infinity",
   )
   log(f"container up: {CONTAINER}")
   try:
     _ = run("docker", "exec", CONTAINER, "mkdir", "-p", "/opt/claude-code",
-            "/opt/cc-reverse-proxy", WORKDIR)
+            "/opt/cc-reverse-proxy", WORKDIR, f"{AGENT_HOME}/.claude")
     _ = run("docker", "cp", str(claude_bin), f"{CONTAINER}:/opt/claude-code/claude")
     _ = run("docker", "cp", str(proxy_bin), f"{CONTAINER}:/opt/cc-reverse-proxy/cc-reverse-proxy")
     _ = run("docker", "exec", CONTAINER, "chmod", "+x",
@@ -149,7 +163,7 @@ def main() -> int:
     )
     for _ in range(60):
       probe = run("docker", "exec", CONTAINER, "sh", "-c",
-                  f"grep -c listening {WORKDIR}/proxy.log 2>/dev/null || true",
+                  f"grep -c 'Reverse proxy:' {WORKDIR}/proxy.log 2>/dev/null || true",
                   check=False).strip()
       if probe not in ("", "0"):
         break
@@ -161,7 +175,8 @@ def main() -> int:
         "docker", "exec", "-i",
         "-e", "ANTHROPIC_API_KEY",
         "-e", f"ANTHROPIC_BASE_URL=http://127.0.0.1:{PORT}",
-        "-e", "CLAUDE_CONFIG_DIR=/tmp/fold-check/.claude",
+        "-e", f"CLAUDE_CONFIG_DIR={AGENT_HOME}/.claude",
+        "-e", "IS_SANDBOX=1",
         "-w", WORKDIR, CONTAINER,
         "/opt/claude-code/claude", "-p",
         "--input-format", "stream-json", "--output-format", "stream-json",
@@ -248,6 +263,13 @@ def main() -> int:
     raw = run("docker", "exec", CONTAINER, "sh", "-c",
               f"cat {WORKDIR}/proxy.jsonl 2>/dev/null || true", check=False)
     _ = (OUT / "events.json").write_text(json.dumps(events, indent=2))
+    stderr_text = proc.stderr.read().decode() if proc.stderr else ""
+    _ = (OUT / "claude.stderr.log").write_text(stderr_text)
+    if stderr_text.strip():
+      log(f"agent stderr: {stderr_text.strip().splitlines()[0][:120]}")
+    proxy_log = run("docker", "exec", CONTAINER, "sh", "-c",
+                    f"cat {WORKDIR}/proxy.log 2>/dev/null || true", check=False)
+    _ = (OUT / "proxy.log").write_text(proxy_log)
     wire = evidence._wire(raw) if raw.strip() else {}  # noqa: SLF001
     got = None
     if wire.get("messages"):
