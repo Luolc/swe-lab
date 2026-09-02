@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted.
+Accepted, **partly superseded**: the outcome taxonomy of §1 and the reporting
+rule of §5 by [ADR-0016](ADR-0016-the-endings-nobody-could-attribute.md), which
+adds a sixth word and a second reported count. Everything else — classification
+by cause, the one causal bit, and the denominator defaulting to "in" — stands
+unchanged.
 
 ## Date
 
