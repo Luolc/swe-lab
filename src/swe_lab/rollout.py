@@ -301,6 +301,12 @@ class CodingAgentTask(Task):
     observer = outcome_of(result)
     if observer is not None:
       extra["agent_outcome"] = observer.outcome.value
+      # What the attempt cost, recorded because it is already parsed and
+      # answering it later means re-reading every trace artifact — or, when the
+      # trace is gone, not answering it at all.
+      for name, value in observer.usage.items():
+        if value is not None:
+          extra[f"agent_{name}"] = value
     return extra
 
   @override

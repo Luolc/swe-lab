@@ -227,6 +227,24 @@ class Harness(ConversationProducer, ABC):
     """
     ...
 
+  def usage(self, sb: SandboxFs) -> dict[str, float | int | None]:
+    """Report what the run spent, when the harness's trace says so.
+
+    Not abstract and not required: a harness whose trace carries no such
+    figures inherits the empty mapping, which reads as "this harness does not
+    report it" — distinct from a zero. Read through the sandbox and return a
+    value rather than raising, for the same reason :meth:`outcome` does.
+
+    Args:
+      sb: The still-live sandbox, read through rather than a host path.
+
+    Returns:
+      Whatever the harness can evidence, by convention ``cost_usd`` and
+      ``num_turns``; empty when it can evidence nothing.
+    """
+    del sb
+    return {}
+
   @abstractmethod
   def outcome(self, sb: SandboxFs) -> AgentOutcome:
     """How the run ended, read from the harness's own captured trace.

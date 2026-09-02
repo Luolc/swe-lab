@@ -104,6 +104,48 @@ _ERROR_SUBTYPES: dict[str, AgentOutcome] = {
 }
 
 
+def event_stream_usage(raw: str) -> dict[str, float | int | None]:
+  """Read what the run cost from its ``stream-json`` trace.
+
+  Both numbers sit in the ``result`` events we already parse for the outcome,
+  and they are aggregated differently, which is the whole reason this is a
+  function rather than a field read:
+
+  - ``total_cost_usd`` is **cumulative over the session**, so the total is the
+    value on the **final** result and summing would count earlier segments
+    twice.
+  - ``num_turns`` is **per result**, so a segmented run reports its turns in
+    pieces and the total is their sum.
+
+  **A metric whose inputs are not all present is ``None``, never a partial.**
+  The final result is the only one that carries the cumulative cost, so a trace
+  whose last result omits it has no cost — reporting the previous segment's
+  figure would be a stale number wearing a measured one's clothes. Likewise a
+  sum over some of the segments is not the run's turn count. Both would enter a
+  later average as though they had been measured, which is the failure this
+  function exists to avoid.
+
+  Args:
+    raw: The event-stream file contents (``""`` when the agent wrote none).
+
+  Returns:
+    ``cost_usd`` and ``num_turns``, each ``None`` unless every result the metric
+    needs carried a usable value.
+  """
+  results = [e for e in _parse_events(raw) if e.get("type") == "result"]
+  if not results:
+    return {"cost_usd": None, "num_turns": None}
+
+  final_cost = results[-1].get("total_cost_usd")
+  cost = float(final_cost) if isinstance(final_cost, (int, float)) else None
+
+  counts = [event.get("num_turns") for event in results]
+  present = [count for count in counts if isinstance(count, int)]
+  turns = sum(present) if len(present) == len(counts) else None
+
+  return {"cost_usd": cost, "num_turns": turns}
+
+
 def event_stream_outcome(raw: str) -> AgentOutcome:
   """Classify how the run ended from its ``stream-json`` trace.
 

@@ -61,6 +61,10 @@ class HarnessOutcomeObserver(SandboxObserver):
     exec_result: The agent execution's own result, set by the composition
       before teardown; ``None`` if the body never got to run it.
     wall_seconds: How long the agent ran, set alongside it.
+    usage: What the agent's own loop reported spending — ``cost_usd`` and
+      ``num_turns``, each ``None`` when the trace did not carry it. Empty until
+      ``before_destroy``, and empty for a harness whose trace has no such
+      figures.
   """
 
   harness: Harness
@@ -68,6 +72,7 @@ class HarnessOutcomeObserver(SandboxObserver):
   collected: dict[str, str] = field(default_factory=dict)
   exec_result: ExecResult | None = None
   wall_seconds: float | None = None
+  usage: dict[str, float | int | None] = field(default_factory=dict)
 
   @property
   def complete(self) -> bool:
@@ -110,6 +115,7 @@ class HarnessOutcomeObserver(SandboxObserver):
       how the run ended.
     """
     self.outcome = self.harness.outcome(sb)
+    self.usage = self.harness.usage(sb)
     self.collected = {
         qualified_name(self.harness.name, role): filename
         for role, filename in self.harness.native_outputs().items()
