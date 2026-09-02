@@ -102,6 +102,51 @@ _PROXY_READY_INTERVAL_S = "0.1"
 _MISCONFIGURED_EXIT = 78
 
 
+_REAPED_PIDS_VAR = "reaped_pids"
+
+
+def _reaper_lines() -> list[str]:
+  """Return the lines that install the script's single ``EXIT`` trap.
+
+  **Bash keeps only the last ``EXIT`` trap installed.** Two helpers each
+  trapping their own background process therefore silently leaves one of them
+  unreaped — the second `trap` replaces the first rather than adding to it. So
+  there is one trap, installed once here, over a list every starter appends to.
+
+  Installed **before** anything is backgrounded, so a process started and then
+  failing a readiness guard is still reaped on the way out.
+
+  Reaping runs in reverse order of starting: the capture proxy goes last,
+  because it is the thing recording whatever the others do on their way down.
+
+  Returns:
+    The lines, in order.
+  """
+  return [
+      f"{_REAPED_PIDS_VAR}=",
+      # Signal everything first, then wait **once** for all of them. The
+      # obvious `kill "$p"; wait "$p"` per pid deadlocks with more than
+      # one background job (measured: two `sleep`s, the second `wait`
+      # never returns), and this script has two the moment proxy capture
+      # and the correction channel are both on — which is the only
+      # configuration the live channel runs in.
+      f"trap 'for _pid in ${_REAPED_PIDS_VAR}; do"
+      ' kill "$_pid" 2>/dev/null; done; wait 2>/dev/null\' EXIT',
+  ]
+
+
+def _reap(pid_var: str) -> str:
+  """Return the line registering ``pid_var`` with the single cleanup trap.
+
+  Args:
+    pid_var: The shell variable holding the process id.
+
+  Returns:
+    One line, prepending the pid so cleanup runs in reverse start order.
+  """
+  return f'{_REAPED_PIDS_VAR}="${pid_var} ${_REAPED_PIDS_VAR}"'
+
+
 def _proxy_start_lines(target: str) -> list[str]:
   """Return the script lines that start the in-sandbox recording proxy.
 
@@ -114,8 +159,11 @@ def _proxy_start_lines(target: str) -> list[str]:
   - **it is accepting connections** — polled on the loopback port, not slept
     through. A fixed sleep is a race, and the failure it produces (the agent's
     very first API call refused) reads as an auth or network problem;
-  - **it is reaped when the script ends** — an ``EXIT`` trap, so the proxy dies
-    on every path out, including the guards that ``exit 78`` above it.
+  - **it is reaped when the script ends** — it registers with the script's
+    single ``EXIT`` trap (see :func:`_reaper_lines`), so the proxy dies on every
+    path out, including the guards that ``exit 78`` above it. It does **not**
+    install a trap of its own: Bash keeps only the last one installed, and this
+    script may also start a correction relay.
 
   The trap is also why no observer is needed for ordering anymore: by the time
   ``run`` returns, the proxy is gone and its log is closed.
@@ -148,8 +196,7 @@ def _proxy_start_lines(target: str) -> list[str]:
           f" --output {log} > {own_log} 2>&1 &"
       ),
       "proxy_pid=$!",
-      'trap \'kill "$proxy_pid" 2>/dev/null; wait "$proxy_pid" 2>/dev/null\''
-      " EXIT",
+      _reap("proxy_pid"),
       "proxy_wait=0",
       f"until {probe}; do",
       '  if ! kill -0 "$proxy_pid" 2>/dev/null; then',
@@ -248,8 +295,7 @@ def _relay_start_lines() -> list[str]:
       f"  rm -f {unclean}",
       f") > {log} 2>&1 &",
       "relay_pid=$!",
-      'trap \'kill "$relay_pid" 2>/dev/null; wait "$relay_pid" 2>/dev/null\''
-      " EXIT",
+      _reap("relay_pid"),
       '  if ! kill -0 "$relay_pid" 2>/dev/null; then',
       f'    echo "FATAL: the correction relay exited before the agent started;'
       f' see {CORRECTION_RELAY_LOG_NAME}" >&2',
@@ -590,6 +636,10 @@ class ClaudeCodeHarness(Harness):
         # clobber the proxy URL this run was wired to.
         f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}',
     ]
+    # One cleanup owner, before anything is backgrounded: two helpers each
+    # installing their own `EXIT` trap would leave only the later one, and the
+    # proxy-plus-channel configuration installs both.
+    lines += _reaper_lines()
     if self.capture == "proxy":
       # Start the recording proxy, then route the agent's API calls through it;
       # the agent's own stdout (a plain JSON result) is not the trace, so it is

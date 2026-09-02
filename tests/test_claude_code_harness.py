@@ -1,7 +1,9 @@
 """Tests for the claude_code harness: mounts, binary, invocation, conversion."""
 
 import json
+import os
 from pathlib import Path
+import subprocess
 from typing import get_args
 
 from etils import epath
@@ -254,7 +256,10 @@ def test_the_script_starts_the_proxy_in_the_sandbox_and_reaps_it():
   assert f'--output "$SANDBOX_WORKSPACE"/{PROXY_LOG_NAME}' in script
   assert f'> "$SANDBOX_WORKSPACE"/{PROXY_STDERR_NAME} 2>&1 &' in script
   assert f"until (exec 3<>/dev/tcp/127.0.0.1/{PROXY_PORT})" in script
-  assert 'trap \'kill "$proxy_pid"' in script
+  # Registered with the script's single EXIT trap rather than owning one:
+  # Bash keeps only the last trap installed, and this script may start a relay
+  # too (see test_the_script_installs_exactly_one_exit_trap).
+  assert 'reaped_pids="$proxy_pid $reaped_pids"' in script
   # The proxy is started before the agent is invoked, not after.
   assert script.index("proxy_pid=$!") < script.index(BINARY_AT + " -p")
   # A stream run starts nothing and mentions no proxy at all.
@@ -730,3 +735,83 @@ def test_the_channel_closes_only_on_the_sentinel_and_says_so_when_it_does_not():
   assert lines.index(clears[0]) > close
   # …and the loop it leaves is the one the sentinel ends.
   assert f"{CORRECTION_DROP_NAME}/{CORRECTION_DONE_NAME}" in script
+
+
+def test_the_script_installs_exactly_one_exit_trap():
+  """Bash keeps only the last ``EXIT`` trap, so there must be exactly one.
+
+  The proxy-plus-channel configuration is the *intended* live-channel setup, and
+  it starts two background processes. Two helpers each trapping their own would
+  leave the earlier one unreaped — a leak that no exit status reports.
+  """
+  script = ClaudeCodeHarness(
+      capture="proxy", correction_channel=True
+  )._invocation_script("/app")
+  assert script.count("trap ") == 1
+  # …and both processes are registered with it.
+  assert 'reaped_pids="$proxy_pid $reaped_pids"' in script
+  assert 'reaped_pids="$relay_pid $reaped_pids"' in script
+
+
+def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
+  """Run the generated cleanup, rather than asserting its shape.
+
+  The shape assertions above would still pass if the trap body reaped only the
+  first entry, or if a later change registered a pid the loop never reads. This
+  runs the real lines from the harness against two live processes and requires
+  **both** to be gone afterwards — so removing either reaper, or letting two
+  traps overwrite each other again, turns it red.
+
+  The children sleep far longer than the timeout, so they cannot die of old age
+  and pass this by accident; and the pids travel through a file rather than a
+  pipe, so nothing here waits on a descriptor a child might hold open.
+  """
+  from swe_lab.harnesses.claude_code.harness import _reap, _reaper_lines
+
+  pid_file = tmp_path / "pids"
+  script = "\n".join(
+      [
+          *_reaper_lines(),
+          "sleep 300 >/dev/null 2>&1 &",
+          "proxy_pid=$!",
+          _reap("proxy_pid"),
+          "sleep 300 >/dev/null 2>&1 &",
+          "relay_pid=$!",
+          _reap("relay_pid"),
+          f'printf "%s %s" "$proxy_pid" "$relay_pid" > {pid_file}',
+      ]
+  )
+  # Staged as a file and run like the harness runs its own script, rather than
+  # through `bash -c`.
+  script_file = tmp_path / "cleanup.sh"
+  _ = script_file.write_text(script + "\n")
+  # Short, because a working trap returns in milliseconds. A trap that never
+  # fires must fail this test quickly rather than hold the suite for the
+  # children's lifetime.
+  timed_out = False
+  try:
+    subprocess.run(
+        ["bash", str(script_file)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=10,
+        check=True,
+    )
+  except subprocess.TimeoutExpired:
+    timed_out = True
+
+  survivors: list[str] = []
+  for name, pid in zip(
+      ("proxy", "relay"),
+      (int(p) for p in pid_file.read_text().split()),
+      strict=True,
+  ):
+    try:
+      os.kill(pid, 0)
+    except ProcessLookupError:
+      continue
+    survivors.append(name)
+    os.kill(pid, 9)  # never leave one behind: an orphan destabilises later runs
+
+  assert not timed_out, "the cleanup trap never returned"
+  assert not survivors, f"outlived the script: {', '.join(survivors)}"
