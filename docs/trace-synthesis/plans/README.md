@@ -98,8 +98,8 @@ and cannot be done honestly tomorrow.
 # python3 - <run-dir>
 import json, pathlib, sys
 files = sorted(pathlib.Path(sys.argv[1]).rglob("claude_code.event_stream.jsonl"))
-if len(files) > 1:  # one stream per attempt; a merged count is not a reading
-    sys.exit(f"{len(files)} file(s), spanning attempts: {[str(f) for f in files]}")
+if len(files) > 1:  # a merged count over several streams is not a reading
+    sys.exit(f"{len(files)} file(s): {[str(f) for f in files]}")
 events = [json.loads(line) for f in files
           for line in f.read_text().splitlines() if line.strip()]
 print(len(files), "file(s),", len(events), "events,",
@@ -114,12 +114,18 @@ Five answers, and what each one means — decided in advance:
 | `1 file(s), 0 events` | the file exists and is empty — where every supervised run *starts*, since the harness's `>` redirect creates it before the agent writes. The actor produced nothing |
 | `1 file(s), N events, 0 result` | **task 17's shape.** Events flowed and no `result` ever came, so nothing could set `at_rest`, so the channel was never closed. A `TIMED_OUT` on this run is **ours** |
 | `1 file(s), N events, R result` | the actor finished at least one turn; task 17 did not occur on this run |
-| `2+ file(s)`, exit 1 | **not a reading** — the path spans more than one attempt, and one number over two attempts belongs to neither. Point it at a single attempt directory and read again |
+| `2+ file(s)`, exit 1 | **not a reading** — the path covers more than one copy of the stream, and one number summed over them belongs to none of them. Point it at a single attempt directory and read again |
 
 The first two are told apart on purpose. Collapsing them — which the first
 version of this snippet did, by printing only the event count — would have
 merged "no answer" with "an answer of zero", which is the same defect this task
 is about.
+
+**The `2+` row is the ordinary case at the top of a run directory, not an
+exotic one.** Handed the first end-to-end run's root, the read refuses with two
+files: the attempt's own stream and the store's copy of the same attempt
+(`r0/rollout/a0/…` and `r0/store/adhoc/…/r0/rollout/a0/…`). Several attempts do
+it too, but a run does not need a retry to get there.
 
 **Two files carry this stream, and only one of them is the input.** The
 workspace holds `ws/a<N>/claude.event_stream.jsonl` — the container-side name

@@ -16,6 +16,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
@@ -38,21 +39,30 @@ def _snippet() -> str:
   return section.split("```python\n")[1].split("```")[0]
 
 
-def _run(directory: Path) -> subprocess.CompletedProcess[str]:
+def _run(directory: Path) -> tuple[int, str, str]:
   """Run the committed snippet against a directory.
+
+  The snippet is whatever the Markdown says today, so it is run on a leash: a
+  fence that comes to loop or print without end would otherwise hang the suite
+  and fill memory with its own output.
 
   Args:
     directory: The path handed to the read.
 
   Returns:
-    The finished process, output captured.
+    Its exit status, stdout and stderr.
   """
-  return subprocess.run(
-      [sys.executable, "-c", _snippet(), str(directory)],
-      capture_output=True,
-      text=True,
-      check=False,
-  )
+  with tempfile.TemporaryFile("w+") as out, tempfile.TemporaryFile("w+") as err:
+    status = subprocess.run(
+        [sys.executable, "-c", _snippet(), str(directory)],
+        stdout=out,
+        stderr=err,
+        timeout=30,
+        check=False,
+    ).returncode
+    _ = out.seek(0)
+    _ = err.seek(0)
+    return status, out.read(), err.read()
 
 
 def test_the_read_names_an_artifact_the_supervised_harness_collects():
@@ -99,9 +109,9 @@ def test_each_reading_in_the_table_is_what_the_snippet_prints(
   if lines is not None:
     stream = attempt / "claude_code.event_stream.jsonl"
     _ = stream.write_text("".join(line + "\n" for line in lines))
-  finished = _run(tmp_path)
-  assert finished.returncode == 0, finished.stderr
-  assert finished.stdout.strip() == expected
+  status, out, err = _run(tmp_path)
+  assert status == 0, err
+  assert out.strip() == expected
 
 
 def test_more_than_one_attempt_refuses_instead_of_merging_them(tmp_path: Path):
@@ -119,7 +129,7 @@ def test_more_than_one_attempt_refuses_instead_of_merging_them(tmp_path: Path):
     _ = (directory / "claude_code.event_stream.jsonl").write_text(
         '{"type": "result"}\n'
     )
-  finished = _run(tmp_path)
-  assert finished.returncode != 0
-  assert finished.stdout.strip() == ""
-  assert "2 file(s)" in finished.stderr
+  status, out, err = _run(tmp_path)
+  assert status != 0
+  assert out.strip() == ""
+  assert "2 file(s)" in err
