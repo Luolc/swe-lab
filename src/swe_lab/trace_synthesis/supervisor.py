@@ -268,8 +268,9 @@ class SpeakAt:
   """Speaks a fixed line at fixed cursors, with no judge at all.
 
   The timing knob in isolation: it varies *when* while holding *what* and
-  *whether* constant. That is the comparison the graded batch could not make,
-  because its trigger was entangled with its criterion.
+  *whether* constant. A policy whose trigger is entangled with its criterion
+  cannot isolate timing at all — the two move together, so no comparison
+  between its arms can attribute a difference to either one.
 
   Attributes:
     cursors: The cursor values at which to speak.
