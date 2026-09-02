@@ -118,13 +118,54 @@ apart:**
 | **P2** | `instance_qutebrowser__qutebrowser-9ed748effa8f3bcd804612d9291da017b514e12f-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d` | qutebrowser/qutebrowser | python |
 
 Both are present in the pinned 731-record parquet, checked by loading it and
-matching the ids exactly (`load_dataset('swebench_pro')`, `n = 731`), with
-image references `jefzda/sweap-images:navidrome.navidrome-navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310`
+matching the ids exactly (`n = 731`), with image references
+`jefzda/sweap-images:navidrome.navidrome-navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310`
 and `jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-9ed748effa8f3bcd804612d9291da017b514e12f-v363c8a7e5ccdf6968fc7ab84a2053ac780366`
 respectively, derived the way
 [`RUNBOOK.md` §1](../pipeline_end_to_end/RUNBOOK.md#1-pre-flight--re-check-every-item-at-launch-time-never-trust-a-prior-pass)
 derives one. Whether either image is **present on the box** is a launch-time
 check, delegated to that same checklist and deliberately not asserted here.
+
+### 2a. Which copy of the data that check read
+
+**A rule is only reproducible together with the data it ran against**, and this
+repository has a live way for two people to run one rule over two different
+files without noticing. `find_repo_root` prefers the `PROJECT_ROOT` environment
+variable over walking up to `pyproject.toml`
+(`src/swe_lab/paths.py:32-35`), `.envrc` exports it, and the SWE-bench Pro
+parquet is gitignored — so `git worktree add` never brings it along, and a shell
+that inherited `PROJECT_ROOT` from the main checkout reads the main checkout's
+data from inside any worktree. That is not hypothetical: it produced a wrong
+"not reproducible" verdict against two agents on 2026-09-02
+([issue #366, entry 3](https://github.com/Luolc/swe-lab/issues/366), which
+carries the three-row comparison).
+
+The state the checks above were actually taken in, printed rather than assumed:
+
+| | |
+|---|---|
+| Checked from | the worktree `/home/ubuntu/dev/swe-lab-probe`, branch `exp/probe-preregistration` |
+| `PROJECT_ROOT` | **unset** |
+| `find_repo_root()` | `/home/ubuntu/dev/swe-lab-probe` |
+| `datasets_root()` | `/home/ubuntu/dev/swe-lab-probe/datasets` — **no parquet under it**; `datasets/swebench_pro/data/` does not exist |
+| Parquet actually read | `/home/ubuntu/dev/swe-lab/datasets/swebench_pro/data/test-00000-of-00001.parquet`, 7,816,820 bytes, sha256 `c8cd7115496ad4e9a8b21d088cef576a65bf821bb542b24336f13f714cef13f8` |
+| How it was reached | `load_dataset('swebench_pro', root='/home/ubuntu/dev/swe-lab/datasets')` — an argument on one command, nothing exported, nothing copied into the worktree, no `.envrc` touched |
+
+The default resolution **failed loudly** here rather than reading the other
+copy silently — `FileNotFoundError` naming the missing worktree path — which is
+the good half of this hazard and is why the explicit `root=` above is a
+deliberate override and not a repair of a silent mismatch. Anyone re-running
+§2's checks must print those first two rows before believing the third.
+
+**What this does and does not touch in the rule.** The selection rule of §2
+reads `candidates.json`, which is **committed in-repo**: it resolves through
+`git`, not through `datasets_root()`, so it selects the same two entries from
+either checkout, and the extracted-and-executed block above ran entirely inside
+this worktree. What needed the parquet is the *verification* — that both ids
+exist in the pinned 731 and what their image references are. A different
+parquet could therefore falsify §2's existence claim without changing which two
+rows the rule picks, which is why the digest is recorded here rather than left
+as "the pinned dataset".
 
 **Why each clause is in the rule, and what it costs.** `verdict`/`confidence`
 keep a determinacy-broken task from turning the robustness reading into a
@@ -223,7 +264,38 @@ directory `<root>/rollout/a0/` unless stated otherwise.
 | R11 | rollout wall clock | `run.json` → `metrics["claude_code.wall_seconds"]` |
 | R12 | actor cost | `claude_code.event_stream.jsonl` → terminal `result` event's `total_cost_usd`, `num_turns`, `duration_ms`, `usage` |
 | R13 | grading, reported not claimed | `unit_test/a*/run.json` → `metrics["unit_test.required" / "passed" / "missing" / "resolved"]`, and how many attempts ran |
-| R14 | corpus provenance | sha256 and byte size of every collected artifact, and the `main` commit at run time — the obligation [`WITNESS.md`](../pipeline_end_to_end/WITNESS.md) discharges for run 1 |
+| R14 | corpus provenance | sha256 and byte size of every collected artifact, the `main` commit at run time, and the environment row of §4a — the obligation [`WITNESS.md`](../pipeline_end_to_end/WITNESS.md) discharges for run 1 |
+
+### 4a. Every count is reported with the state that produced it
+
+**A count is reported with the SHA, a clean tree, *and* the resolved data root
+— the SHA alone is not enough.** This holds for the quality-gate counts in this
+probe's PRs and for any count either probe run produces.
+
+The reason is the hazard §2a records: `PROJECT_ROOT` beats the walk-up, so a
+count taken in a worktree may be a reading of another checkout's gitignored
+data, and two counts at one SHA that disagree are then evidence **about the two
+environments**, not a contradiction about the commit. On 2026-09-02 that gap
+turned three runs of one configuration into a reported "three worktrees, all
+agreeing", and a correct 967/4 from two other agents into a wrongly-declared
+irreproducible reading
+([issue #366, entry 3](https://github.com/Luolc/swe-lab/issues/366)).
+
+So a count in this probe's report or PR body carries four things: the count,
+the commit, whether the tree was clean, and `datasets_root()` as *printed* —
+not as inferred from which directory the command was typed in. The general
+shape is one this repo has already named: **a true reading claimed over a wider
+scope than it measures.**
+
+This document's own gate reading, in that form: `967 passed, 4 skipped, 10
+deselected`, tree clean, `PROJECT_ROOT` unset,
+`datasets_root() = /home/ubuntu/dev/swe-lab-probe/datasets` — the
+parquet-absent configuration, which is #366's third row and is why the count is
+967/4 and not 968/3. **The commit is deliberately not written here**: a file
+cannot name the commit that contains it without going stale on its next edit,
+so the SHA travels with the reading in the PR body, where a gate count is
+reported anyway. The other three parts of the state have no such excuse and are
+above.
 
 **Supervision-side tokens and dollars are absent, and the absence is the
 readout** — the same gap run 1 reported
@@ -400,8 +472,10 @@ copy it.
 ## 8. What may still change
 
 **Frozen:** the scale and its ceiling (§1), the selection rule and the two
-instance ids (§2), the fixed configuration and the drift check (§3), the
-readout list (§4), the verdict rule with its threshold, its licensed sentences
+instance ids (§2) together with the data copy its verification read (§2a), the
+fixed configuration and the drift check (§3), the readout list (§4) and the
+state every count is reported with (§4a), the verdict rule with its threshold,
+its licensed sentences
 and its quantity check (§5), the failure handling and its closed cause list
 (§6), the exclusions (§7).
 
