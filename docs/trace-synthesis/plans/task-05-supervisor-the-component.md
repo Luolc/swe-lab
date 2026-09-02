@@ -79,12 +79,31 @@ by one named test.
 
 Two inputs, and they are different in kind:
 
-- **Evidence — actor-produced only.** The records the actor emitted: assistant
-  messages and tool results, in order, with the cursor that identifies where in
-  the stream the supervisor is. **[C]** These are the record types
+- **The task statement — handed over, not observed.** What the actor was asked
+  to do, given at construction by whoever wrote the prompt. **The barrier keeps
+  out the solution, not the goal**: a supervisor that cannot see what was asked
+  cannot tell deviation from progress, and is left objecting to style.
+
+  It arrives this way rather than being read off the stream because *which
+  message is the brief* is a fact about **origin**, and position is only a
+  proxy for it. A filter that promoted "the first user text I have seen" would
+  admit an outside interjection as the task whenever the supervisor attached
+  after the actor had already spoken — the proxy fails exactly where the
+  supervisor is most likely to be attached late.
+- **Evidence — what the actor produced.** Its assistant messages and the
+  results of its own tool calls, in order, with the cursor that identifies
+  where in the stream the supervisor is. **[C]** These are the record types
   `event_stream_to_conversation` already parses
   ([`convert.py:51`](../../../src/swe_lab/harnesses/claude_code/convert.py)),
   which is where the shapes are defined rather than re-derived here.
+
+  **Every user text is excluded**, and the two kinds are distinguished only so
+  the record can say which it was: text carrying the intervention tag came from
+  this supervisor, anything else is an outside interjection. Neither is an
+  observation of what the actor did, and admitting the supervisor's own words
+  would let it read its output as the actor's behaviour. The filter is
+  **stateless**, so where a supervisor attached cannot change its verdict on a
+  message.
 - **Criterion — the guidebook.** The phase-B artifact, host-side, validated by
   **[C]** `validate_guidebook`
   ([`guidebook.py:41`](../../../src/swe_lab/trace_synthesis/guidebook.py)).
@@ -110,12 +129,25 @@ test or the sentence is downgraded):
   of `{gold_patch, reference_patch, test_patch, hidden_tests, fail_to_pass,
   pass_to_pass, fix_commit}` catches the names we thought of; an allowlist
   catches the one we did not.
-- `test_evidence_is_built_only_from_the_actor_stream` — the evidence builder
-  takes the stream and nothing else, and a record the actor did not produce
-  (**[M]** the TUI prompt-suggestion exchange, whose body is the whole
-  conversation plus a `[SUGGESTION MODE: …]` message nobody sent —
-  [report §14.4](../../../experiments/trace_synthesis/streamjson_input/REPORT.md))
-  is excluded rather than judged.
+- `test_the_task_is_given_not_read_off_the_stream` — the goal reaches the
+  policy without any message having to be guessed to *be* the brief.
+- `test_a_supervisor_attached_mid_run_admits_no_user_text` — where the
+  supervisor started cannot change what counts as evidence.
+- `test_the_supervisors_own_words_never_come_back_as_evidence` — its own
+  correction is **memory, not observation**. Admitted as evidence, the
+  supervisor would be reading its own output as something the actor did.
+- `test_no_user_text_is_evidence_whoever_wrote_it` — the exclusion is by
+  origin, and covers the outside interjection as well as our own.
+- `test_every_event_is_dispositioned_in_the_record` — the log says *why* a
+  message was not judged rather than omitting it, so a reader can tell an
+  exclusion from a gap.
+
+**The supervisor's own words live in its memory, on a channel separate from its
+evidence.** Since a correction never returns as an observation, a policy has
+nothing to compare against unless the supervisor keeps a list of what it has
+already said — and would otherwise be free to say the same thing three times in
+a row. That list is handed to the policy beside the evidence, never mixed into
+it (`test_what_it_said_is_remembered_outside_the_evidence`).
 
 ## 4. When it speaks: a policy seam, and exactly two implementations
 

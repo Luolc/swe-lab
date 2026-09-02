@@ -32,6 +32,7 @@ actually ran did so). Conversion neither adds nor removes any of it.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import json
 from typing import Any
 
@@ -59,18 +60,36 @@ def event_stream_to_conversation(raw: str) -> Conversation:
     The conversation; an empty ``Conversation(messages=[])`` when the text is
     empty or carries no user/assistant messages.
   """
-  messages: list[Message] = []
-  for event in _parse_events(raw):
-    if event.get("type") not in ("user", "assistant"):
-      continue
-    message = event.get("message")
-    if not isinstance(message, dict):
-      continue
-    role = _role(message.get("role"))
-    blocks = _content_blocks(message.get("content"))
-    if role is not None and blocks:
-      messages.append(Message(role=role, content=blocks))
+  messages = [m for e in _parse_events(raw) if (m := event_to_message(e))]
   return Conversation(messages=messages)
+
+
+def event_to_message(event: Mapping[str, Any]) -> Message | None:
+  """Convert one ``stream-json`` event into a typed message.
+
+  Extracted from :func:`event_stream_to_conversation` so that a live consumer
+  reading the stream event by event maps content blocks through the *same*
+  helpers as the after-the-fact conversion, rather than growing a second
+  parser beside it.
+
+  Args:
+    event: One decoded ``stream-json`` event.
+
+  Returns:
+    The message it carries, or ``None`` for an event that carries none — a
+    non-``user``/``assistant`` event, a malformed ``message``, an unknown role,
+    or content with no block we represent.
+  """
+  if event.get("type") not in ("user", "assistant"):
+    return None
+  message = event.get("message")
+  if not isinstance(message, dict):
+    return None
+  role = _role(message.get("role"))
+  blocks = _content_blocks(message.get("content"))
+  if role is None or not blocks:
+    return None
+  return Message(role=role, content=blocks)
 
 
 # The terminal ``result`` event's error subtypes, mapped onto the taxonomy.
