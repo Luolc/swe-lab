@@ -190,10 +190,11 @@ That is a weaker state and the run should say so rather than reporting a check
 it did not perform.
 
 **When this check fires, that is the design working.** The day someone genuinely
-needs a per-instance criterion, the hash stops matching and the run stops. That
-is the moment the barrier has to be re-examined by a person — **not an obstacle
-to route around**, and the rejection path is deliberately loud so that routing
-around it takes a visible decision rather than a quiet edit.
+needs a per-instance criterion, the hash stops matching and `load_criterion`
+rejects — and once the `[U]` run-level consumer exists, the run stops with it.
+That is the moment the barrier has to be re-examined by a person — **not an
+obstacle to route around**, and the rejection path is deliberately loud so that
+routing around it takes a visible decision rather than a quiet edit.
 
 **The provenance statement survives as rationale, not as a guarantee.** *"Its
 author must not have read the fix"* is a claim about a person; nothing can test

@@ -10,9 +10,10 @@ observation can see it, because it never travels that channel.
 **What the digest check does and does not establish**, because a barrier
 described more strongly than it is, is worse than none:
 
-- It **does** guarantee that no run selects a different criterion per instance.
-  One artifact, one digest, every instance — a per-instance criterion cannot be
-  swapped in without the digest stopping the run.
+- It **does** guarantee that every load yields the same criterion: one
+  artifact, one digest, so a per-instance criterion cannot be swapped in
+  without :func:`load_criterion` rejecting it. Whether that reaches a *run*
+  needs the caller described below, which does not exist yet.
 - It does **not** establish that the one shared artifact is free of solution
   knowledge. A single committed criterion could carry the fixes for every
   instance and still be byte-identical everywhere, and the optional

@@ -87,7 +87,9 @@ def test_a_criterion_naming_a_changed_file_is_rejected(
     load_criterion(gold_patch=GOLD_PATCH, path=path, digest=digest)
 
 
-def test_an_edited_criterion_stops_the_run(tmp_path: pathlib.Path) -> None:
+def test_an_edited_criterion_is_rejected_by_the_loader(
+    tmp_path: pathlib.Path,
+) -> None:
   """Instance-independence is enforced by the digest, not by inspection.
 
   Any edit at all, benign or not, is rejected until someone re-pins it.
@@ -101,7 +103,9 @@ def test_an_edited_criterion_stops_the_run(tmp_path: pathlib.Path) -> None:
     load_criterion(path=path)
 
 
-def test_a_missing_criterion_stops_the_run(tmp_path: pathlib.Path) -> None:
+def test_a_missing_criterion_is_rejected_by_the_loader(
+    tmp_path: pathlib.Path,
+) -> None:
   """An absent artifact is a refusal, never a silently empty criterion."""
   with pytest.raises(CriterionRejectedError):
     load_criterion(path=tmp_path / "nope.md")
