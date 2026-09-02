@@ -418,8 +418,13 @@ class RolloutOutcome(StrEnum):
       per ADR-0011 — wall-clock is a budget it was handed and spent.
     NO_PATCH: It terminated on its own terms and produced no usable patch. A
       genuine failure to solve, not a failure of the system.
-    PATCH_PRODUCED: There is something to grade. The only member that lets
-      grading run.
+    PATCH_PRODUCED: There is something to grade.
+    UNCLASSIFIED: The evidence needed to attribute the ending was not there —
+      no harness outcome to read, or no patch information at all. Neither
+      positively ours nor positively the actor's. It stays in the denominator
+      like any unclassified ending, but it is **counted separately** so that a
+      failure mode we have not named yet shows up as a growing number instead
+      of hiding inside :attr:`NO_PATCH`.
   """
 
   OOM_KILLED = "oom_killed"
@@ -427,6 +432,7 @@ class RolloutOutcome(StrEnum):
   TIMED_OUT = "timed_out"
   NO_PATCH = "no_patch"
   PATCH_PRODUCED = "patch_produced"
+  UNCLASSIFIED = "unclassified"
 
   @property
   def ours(self) -> bool:
@@ -455,6 +461,23 @@ class RolloutOutcome(StrEnum):
       Whether to count this run in the denominator.
     """
     return not self.ours
+
+  @property
+  def unclassified(self) -> bool:
+    """Whether the ending was attributed to nobody, for want of evidence.
+
+    Reported alongside every rate, next to the excluded count (ADR-0015 §5, as
+    amended). The excluded set is watched by construction — something had to
+    be positively identified to leave. This set is the one that is *not*:
+    keeping it in the denominator is the safe default, but it makes an
+    unnamed failure mode silent, and silence is where this repo's last three
+    defects lived. A separate count is what turns that silence into a number.
+
+    Returns:
+      Whether this ending was positively identified as neither ours nor the
+      actor's.
+    """
+    return self is RolloutOutcome.UNCLASSIFIED
 
 
 # The only two endings that are ours rather than the actor's. Kept beside the
@@ -489,7 +512,13 @@ def rollout_outcome(result: AttemptResult) -> RolloutOutcome:
   if observer is not None and observer.outcome.retryable:
     return RolloutOutcome.SYSTEM_FAILED
   patch = patch_of(result)
-  if patch is None or patch.is_empty:
+  if observer is None or patch is None:
+    # We saw no evidence, which is not the same as evidence of nothing: with
+    # no outcome to read we cannot tell a crash from a clean stop, and with no
+    # diff extraction we never looked for work. Calling either one `NO_PATCH`
+    # would book an absence of evidence as the actor's failure to solve.
+    return RolloutOutcome.UNCLASSIFIED
+  if patch.is_empty:
     return RolloutOutcome.NO_PATCH
   return RolloutOutcome.PATCH_PRODUCED
 

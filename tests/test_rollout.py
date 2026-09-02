@@ -37,6 +37,7 @@ from swe_lab.sandbox import (
     SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
+from swe_lab.sandbox.observers.diff_extract import DiffExtractObserver
 from swe_lab.sandbox.testing import FakeSandbox
 from swe_lab.workflow import AttemptResult
 
@@ -136,8 +137,14 @@ def _attempt(
     *,
     status: RunStatus = RunStatus.SUCCESS,
     artifacts: dict[str, epath.Path] | None = None,
+    patch: DiffExtractObserver | None = None,
 ) -> AttemptResult:
-  """Build a finished rollout attempt whose agent ended the given way."""
+  """Build a finished rollout attempt whose agent ended the given way.
+
+  ``patch`` defaults to ``None`` — no diff extraction composed at all, which is
+  a different thing from an extraction that came back empty, and the two must
+  not be spelled the same way at a call site.
+  """
   observer = HarnessOutcomeObserver(harness=ClaudeCodeHarness())
   observer.outcome = outcome
   return AttemptResult(
@@ -153,7 +160,7 @@ def _attempt(
       ),
       exec_result=None,
       output_schema=(ArtifactSchema(CONVERSATION_NAME),),
-      observers=(observer,),
+      observers=(observer,) if patch is None else (observer, patch),
   )
 
 
@@ -234,8 +241,11 @@ def test_the_agent_outcome_lands_on_the_record():
   task = CodingAgentTask(harness=ClaudeCodeHarness())
   # Two words, because they answer different questions: `agent_outcome` is what
   # the trace says the loop did, `rollout_outcome` is what the stage produced.
-  # Here the actor spent its own turn budget and left no patch behind.
-  assert task.record_extra(_attempt(AgentOutcome.MAX_TURNS)) == {
+  # Here the actor spent its own turn budget and left an empty patch behind.
+  spent = _attempt(
+      AgentOutcome.MAX_TURNS, patch=DiffExtractObserver(patch="", is_empty=True)
+  )
+  assert task.record_extra(spent) == {
       "agent_outcome": "max_turns",
       "rollout_outcome": "no_patch",
   }
@@ -278,7 +288,12 @@ def test_a_clean_run_that_produced_nothing_stays_in_the_denominator():
   raise the measured success rate, and raise it most for the weakest actor.
   """
   task = CodingAgentTask(harness=ClaudeCodeHarness())
-  gave_up = _attempt(AgentOutcome.FINISHED)
+  gave_up = _attempt(
+      AgentOutcome.FINISHED,
+      # It really looked: an extraction that ran and came back empty, which is
+      # not the same input as no extraction at all.
+      patch=DiffExtractObserver(patch="", is_empty=True),
+  )
   assert rollout_outcome(gave_up) is RolloutOutcome.NO_PATCH
   assert rollout_outcome(gave_up).counts_in_denominator is True
   # It is a real result, so it is not refused here — the empty patch it left
@@ -301,3 +316,51 @@ def test_an_unclassifiable_ending_stays_in_the_denominator():
   )
   # A budget the actor spent is the actor's, per ADR-0011.
   assert RolloutOutcome.TIMED_OUT.counts_in_denominator is True
+  # …and the ending that was attributed to nobody is the one that most needs
+  # the default to hold, since nothing positively identified it.
+  assert RolloutOutcome.UNCLASSIFIED.counts_in_denominator is True
+
+
+def test_an_ending_with_no_evidence_is_not_booked_as_the_actors():
+  """An absence of evidence must not read as evidence the actor produced none.
+
+  The distinction the enum previously could not make: ``NO_PATCH`` says an
+  extraction ran and came back empty. These two say we never had the evidence
+  to attribute anything — and folding them into ``NO_PATCH`` charges the actor
+  for our own missing instrumentation.
+  """
+  # No diff extraction composed at all: we never looked for work.
+  never_looked = _attempt(AgentOutcome.FINISHED)
+  assert patch_of(never_looked) is None
+  assert rollout_outcome(never_looked) is RolloutOutcome.UNCLASSIFIED
+
+  # A patch, but no harness outcome to read: a crash and a clean stop are
+  # indistinguishable from here, so neither attribution is earned.
+  extraction = DiffExtractObserver(patch="diff --git a/a b/a", is_empty=False)
+  no_outcome = dataclasses.replace(
+      _attempt(AgentOutcome.FINISHED), observers=(extraction,)
+  )
+  assert outcome_of(no_outcome) is None
+  assert rollout_outcome(no_outcome) is RolloutOutcome.UNCLASSIFIED
+
+
+def test_the_unclassified_count_is_reportable_apart_from_the_excluded_one():
+  """The exclusion set is watched by construction; this set is not.
+
+  Every rate is reported with its excluded count (ADR-0015 §5). That count only
+  covers endings something positively identified, so a failure mode we have not
+  named yet stays silent inside the denominator. `unclassified` is the second
+  number that makes it a growing figure instead of silence — the property is
+  what a reporter reads, so it is asserted to be exactly one word wide.
+  """
+  assert [o for o in RolloutOutcome if o.unclassified] == [
+      RolloutOutcome.UNCLASSIFIED
+  ]
+  # It is reported *and* counted: the two are independent, and this one is
+  # deliberately both — in the denominator, and visible.
+  assert RolloutOutcome.UNCLASSIFIED.ours is False
+  assert RolloutOutcome.UNCLASSIFIED.counts_in_denominator is True
+  # An ending that IS attributed is never counted here, or the number would
+  # stop meaning "nobody could attribute this".
+  assert RolloutOutcome.NO_PATCH.unclassified is False
+  assert RolloutOutcome.SYSTEM_FAILED.unclassified is False
