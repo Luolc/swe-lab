@@ -30,7 +30,7 @@ teardown.
 
 **Cheap instances exist and are not represented here.** An `ansible` instance
 finished its agent phase in 83 s with a 1.2 s grading run — likely well under
-$1. Its cost is unrecoverable because the defect in §5.1 destroyed the record;
+$1. Its cost is unrecoverable because the defect in §6.1 destroyed the record;
 the number is missing rather than estimated on purpose.
 
 **Both NodeBB numbers above are from the same instance**, so the 1.5× cost gap
@@ -68,6 +68,13 @@ Adopt or overturn deliberately; each of these cost an argument.
   leakage is not a thing it is asked to refrain from — it is a thing it cannot
   express. Do not re-implement a second barrier on top; consume the component's
   constructor interface.
+
+  **A field that exists but goes unused is not a barrier** — it is one more
+  thing you have to keep true, and nothing fails when it stops being true. The
+  per-instance guidebook is therefore *deleted* from the supervisor's input
+  rather than passed and ignored (owner ruling, 2026-09-01). If you extend the
+  interface, extend it the same way: what must not leak must be **absent**, so
+  that a leak is a type error rather than a discipline.
 - **Paired arms, per instance.** The control arm is the *same code path* with
   the speaking budget set to zero — same judge calls, stdin held open the same
   way, and a "would have spoken" marker recorded. That makes the arms comparable
@@ -134,9 +141,28 @@ Compute what each needs from your *observed* headroom distribution, then
 **freeze the choice before spending on the formal arms.** Choosing after seeing
 results is choosing the flattering one.
 
-## 5. Hazards that will cost you data
+## 5. What "the pipeline works" was checked to mean
 
-### 5.1 Two rollouts of one instance could erase each other
+Before trusting any of this, check that task 01's seven acceptance points are
+green in this repo's record — the list is reproduced so you can check rather
+than assume: the supervisor is on the actor's **live** stream; the **barrier
+holds** (the fields are absent, and a criterion-artifact sha mismatch refuses
+the run); the policy speaks at least once **because of a real deviation** and
+not on a schedule; the correction lands **mid-turn** in the measured wire shape;
+the patch is taken **against the pre-agent baseline** and grading runs; the
+trace is persisted **with the interjection still in it after conversion**; and
+the **outcome word** is the right one.
+
+Each of those names a test, a persisted field or a record — an acceptance
+nobody can check is worth as little as a metric nobody reads. Two are worth
+copying into your own harness: a run whose only utterances are **scheduled**
+does not demonstrate a policy (a knob cannot be evidence for what it sets), and
+an interjection that is delivered but **lost in conversion** satisfies every
+delivery check while leaving no evidence behind.
+
+## 6. Hazards that will cost you data
+
+### 6.1 Two rollouts of one instance could erase each other
 
 Fixed here in #332 — check your version. The CLI's per-run scratch directory
 was keyed by workflow and instance only — not by `rollout_id` — and a
@@ -165,7 +191,7 @@ hidden it; all-sequential would have looked like persistence never working. If
 you run sequentially at scale on an unfixed version, you lose half your records
 silently.
 
-### 5.2 Patches are contaminated unless the pre-agent baseline is on
+### 6.2 Patches are contaminated unless the pre-agent baseline is on
 
 Some images ship files that are untracked at `base_commit` — one SWE-bench Pro
 image carries a Redis append-only-file directory — and the extraction contract
@@ -180,7 +206,7 @@ many instances are affected is **not measured** — one image was examined.
 Record `git status --porcelain` at the baseline step and the affected-instance
 rate accumulates as a by-product of runs you are making anyway.
 
-### 5.3 A broken system and a hard task look identical
+### 6.3 A broken system and a hard task look identical
 
 Both arrive as a zero. Give infrastructure failure its own word at the point it
 happens, or it is counted as task difficulty and depresses the measured rate of
