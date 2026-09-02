@@ -136,7 +136,14 @@ rather than as a promise made once:
 
 ## 5. Cost and hygiene
 
-- **Wall clock:** `___`
+- **Wall clock:** `___` (`claude_code.wall_seconds`)
+- **Supervision catch-up:** `supervisor.jsonl`'s last timestamp minus the
+  event stream's last timestamp = `___` seconds — the span in which the actor
+  had already stopped and the supervisor was still working through its
+  backlog. As a fraction of the wall clock: `___`. **Both are recorded on
+  every run, not only when something looks wrong:** a number first computed
+  after an incident has no baseline to be read against. This is a cost
+  measurement, not one of §6's three readouts, which are frozen.
 - **Actor spend:** `___` (see §2 line 1 for how it is reported)
 - **Containers:** started `___`, left behind `___`. The window this ran in:
   `___`.
@@ -152,7 +159,25 @@ claims rather than the prose:
 - Native session transcript (Assertion A): `___`
 - Converted trace: `___`
 
-## 7. Open questions
+## 7. Unanticipated findings
+
+**Mandatory, and filled on every run** — including the runs with nothing to
+put here, where the entry is exactly `None observed.` The empty slot is the
+point: a report that can only record what its criteria anticipated cannot
+learn anything a script could not have told us, and a report with nowhere to
+put a surprise does one of two things with it — drops it, or bends a closure
+criterion to make room. The second is what a pre-registration exists to
+prevent, so a standing slot for the unanticipated is part of the
+pre-registered shape rather than a door opened once something turned up.
+
+Nothing here is frozen by `PREREGISTRATION.md` and nothing here may close,
+weaken or strengthen one of the seven points: evidence for a point goes in
+that point's row, judged against its frozen criterion. What belongs here is
+what this run showed that no point, readout or outcome word asks about.
+
+`___`
+
+## 8. Open questions
 
 Anything this run raised and did not answer, one line each — **not** softened
 into the sections above. `___`
