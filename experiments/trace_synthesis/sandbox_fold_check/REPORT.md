@@ -27,11 +27,20 @@ decision rests on is about the artifact we ship, not only about the host.
 **Does not settle:** anything about *compliance* — whether an actor acts on a
 correction delivered this way. This measures shape, and only shape.
 
-**The confounds named in advance did not have to be untangled.** The sandbox arm
-differs from the baseline in version *and* environment, so a mismatch could not
-have said which. Equality makes the question moot: **neither difference moved
-the wrapper**, which is a stronger result than the check was designed to reach —
-it was designed only to refute.
+**The confounds named in advance did not have to be untangled — and equality
+does not untangle them either.** The sandbox arm differs from the baseline in
+version *and* environment, so a mismatch could not have said which. What this
+result supports is exactly one sentence:
+
+> **The combined change of version and environment did not alter the wrapper for
+> this input.**
+
+It does **not** support "neither difference moved the wrapper". Attributing the
+*absence* of an effect to each factor separately needs an arm that varies one at
+a time, and this run has none — two changes that individually altered the
+wrapper and happened to offset would produce the same equality. That is
+unlikely; it is also untested, and the difference between those two words is the
+whole reason the disambiguating arm exists.
 
 The disambiguating arm (2.1.212 on the host) was named in the pre-registration
 and **not run**, exactly as registered: it was only worth buying on a mismatch.
@@ -42,11 +51,20 @@ and **not run**, exactly as registered: it was only worth buying on a mismatch.
 baseline it compares against has, and the comparison is an equality between two
 single observations rather than a rate.
 
-An equality is worth more than a rate at N=1 and less than it looks: it is
-strong evidence that this assembly path is **deterministic for this input**, and
-**no** evidence about other tasks, timings, models, or non-text content blocks.
-Those edges are [task 14](../../../docs/trace-synthesis/plans/README.md),
-unchanged by this result.
+**What the data says is that two recorded outputs were equal.** That is not a
+repeatability claim: a single pair cannot distinguish an assembly path that is
+deterministic from one that happened to agree twice, because nothing here was
+run twice under the same conditions. Calling it "deterministic for this input"
+— as an earlier draft of this report did — reads a property of the *process* off
+a single pair of *outputs*.
+
+It is also **no** evidence about other tasks, timings, models, or non-text
+content blocks. Those edges are
+[task 14](../../../docs/trace-synthesis/plans/README.md), unchanged by this
+result.
+
+What it does do is what it was registered to do: **the refutation condition had
+its chance to fire and did not.**
 
 ## Method
 
