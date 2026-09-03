@@ -106,11 +106,23 @@ Host root: `.cache/rollout_workspaces/<instance_id>/` · in-container:
 
 ### Staged before the run (mounts)
 
+**This table is the default configuration** — `stream` capture, no correction
+channel. Two harness settings change *which* file the agent reads on stdin, and
+nothing else in this section. All four combinations, from `_stdin_path` in
+`src/swe_lab/harnesses/claude_code/harness.py`:
+
+| capture | correction channel | the agent's stdin |
+|---|---|---|
+| `stream` (default) | off (default) | `prompt.stream.json` |
+| `stream` | on | the correction FIFO — the relay opens the run by `cat`-ing `prompt.stream.json` into it |
+| `proxy` | off | `prompt.txt`, **the one path on which the agent reads the plain file** |
+| `proxy` | on | the same FIFO |
+
 | File | In-container path | Written by | Read by | Content |
 |---|---|---|---|---|
-| `run_claude_code.sh` | `$SANDBOX_WORKSPACE/run_claude_code.sh` | harness (mount) | the main body | the agent invocation: resolve `$HOME` in three tiers (image → passwd → `/tmp/agent-home`) · `export CLAUDE_CONFIG_DIR=/agent-home/.claude` · `export IS_SANDBOX=1` · `. agent_env.sh` (caller-injected env) · `cd $WORKDIR` · `/opt/claude-code/claude -p --model … --output-format stream-json --verbose --dangerously-skip-permissions --replay-user-messages --input-format stream-json < prompt.stream.json > claude.event_stream.jsonl 2> claude.stderr.log` (the prompt is piped in on **stdin**, not inlined; the agent's own exit status is propagated rather than swallowed) |
-| `prompt.txt` | `$SANDBOX_WORKSPACE/prompt.txt` | **harness** (written in `run`) | a later reader, not the agent | the task prompt — content is **dataset-derived** (`SweBenchProInstance.prompt`), handed to `Harness.run(prompt=...)` as text; the *filename* is this harness's own choice (ADR-0007 §8). Kept on every path as the readable record of what was asked |
-| `prompt.stream.json` | `$SANDBOX_WORKSPACE/prompt.stream.json` | **harness** (written in `run`) | the agent (via run_claude_code.sh) | the same prompt as the one `stream-json` user event the run opens with. Under `--input-format stream-json` the prompt cannot be a plain file — every message on that stdin is a JSON line — and `--replay-user-messages` is only accepted alongside it ([ADR-0017](../decisions/ADR-0017-what-a-capture-is-evidence-of.md)) |
+| `run_claude_code.sh` | `$SANDBOX_WORKSPACE/run_claude_code.sh` | harness (mount) | the main body | the agent invocation, in the default configuration above: resolve `$HOME` in three tiers (image → passwd → `/tmp/agent-home`) · `export CLAUDE_CONFIG_DIR=/agent-home/.claude` · `export IS_SANDBOX=1` · `. agent_env.sh` (caller-injected env) · `cd $WORKDIR` · `/opt/claude-code/claude -p --model … --output-format stream-json --verbose --dangerously-skip-permissions --replay-user-messages --input-format stream-json < prompt.stream.json > claude.event_stream.jsonl 2> claude.stderr.log` (the prompt is piped in on **stdin**, not inlined; the agent's own exit status is propagated rather than swallowed). `proxy` capture without the channel drops `--replay-user-messages --input-format stream-json` and redirects `prompt.txt`; either channel run redirects the FIFO |
+| `prompt.txt` | `$SANDBOX_WORKSPACE/prompt.txt` | **harness** (written in `run`) | the agent under `proxy` capture with no channel; a later reader on the other three paths | the task prompt — content is **dataset-derived** (`SweBenchProInstance.prompt`), handed to `Harness.run(prompt=...)` as text; the *filename* is this harness's own choice (ADR-0007 §8). Written on every path — on the three where the agent's stdin is `stream-json` it is the readable record of what was asked, nothing more |
+| `prompt.stream.json` | `$SANDBOX_WORKSPACE/prompt.stream.json` | **harness** (written in `run`, on the three paths whose stdin is `stream-json`) | the agent — directly under `stream` capture, through the relay when the channel is on | the same prompt as the one `stream-json` user event the run opens with. Under `--input-format stream-json` the prompt cannot be a plain file — every message on that stdin is a JSON line — and `--replay-user-messages` is only accepted alongside it ([ADR-0017](../decisions/ADR-0017-what-a-capture-is-evidence-of.md)) |
 
 ### Produced during the run (in-container, by `run_claude_code.sh`)
 
@@ -166,9 +178,10 @@ never a candidate):
   `patch.raw.diff` (diff-extract observer).
 
 The staged inputs (`entryscript.sh` / `run_claude_code.sh` / `run_script.sh` /
-`parser.py` / `required_tests.json` / `prompt.txt`) remain in the workspace and
-make it self-describing — a persisted workspace records *what ran*, *what was
-expected*, and *what resulted*, re-gradable without the dataset record.
+`parser.py` / `required_tests.json` / `prompt.txt` / `prompt.stream.json`)
+remain in the workspace and make it self-describing — a persisted workspace
+records *what ran*, *what was expected*, and *what resulted*, re-gradable
+without the dataset record.
 
 ## Notes
 
@@ -176,10 +189,16 @@ expected*, and *what resulted*, re-gradable without the dataset record.
   workspace unless `reuse=True`; mounts are transferred into a fresh dir.
 - **Filenames are constants**, owned by their axis: the SWE-Bench-Pro names
   (`run_script.sh`, `parser.py`, `output.json`, `required_tests.json`,
-  `entryscript.sh`, `stdout.log`, `stderr.log`, **and the solve `prompt.txt`**)
-  in the dataset adapter; the claude_code names (`run_claude_code.sh`,
-  `claude.event_stream.jsonl`, `claude.stderr.log`, `$HOME`, the `/opt/claude-code/claude`
-  binary asset path) in the harness; `conversation.json` in the shared
-  conversation observer; `extract.sh` / `patch.raw.diff` / `patch.diff` in the
-  shared diff-extract observer. `PROMPT_NAME` (`prompt.txt`) is the one
-  cross-axis convention — the dataset writes it, the harness reads it.
+  `entryscript.sh`, `stdout.log`, `stderr.log`) in the dataset adapter; the
+  claude_code names (`run_claude_code.sh`, `claude.event_stream.jsonl`,
+  `claude.stderr.log`, **both prompt files**, `$HOME`, the
+  `/opt/claude-code/claude` binary asset path) in the harness;
+  `conversation.json` in the shared conversation observer; `extract.sh` /
+  `patch.raw.diff` / `patch.diff` in the shared diff-extract observer.
+
+  **There is no cross-axis prompt filename.** The composition's declared prompt
+  input is `PROMPT_NAME` — `prompt.md` (`src/swe_lab/rollout.py`) — which
+  `CodingAgentTask.action` reads back and hands to `Harness.run(prompt=...)` as
+  **text**; where a harness then lands it is the harness's own choice
+  (ADR-0007 §8), and each of the three writes its own `PROMPT_FILENAME`. So the
+  prompt crosses the axis as a string, not as a filename.
