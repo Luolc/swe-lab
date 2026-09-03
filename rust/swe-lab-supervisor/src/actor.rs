@@ -221,6 +221,9 @@ pub struct Actor {
     child: Child,
     group: Pid,
     mark: String,
+    /// The wrapper's own start time, in clock ticks since boot: a floor
+    /// under every descendant's — see [`marked_processes`].
+    started: u64,
     stdin: Option<ChildStdin>,
     gate: Arc<Gate>,
     /// `SIGSTOP` was sent to the group and no `SIGCONT` has followed. A real
@@ -279,6 +282,15 @@ impl Actor {
             .stderr(Stdio::piped())
             .process_group(0)
             .env(MARK_ENV, &mark);
+        // Read before the actor exists, so that the floor is below it.
+        let floor = match start_time(Pid::this()) {
+            Probe::Present(started) => started,
+            other => {
+                return Err(io::Error::other(format!(
+                    "the wrapper's own start time cannot be read: {other:?}"
+                )));
+            }
+        };
         let child = command.spawn()?;
         let group = Pid::from_raw(
             i32::try_from(child.id()).map_err(|_| io::Error::other("actor pid does not fit"))?,
@@ -292,6 +304,7 @@ impl Actor {
             stdin: None,
             gate: Arc::new(Gate::new()),
             frozen: false,
+            started: floor,
             reaped: false,
             stdout_drain: None,
             stderr_drain: None,
@@ -505,7 +518,7 @@ impl Actor {
         signal_group(self.group, Signal::SIGKILL)?;
         let status = self.child.wait()?;
         self.reaped = true;
-        let stragglers = sweep(&self.mark, self.group);
+        let stragglers = sweep(&self.mark, self.group, self.started);
         let deadline = Instant::now() + grace;
         let stdout = finish(&mut self.stdout_drain, deadline);
         let stderr = finish(&mut self.stderr_drain, deadline);
@@ -531,7 +544,7 @@ impl Drop for Actor {
         let _ = signal_group(self.group, Signal::SIGKILL);
         let _ = self.child.wait();
         self.reaped = true;
-        let _ = sweep(&self.mark, self.group);
+        let _ = sweep(&self.mark, self.group, self.started);
     }
 }
 
@@ -587,14 +600,14 @@ struct Marked {
 /// against the start time it was found with just before it is signalled;
 /// the window between that check and the `kill` is the accepted residue
 /// described in the module doc.
-fn sweep(mark: &str, group: Pid) -> Result<usize, String> {
+fn sweep(mark: &str, group: Pid, floor: u64) -> Result<usize, String> {
     let needle = format!("{MARK_ENV}={mark}");
     let escaped = |found: Vec<Marked>| -> Vec<Marked> {
         found.into_iter().filter(|m| m.group != group).collect()
     };
     let mut killed = HashSet::new();
     for _ in 0..SWEEP_PASSES {
-        let stragglers = escaped(marked_processes(&needle)?);
+        let stragglers = escaped(marked_processes(&needle, floor)?);
         if stragglers.is_empty() {
             return Ok(killed.len());
         }
@@ -611,7 +624,7 @@ fn sweep(mark: &str, group: Pid) -> Result<usize, String> {
         }
         thread::sleep(EXIT_POLL_INTERVAL);
     }
-    let left = escaped(marked_processes(&needle)?).len();
+    let left = escaped(marked_processes(&needle, floor)?).len();
     if left == 0 {
         Ok(killed.len())
     } else {
@@ -621,10 +634,20 @@ fn sweep(mark: &str, group: Pid) -> Result<usize, String> {
     }
 }
 
-/// Every live process of this user's own (see [`own`]) whose initial
-/// environment holds `needle` as one entry. A read of one of those that
-/// fails is a state unknown — the answer cannot be trusted, and says so.
-fn marked_processes(needle: &str) -> Result<Vec<Marked>, String> {
+/// Every live process of this user's own (see [`own`]) that started at or
+/// after `floor` (clock ticks since boot) and whose initial environment
+/// holds `needle` as one entry.
+///
+/// The floor is the wrapper's own start time: a process that started
+/// strictly before it cannot be a descendant of the actor, whatever its
+/// environment says — a fact read from `stat`, which is readable even when
+/// `environ` is not (a hosted CI runner has live processes of the job's
+/// own uid whose environment it may not read). Start times are whole
+/// ticks, so a process on the same tick as the wrapper is kept, not
+/// excluded: the boundary falls on the side where the cost is one more
+/// read. A read of one of the remaining processes that fails is a state
+/// unknown — the answer cannot be trusted, and says so.
+fn marked_processes(needle: &str, floor: u64) -> Result<Vec<Marked>, String> {
     let entries = fs::read_dir("/proc").map_err(|e| format!("listing /proc: {e}"))?;
     let me = std::process::id();
     let mut found = Vec::new();
@@ -654,6 +677,10 @@ fn marked_processes(needle: &str) -> Result<Vec<Marked>, String> {
             // No environment left to read — this kernel refuses the read
             // of an exited process rather than returning none, so `stat`
             // is read first and is what says so.
+            continue;
+        }
+        if stat.started < floor {
+            // Older than the wrapper: not a descendant, whatever it holds.
             continue;
         }
         let environ = match proc_file(owned.0, "environ") {
@@ -1084,7 +1111,9 @@ mod tests {
     }
 
     fn probes_alive(value: &str) -> usize {
-        marked_processes(&format!("PROBE={value}")).unwrap().len()
+        marked_processes(&format!("PROBE={value}"), 0)
+            .unwrap()
+            .len()
     }
 
     fn wait_until(deadline: Duration, condition: impl Fn() -> bool) -> bool {
@@ -1644,7 +1673,7 @@ mod tests {
         .unwrap();
         let group = Pid::from_raw(i32::try_from(actor.pid()).unwrap());
         let escaped = || {
-            marked_processes(&format!("PROBE={probe}"))
+            marked_processes(&format!("PROBE={probe}"), 0)
                 .unwrap()
                 .iter()
                 .any(|m| m.group != group)
@@ -1740,7 +1769,7 @@ mod tests {
     #[test]
     fn a_box_with_other_users_processes_still_gets_a_sweep_answer() {
         assert!(matches!(own(1), Probe::Present(_)), "PID 1 is always there");
-        marked_processes("PROBE=nobody-has-this").unwrap();
+        marked_processes("PROBE=nobody-has-this", 0).unwrap();
     }
 
     /// A child that exited and is not yet reaped is a zombie: exited by the
@@ -1778,6 +1807,35 @@ mod tests {
         child.wait().unwrap();
         live.kill().unwrap();
         live.wait().unwrap();
+    }
+
+    /// The floor excludes a process that started strictly before it and
+    /// keeps one on the same tick: a real child, its own start tick as the
+    /// floor (kept — the same-tick case, by construction) and one tick
+    /// later (excluded), the mark present in both arms.
+    #[test]
+    fn the_start_time_floor_excludes_only_what_started_strictly_before_it() {
+        let probe = format!("floor-{}", std::process::id());
+        let needle = format!("PROBE={probe}");
+        let mut child = Command::new("sleep")
+            .arg("30")
+            .env("PROBE", &probe)
+            .spawn()
+            .unwrap();
+        let Probe::Present(stat) = stat_fields(owned(child.id())) else {
+            panic!("the child's stat")
+        };
+        let found = |floor: u64| {
+            marked_processes(&needle, floor)
+                .unwrap()
+                .iter()
+                .any(|m| m.pid.as_raw() == i32::try_from(child.id()).unwrap())
+        };
+        assert!(found(0), "no floor: the child is found");
+        assert!(found(stat.started), "the same tick is kept");
+        assert!(!found(stat.started + 1), "one tick later: excluded");
+        child.kill().unwrap();
+        child.wait().unwrap();
     }
 
     #[test]
