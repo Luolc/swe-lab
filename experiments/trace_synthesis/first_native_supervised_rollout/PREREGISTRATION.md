@@ -398,3 +398,54 @@ the one that does not survive the run.
 
 This is the same failure the censoring rules above are written against, one
 level down: **the criteria are reviewed, the definitions they cite are not.**
+
+### A.2 The full sweep: every field these criteria cite, checked against #393
+
+*Appended 2026-09-03 by `swelab-integ-impl`, before the run. A.1 recorded one
+quantity found by chance; this is the enumeration, because **a process that
+depends on someone happening to read the right commit gives the same output as
+no process at all — until the once nobody reads it**.*
+
+**The list is counted from the frozen text, not recalled**: every backticked
+identifier in the Success-criteria section, deduplicated. Filenames, literal
+values and third-party JSON keys (`authorization`, `usage`, `stop_reason`) are
+dropped, leaving the quantities this run produces about itself.
+
+| cited quantity | changed by #393? |
+|---|---|
+| `supervision.boundaries` | **yes** — counting, see A.1 |
+| `accounted_for` | **yes** — now also requires both log digests |
+| `supervision.unhealthy` | **yes, derived** — set exactly when `accounted_for` is false |
+| `rollout_outcome` | **yes, derived** — `SUPERVISION_FAILED` follows from that metric |
+| `summary.criterion_sha256` | no |
+| `summary.actor_event_log_sha256` | no |
+| `judge_every_n_assistant_messages` | no |
+| `spoke` / `silent` / `unjudged` row kinds | no |
+| `supervisor_log.jsonl`, `supervisor_summary.json` | no |
+
+**`accounted_for` tightened.** In #393 it is
+`gaps == 0 && supervisor_exit == Clean && events > 0 &&
+actor_event_log_sha256.is_some() && supervisor_log_sha256.is_some()` — the last
+two conjuncts are new. The direction is **stricter**, so criterion A becomes
+harder to satisfy rather than easier: if it now comes out false, that is a true
+finding and not a false alarm. Tightening still gets recorded — a silent change
+in the conservative direction is still a silent change.
+
+**The propagation is the part no single catch would have found.** `accounted_for`
+is not consulted only by the criterion that names it:
+
+`accounted_for` → `supervision.unhealthy`
+(`native_supervision.py`, the metric is emitted exactly when it is false) →
+`rollout_outcome = SUPERVISION_FAILED` (`rollout.py`).
+
+So one definitional change reaches **four** quantities the frozen criteria cite,
+three of them without ever appearing in a diff under their own names. Checking
+the two that were noticed would have left the other two unexamined and
+unmentioned.
+
+**Note on the list itself.** A list of these fields offered from memory included
+`supervisor_exit`, `actor_exit_code` and `actor_exit_signal`, and spoke of three
+digests. None of those three names occurs anywhere in this file, and the
+criteria cite two digests. The counted list is the one above; it is recorded
+here because the difference between counting and recalling is the whole reason
+this section exists.
