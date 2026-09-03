@@ -7,16 +7,16 @@ import os
 
 import pytest
 
+from swe_lab.cli.host_env import (
+    adopt_host_scoped_credentials,
+    HOST_OAUTH_TOKEN_ENV,
+    HOST_SUPERVISOR_API_KEY_ENV,
+)
 from swe_lab.credential_sources import (
     adopted_credential_sources,
     forget_adoptions,
 )
 from swe_lab.harnesses.claude_code.constants import OAUTH_TOKEN_ENV
-from swe_lab.host_env import (
-    adopt_host_scoped_credentials,
-    HOST_OAUTH_TOKEN_ENV,
-    HOST_SUPERVISOR_API_KEY_ENV,
-)
 from swe_lab.trace_synthesis.native_supervision import (
     API_KEY_ENV as SUPERVISOR_API_KEY_ENV,
 )

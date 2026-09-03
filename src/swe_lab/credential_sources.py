@@ -1,11 +1,16 @@
 """Which shell name each credential was adopted from — **names, never values**.
 
 A leaf on purpose: it imports nothing from this package, so both ends can use
-it. :mod:`swe_lab.host_env` performs the adoptions and records them here, and
-:mod:`swe_lab.rollout` reads them into the run record. Were this state to live
-in either of those, the other would have to import it and the import graph
-closes a loop (``host_env`` → the harness constants → ``native_supervision`` →
-``rollout``), which fails at import time in a way that names neither end.
+it. :mod:`swe_lab.cli.host_env` performs the adoptions and records them here,
+and :mod:`swe_lab.rollout` reads them into the run record. Were this state to
+live in either of those, the other would have to import it, and either direction
+closes a loop: ``rollout`` → ``cli.host_env`` runs ``cli/__init__`` → ``run`` →
+``rollout``, and moving the state down instead only shifts the loop to
+``host_env`` → the harness constants → ``native_supervision`` → ``rollout``.
+
+**Both failures arrive as an `ImportError` about a "partially initialized
+module", naming neither end of the cycle** — it does not read like an import
+loop, so it is written down here rather than rediscovered.
 
 Nothing here ever holds a credential. The point of recording the *source name*
 is that adoption is otherwise invisible: a run reads a canonical variable and

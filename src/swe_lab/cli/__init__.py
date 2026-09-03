@@ -7,8 +7,7 @@ dispatcher stays a thin table so it never grows into one giant file). Run it as
 
 import typer
 
-from swe_lab.host_env import adopt_host_scoped_credentials
-
+from .host_env import adopt_host_scoped_credentials
 from .promote import promote_cmd
 from .run import run_cmd
 
