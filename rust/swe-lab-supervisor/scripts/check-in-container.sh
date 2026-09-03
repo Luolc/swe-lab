@@ -13,11 +13,14 @@
 # holds exactly the components and targets the file lists — nothing here
 # names one — and it is tagged by the file's digest, so a changed file is a
 # new image. The container runs as the invoking user, so nothing it writes
-# lands in the image (the official image leaves the toolchain world-writable,
-# and rustup would install a missing item into the throwaway container at
-# run time; with the tag following the file, nothing is ever missing). Cargo's registry and the build output are kept under
-# target/container/ on the host, so a second run does not download or rebuild
-# the world. Containers are always `--rm`; nothing is left running.
+# lands in the image; and rustup is told not to install at run time
+# (`RUSTUP_AUTO_INSTALL=0`): the official image leaves the toolchain
+# world-writable, and rustup would otherwise put a missing item into the
+# throwaway container and go on, green — so an image missing what the file
+# lists fails its gates instead, and a green gate vouches for the image.
+# Cargo's registry and the build output are kept under target/container/ on
+# the host, so a second run does not download or rebuild the world.
+# Containers are always `--rm`; nothing is left running.
 set -euo pipefail
 crate=$(cd "$(dirname "$0")/.." && pwd)
 # The whole repository is mounted, not just the crate: the criterion text is
@@ -31,9 +34,11 @@ image="swe-lab-rust-build:$version-$pin"
 
 docker build --quiet --tag "$image" - <<DOCKERFILE >/dev/null
 FROM rust:$version
+# --no-self-update: rustup itself stays what the base image ships, so two
+# builds of one tag run the same rustup.
 RUN mkdir /pin \
  && echo '$(base64 -w0 "$crate/rust-toolchain.toml")' | base64 -d > /pin/rust-toolchain.toml \
- && cd /pin && rustup toolchain install
+ && cd /pin && rustup toolchain install --no-self-update
 DOCKERFILE
 
 cache="$crate/target/container"
@@ -48,6 +53,7 @@ exec docker run --rm --init \
   --user "$(id -u):$(id -g)" \
   --env HOME=/tmp \
   --env CARGO_HOME=/cargo \
+  --env RUSTUP_AUTO_INSTALL=0 \
   --volume "$repo:/repo" \
   --volume "$cache/cargo:/cargo" \
   --volume "$cache/target:/repo/$crate_in_repo/target" \
