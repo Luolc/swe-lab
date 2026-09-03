@@ -26,9 +26,9 @@ from swe_lab.harnesses.claude_code.constants import (
     CORRECTION_DONE_NAME,
     CORRECTION_DROP_NAME,
     CORRECTION_FIFO_NAME,
-    CORRECTION_PROMPT_NAME,
     CORRECTION_UNCLEAN_NAME,
     EVENT_STREAM_NAME,
+    STREAM_JSON_PROMPT_NAME,
 )
 from swe_lab.harnesses.claude_code.harness import user_event_line
 from swe_lab.rollout import (
@@ -555,7 +555,7 @@ def test_the_channel_works_in_a_real_container(tmp_path: Path):
             "proxy_pid=$!",
             _reap("proxy_pid"),
             f"printf '%s\\n' {shlex.quote(prompt)}"
-            f' > "$SANDBOX_WORKSPACE"/{CORRECTION_PROMPT_NAME}',
+            f' > "$SANDBOX_WORKSPACE"/{STREAM_JSON_PROMPT_NAME}',
             *_relay_start_lines(),
             # The host writes into the bind-mounted drop directory
             # while the agent runs; the same files are the same bytes.
