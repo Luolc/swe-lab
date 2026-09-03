@@ -38,6 +38,7 @@ from swe_lab.trace_synthesis.supervisor import (
     MAX_INTERVENTION_CHARS,
     Observation,
     PolicyLapseError,
+    Supervisor,
     Verdict,
 )
 
@@ -80,11 +81,14 @@ class RecordingTransport:
   Attributes:
     answers: The contents to return, in order; the last repeats.
     model: The model the response reports, which need not be the one asked for.
+    finish_reason: ``choices[0].finish_reason`` to report, or ``None`` to omit
+      it — matching a provider response that carries none.
     payloads: Every request body sent.
   """
 
   answers: list[str]
   model: str = "served/model-x"
+  finish_reason: str | None = None
   payloads: list[dict[str, Any]] = dataclasses.field(default_factory=list)
 
   def __call__(self, payload: Any) -> dict[str, Any]:
@@ -98,10 +102,10 @@ class RecordingTransport:
     """
     self.payloads.append(dict(payload))
     index = min(len(self.payloads) - 1, len(self.answers) - 1)
-    return {
-        "model": self.model,
-        "choices": [{"message": {"content": self.answers[index]}}],
-    }
+    choice: dict[str, Any] = {"message": {"content": self.answers[index]}}
+    if self.finish_reason is not None:
+      choice["finish_reason"] = self.finish_reason
+    return {"model": self.model, "choices": [choice]}
 
 
 def test_a_judge_without_a_named_model_cannot_be_built() -> None:
@@ -212,7 +216,7 @@ def test_every_call_records_what_answered_it_and_what_was_not_sent() -> None:
   assert call.response_model == "served/actual"
   assert set(call.sampling_sent) == set(SAMPLING_KEYS)
   assert call.sampling_sent["temperature"] is None
-  assert call.sampling_sent["max_tokens"] == 512
+  assert call.sampling_sent["max_tokens"] == judge.max_tokens
 
 
 def test_an_unusable_judge_answer_is_never_retried() -> None:
@@ -223,6 +227,57 @@ def test_an_unusable_judge_answer_is_never_retried() -> None:
   with pytest.raises(JudgeAnswerError):
     judge(observation(), load_criterion())
   assert len(transport.payloads) == 1
+
+
+def test_a_token_budget_lapse_is_recorded_differently_from_a_bad_answer() -> (
+    None
+):
+  """`supervisor.jsonl` must not fold these two failures into one lapse.
+
+  Both are `JudgeAnswerError`s the policy bounds to a `PolicyLapseError`, but
+  they call for different fixes: `finish_reason == "length"` means our own
+  `max_tokens` ran out before the model could finish, while any other value
+  means the model finished normally and still produced an answer this could
+  not use. Before issue #383, `supervisor.jsonl` recorded both the same way —
+  which is how 85/85 lapses in a 902-call replay all turned out to be the
+  former without anyone noticing from the log alone.
+  """
+
+  def lapse_row(transport: RecordingTransport) -> dict[str, object]:
+    policy = supervising_policy(
+        model="anthropic/claude-sonnet-5", transport=transport, budget=1
+    )
+    rows: list[dict[str, object]] = []
+    supervisor = Supervisor(
+        policy=policy,
+        task="make the test pass",
+        sink=lambda _: None,
+        log=lambda row: rows.append(dict(row)),
+    )
+    supervisor.observe(
+        {
+            "type": "assistant",
+            "message": {
+                "role": "assistant",
+                "content": [{"type": "text", "text": "editing blind"}],
+            },
+        }
+    )
+    assert len(rows) == 1
+    return rows[0]
+
+  budget_row = lapse_row(
+      RecordingTransport(answers=['{"off_track": tru'], finish_reason="length")
+  )
+  bad_answer_row = lapse_row(
+      RecordingTransport(answers=["not json at all"], finish_reason="stop")
+  )
+
+  assert budget_row["kind"] == "lapse"
+  assert bad_answer_row["kind"] == "lapse"
+  assert budget_row["finish_reason"] == "length"
+  assert bad_answer_row["finish_reason"] == "stop"
+  assert budget_row["finish_reason"] != bad_answer_row["finish_reason"]
 
 
 def test_an_over_long_line_from_the_writer_is_rejected_not_truncated() -> None:
