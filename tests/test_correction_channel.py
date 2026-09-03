@@ -30,7 +30,7 @@ from swe_lab.harnesses.claude_code.constants import (
     EVENT_STREAM_NAME,
     STREAM_JSON_PROMPT_NAME,
 )
-from swe_lab.harnesses.claude_code.harness import user_event_line
+from swe_lab.harnesses.claude_code.convert import user_event_line
 from swe_lab.rollout import (
     CodingAgentTask,
     rollout_outcome,
@@ -41,12 +41,9 @@ from swe_lab.rollout import (
 from swe_lab.sandbox import RunResult, RunStatus, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
 from swe_lab.trace_synthesis.channel import (
-    BOUNDARIES_METRIC,
     CorrectionChannel,
-    CORRECTIONS_METRIC,
     stream_events,
     SupervisedRun,
-    SUPERVISOR_LOG_NAME,
     SupervisorPump,
 )
 from swe_lab.trace_synthesis.supervisor import (
@@ -57,6 +54,11 @@ from swe_lab.trace_synthesis.supervisor import (
     Observation,
     PolicyLapseError,
     Supervisor,
+)
+from swe_lab.trace_synthesis.vocabulary import (
+    BOUNDARIES_METRIC,
+    CORRECTIONS_METRIC,
+    SUPERVISOR_LOG_NAME,
 )
 from swe_lab.workflow import AttemptResult
 
@@ -527,11 +529,11 @@ def test_the_channel_works_in_a_real_container(tmp_path: Path):
   A stand-in stands in for the capture proxy: the pinned proxy binary is not in
   a plain image, and what is under test is the reaping, not the proxy.
   """
+  from swe_lab.harnesses.claude_code.convert import user_event_line
   from swe_lab.harnesses.claude_code.harness import (
       _reap,
       _reaper_lines,
       _relay_start_lines,
-      user_event_line,
   )
   from swe_lab.sandbox.backends.host import DockerHostSandbox
 

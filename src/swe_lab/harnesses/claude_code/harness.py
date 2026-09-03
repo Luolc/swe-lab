@@ -23,7 +23,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-import json
 import logging
 import shlex
 from typing import override
@@ -48,6 +47,24 @@ from swe_lab.sandbox import (
     SandboxFs,
     SandboxObserver,
 )
+from swe_lab.trace_synthesis.native_supervision import (
+    API_KEY_ENV as SUPERVISOR_API_KEY_ENV,
+)
+from swe_lab.trace_synthesis.native_supervision import (
+    BASE_URL_ENV as SUPERVISOR_BASE_URL_ENV,
+)
+from swe_lab.trace_synthesis.native_supervision import (
+    NativeSupervision,
+    NativeSupervisionObserver,
+    SUPERVISOR_BINARY_AT,
+    SUPERVISOR_CONFIG_NAME,
+    SUPERVISOR_SUMMARY_NAME,
+)
+
+# Aliased because this module already has an `API_KEY_ENV` of the actor's, and
+# two credentials' variables under one name is the confusion a credential
+# boundary can least afford.
+from swe_lab.trace_synthesis.vocabulary import SUPERVISOR_LOG_NAME
 
 from .binary import PINNED_CLAUDE_CODE_VERSION
 from .capture import Capture, Effort
@@ -68,6 +85,7 @@ from .constants import (
     EVENT_STREAM_NAME,
     INFO_ARTIFACT,
     MAX_PROMPT_BYTES,
+    OPENROUTER_API,
     PROMPT_FILENAME,
     PROXY_BASE_URL,
     PROXY_BINARY_AT,
@@ -75,6 +93,12 @@ from .constants import (
     PROXY_PORT,
     PROXY_STDERR_NAME,
     STREAM_JSON_PROMPT_NAME,
+    SUPERVISOR_INFO_NAME,
+    SUPERVISOR_PROXY_BASE_URL,
+    SUPERVISOR_PROXY_LOG_NAME,
+    SUPERVISOR_PROXY_PORT,
+    SUPERVISOR_PROXY_STDERR_NAME,
+    SUPERVISOR_STDERR_NAME,
     UNATTENDED_DENIED_TOOLS,
 )
 from .convert import (
@@ -83,6 +107,7 @@ from .convert import (
     event_stream_usage,
     proxy_log_outcome,
     proxy_log_to_conversation,
+    user_event_line,
 )
 from .native_transcript import NativeTranscriptObserver
 
@@ -161,8 +186,16 @@ def _reap(pid_var: str) -> str:
   return f'{_REAPED_PIDS_VAR}="${pid_var} ${_REAPED_PIDS_VAR}"'
 
 
-def _proxy_start_lines(target: str) -> list[str]:
-  """Return the script lines that start the in-sandbox recording proxy.
+def _proxy_start_lines(
+    *,
+    target: str,
+    port: int,
+    log_name: str,
+    own_log_name: str,
+    name: str,
+    label: str,
+) -> list[str]:
+  """Return the script lines that start one in-sandbox recording proxy.
 
   Three things have to be true before the agent may run, and each is a line
   here rather than an assumption:
@@ -190,38 +223,57 @@ def _proxy_start_lines(target: str) -> list[str]:
   written is a complete record. A killed run yields *partial* capture, never a
   corrupt file.
 
+  **A run may start more than one.** The actor's calls and the in-sandbox
+  supervisor's go to different upstreams, so each gets its own instance, its
+  own port and its own log — one function rather than two, because everything
+  that makes an instance safe (the readiness poll, the liveness check, the
+  registration with the single trap) has to be true of both, and a second copy
+  is a second place for one of them to be forgotten.
+
   Args:
     target: The upstream API base URL to forward to.
+    port: The loopback port this instance listens on. Private to the sandbox's
+      own network namespace, so two instances need only differ from each other.
+    log_name: The workspace file this instance records exchanges into.
+    own_log_name: The workspace file this instance's own output goes to.
+    name: What this instance is called in the script. It prefixes the shell
+      variables holding its pid and its wait counter, which have to be distinct
+      per instance: a second start reusing the first's pid variable would leave
+      the trap reaping one process twice and the other never.
+    label: What this instance records, in the failure messages — the only thing
+      a reader of a dead proxy has to tell the two apart. Separate from
+      ``name`` because one of them is shell syntax and the other is English.
 
   Returns:
     The lines, in order.
   """
   binary = shlex.quote(PROXY_BINARY_AT)
-  log = f'"$SANDBOX_WORKSPACE"/{PROXY_LOG_NAME}'
-  own_log = f'"$SANDBOX_WORKSPACE"/{PROXY_STDERR_NAME}'
+  log = f'"$SANDBOX_WORKSPACE"/{log_name}'
+  own_log = f'"$SANDBOX_WORKSPACE"/{own_log_name}'
+  pid_var = f"{name}_pid"
+  wait_var = f"{name}_wait"
   # Bash's /dev/tcp is the only TCP probe that needs nothing installed in the
   # image; `curl` and `nc` are not present in every instance image. A shell
   # without it fails every attempt and hits the loud timeout below rather than
   # running the agent against a proxy nobody confirmed.
-  probe = f"(exec 3<>/dev/tcp/127.0.0.1/{PROXY_PORT}) 2>/dev/null"
+  probe = f"(exec 3<>/dev/tcp/127.0.0.1/{port}) 2>/dev/null"
   return [
       (
-          f"{binary} --port {PROXY_PORT} --target {shlex.quote(target)}"
+          f"{binary} --port {port} --target {shlex.quote(target)}"
           f" --output {log} > {own_log} 2>&1 &"
       ),
-      "proxy_pid=$!",
-      _reap("proxy_pid"),
-      "proxy_wait=0",
+      f"{pid_var}=$!",
+      _reap(pid_var),
+      f"{wait_var}=0",
       f"until {probe}; do",
-      '  if ! kill -0 "$proxy_pid" 2>/dev/null; then',
-      f'    echo "FATAL: the capture proxy exited; see {PROXY_STDERR_NAME}"'
-      " >&2",
+      f'  if ! kill -0 "${pid_var}" 2>/dev/null; then',
+      f'    echo "FATAL: the {label} proxy exited; see {own_log_name}" >&2',
       f"    exit {_MISCONFIGURED_EXIT}",
       "  fi",
-      "  proxy_wait=$((proxy_wait+1))",
-      f'  if [ "$proxy_wait" -ge {_PROXY_READY_ATTEMPTS} ]; then',
-      f'    echo "FATAL: the capture proxy never listened on port'
-      f' {PROXY_PORT}; see {PROXY_STDERR_NAME}" >&2',
+      f"  {wait_var}=$(({wait_var}+1))",
+      f'  if [ "${wait_var}" -ge {_PROXY_READY_ATTEMPTS} ]; then',
+      f'    echo "FATAL: the {label} proxy never listened on port'
+      f' {port}; see {own_log_name}" >&2',
       f"    exit {_MISCONFIGURED_EXIT}",
       "  fi",
       f"  sleep {_PROXY_READY_INTERVAL_S}",
@@ -230,26 +282,6 @@ def _proxy_start_lines(target: str) -> list[str]:
 
 
 _RELAY_POLL_INTERVAL_S = 0.1
-
-
-def user_event_line(text: str) -> str:
-  """Return one stream-json user event, newline-terminated.
-
-  The wire shape is not ours to choose: it is what the CLI accepts under
-  ``--input-format stream-json``, and it is the shape the compliance experiment
-  measured, so it is reproduced rather than re-derived.
-
-  Args:
-    text: The message body.
-
-  Returns:
-    A single JSON line, ending in a newline.
-  """
-  event = {
-      "type": "user",
-      "message": {"role": "user", "content": [{"type": "text", "text": text}]},
-  }
-  return json.dumps(event) + "\n"
 
 
 def _relay_start_lines() -> list[str]:
@@ -322,6 +354,96 @@ def _relay_start_lines() -> list[str]:
   ]
 
 
+def _supervisor_probe_lines() -> list[str]:
+  """Return the lines that prove a supervised run can be supervised, or stop.
+
+  Two preconditions, both checked before the actor exists, because the failure
+  they prevent is the same one and it is the expensive one: a run that goes
+  ahead without a working supervisor ends as an *ordinary* result. An
+  unsupervised success is worse than a failure — a failure is discarded, and a
+  success is kept as data.
+
+  The binary is asked to answer ``--version`` rather than tested with ``[ -x
+  ]``. **A positive premise, not a list of the ways it could be missing:**
+  ``-x`` rules out "absent" and lets "present, executable, and not a working
+  binary for this image" straight through, so the arm nobody enumerated is
+  exactly as green as the arms they did. Answering constrains it to be the
+  kind of thing it claims to be, and everything that is not passes no part of
+  it.
+
+  The credential is checked for presence only, and only its **name** is ever
+  written: it arrives by reference (the sandbox's ``pass_env``), and a check
+  that rendered it would put it in the script, the script in the workspace,
+  and the workspace in the run's artifacts.
+
+  Returns:
+    The lines, in order. The version answer is also the run's record of which
+    build supervised it, which the container does not outlive.
+  """
+  binary = shlex.quote(SUPERVISOR_BINARY_AT)
+  info = f'"$SANDBOX_WORKSPACE"/{SUPERVISOR_INFO_NAME}'
+  return [
+      f'if [ -z "${{{SUPERVISOR_API_KEY_ENV}:-}}" ]; then',
+      f'  echo "FATAL: {SUPERVISOR_API_KEY_ENV} is unset or empty; the'
+      f" supervisor cannot reach its model. Pass it to the sandbox by"
+      f' reference (pass_env)." >&2',
+      f"  exit {_MISCONFIGURED_EXIT}",
+      "fi",
+      f"if ! {binary} --version > {info} 2>&1; then",
+      f'  echo "FATAL: the supervisor wrapper at {SUPERVISOR_BINARY_AT} did'
+      f' not answer --version; see {SUPERVISOR_INFO_NAME}" >&2',
+      f"  exit {_MISCONFIGURED_EXIT}",
+      "fi",
+  ]
+
+
+def _supervisor_command(actor_argv: Sequence[str]) -> str:
+  """Return the one command line that runs the actor under the wrapper.
+
+  A string rather than an argv, because the two halves need opposite
+  treatments and the difference matters:
+
+  - the wrapper's **own** flags name workspace files, and the workspace path is
+    a shell variable the sandbox exports. Those have to reach the shell
+    unquoted enough to expand, exactly as every other path in this script does;
+  - the **actor's** tokens must reach the actor unchanged, so they are
+    shell-quoted as a unit. The wrapper executes them as given — it joins
+    nothing into a shell command and adds no flags of its own — so what this
+    hands over is a handover, not a second construction of them.
+
+  Quoting them the same way would be wrong in one direction or the other: a
+  `$SANDBOX_WORKSPACE` inside single quotes arrives at the wrapper literally,
+  and an unquoted actor token with a space in it arrives as two.
+
+  Args:
+    actor_argv: The actor's command, from
+      :meth:`ClaudeCodeHarness.actor_argv`.
+
+  Returns:
+    The command line, without redirects.
+  """
+  flags = {
+      "--config": SUPERVISOR_CONFIG_NAME,
+      "--actor-event-log": EVENT_STREAM_NAME,
+      "--supervisor-log": SUPERVISOR_LOG_NAME,
+      "--summary": SUPERVISOR_SUMMARY_NAME,
+      "--actor-stderr": AGENT_STDERR_NAME,
+      # The prompt travels by path, not on stdin. The wrapper writes these
+      # bytes unparsed as the first thing the actor reads and then holds that
+      # stdin open, because when it closes is the wrapper's policy to decide —
+      # a quiet result closes it, a correction at a result boundary keeps it
+      # open — and a plain file's EOF must not decide instead.
+      "--actor-prompt": STREAM_JSON_PROMPT_NAME,
+  }
+  named = " ".join(
+      f'{flag} "$SANDBOX_WORKSPACE"/{name}' for flag, name in flags.items()
+  )
+  return (
+      f"{shlex.quote(SUPERVISOR_BINARY_AT)} run {named}"
+      f" -- {shlex.join(actor_argv)}"
+  )
+
+
 @dataclass(frozen=True)
 class ClaudeCodeHarness(Harness):
   """The Claude Code agent as a sandbox-engine harness plug.
@@ -391,6 +513,18 @@ class ClaudeCodeHarness(Harness):
       tools or capture wiring — drift that would be invisible in the traces it
       produces. That reasoning expires the moment the supervised path needs a
       genuinely different invocation rather than an extended one.
+    native_supervision: Run the actor as the **child of the in-sandbox
+      supervision wrapper** rather than as the script's own command, so the
+      supervisor lives beside the actor instead of on the host (#375). Adds a
+      second capture-proxy instance for the supervisor's own model calls, hands
+      the wrapper the actor's argv and the prompt's path, and leaves the
+      actor's stdout, stderr and stdin to it.
+
+      ``None`` runs the actor directly, which is still the default and still
+      what every shipped definition takes: the wrapper is added *beside* the
+      host runtime rather than in place of it, until it has run end to end.
+      Mutually exclusive with ``correction_channel`` — see
+      :meth:`__post_init__`.
   """
 
   model: str = DEFAULT_MODEL
@@ -403,6 +537,27 @@ class ClaudeCodeHarness(Harness):
   max_budget_usd: float | None = None
   subagent_wait_ceiling_ms: int | None = None
   correction_channel: bool = False
+  native_supervision: NativeSupervision | None = None
+
+  def __post_init__(self) -> None:
+    """Refuse the one configuration in which two components own the actor.
+
+    The native wrapper owns the actor's stdin — that ownership is what lets it
+    decide when the run ends, and it is how the prompt reaches the actor. The
+    correction channel owns the same stdin from the other side: a FIFO the
+    in-sandbox relay holds open. Both at once is two writers to one stdin and
+    two answers to when it closes, so it is refused where the two are named
+    rather than discovered as a run that ended at a moment neither chose.
+
+    Raises:
+      ValueError: Both the native wrapper and the correction channel are on.
+    """
+    if self.native_supervision is not None and self.correction_channel:
+      raise ValueError(
+          "native_supervision and correction_channel both own the actor's"
+          " stdin; the wrapper replaces the FIFO and the relay rather than"
+          " running beside them"
+      )
 
   @property
   def _stdin_is_stream_json(self) -> bool:
@@ -422,7 +577,34 @@ class ClaudeCodeHarness(Harness):
     Returns:
       Whether the run's stdin carries stream-json.
     """
-    return self.correction_channel or self.capture != "proxy"
+    return (
+        self.correction_channel
+        or self.native_supervision is not None
+        or self.capture != "proxy"
+    )
+
+  @property
+  def _narrates_event_stream(self) -> bool:
+    """Whether the agent writes its own ``stream-json`` trace to a file.
+
+    Two orthogonal decisions meet here: recording traffic through the proxy
+    says nothing about whether the actor should also narrate itself, and a
+    supervised run needs both — the proxy log is the trace, and the event
+    stream is the only *live* view of the actor there is.
+
+    Read by :meth:`actor_argv`, which picks the output format, and by the
+    invocation script, which picks where that output goes. One property rather
+    than one condition in each, because the two must agree: an agent narrating
+    into ``/dev/null`` is a supervisor with nothing to read.
+
+    Returns:
+      Whether the run wants the agent's own event stream.
+    """
+    return (
+        self.capture != "proxy"
+        or self.correction_channel
+        or self.native_supervision is not None
+    )
 
   @property
   @override
@@ -463,12 +645,20 @@ class ClaudeCodeHarness(Harness):
     container's writable layer, so a hook that runs after this one is a hook
     that runs after the record is gone.
     """
+    supervision = (
+        (NativeSupervisionObserver(),)
+        if self.native_supervision is not None
+        else ()
+    )
     return (
         # First: record which build the sandbox actually got, before anything
         # can go wrong with the run it describes.
         AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT),
         ConversationObserver(producer=self),
         HarnessOutcomeObserver(harness=self),
+        # Before the transcript, so a run whose wrapper lost the actor is
+        # already marked as such by the time anything reads the trace it left.
+        *supervision,
         NativeTranscriptObserver(),
     )
 
@@ -484,6 +674,12 @@ class ClaudeCodeHarness(Harness):
     Returns:
       One asset, or two under ``PROXY`` capture.
     """
+    from swe_lab.trace_synthesis.supervisor_binary import (
+        ensure_supervisor_binary,
+        local_build,
+        supervisor_version,
+    )
+
     from .binary import ensure_claude_binary
     from .proxy import ensure_proxy_binary, proxy_source_version
 
@@ -493,18 +689,37 @@ class ClaudeCodeHarness(Harness):
         version=version,
         fetch=lambda dest: ensure_claude_binary(version=version, dest=dest),
     )
-    if self.capture != "proxy":
-      return (agent,)
-    return (
-        agent,
-        AgentAsset(
-            path=PROXY_BINARY_AT,
-            # cc-reverse-proxy is a single unversioned Go file in a sibling
-            # checkout, so its content hash *is* its release (see the module).
-            version=proxy_source_version(),
-            fetch=lambda dest: ensure_proxy_binary(dest=dest),
-        ),
-    )
+    assets = [agent]
+    if self.capture == "proxy":
+      assets.append(
+          AgentAsset(
+              path=PROXY_BINARY_AT,
+              # cc-reverse-proxy is a single unversioned Go file in a sibling
+              # checkout, so its content hash *is* its release (see the
+              # module).
+              version=proxy_source_version(),
+              fetch=lambda dest: ensure_proxy_binary(dest=dest),
+          )
+      )
+    # Independent of capture: the wrapper runs the actor, which every capture
+    # mode needs. Nesting this under the proxy branch left a supervised stream
+    # run declaring no wrapper at all — the script would exec a path nothing
+    # had placed, and the run would stop at the `--version` probe.
+    if self.native_supervision is not None:
+      # The version is read off the binary rather than pinned here: there is
+      # no release to pin against yet, and asserting a guess would refuse a
+      # real artifact. `ensure_supervisor_binary` raises when there is nothing
+      # to verify, so this declaration cannot name a version for a wrapper
+      # that is not there.
+      source = local_build()
+      assets.append(
+          AgentAsset(
+              path=SUPERVISOR_BINARY_AT,
+              version=supervisor_version(source) if source else "unreleased",
+              fetch=lambda dest: ensure_supervisor_binary(dest=dest),
+          )
+      )
+    return tuple(assets)
 
   @override
   def mounts(self, workdir: str) -> Mounts:
@@ -577,6 +792,16 @@ class ClaudeCodeHarness(Harness):
       # addition to the plain file, which stays the human-readable record of
       # what was asked on every path.
       sb.write(STREAM_JSON_PROMPT_NAME, user_event_line(prompt).encode())
+    if self.native_supervision is not None:
+      # The supervisor's `task` is the actor's prompt today, and they are two
+      # parameters rather than one so that they can stop being: the config
+      # states what the judge measures against, and `--actor-prompt` states
+      # what the actor was told. Binding them would make changing one change
+      # the other.
+      sb.write(
+          SUPERVISOR_CONFIG_NAME,
+          self.native_supervision.config_bytes(task=prompt),
+      )
     if env:
       sb.write(AGENT_ENV_NAME, env_exports(env).encode())
     return sb.run_script(AGENT_SCRIPT_NAME, timeout=timeout)
@@ -606,8 +831,24 @@ class ClaudeCodeHarness(Harness):
         if self.capture == "proxy"
         else {"event_stream.jsonl": EVENT_STREAM_NAME}
     )
-    if self.capture == "proxy" and self.correction_channel:
+    if self.capture == "proxy" and self._narrates_event_stream:
       trace |= {"event_stream.jsonl": EVENT_STREAM_NAME}
+    if self.native_supervision is not None:
+      # The wrapper's own artifacts. The summary is the one a consumer
+      # classifies the run from; the rest are what a reader needs when that
+      # classification says the run was not accounted for.
+      trace |= {
+          # What the wrapper was told, kept beside what it did: a reader who
+          # has the summary but not the policy it was produced under cannot
+          # say what "off track" meant for this run.
+          "supervisor_config.json": SUPERVISOR_CONFIG_NAME,
+          "supervisor_log.jsonl": SUPERVISOR_LOG_NAME,
+          "supervisor_summary.json": SUPERVISOR_SUMMARY_NAME,
+          "supervisor_stderr.log": SUPERVISOR_STDERR_NAME,
+          "supervisor.info": SUPERVISOR_INFO_NAME,
+          "supervisor_proxy_log.jsonl": SUPERVISOR_PROXY_LOG_NAME,
+          "supervisor_proxy_stderr.log": SUPERVISOR_PROXY_STDERR_NAME,
+      }
     return trace | {
         "stderr.log": AGENT_STDERR_NAME,
         "exit_code.txt": AGENT_EXIT_CODE_NAME,
@@ -648,6 +889,65 @@ class ClaudeCodeHarness(Harness):
     if self.capture == "proxy":
       return {}
     return event_stream_usage(read_text(sb, EVENT_STREAM_NAME))
+
+  def actor_argv(self) -> tuple[str, ...]:
+    """Return the agent's command as the tokens a process would exec.
+
+    **The one construction of this run's flags.** The invocation script is a
+    consumer of these tokens rather than a second place they are assembled,
+    which is what lets a process wrapper launch the same actor the script
+    would: the native supervision runtime takes an argv after ``--`` and
+    executes it as given, joining nothing into a shell command and adding no
+    flags of its own (#375). A second construction beside this one would be a
+    supervised run differing from an unsupervised one by more than the
+    supervision — the drift ``correction_channel`` is a field rather than a
+    subclass to avoid.
+
+    Tokens, so nothing here needs a shell to be meaningful: no redirect, no
+    variable, no quoting. The run's redirects and its stdin belong to whoever
+    runs the tokens — the script, or the wrapper.
+
+    Returns:
+      The binary's absolute path followed by its flags, in the order the run
+      passes them.
+    """
+    # Always denied: not covered by --dangerously-skip-permissions, and each
+    # hangs an unattended run in its own way (see the constant).
+    denied = ",".join(UNATTENDED_DENIED_TOOLS)
+    argv = [
+        BINARY_AT,
+        "-p",
+        "--model",
+        self.model,
+        "--output-format",
+        *(
+            ("stream-json", "--verbose")
+            if self._narrates_event_stream
+            else ("json",)
+        ),
+        "--dangerously-skip-permissions",
+        "--disallowedTools",
+        denied,
+        "--effort",
+        self.effort,
+        # Undocumented in --help on 2.1.220, but accepted — verified against a
+        # bogus flag in the same position, which is rejected outright.
+        "--max-turns",
+        str(int(self.max_turns)),
+    ]
+    if self.capture != "proxy":
+      # Without this the CLI echoes no stdin, so the trace it writes contains
+      # what the agent said and not what it was asked — the opening prompt and
+      # any mid-run injection are simply absent (ADR-0017). The proxy path
+      # needs nothing here: its trace is the wire, which carries both already.
+      argv.append("--replay-user-messages")
+    if self.bare:
+      argv.insert(2, "--bare")
+    if self.max_budget_usd is not None:
+      argv += ["--max-budget-usd", str(self.max_budget_usd)]
+    if self._stdin_is_stream_json:
+      argv += ["--input-format", "stream-json"]
+    return tuple(argv)
 
   def _stdin_path(self) -> str:
     """Return the workspace file the agent reads its input from.
@@ -700,7 +1000,6 @@ class ClaudeCodeHarness(Harness):
 
     """
     config_dir = shlex.quote(f"{AGENT_HOME}/.claude")
-    binary = shlex.quote(BINARY_AT)
     stderr = f'"$SANDBOX_WORKSPACE"/{AGENT_STDERR_NAME}'
     lines = [
         "set -u",
@@ -730,45 +1029,42 @@ class ClaudeCodeHarness(Harness):
     # and a supervised run needs both — the proxy log is the trace, and the
     # event stream is the only *live* view of the actor there is.
     if self.capture == "proxy":
-      lines += _proxy_start_lines(self.proxy_target)
+      lines += _proxy_start_lines(
+          target=self.proxy_target,
+          port=PROXY_PORT,
+          log_name=PROXY_LOG_NAME,
+          own_log_name=PROXY_STDERR_NAME,
+          name="proxy",
+          label="capture",
+      )
       lines.append(f"export ANTHROPIC_BASE_URL={PROXY_BASE_URL}")
-    if self.capture != "proxy" or self.correction_channel:
+    if self.native_supervision is not None:
+      # The supervisor's own upstream, terminated inside the sandbox: the
+      # wrapper carries no TLS and refuses an https:// base URL, so it speaks
+      # plain HTTP to this instance and this instance speaks TLS to OpenRouter.
+      lines += _proxy_start_lines(
+          target=OPENROUTER_API,
+          port=SUPERVISOR_PROXY_PORT,
+          log_name=SUPERVISOR_PROXY_LOG_NAME,
+          own_log_name=SUPERVISOR_PROXY_STDERR_NAME,
+          name="supervisor_proxy",
+          label="supervisor",
+      )
+      # The endpoint is ours to state; the credential is passed by reference
+      # into the sandbox and is never named here with a value.
+      lines.append(
+          f"export {SUPERVISOR_BASE_URL_ENV}={SUPERVISOR_PROXY_BASE_URL}"
+      )
+      lines += _supervisor_probe_lines()
+    if self._narrates_event_stream:
       # Streamed, and to a file: a supervisor reads this while the actor is
       # still running, so it has to exist during the run rather than be
       # reconstructed after it.
-      event_stream = f'"$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}'
-      output_format = "stream-json --verbose"
-      capture_redirect = f"> {event_stream}"
+      capture_redirect = f'> "$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}'
     else:
       # An unsupervised proxy run has no reader for the agent's own stdout —
       # the trace comes from the proxy log — so it is discarded.
-      output_format = "json"
       capture_redirect = "> /dev/null"
-    # Always denied: not covered by --dangerously-skip-permissions, and each
-    # hangs an unattended run in its own way (see the constant).
-    denied = ",".join(UNATTENDED_DENIED_TOOLS)
-    flags = [
-        "-p",
-        f"--model {shlex.quote(self.model)}",
-        f"--output-format {output_format}",
-        "--dangerously-skip-permissions",
-        f"--disallowedTools {shlex.quote(denied)}",
-        f"--effort {self.effort}",
-        # Undocumented in --help on 2.1.220, but accepted — verified against a
-        # bogus flag in the same position, which is rejected outright.
-        f"--max-turns {int(self.max_turns)}",
-    ]
-    if self.capture != "proxy":
-      # Without this the CLI echoes no stdin, so the trace it writes contains
-      # what the agent said and not what it was asked — the opening prompt and
-      # any mid-run injection are simply absent (ADR-0017). The proxy path
-      # needs nothing here: its trace is the wire, which carries both already.
-      flags.append("--replay-user-messages")
-    if self.bare:
-      flags.insert(1, "--bare")
-    if self.max_budget_usd is not None:
-      flags.append(f"--max-budget-usd {self.max_budget_usd}")
-
     if self.subagent_wait_ceiling_ms is not None:
       # After the caller env block on purpose: this bound is the harness's, and
       # a prompt-supplied env must not raise it.
@@ -789,8 +1085,6 @@ class ClaudeCodeHarness(Harness):
           "fi",
       ]
 
-    if self._stdin_is_stream_json:
-      flags.append("--input-format stream-json")
     if self.correction_channel:
       # Before the agent: a redirect from a FIFO blocks until a writer opens
       # the other end, so an agent started first would wait forever.
@@ -798,15 +1092,25 @@ class ClaudeCodeHarness(Harness):
     stdin_source = self._stdin_path()
 
     exit_file = f'"$SANDBOX_WORKSPACE"/{AGENT_EXIT_CODE_NAME}'
+    if self.native_supervision is not None:
+      # No stdin redirect at all: the wrapper owns the actor's stdin and is
+      # handed the prompt by path. Its own output is kept apart from the
+      # actor's, which it writes itself.
+      command = (
+          f"{_supervisor_command(self.actor_argv())}"
+          f' > "$SANDBOX_WORKSPACE"/{SUPERVISOR_STDERR_NAME} 2>&1'
+      )
+    else:
+      # Feed the prompt on stdin (``-p`` with no argument reads it) rather
+      # than inlining it into the argv — no shell-quoting hazard for a large,
+      # arbitrary prompt.
+      command = (
+          f"{shlex.join(self.actor_argv())}"
+          f" < {stdin_source} {capture_redirect} 2> {stderr}"
+      )
     lines += [
         f"cd {shlex.quote(workdir)}",
-        # Feed the prompt on stdin (``-p`` with no argument reads it) rather
-        # than inlining it into the argv — no shell-quoting hazard for a large,
-        # arbitrary prompt.
-        (
-            f"{binary} {' '.join(flags)}"
-            f" < {stdin_source} {capture_redirect} 2> {stderr}"
-        ),
+        command,
         *status_tail(exit_file),
     ]
     return "\n".join(lines) + "\n"

@@ -1,17 +1,17 @@
 Exception in thread Thread-1 (_loop):
 Traceback (most recent call last):
-  File "/home/ubuntu/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/threading.py", line 1044, in _bootstrap_inner
+  File "~/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/threading.py", line 1044, in _bootstrap_inner
     self.run()
     ~~~~~~~~^^
-  File "/home/ubuntu/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/threading.py", line 995, in run
+  File "~/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/threading.py", line 995, in run
     self._target(*self._args, **self._kwargs)
     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ubuntu/dev/swe-lab-steered/experiments/trace_synthesis/steered_rerun/supervisor.py", line 418, in _loop
+  File "~/dev/swe-lab-steered/experiments/trace_synthesis/steered_rerun/supervisor.py", line 418, in _loop
     self._answer(path)
     ~~~~~~~~~~~~^^^^^^
-  File "/home/ubuntu/dev/swe-lab-steered/experiments/trace_synthesis/steered_rerun/supervisor.py", line 435, in _answer
+  File "~/dev/swe-lab-steered/experiments/trace_synthesis/steered_rerun/supervisor.py", line 435, in _answer
     decision = self.supervisor.judge(request)
-  File "/home/ubuntu/dev/swe-lab-steered/experiments/trace_synthesis/steered_rerun/supervisor.py", line 196, in judge
+  File "~/dev/swe-lab-steered/experiments/trace_synthesis/steered_rerun/supervisor.py", line 196, in judge
     verdict, error, usage = self._ask_model(
                             ~~~~~~~~~~~~~~~^
         history=history,

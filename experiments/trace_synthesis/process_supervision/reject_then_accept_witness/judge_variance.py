@@ -38,9 +38,9 @@ import types
 _HERE = pathlib.Path(__file__).resolve().parent
 _STUDY = _HERE.parent / "guidebook_as_step_criterion"
 _CAPTURE = pathlib.Path(
-    "/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis"
+    "~/dev/swe-lab-artifacts/trace_synthesis"
     "/baseline-qutebrowser-rollout-0/rollout/a0/claude_code.proxy_log.jsonl"
-)
+).expanduser()
 _STEP_INDEX = 15
 _POSITION = 14
 _ROLLOUT = "baseline-qutebrowser-rollout-0"

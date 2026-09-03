@@ -51,6 +51,7 @@ from swe_lab.harnesses.claude_code.constants import (
     PROXY_STDERR_NAME,
     STREAM_JSON_PROMPT_NAME,
 )
+from swe_lab.harnesses.claude_code.harness import _reap
 from swe_lab.harnesses.claude_code.proxy import PROXY_SOURCE_ENV
 from swe_lab.harnesses.common import AgentInfoObserver, home_fallback_lines
 from swe_lab.sandbox import (
@@ -162,6 +163,113 @@ def test_invocation_script_shape_and_quoting():
   # stream-json message the run opens with
   assert '< "$SANDBOX_WORKSPACE"/prompt.stream.json' in script
   assert '> "$SANDBOX_WORKSPACE"/claude.event_stream.jsonl' in script
+
+
+def test_two_proxy_instances_share_no_shell_variable() -> None:
+  """A second instance can be started beside the first without colliding.
+
+  Both instances register with the script's one `EXIT` trap, so each needs its
+  own pid variable: a second start reusing the first's would leave the trap
+  reaping one process twice and the other never — a proxy outliving the run,
+  with its log still open.
+  """
+  from swe_lab.harnesses.claude_code.harness import _proxy_start_lines
+
+  first = _proxy_start_lines(
+      target="https://api.anthropic.com",
+      port=9527,
+      log_name="a.jsonl",
+      own_log_name="a.log",
+      name="proxy",
+      label="capture",
+  )
+  second = _proxy_start_lines(
+      target="https://openrouter.ai/api",
+      port=9528,
+      log_name="b.jsonl",
+      own_log_name="b.log",
+      name="supervisor_proxy",
+      label="supervisor",
+  )
+
+  def shell_variables(lines: list[str]) -> set[str]:
+    return {
+        line.split("=", 1)[0]
+        for line in lines
+        if "=" in line and line[:1].isalpha()
+    }
+
+  # `reaped_pids` is the one trap's list and is shared on purpose; everything
+  # else has to be per-instance.
+  shared = {"reaped_pids"}
+  mine, theirs = (
+      shell_variables(first) - shared,
+      shell_variables(second) - shared,
+  )
+
+  # Asserted as equalities, not as "no overlap": two empty sets are disjoint
+  # too, and would pass this silently.
+  assert mine == {"proxy_pid", "proxy_wait"}
+  assert theirs == {"supervisor_proxy_pid", "supervisor_proxy_wait"}
+  assert not mine & theirs
+  # Each still hands its own pid to the one trap, which is what reaps it.
+  assert _reap("proxy_pid") in first
+  assert _reap("supervisor_proxy_pid") in second
+
+
+_ARGV_CONFIGURATIONS = (
+    ClaudeCodeHarness(),
+    ClaudeCodeHarness(capture="proxy"),
+    ClaudeCodeHarness(capture="proxy", correction_channel=True),
+    ClaudeCodeHarness(bare=False, max_budget_usd=1.5),
+    ClaudeCodeHarness(model="a model", effort="low", max_turns=7),
+)
+
+
+@pytest.mark.parametrize("harness", _ARGV_CONFIGURATIONS)
+def test_the_script_runs_exactly_the_argv_the_harness_hands_out(
+    harness: ClaudeCodeHarness,
+) -> None:
+  """The invocation script is a consumer of `actor_argv`, not a second one.
+
+  A process wrapper launches the actor from these tokens, so a flag the script
+  adds on its own is a supervised run differing from an unsupervised one by
+  more than the supervision — and it is invisible in the traces either
+  produces.
+
+  Args:
+    harness: The configuration to render.
+  """
+  script = _script("/app", harness)
+
+  command = next(
+      line for line in script.splitlines() if line.startswith(BINARY_AT)
+  )
+
+  assert shlex.split(command.split(" < ")[0]) == list(harness.actor_argv())
+
+
+@pytest.mark.parametrize("harness", _ARGV_CONFIGURATIONS)
+def test_the_actor_argv_needs_no_shell_to_mean_what_it_says(
+    harness: ClaudeCodeHarness,
+) -> None:
+  """Every token is one a wrapper can `exec` without interpreting it.
+
+  The native runtime executes the argv after `--` as given: no shell, no
+  expansion. A token carrying a redirect or a variable would arrive at the
+  agent literally.
+
+  Args:
+    harness: The configuration to render.
+  """
+  argv = harness.actor_argv()
+
+  # The absence below is only evidence if there is an argv to inspect.
+  assert argv[0] == BINARY_AT
+  assert len(argv) > 1
+  for token in argv:
+    assert "$" not in token
+    assert token not in ("<", ">", ">>", "2>", "|", "&", ";")
 
 
 def test_bare_can_be_turned_off_for_an_oauth_composition():
@@ -1097,7 +1205,7 @@ def test_the_supervised_script_carries_a_correction_to_a_stub_agent(
   (a listener, so the script's readiness probe passes). The pinned binaries are
   not in a plain image, and what is under test is the script that drives them.
   """
-  from swe_lab.harnesses.claude_code.harness import user_event_line
+  from swe_lab.harnesses.claude_code.convert import user_event_line
   from swe_lab.rollout import CodingAgentTask
   from swe_lab.sandbox.backends.host import DockerHostSandbox
   from swe_lab.trace_synthesis.channel import CorrectionChannel

@@ -12,7 +12,7 @@ costs, and what is still unknown**. It does not propose a design.
 |---|---|
 | Author | `swelab-resume-research` (read-only) |
 | Date | 2026-09-01, machine `dev-*` (this box), `America/Los_Angeles` |
-| Harness under test | Claude Code **2.1.257**, `/home/ubuntu/.local/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe` |
+| Harness under test | Claude Code **2.1.257**, `~/.local/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe` |
 | Model under test | `claude-sonnet-4-5` → `claude-sonnet-4-5-20250929` |
 | Repo commit | `exp/process-supervision-research` @ `0e593e1` |
 | Raw artifacts | [`runs/`](runs/) — 20 real `claude` invocations (16 reached the API), 2 redacted proxy captures |
@@ -463,7 +463,7 @@ Listed because a feasibility report that hides its gaps is worthless.
 ## Side finding — a credential exposure, reported not fixed
 
 While capturing, `cc-reverse-proxy` was run from
-`/home/ubuntu/dev/cc-reverse-proxy/python/reverse_proxy.py` (HEAD `4d8d7e6`,
+`~/dev/cc-reverse-proxy/python/reverse_proxy.py` (HEAD `4d8d7e6`,
 clean tree) — the same path `injection_shape/run_experiment.py` invokes. **That
 build does not redact.** Its captures contained, in cleartext:
 

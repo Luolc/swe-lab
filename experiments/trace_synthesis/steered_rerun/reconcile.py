@@ -47,7 +47,7 @@ check cannot see.
 Usage::
 
   direnv exec . uv run python experiments/trace_synthesis/steered_rerun/reconcile.py \\
-      --frozen /home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/<label>-rollout-<n> \\
+      --frozen ~/dev/swe-lab-artifacts/trace_synthesis/<label>-rollout-<n> \\
       --label <label> --session <label>-r<n>
 """
 

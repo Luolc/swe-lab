@@ -29,11 +29,11 @@ import urllib.request
 
 _HERE = pathlib.Path(__file__).resolve().parent
 _STUDY = _HERE.parent / "guidebook_as_step_criterion"
-_PROXY_SOURCE = pathlib.Path("/home/ubuntu/dev/cc-reverse-proxy/reverse_proxy.go")
+_PROXY_SOURCE = pathlib.Path("~/dev/cc-reverse-proxy/reverse_proxy.go").expanduser()
 _CAPTURE = pathlib.Path(
-    "/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis"
+    "~/dev/swe-lab-artifacts/trace_synthesis"
     "/baseline-qutebrowser-rollout-0/rollout/a0/claude_code.proxy_log.jsonl"
-)
+).expanduser()
 # The step fixed in the pre-registration: #305's first off-track step.
 _STEP_INDEX = 15
 _POSITION = 14

@@ -363,3 +363,27 @@ def _as_dict(value: object) -> dict[str, Any]:
 def _opt_str(value: object) -> str | None:
   """Return ``value`` when it is a string, else ``None``."""
   return value if isinstance(value, str) else None
+
+
+def user_event_line(text: str) -> str:
+  """Return one stream-json user event, newline-terminated.
+
+  The wire shape is not ours to choose: it is what the CLI accepts under
+  ``--input-format stream-json``, and it is the shape the compliance experiment
+  measured, so it is reproduced rather than re-derived.
+
+  It belongs here, not in ``harness``: ``trace_synthesis.channel`` needs it and
+  ``harness`` imports ``trace_synthesis``, so defining it there makes the
+  import graph cyclic.
+
+  Args:
+    text: The message body.
+
+  Returns:
+    A single JSON line, ending in a newline.
+  """
+  event = {
+      "type": "user",
+      "message": {"role": "user", "content": [{"type": "text", "text": text}]},
+  }
+  return json.dumps(event) + "\n"

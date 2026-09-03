@@ -47,7 +47,7 @@ import re
 
 _HERE = pathlib.Path(__file__).resolve().parent
 _RUNS = _HERE / "runs"
-_FROZEN_ROOT = pathlib.Path("/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis")
+_FROZEN_ROOT = pathlib.Path("~/dev/swe-lab-artifacts/trace_synthesis").expanduser()
 
 # What the hook wraps a hint in; the survival check looks for exactly this.
 _OPEN, _CLOSE = "<oracle_hint>", "</oracle_hint>"
