@@ -193,10 +193,11 @@ SUPERVISED_ROLLOUT: WorkflowDef = _supervised_rollout(
     )
 )
 
-# The same policy, the same criterion, the same judge on every boundary — with
-# nothing left to spend. What the actor experiences differs by the corrections
-# alone, and the supervision side differs only past the point where a
-# correction was decided on, which is the whole of what a paired arm is for.
+# The same policy, the same criterion, the same judge on every boundary either
+# arm judges at all — with nothing left to spend. What the actor experiences
+# differs by the corrections alone, and the supervision side differs only past
+# the point where a correction was decided on, which is the whole of what a
+# paired arm is for.
 CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
     supervision(
         model=SUPERVISOR_MODEL,

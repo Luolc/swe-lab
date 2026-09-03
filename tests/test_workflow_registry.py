@@ -442,11 +442,11 @@ def test_the_control_arm_pays_the_same_judge_calls_as_the_treatment():
   """The judge runs at both shipped budgets; only the writer differs.
 
   The budget gates *speech* and never gates judgement: the policy consults the
-  judge at every boundary and records what it would have said before the
-  budget is consulted. The two budgets here are the shipped ones, tied to the
-  two registered arms by the assertion above. Asserted over behaviour rather
-  than over fields, because "same type, different budget" does not by itself
-  say the judge still runs.
+  judge at every boundary carrying evidence and records what it would have said
+  before the budget is consulted. The two budgets here are the shipped ones,
+  tied to the two registered arms by the assertion above. Asserted over
+  behaviour rather than over fields, because "same type, different budget" does
+  not by itself say the judge still runs.
 
   Call counts are the whole of it — nothing here measures latency or cost, and
   what matched judge calls buy a comparison is stated once, at

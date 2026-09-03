@@ -199,8 +199,8 @@ def test_an_actor_already_recovering_is_left_alone() -> None:
 def test_budget_zero_speaks_nothing_and_still_marks_every_deviation() -> None:
   """The marker is recorded before the budget is consulted.
 
-  So the control arm judges every boundary and records where it would have
-  spoken; what that buys is stated once, at
+  So the control arm judges every boundary it has evidence for and records
+  where it would have spoken; what that buys is stated once, at
   `workflow.definitions.CONTROL_BUDGET`.
   """
   speaker, _, _ = policy(OFF_TRACK, budget=0)
