@@ -1,0 +1,46 @@
+{
+  "claude_version": "2.1.259 (Claude Code)",
+  "git_commit": "987273c5440685a15a173ada11b82027e27c4d03",
+  "arms": [
+    {
+      "flag": "--max-turns",
+      "stderr_first_line": "error: option '--max-turns <turns>' argument missing",
+      "exit_code": "1"
+    },
+    {
+      "flag": "--definitely-not-a-flag",
+      "stderr_first_line": "error: unknown option '--definitely-not-a-flag'",
+      "exit_code": "1"
+    },
+    {
+      "flag": "--resume-session-at",
+      "stderr_first_line": "error: option '--resume-session-at <message id>' argument missing",
+      "exit_code": "1"
+    },
+    {
+      "flag": "--resume-drops-turn",
+      "stderr_first_line": "error: option '--resume-drops-turn <message id>' argument missing",
+      "exit_code": "1"
+    },
+    {
+      "flag": "--task-budget",
+      "stderr_first_line": "error: option '--task-budget <tokens>' argument missing",
+      "exit_code": "1"
+    },
+    {
+      "flag": "--rewind-files",
+      "stderr_first_line": "error: option '--rewind-files <user-message-id>' argument missing",
+      "exit_code": "1"
+    },
+    {
+      "flag": "--max-budget-usd",
+      "stderr_first_line": "error: option '--max-budget-usd <amount>' argument missing",
+      "exit_code": "1"
+    },
+    {
+      "flag": "--system-prompt-snapshot",
+      "stderr_first_line": "error: option '--system-prompt-snapshot <on|off>' argument missing",
+      "exit_code": "1"
+    }
+  ]
+}

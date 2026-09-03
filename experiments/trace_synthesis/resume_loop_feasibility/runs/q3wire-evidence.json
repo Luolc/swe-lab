@@ -1,0 +1,168 @@
+{
+  "capture": {
+    "entries": 4,
+    "note": "raw capture is scratch-only and never committed"
+  },
+  "requests": [
+    {
+      "index": 0,
+      "messages": 1,
+      "role_sequence": [
+        "user"
+      ],
+      "shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text"
+          ]
+        }
+      ],
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant_messages": 0,
+      "system_reminder_blocks": 0,
+      "max_turns_note_on_wire": 0
+    },
+    {
+      "index": 1,
+      "messages": 2,
+      "role_sequence": [
+        "user",
+        "system"
+      ],
+      "shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text",
+            "text"
+          ]
+        },
+        {
+          "role": "system",
+          "blocks": [
+            "text"
+          ]
+        }
+      ],
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant_messages": 0,
+      "system_reminder_blocks": 3,
+      "max_turns_note_on_wire": 0
+    },
+    {
+      "index": 2,
+      "messages": 4,
+      "role_sequence": [
+        "user",
+        "system",
+        "assistant",
+        "user"
+      ],
+      "shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text",
+            "text"
+          ]
+        },
+        {
+          "role": "system",
+          "blocks": [
+            "str"
+          ]
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use"
+          ]
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result"
+          ]
+        }
+      ],
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant_messages": 0,
+      "system_reminder_blocks": 3,
+      "max_turns_note_on_wire": 0
+    },
+    {
+      "index": 3,
+      "messages": 8,
+      "role_sequence": [
+        "user",
+        "system",
+        "assistant",
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text",
+            "text"
+          ]
+        },
+        {
+          "role": "system",
+          "blocks": [
+            "str"
+          ]
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use"
+          ]
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result"
+          ]
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use"
+          ]
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ]
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "text"
+          ]
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "text"
+          ]
+        }
+      ],
+      "seam_user_text_blocks": 1,
+      "seam_synthetic_assistant_messages": 1,
+      "system_reminder_blocks": 3,
+      "max_turns_note_on_wire": 0
+    }
+  ]
+}

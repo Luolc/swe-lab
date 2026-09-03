@@ -508,6 +508,42 @@ each. **That estimate is an estimate**, typeset as prose precisely so it is not
 mistaken for the constraint; the constraint is the `$5.00` ledger stop, which is
 enforced.
 
+## Amendment 1 — `--max-budget-usd` is removed from the behavioural arms
+
+**Label: post-hoc, prospective, with an empty prior action set for the arms it
+governs.** Registered 2026-09-03 after Q0, Q2'.1 and Q1 had run and before Q4 or
+Q5 ran; those three arms carry the defect and say so, and no analytical rule is
+changed by it.
+
+**The observation that forced it.** Reading the Q1 session transcript for the
+seam, the actor's context turned out to contain, after every tool result:
+
+```
+attachment  budget_usd  {'type': 'budget_usd', 'used': 0.0567628, 'total': 0.25, 'remaining': 0.1932372}
+```
+
+`--max-budget-usd` is not passive. It puts a **running budget readout into the
+actor's context**, so the actor can see it is on a budget and how much is left.
+That is a context shape a production rollout does not have, and its plausible
+effect — an actor wrapping up as the remaining budget falls — is *the very
+behaviour Q4 exists to measure*. The guard I added to protect the experiment
+was contaminating the experiment's dependent variable.
+
+This is the hazard in the direction people do not look for it: the instrument is
+the newer half, and a guard is the last place a confound gets suspected.
+
+**The replacement guard has no free parameter and no context footprint.** Cost is
+bounded by `--max-turns`, which every arm already carries and which is the
+independent variable anyway, plus the pre-launch ledger check and the wall-clock
+timeout. A bounded turn count bounds the spend; nothing is written into the
+actor's context to achieve it.
+
+**What this does not repair.** Q0 costs nothing and is unaffected. Q2'.1 and Q1
+ran with the flag: their conclusions are about *turn counting*, *exit
+distinguishability* and *context recall*, none of which the readout plausibly
+moves, but the runs are not clean of it and the report says so at the point each
+number is given rather than in a footnote.
+
 ## Evidence, and what is committed
 
 Following the precedent set by [`streamjson_input`](../streamjson_input/README.md)

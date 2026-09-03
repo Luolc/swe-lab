@@ -1,0 +1,124 @@
+{
+  "segments": [
+    {
+      "segment": 1,
+      "anchor_used": false,
+      "exit_code": 1,
+      "result_subtype": "error_max_turns",
+      "tools": [
+        "Read"
+      ],
+      "cache_read_input_tokens": 31375,
+      "cache_creation_input_tokens": 8422,
+      "total_cost_usd": 0.044083000000000004
+    },
+    {
+      "segment": 2,
+      "anchor_used": true,
+      "exit_code": 1,
+      "result_subtype": "error_max_turns",
+      "tools": [
+        "Bash"
+      ],
+      "cache_read_input_tokens": 39797,
+      "cache_creation_input_tokens": 195,
+      "total_cost_usd": 0.0098034
+    },
+    {
+      "segment": 3,
+      "anchor_used": true,
+      "exit_code": 1,
+      "result_subtype": "error_max_turns",
+      "tools": [
+        "Read"
+      ],
+      "cache_read_input_tokens": 39992,
+      "cache_creation_input_tokens": 127,
+      "total_cost_usd": 0.0095904
+    },
+    {
+      "segment": 4,
+      "anchor_used": true,
+      "exit_code": 1,
+      "result_subtype": "error_max_turns",
+      "tools": [
+        "Bash"
+      ],
+      "cache_read_input_tokens": 40119,
+      "cache_creation_input_tokens": 163,
+      "total_cost_usd": 0.009529800000000001
+    }
+  ],
+  "credential_gate": {
+    "redaction_marker_occurrences": 25,
+    "credential_shapes": {
+      "sk_ant": 0,
+      "bearer_jwt": 0,
+      "jwt_shaped": 0
+    }
+  },
+  "wire": [
+    {
+      "messages": 1,
+      "role_sequence": [
+        "user"
+      ],
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant": 0,
+      "system_reminder_blocks": 0
+    },
+    {
+      "messages": 2,
+      "role_sequence": [
+        "user",
+        "system"
+      ],
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant": 0,
+      "system_reminder_blocks": 3
+    },
+    {
+      "messages": 4,
+      "role_sequence": [
+        "user",
+        "system",
+        "assistant",
+        "user"
+      ],
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant": 0,
+      "system_reminder_blocks": 3
+    },
+    {
+      "messages": 6,
+      "role_sequence": [
+        "user",
+        "system",
+        "assistant",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant": 0,
+      "system_reminder_blocks": 3
+    },
+    {
+      "messages": 8,
+      "role_sequence": [
+        "user",
+        "system",
+        "assistant",
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant": 0,
+      "system_reminder_blocks": 3
+    }
+  ],
+  "ledger_total_usd": 0.6989
+}
