@@ -1,6 +1,5 @@
 {
-  "kind": "first-e2e-inference-control",
-  "source": "first-e2e-2026-09-02 r0/rollout/a0",
+  "kind": "capture-aggregate",
   "source_sha256": "701808d7ee9941eaa9de11a87277ca9d5be49305fd59ab8981d0e57f347c9136",
   "source_bytes": 3064215,
   "credential_gate": {
@@ -14,14 +13,133 @@
   "captured_requests": 33,
   "main_loop_requests": 32,
   "auxiliary_requests": 1,
-  "longest_request_messages": 71,
-  "longest_request_user_messages": 32,
-  "longest_request_user_tool_result": 31,
-  "longest_request_user_tool_result_and_text": 0,
-  "union_user_message_instances": 528,
-  "union_user_tool_result": 496,
-  "union_user_tool_result_and_text": 0,
-  "distinct_user_tool_result_block_shapes": {
+  "fullest_history_messages": 71,
+  "fullest_history_user_tool_result": 31,
+  "fullest_history_user_tool_result_and_text": 0,
+  "cumulative_wire_user_instances": 528,
+  "cumulative_wire_user_tool_result": 496,
+  "cumulative_wire_user_tool_result_and_text": 0,
+  "per_request_tool_result_counts": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31
+  ],
+  "user_tool_result_block_histogram": {
     "tool_result": 496
-  }
+  },
+  "trailing_message_role": "system",
+  "trailing_message_blocks": [
+    "text"
+  ],
+  "trailing_message_text_digests": [
+    {
+      "len": 458,
+      "sha256": "7a4e9e7cc6a4a01c9df1adf5b35fbf0b5486460f2b0793075af3876c3fd53e8d"
+    }
+  ],
+  "reminder_bearing_message_coordinates": [
+    {
+      "index": 0,
+      "role": "user",
+      "blocks": [
+        "text",
+        "text"
+      ],
+      "carries_tool_result": false
+    },
+    {
+      "index": 1,
+      "role": "system",
+      "blocks": [
+        "str"
+      ],
+      "carries_tool_result": false
+    },
+    {
+      "index": 18,
+      "role": "system",
+      "blocks": [
+        "str"
+      ],
+      "carries_tool_result": false
+    },
+    {
+      "index": 21,
+      "role": "system",
+      "blocks": [
+        "str"
+      ],
+      "carries_tool_result": false
+    },
+    {
+      "index": 28,
+      "role": "system",
+      "blocks": [
+        "str"
+      ],
+      "carries_tool_result": false
+    },
+    {
+      "index": 31,
+      "role": "system",
+      "blocks": [
+        "str"
+      ],
+      "carries_tool_result": false
+    },
+    {
+      "index": 40,
+      "role": "system",
+      "blocks": [
+        "str"
+      ],
+      "carries_tool_result": false
+    },
+    {
+      "index": 55,
+      "role": "system",
+      "blocks": [
+        "str"
+      ],
+      "carries_tool_result": false
+    },
+    {
+      "index": 70,
+      "role": "system",
+      "blocks": [
+        "text"
+      ],
+      "carries_tool_result": false
+    }
+  ],
+  "label": "first-e2e-inference-control"
 }

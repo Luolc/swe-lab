@@ -154,30 +154,156 @@ def test_the_anchored_seam_carries_neither_default_resume_artifact() -> None:
     assert request["seam_synthetic_assistant"] == 0
 
 
-def test_the_seam_detector_has_discriminating_power() -> None:
-  """A planted seam flips the same reducer from zero to non-zero.
+def _capture_line(text: str) -> str:
+  """Build one proxy-capture JSONL line whose seam text is `text`.
 
-  Without this, every zero in the report is equally consistent with a detector
-  that cannot fire at all.
+  Args:
+    text: the text block placed beside a tool_result, i.e. the seam slot.
+
+  Returns:
+    A JSONL line in the shape the real captures have.
+  """
+  return json.dumps(
+      {
+          "complete": True,
+          "request": {
+              "headers": {"authorization": "[REDACTED]"},
+              "body": {
+                  "tools": [{"name": "Bash"}],
+                  "messages": [
+                      {
+                          "role": "user",
+                          "content": [{"type": "text", "text": "go"}],
+                      },
+                      {
+                          "role": "assistant",
+                          "content": [{"type": "tool_use", "name": "Bash"}],
+                      },
+                      {
+                          "role": "user",
+                          "content": [
+                              {"type": "tool_result", "content": "ok"},
+                              {"type": "text", "text": text},
+                          ],
+                      },
+                  ],
+              },
+          },
+          "response": {},
+      }
+  )
+
+
+def test_the_seam_detector_has_discriminating_power(
+    tmp_path: Path,
+) -> None:
+  """Clean and planted captures through **the detector the report cites**.
+
+  The previous version of this test evaluated `json.dumps(...).count(...)`
+  inline, so replacing `reduce_capture()`'s counter with a constant zero left
+  it green — the test and the instrument were different code paths, which is
+  the exact failure the report's P0 was about.
   """
   evidence = _evidence_module()
-  clean = {
-      "role": "user",
-      "content": [
-          {"type": "tool_result", "content": "ok"},
-          {"type": "text", "text": "Continue."},
-      ],
-  }
-  mutant = {
-      "role": "user",
-      "content": [
-          {"type": "tool_result", "content": "ok"},
-          {"type": "text", "text": evidence.SEAM_USER_TEXT},
-      ],
-  }
-  assert json.dumps([clean]).count(evidence.SEAM_USER_TEXT) == 0
-  assert json.dumps([mutant]).count(evidence.SEAM_USER_TEXT) == 1
-  assert evidence.message_shape(clean)["blocks"] == ["tool_result", "text"]
+  clean = tmp_path / "clean.jsonl"
+  planted = tmp_path / "planted.jsonl"
+  _ = clean.write_text(_capture_line("Continue.") + "\n", encoding="utf-8")
+  _ = planted.write_text(
+      _capture_line(evidence.SEAM_USER_TEXT) + "\n", encoding="utf-8"
+  )
+
+  clean_request = evidence.reduce_capture(clean)["requests"][0]
+  planted_request = evidence.reduce_capture(planted)["requests"][0]
+
+  assert clean_request["seam_user_text_blocks"] == 0
+  assert planted_request["seam_user_text_blocks"] == 1
+  # Both carry the same block layout, so the contrast is the literal alone.
+  assert clean_request["last_message_blocks"] == ["tool_result", "text"]
+  assert planted_request["last_message_blocks"] == ["tool_result", "text"]
+
+
+def test_the_credential_gate_fails_closed(tmp_path: Path) -> None:
+  """A capture whose redaction failed must not become a witness.
+
+  The reduction keeps only digests, so a credential in the raw bytes would not
+  survive into the witness and the output scan would pass — the gate has to
+  fire on the raw capture or it does not fire at all.
+  """
+  evidence = _evidence_module()
+  unsafe = tmp_path / "unsafe.jsonl"
+  line = json.loads(_capture_line("Continue."))
+  line["request"]["headers"]["authorization"] = (
+      "Bearer " + "eyJhbGciOiJIUzI1NiJ9.cGF5bG9hZHBheWxvYWQ.signature"
+  )
+  _ = unsafe.write_text(json.dumps(line) + "\n", encoding="utf-8")
+  with pytest.raises(evidence.CredentialGateFailure):
+    _ = evidence.reduce_capture(unsafe)
+
+  # Control arm: the same path must still accept a properly redacted capture,
+  # or a gate that rejects everything would pass the arm above too.
+  clean = tmp_path / "clean.jsonl"
+  _ = clean.write_text(_capture_line("Continue.") + "\n", encoding="utf-8")
+  assert len(evidence.reduce_capture(clean)["requests"]) == 1
+
+
+def test_the_gate_requires_its_positive_arm(tmp_path: Path) -> None:
+  """No redaction marker means a zero on the credential arm proves nothing."""
+  evidence = _evidence_module()
+  bare = tmp_path / "bare.jsonl"
+  line = json.loads(_capture_line("Continue."))
+  line["request"]["headers"] = {}
+  _ = bare.write_text(json.dumps(line) + "\n", encoding="utf-8")
+  with pytest.raises(evidence.CredentialGateFailure):
+    _ = evidence.reduce_capture(bare)
+
+
+def test_the_aggregation_is_a_committed_path_not_a_transcription(
+    tmp_path: Path,
+) -> None:
+  """§9.3's numbers are regenerated by `aggregate_capture`, not hand-copied.
+
+  Two synthetic requests re-serialize a growing history, which is the property
+  that makes the cumulative count correlated; the test pins that the two
+  denominators come out different.
+  """
+  evidence = _evidence_module()
+  log = tmp_path / "grow.jsonl"
+  lines = []
+  for turns in (1, 2):
+    messages: list[dict[str, Any]] = [
+        {"role": "user", "content": [{"type": "text", "text": "go"}]}
+    ]
+    for _ in range(turns):
+      messages.append(
+          {
+              "role": "assistant",
+              "content": [{"type": "tool_use", "name": "Bash"}],
+          }
+      )
+      messages.append(
+          {
+              "role": "user",
+              "content": [{"type": "tool_result", "content": "ok"}],
+          }
+      )
+    lines.append(
+        json.dumps(
+            {
+                "complete": True,
+                "request": {
+                    "headers": {"authorization": "[REDACTED]"},
+                    "body": {"tools": [{"name": "Bash"}], "messages": messages},
+                },
+                "response": {},
+            }
+        )
+    )
+  _ = log.write_text("\n".join(lines) + "\n", encoding="utf-8")
+  aggregate = evidence.aggregate_capture(evidence.reduce_capture(log))
+  assert aggregate["per_request_tool_result_counts"] == [1, 2]
+  assert aggregate["cumulative_wire_user_tool_result"] == 3
+  assert aggregate["fullest_history_user_tool_result"] == 2
+  assert aggregate["cumulative_wire_user_tool_result_and_text"] == 0
 
 
 def test_the_three_correction_shapes_are_distinct() -> None:
@@ -193,7 +319,7 @@ def test_the_three_correction_shapes_are_distinct() -> None:
   for request in seams:
     assert request["last_message_blocks"] == ["tool_result", "text"]
   # One correction block per seam, so the layout accumulates rather than
-  # appearing once: 30 turns would end with 30 of them.
+  # appearing once: four segments carry three seams, so 30 segments carry 29.
   assert [r["correction_text_blocks"] for r in anchored] == [0, 1, 2, 3]
 
   unsegmented = [
@@ -225,23 +351,56 @@ def test_every_capture_witness_passed_the_credential_gate(name: str) -> None:
   assert set(gate["credential_shapes"].values()) == {0}
 
 
-def test_the_real_rollout_control_carries_its_denominator() -> None:
-  """The inference-time control is 0 in 496, and says so with its divisor.
+def test_the_real_rollout_control_carries_both_denominators() -> None:
+  """The inference control keeps the correlated and un-correlated counts apart.
 
-  A bare zero is not evidence. This pins both the numerator and the
-  denominator, so a later edit cannot quietly turn the count into "never".
+  The cumulative figure sums over request histories that each re-serialize the
+  whole conversation, so it counts wire *instances*, not independently
+  generated messages. Reporting only that number would present correlated
+  re-serialization as a much larger sample, so both are pinned here and the
+  per-request progression that proves the correlation is pinned with them.
   """
   witness = _witness("first-e2e-control-evidence.json")
-  assert witness["union_user_tool_result_and_text"] == 0
-  assert witness["union_user_tool_result"] == 496
+  # Un-correlated: one conversation.
+  assert witness["fullest_history_user_tool_result"] == 31
+  assert witness["fullest_history_user_tool_result_and_text"] == 0
+  # Correlated: 32 growing histories, counts 0..31.
+  assert witness["cumulative_wire_user_tool_result"] == 496
+  assert witness["cumulative_wire_user_tool_result_and_text"] == 0
+  assert witness["per_request_tool_result_counts"] == list(range(32))
   assert witness["main_loop_requests"] == 32
-  # The only block shape observed on a user message carrying a tool result.
-  assert witness["distinct_user_tool_result_block_shapes"] == {
-      "tool_result": 496
-  }
+  assert witness["user_tool_result_block_histogram"] == {"tool_result": 496}
   gate = witness["credential_gate"]
   assert gate["redaction_marker_occurrences"] > 0
   assert set(gate["credential_shapes"].values()) == {0}
+
+
+def test_the_reminder_placement_observation_is_committed() -> None:
+  """§9.3's placement observation is data, not only a sentence.
+
+  The report scopes the mechanism reading to this capture; what is asserted
+  here is the observation itself, so a later edit cannot restate it without the
+  coordinates moving too.
+  """
+  coordinates = _witness("first-e2e-control-evidence.json")[
+      "reminder_bearing_message_coordinates"
+  ]
+  assert coordinates, "expected reminder-bearing messages in the control"
+  assert not any(c["carries_tool_result"] for c in coordinates)
+  assert {c["role"] for c in coordinates} <= {"user", "system"}
+
+
+def test_the_inference_control_trailing_message_is_a_system_message() -> None:
+  """A′'s correction shape on a real rollout: a separate trailing `system`.
+
+  This is the existence proof the report leans on in §13 (Q8) — that a
+  correction *can* arrive as its own `system` message in this harness.
+  """
+  witness = _witness("first-e2e-control-evidence.json")
+  assert witness["trailing_message_role"] == "system"
+  assert witness["trailing_message_blocks"] == ["text"]
+  # Length, not digest: this run's correction text differs from the toy one.
+  assert witness["trailing_message_text_digests"][0]["len"] == 458
 
 
 def _record(model: str | None, *, request_id: str | None) -> dict[str, Any]:
@@ -269,11 +428,12 @@ def _record(model: str | None, *, request_id: str | None) -> dict[str, Any]:
 def test_the_synthetic_assistant_turn_is_removed() -> None:
   """Positive arm: the record the model never wrote does not survive.
 
-  This is the owner's one hard constraint after criterion (b) was relaxed on
+  This is the owner's one hard requirement after criterion (b) was relaxed on
   2026-09-03, so it is asserted rather than described.
   """
-  synthetic = _record("<synthetic>", request_id=None)
-  kept = _filter_module().strip_synthetic_assistants([synthetic])
+  kept = _filter_module().strip_synthetic_assistants(
+      [_record("<synthetic>", request_id=None)]
+  )
   assert kept == []
 
 
@@ -284,8 +444,7 @@ def test_a_real_assistant_turn_is_kept() -> None:
   above would still be green — indistinguishable from a correct filter.
   """
   real = _record("claude-sonnet-5", request_id="req_abc")
-  kept = _filter_module().strip_synthetic_assistants([real])
-  assert kept == [real]
+  assert _filter_module().strip_synthetic_assistants([real]) == [real]
 
 
 def test_the_filter_keeps_order_and_passes_other_records_through() -> None:
@@ -305,7 +464,7 @@ def test_the_chain_is_positive_not_an_exclusion_list() -> None:
   """An assistant record missing its provenance fields is dropped, not kept.
 
   An exclusion list keyed on the literal `<synthetic>` marker would keep every
-  one of these, and the marker is not promised by any interface.
+  one of these, and no interface promises that marker.
   """
   module = _filter_module()
   for record in (
@@ -321,8 +480,8 @@ def test_the_chain_is_positive_not_an_exclusion_list() -> None:
 def test_the_committed_shape_fixture_matches_what_the_filter_reads() -> None:
   """The real/synthetic distinction the filter uses is the observed one.
 
-  Guards against the filter drifting away from the records it was written for:
-  the fixture is reduced from a real resumed session.
+  Guards against the filter drifting from the records it was written for: the
+  fixture is reduced from a real resumed session.
   """
   fixture = _witness("assistant-record-shapes.json")
   synthetic = fixture["synthetic_assistant_examples"][0]

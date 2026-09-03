@@ -62,7 +62,8 @@ reversal is the finding.
 
    The correction blocks **accumulate one per seam** — `correction_text_blocks`
    reads 0, 1, 2, 3 across the four main-loop requests — so a 30-turn rollout
-   ends with 30 of them, not one.
+   ends with 29 of them (one per seam, and 30 segments have 29 seams), not
+   one.
 
    Three separate statements, and none of them substitutes for another:
 
@@ -77,12 +78,15 @@ reversal is the finding.
       `sha256 3ba88726…` by `tests/test_streamjson_input_evidence.py`) **are
       different**. A trace produced by this loop therefore contains a layout
       that **occurs under supervision and did not occur in either control** —
-      which is exactly what owner criterion **(b)** forbids: *a context shape
-      that does not occur at inference time.* **Corroborated against a real
-      rollout** (§9.3): on the first end-to-end run's wire — a real SWE-bench
-      instance, no `--safe-mode` — `[tool_result, text]` occurs **0 times in 496
-      tool-result-carrying user messages**, and all 496 are `[tool_result]`
-      alone. Not "never"; 0 in 496, one rollout.
+      which is what owner criterion **(b)** asks about: *a context shape that
+      does not occur at inference time.* **The anchored shape differs from every
+      inference control we have measured, and (b) is therefore uncleared — this
+      sample does not show the shape cannot occur at inference, nor that (b) is
+      violated.** On the first end-to-end run's wire (§9.3) — a real SWE-bench
+      instance, no `--safe-mode` — `[tool_result, text]` occurs **0 times in the
+      fullest conversation's 31** tool-result-carrying user messages, and 0
+      across **496 cumulative wire instances** of them. One rollout, one
+      instance.
 
    So the segmented loop trades one criterion violation for a different one. It
    fixes **(a)** — no assistant tokens the model never wrote — and on this
@@ -135,7 +139,8 @@ these:
   (§12). This is not a caveat; it is the gate.
 
 - **`--resume-session-at` is an undocumented flag** (`hideHelp()`), so the
-  clean seam rests on behaviour that carries no compatibility promise. A build
+  artifact-free seam rests on behaviour that carries no compatibility promise.
+  A build
   that changes it silently returns the design to §6.2's dirty seam, which is
   *not* a loud failure — it is a quiet change in the training data. Any
   implementation must **assert the seam shape on the wire**, not assume it.
@@ -260,8 +265,11 @@ Arm 6 is what makes arm 4 informative; arm 5 is what makes it *context* rather
 than a tool finding the value again.
 
 **The session grows; it does not fork.** After resume the original session file
-was the same file, larger (41 509 bytes). The only other id on disk belongs to
-the control's own fresh session.
+was the **same file**, and the only other id on disk belongs to the control's
+own fresh session — two session files for three invocations. **No before/after
+snapshot was captured**, so *"grew"* rests on the resumed session having one
+file rather than on any size delta; the locator was broken during the run and
+`runs/q1-session-evidence.json` is a labelled after-the-fact re-derivation.
 
 Regenerate: `python run_matrix.py q1` → `runs/q1-summary.json`.
 
@@ -351,7 +359,9 @@ as options rather than as a solved problem:
 - **Merge** the two adjacent user messages.
 - **Substitute** — write the correction into the text block where
   `Continue from where you left off.` sits, and drop the synthetic assistant.
-  This yields the harness's own mid-turn shape.
+  This yields the layout the harness itself writes on the resume path — which
+  is **not** the shape inference produces: §9.1 and the committed A′/TUI
+  control show inference emits a separate `system [text]`.
 
 **Neither repair touches `Q3b`; both make it worse**, because the actor's output
 was conditioned on the correction arriving *after* a synthetic assistant turn,
@@ -413,8 +423,9 @@ both arms** and is a property of any agent loop, not of segmenting.
 
 **All cache creation landed in `ephemeral_1h_input_tokens`; `ephemeral_5m` was
 0 on every call.** That is the field's value and nothing more — **§8.2 measures
-a retention that contradicts reading it as a one-hour TTL**, and this sentence
-must not be cited on its own as evidence about how long a prefix survives.
+one confounded pair whose delayed arm re-created its prefix**, and this
+sentence must not be cited on its own as evidence about how long a prefix
+survives. **No TTL interpretation is supported in either direction.**
 
 ### 8.1 Amendment 1 — the guard that was a treatment
 
@@ -442,7 +453,10 @@ This generalizes past this spike: it is true of **any** rollout that passes
 
 ### 8.2 Q5b — how long may the supervisor deliberate?
 
-Two arms identical but for the pause before the final segment (`N=1` per arm):
+Two arms **intended** to differ only in the pause before the final segment
+(`N=1` per arm). They do not: see the confounds listed below the table — they
+differ in session, working directory, nonce and tool-result content, with
+unrelated traffic in flight.
 
 | arm | pause | `cache_read` | `cache_creation` | cost of that segment |
 | --- | --- | --- | --- | --- |
@@ -503,7 +517,7 @@ own validation answered:
 
 These are **observed dependency constraints**, not inferences from the names.
 
-### 9.1 `--resume-session-at` produces a clean seam — the measurement
+### 9.1 `--resume-session-at` removes both default-resume artifacts — the measurement
 
 A four-segment loop, `--max-turns 1` per segment, segment *n* resuming with
 `--resume-session-at <uuid of the last message record>`, captured on the wire.
@@ -607,6 +621,14 @@ which this reading verified before use. (The two paths named for it are
 only come from a reminder or another harness attachment. Both outcomes are
 results, and the reading was done without a preference between them.
 
+Regenerate every number in this section with one command:
+
+```sh
+python evidence.py \
+  ~/corpora/swe-lab/first-e2e-2026-09-02/r0/rollout/a0/claude_code.proxy_log.jsonl \
+  runs/first-e2e-control-evidence.json --aggregate --label first-e2e-inference-control
+```
+
 Read with **the same `evidence.reduce_capture()`** the rest of this report uses
 — the record shape turned out to be identical, so **no adapter and no second
 analyzer** were introduced. That matters here specifically: a second detector is
@@ -625,8 +647,19 @@ what produced this report's P0.
 | — carrying a `tool_result` | **496** |
 | — `[tool_result, text]` | **0** |
 
-**Every one of the 496 is `[tool_result]` alone** — that is the only distinct
-block shape observed on a user message carrying a tool result.
+**The two denominators are different quantities and both are reported.** Every
+request re-serializes the whole conversation, so the per-request tool-result
+counts run exactly **0, 1, 2, … 31** and sum to 496. The 496 is a count of
+**wire instances**, not of 496 independently generated messages and certainly
+not of 496 rollouts; the **31** in the fullest history is the un-correlated
+figure. Quoting only the larger number would present correlated
+re-serialization as a much bigger sample than it is. Both are regenerated by
+`evidence.aggregate_capture()` and pinned in
+`tests/test_resume_loop_evidence.py`, including the `0..31` progression that
+demonstrates the correlation.
+
+**Every one is `[tool_result]` alone** — the block-shape histogram over those
+instances is exactly `{"tool_result": 496}`, the only shape observed.
 
 **The observation, and separately the explanation — they are not the same
 strength and the count's hardness must not bleed into the account of it.**
@@ -635,14 +668,19 @@ strength and the count's hardness must not bleed into the account of it.**
   every `<system-reminder>`-bearing text block sits either on the **opening user
   message** or on a `role: system` message. None sits on a message carrying a
   `tool_result`.
-- **Explanation (a mechanism claim, and weaker).** *Claude Code delivers
-  reminders as separate `system` messages and does not append them to a
-  tool-result message.* This does **not** follow from the count. It is an
-  induction from where reminders happened to sit in **one** capture — `N=1` at
-  the level of *harness behaviour*, whatever the message counts inside it — and
-  it is the kind of statement a single run cannot establish. **It is recorded
-  here as a candidate explanation awaiting its own test, not as a property of
-  the harness.**
+- **Explanation (a mechanism claim, and weaker).** A candidate reading is that
+  *this harness delivers reminders as separate `system` messages rather than
+  appending them to a tool-result message*. **That does not follow from the
+  count**, and it is deliberately **not** asserted as a property of Claude Code.
+  It is an induction from where reminders sat in **one capture, one instance,
+  one harness version** — `N=1` at the level of *harness behaviour*, whatever
+  the message counts inside it — while this report leaves compaction, parallel
+  tool calls, sub-agents, other instances and other versions explicitly open.
+  **Scoped statement: in this capture, every reminder-bearing message was the
+  opening `user` message or a separate `system` message, and none carried a
+  `tool_result`.** The coordinates are committed
+  (`reminder_bearing_message_coordinates`) so the observation is auditable
+  rather than only described.
 
 A reader may rely on the first bullet. The second is the fragile half, and it is
 labelled so that a later citation cannot borrow the count's hardness for it.
@@ -652,11 +690,13 @@ tool-result-carrying user messages, across one rollout on one instance** — it 
 **not** "never". One run cannot support that, and the count is quoted with its
 denominator precisely because a bare zero is not evidence.
 
-**What it does to §9.1's conclusion.** It **strengthens** statement ③ rather
-than weakening it: on the strongest inference-time evidence available to us, the
-supervised layout does not occur naturally. The open question is narrowed, not
-closed — and it moved in the direction that is *worse* for the design this
-experiment was commissioned to explore.
+**What it does to §9.1's conclusion.** It **strengthens** statement ③ without
+promoting it: the anchored layout differs from every inference control measured,
+so criterion (b) stays **uncleared**. It does **not** establish that the layout
+cannot occur at inference — one rollout on one instance cannot carry that — and
+the report does not say (b) is violated. The open question is narrowed, not
+closed, and it moved in the direction *worse* for the design this experiment
+was commissioned to explore.
 
 One detail worth keeping straight: this run's trailing correction is
 `system [text]` at **`len 458`**, not the `len 440` of `streamjson_input`'s
@@ -752,8 +792,8 @@ launch rather than by anyone remembering it. Per-run figures are in
 - **The `Y` arm was not run.** Without the same neutral continue delivered on a
   live stdin, `RESTATE` cannot be attributed to segmentation rather than to the
   word "Continue."
-- **`N=1` on every wire shape.** A clean seam at N=1 is *possibility, not
-  reliability*.
+- **`N=1` on every wire shape.** An artifact-free seam at N=1 is
+  *possibility, not reliability*.
 - **No byte-level comparison against A′'s injected block** was made.
 - **Deep loops.** The deepest run here is five segments; a real rollout is
   30–100.
