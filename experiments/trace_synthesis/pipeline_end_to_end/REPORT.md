@@ -139,19 +139,29 @@ the actor it reached.** Every reading is in `WITNESS.md`'s block; the function
 they all turn on is at `models.py:377`, taken from the actor's own `grep`
 output (event 7, 07:23:34.719Z) rather than written into the witness.
 
-| # | judged at | evidence the judge held | had the actor read it? | delivered | the actor's answer |
+| # | judged at | evidence the judge held | had the actor read it? | reached the actor | the actor's answer |
 |---|---|---|---|---|---|
-| 1 | cursor 4 | **0 records — empty** | not in the window | 07:23:47.541, **9.5 s** after event 13 | line 34, 07:23:53.867Z |
-| 2 | cursor 8 | 3 records | not in the window | 07:24:04.404, **26.3 s** after event 13 | line 61, 07:24:42.592Z |
-| 3 | cursor 12 | 6 records | not in the window | 07:24:23.080, **45.0 s** after event 13 | line 61, 07:24:42.592Z |
+| 1 | cursor 4 | **0 records — empty** | not in the window | 07:23:47.615Z, **9.5 s** after event 13 | line 34, 07:23:53.867Z |
+| 2 | cursor 8 | 3 records | not in the window | 07:24:04.503Z, **26.4 s** after event 13 | line 61, 07:24:42.592Z |
+| 3 | cursor 12 | 6 records | not in the window | 07:24:23.162Z, **45.1 s** after event 13 | line 61, 07:24:42.592Z |
+
+**The column is receipt, not the supervisor's write.** `supervisor.jsonl`
+records when a correction was written — 07:23:47.541, 07:24:04.404,
+07:24:23.080 — and the actor's own transcript records when it arrived,
+**73 / 99 / 82 ms** later.
+The question this section asks is what the actor had already done when the note
+reached it, so the receipt is what the table carries; the two are named apart
+because a column headed *delivered* holding the write time is how they get
+merged.
 
 **Event 13 (07:23:38.071Z) is the actor's first `Read` of `models.py` whose
-window covers line 377** — `offset 370, limit 60`. It is *not* in the evidence
-any of the three judgements held: it is event 13, and the three judged at
-cursors 4, 8 and 12. Correction 2's other half is the same story with a second
-file: it says no read of the *canonical-ISBN* logic has landed, and the actor
-read `utils/isbn.py` at event 49, 07:24:01.701Z — **2.7 s before that
-correction was written**.
+window covers line 377** — `offset 370, limit 60`, printed by the witness rather
+than asserted here. It is *not* in the evidence any of the three judgements
+held: it is event 13, and the three judged at cursors 4, 8 and 12. Correction
+2's other half is the same story with a second file: it says no read of the
+*canonical-ISBN* logic has landed, and the actor read `utils/isbn.py` at event
+49, 07:24:01.701Z — **2.8 s before that correction reached it** (2.7 s before
+it was written).
 
 **Two different failures, and merging them would lose the one that matters.**
 Corrections 2 and 3 are sound judgements on a stale prefix: what they assert was
@@ -162,10 +172,24 @@ admitted records (`supervisor.py:592-594`), and `SpeakWhenOffTrack.consider`
 calls the judge regardless (`supervisor.py:468`). So the first thing this
 pipeline ever said to an actor was decided on an empty input, and the specific
 claim in it — that `models.py` had not been opened — could only have come from
-the task text. *(Those two line numbers are read from the checkout, not from the
-run's record. The file's last change is `3e97442`, which `WITNESS.md` records as
-the repository state at run time, so the lines that ran are the lines in the
-file today.)*
+the task text. *(Those two line numbers are read from the checkout, not from
+the run's record. The file's last change is `3e97442`, which `WITNESS.md`
+records as the repository state at run time, so the lines that ran are the lines
+in the file today.)*
+
+**That failure was named in this project before this run produced it.**
+[`mid_turn_compliance/REPORT.md` §5.1](../mid_turn_compliance/REPORT.md#51-one-shape-three-times)
+carries it as a playbook entry:
+
+> **A model used as an instrument gets a closed vocabulary.** Anything outside
+> it is `UNPARSEABLE`, never interpreted, and **it is never handed an empty
+> input** — a normal-looking output becomes a false finding under a permissive
+> reader, and it will be false in the direction you were hoping.
+
+Correction 1 is that entry, item for item: an empty input, an ordinary-looking
+verdict, and a finding false in the direction the judge was looking for one.
+Recorded here as a recurrence of a failure mode this repository had already
+named, which is a different and worse thing than a first sighting.
 
 **The actor answered, and this fills a slot the pre-registration left open.**
 [§5](PREREGISTRATION.md#5-evidence-for-points-1-3-and-4--two-assertions-not-one-on-two-different-bases)

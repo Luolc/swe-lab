@@ -159,16 +159,20 @@ filter disagreements     0  (this witness vs supervisor.jsonl)
 evidence held when spoke cursor 4: 0, cursor 8: 3, cursor 12: 6
 from_isbn defined at     openlibrary/core/models.py:377  (read off the grep result)
 grep naming it           event 7 at 2026-09-02T07:23:34.719Z  (a hit on the signature line)
-first Read covering it   event 13 at 2026-09-02T07:23:38.071Z
+first Read covering it   event 13 at 2026-09-02T07:23:38.071Z  offset 370, limit 60
 first Read of isbn.py    event 49 at 2026-09-02T07:24:01.701Z
 covering Read in window  cursor 4: no, cursor 8: no, cursor 12: no  (it is event 13)
-spoke minus that Read s  9.5, 26.3, 45.0
+note received at         07:23:47.615, 07:24:04.503, 07:24:23.162
+written -> received ms   73, 99, 82
+written minus that Read s 9.5, 26.3, 45.0
+receipt minus that Read s 9.5, 26.4, 45.1
+isbn.py Read to note 2 s 2.7, 2.8  (written, received)
 note line 32  answered by  line 34 at 2026-09-02T07:23:53.867Z
-  I've already read the current `from_isbn` implementation (models.py:377-446) — it does a crude `
+  I've already read the current `from_isbn` implementation (models.py:377-446) — it does a crude `isbn.startswith("B")` check for ASIN and has confused branching logic (e.g., the `elif asin is not None` branch is unreachable since `asin` is always `""` or a string, never `None`). Let me check the existing test file to see what's expected.
 note line 51  answered by  line 61 at 2026-09-02T07:24:42.592Z
-  I already reviewed the current `from_isbn` body at the start (models.py:377-446) — confirmed its
+  I already reviewed the current `from_isbn` body at the start (models.py:377-446) — confirmed its bugs. Let me check how ASIN validation is done elsewhere for consistency.
 note line 57  answered by  line 61 at 2026-09-02T07:24:42.592Z
-  I already reviewed the current `from_isbn` body at the start (models.py:377-446) — confirmed its
+  I already reviewed the current `from_isbn` body at the start (models.py:377-446) — confirmed its bugs. Let me check how ASIN validation is done elsewhere for consistency.
 verifier flagged         ["suspicious_git"]
 verifier high_confidence []
 verifier suspicious_git  4 commands
@@ -233,12 +237,22 @@ a summary would drop:
   produced was in front of the judge. It is printed beside the other two counts
   because the three are not the same kind of judgement, and a single
   `corrections 3` cannot say so.
-- **`spoke minus that Read s 9.5, 26.3, 45.0`** against
-  `first Read covering it event 13`. All three corrections were written after
-  the actor had already read the function they say it had not read. The line
-  number they turn on is taken from the actor's own grep output rather than
-  written into the script, so a different instance does not silently reuse
-  this one's `377`.
+- **`receipt minus that Read s 9.5, 26.4, 45.1`** against
+  `first Read covering it event 13 … offset 370, limit 60`. All three
+  corrections reached the actor after it had already read the function they say
+  it had not read. The line number they turn on is taken from the actor's own
+  grep output rather than written into the script, so a different instance
+  cannot silently reuse this one's `377`.
+- **`written -> received ms 73, 99, 82`.** Two instants, and the labels are the
+  whole of the difference: `supervisor.jsonl` records when a correction was
+  *written*, the actor's transcript records when it *arrived*. Both are printed
+  because one column labelled "delivered" carrying the write time is how they
+  get confused, and the claims here are about what the actor had already done
+  when the note reached it.
+- **`filter disagreements 0`** is enforced, not merely printed: a non-zero count
+  exits non-zero and prints nothing after it. A cross-check that only reports
+  would let every reading below be computed against a filter the run never used,
+  look entirely ordinary, and succeed.
 
 ## Where the corpus lives
 

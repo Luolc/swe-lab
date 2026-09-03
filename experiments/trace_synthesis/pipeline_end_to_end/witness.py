@@ -209,6 +209,15 @@ disagreements = sum(
     for e, s in zip(events, sup, strict=True)
 )
 print(f"filter disagreements     {disagreements}  (this witness vs supervisor.jsonl)")
+# Printed *and* enforced. A cross-check that only prints is not a check: every
+# reading below would still be computed, still look ordinary, and still exit 0
+# against a filter the run never used.
+if disagreements:
+  raise SystemExit(
+      f"filter disagreements {disagreements}: this script's copy of"
+      " EvidenceFilter does not match the dispositions in supervisor.jsonl, so"
+      " nothing below describes the filter that ran"
+  )
 
 # How much evidence the judge held at each boundary that spoke. The supervisor
 # appends an admitted record before building the observation, so the count at
@@ -240,11 +249,21 @@ def covers(event, path, line):
   return False
 
 
+def window(event, path):
+  """Return the (offset, limit) of the event's Read of `path`."""
+  for b in blocks(event, "tool_use"):
+    got = b.get("input") or {}
+    if b.get("name") == "Read" and path in str(got.get("file_path", "")):
+      return got.get("offset", 1), got.get("limit")
+  return None, None
+
+
 body_at, body_when = first(lambda e: covers(e, TARGET, defined))
 isbn_at, isbn_when = first(lambda e: covers(e, "openlibrary/utils/isbn.py", 1))
+offset, limit = window(events[body_at - 1], TARGET)
 print(f"from_isbn defined at     {TARGET}:{defined}  (read off the grep result)")
 print(f"grep naming it           event {grep_at} at {grep_when}  (a hit on the signature line)")
-print(f"first Read covering it   event {body_at} at {body_when}")
+print(f"first Read covering it   event {body_at} at {body_when}  offset {offset}, limit {limit}")
 print(f"first Read of isbn.py    event {isbn_at} at {isbn_when}")
 
 # Whether that Read was inside the evidence each judgement actually held. This
@@ -254,9 +273,39 @@ print("covering Read in window  " + ", ".join(
     f"cursor {x['cursor']}: {'yes' if body_at <= x['cursor'] else 'no'}" for x in spoke)
     + f"  (it is event {body_at})")
 
-stamp = dt.datetime.fromisoformat(body_when.replace("Z", "+00:00"))
-print("spoke minus that Read s  " + ", ".join(
-    f"{(dt.datetime.fromisoformat(x['at']) - stamp).total_seconds():.1f}" for x in spoke))
+# Two instants, not one. `supervisor.jsonl` records when a correction was
+# *written*; the actor's own transcript records when it *arrived*. The question
+# these readings serve is what the actor had already done when the note reached
+# it, so the receipt is the load-bearing one and the write is what the
+# supervisor's own account can see. Both are printed because a single column
+# labelled "delivered" carrying the write time is how they get confused.
+received = sorted(x["timestamp"] for x in noted)
+lags = [
+    (dt.datetime.fromisoformat(r.replace("Z", "+00:00"))
+     - dt.datetime.fromisoformat(s["at"])).total_seconds()
+    for s, r in zip(spoke, received, strict=True)
+]
+# Pairing the two lists by order is only sound if each receipt follows its own
+# write and nothing else's, so that is checked rather than assumed.
+if not all(0 < lag < 1 for lag in lags):
+  raise SystemExit(f"note receipts do not follow their writes within 1 s: {lags}")
+print("note received at         " + ", ".join(x[11:23] for x in received))
+print("written -> received ms   " + ", ".join(f"{lag * 1000:.0f}" for lag in lags))
+
+
+def since(when, stamps):
+  """Return seconds from `when` to each of `stamps`, formatted."""
+  base = dt.datetime.fromisoformat(when.replace("Z", "+00:00"))
+  return ", ".join(
+      f"{(dt.datetime.fromisoformat(s.replace('Z', '+00:00')) - base).total_seconds():.1f}"
+      for s in stamps
+  )
+
+
+print("written minus that Read s " + since(body_when, [x["at"] for x in spoke]))
+print("receipt minus that Read s " + since(body_when, received))
+print("isbn.py Read to note 2 s " + since(isbn_when, [spoke[1]["at"], received[1]])
+      + "  (written, received)")
 
 # The actor's own answer to each note. Transcript rows are stored out of
 # chronological order, so "next" is by timestamp and not by line, and what is
@@ -279,7 +328,9 @@ for line_no, note in zip(where, noted, strict=True):
   when, at_line, row = next(
       t for t in stamped if t[0] > note["timestamp"] and says(t[2]))
   print(f"note line {line_no:<3} answered by  line {at_line} at {when}")
-  print(f"  {says(row)[:96]}")
+  # In full: the report quotes these, and a witness truncated shorter than the
+  # quotation cannot support it.
+  print(f"  {says(row)}")
 
 # The integrity side, both readings. The verifier's own list and the purge's
 # before/after are two different questions asked of the same repository.
