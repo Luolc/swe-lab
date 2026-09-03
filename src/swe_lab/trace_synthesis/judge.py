@@ -162,7 +162,29 @@ class JudgeAnswerError(ValueError):
 
   Never retried: a second ask would make the verdict a function of how many
   times we asked.
+
+  Attributes:
+    finish_reason: What the provider's ``choices[0].finish_reason`` said ended
+      the response, or ``None`` when the response carried none. ``"length"``
+      means the answer was never finished — the token budget ran out before
+      the model could write it — which is a configuration problem, not a
+      judgment-quality one; anything else (typically ``"stop"``) means the
+      model finished and still produced something this class could not use.
+      A caller that only sees "the judge call failed" cannot tell those apart
+      (issue #383); this is how it can.
   """
+
+  finish_reason: str | None
+
+  def __init__(self, message: str, *, finish_reason: str | None) -> None:
+    """Record the answer shape failure together with why the call ended.
+
+    Args:
+      message: What was wrong with the answer.
+      finish_reason: See the class attribute.
+    """
+    super().__init__(message)
+    self.finish_reason = finish_reason
 
 
 @dataclasses.dataclass(frozen=True)
@@ -177,12 +199,16 @@ class Call:
     sampling_sent: Every key in :data:`SAMPLING_KEYS` mapped to the value sent,
       or ``None`` where the request left it to the provider.
     raw: The answer's text, before parsing.
+    finish_reason: The provider's ``choices[0].finish_reason``, or ``None``
+      when absent. ``"length"`` means the answer was truncated by
+      ``max_tokens`` rather than completed.
   """
 
   requested_model: str
   response_model: str | None
   sampling_sent: Mapping[str, Any]
   raw: str
+  finish_reason: str | None
 
 
 def _sampling_sent(payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -248,13 +274,27 @@ class ModelJudge:
       smuggled in"; that choice belongs to the caller, and this class only
       refuses to let it go unstated.
     transport: How a request is sent.
-    max_tokens: The one sampling parameter we set.
+    max_tokens: The reasoning-plus-answer budget for one call — the sampling
+      parameter that decides whether the model gets to finish. Measured
+      against 902 replayed calls (issue #383): every lapse (85/902, 9.4%) had
+      ``finish_reason == "length"`` with reasoning tokens at the previous cap
+      of 512 (median 511, max 512), while every call that produced a usable
+      answer needed at most 441 reasoning tokens for a distribution whose
+      median was 89. The old 512 sat inside that distribution rather than past
+      its tail, so a call needing an ordinary amount of reasoning could still
+      run out before writing its answer; the 85 failing calls were themselves
+      cut off at 512, so their true demand is censored and may be higher still.
+      4096 clears the entire observed distribution — including its successful
+      tail — with roughly 8x margin over the old cap, and costs nothing on the
+      common case: the model stops once it has an answer, so a call needing
+      the median's ~89 reasoning tokens spends the same either way. See issue
+      #383 for the recompute.
     calls: What answered each request, in order.
   """
 
   model: str
   transport: Transport
-  max_tokens: int = 512
+  max_tokens: int = 4096
   calls: list[Call] = dataclasses.field(default_factory=list)
 
   def __call__(self, observation: Observation, criterion: Criterion) -> Verdict:
@@ -280,13 +320,16 @@ class ModelJudge:
         ],
     }
     response = self.transport(payload)
-    raw = response["choices"][0]["message"]["content"]
+    choice = response["choices"][0]
+    raw = choice["message"]["content"]
+    finish_reason = choice.get("finish_reason")
     self.calls.append(
         Call(
             requested_model=self.model,
             response_model=response.get("model"),
             sampling_sent=_sampling_sent(payload),
             raw=raw,
+            finish_reason=finish_reason,
         )
     )
     try:
@@ -294,7 +337,9 @@ class ModelJudge:
       off_track = answer["off_track"]
       self_correcting = answer["self_correcting"]
     except (json.JSONDecodeError, KeyError, TypeError) as error:
-      raise JudgeAnswerError(f"unusable judge answer: {error}") from error
+      raise JudgeAnswerError(
+          f"unusable judge answer: {error}", finish_reason=finish_reason
+      ) from error
 
     # Coercion here would read "false" as True — a verdict of *no* becoming a
     # correction — so the shape is required rather than converted.
@@ -304,7 +349,8 @@ class ModelJudge:
     ):
       if type(value) is not bool:
         raise JudgeAnswerError(
-            f"{name} must be a JSON boolean, got {type(value).__name__}"
+            f"{name} must be a JSON boolean, got {type(value).__name__}",
+            finish_reason=finish_reason,
         )
 
     return Verdict(
@@ -351,13 +397,15 @@ class ModelWriter:
         ],
     }
     response = self.transport(payload)
-    raw = response["choices"][0]["message"]["content"]
+    choice = response["choices"][0]
+    raw = choice["message"]["content"]
     self.calls.append(
         Call(
             requested_model=self.model,
             response_model=response.get("model"),
             sampling_sent=_sampling_sent(payload),
             raw=raw,
+            finish_reason=choice.get("finish_reason"),
         )
     )
     return raw
