@@ -109,9 +109,9 @@ in the traces it produces**.
 @dataclasses.dataclass(frozen=True)
 class SegmentedSupervision:
   policy: SpeakPolicy
-  max_segments: int          # no default: a loop must state its ceiling
-  wall_clock_seconds: float  # no default
-  max_cost_usd: float        # no default
+  max_segments: int = 1_000
+  wall_clock_seconds: float = 86_400.0
+  max_cost_usd: float = 1_000.0
   turns_per_segment: int = 5
   neutral_continue: str = "Continue."
 ```
@@ -123,8 +123,9 @@ class SegmentedSupervision:
   and uses `segmented.turns_per_segment` for `--max-turns` when segmented.
 - **`max_turns` changes meaning under segmentation** — today it is the whole
   run's runaway guard at 500, and under segmentation it is one segment's length.
-  The runaway guard moves to `max_segments × turns_per_segment`, which is why
-  `max_segments` has no default. **This is written into `max_turns`'s own
+  The runaway guard moves to `max_segments × turns_per_segment`. Its large,
+  finite default stays out of normal long runs but prevents an ending-reading
+  defect from resuming forever. **This is written into `max_turns`'s own
   docstring**, not only here: a parameter that silently changes meaning and a
   comment that has gone stale are the same failure.
 
@@ -463,7 +464,7 @@ quietly absorbs its own corrections teaches nobody what to look for next time.
 | 3 | A′-specific is only `channel.py`, so replace that | **Brief conceded.** True of the delivery mechanism, but `SupervisedRun` brackets *one* blocked `run()` and this loop drives several. The seam is `run()` |
 | 4 | requirement C is free | Costs a shared-code change; the narrowest form (§5) is accepted **on condition of the byte-identity control test**. A second judge call per seam was considered and rejected as more expensive and worse |
 | 5 | "a cost cap, any cap" | **Brief conceded**: `--max-budget-usd` is a treatment, not a guard (report Amendment 1). Host-side accumulation instead |
-| 6 | reuse `max_turns` | Accepted with `max_segments` mandatory, **and the meaning change written into the docstring** |
+| 6 | reuse `max_turns` | Superseded by the owner's 2026-09-03 launch ruling: keep a large finite `max_segments` default, and write the meaning change into the docstring |
 | 7 | no ADR mentioned | **Write one, in this PR**, with the three points of §7 |
 | 8 | — | Known limitation recorded here (§8) with a pointer from task 12, so it does not fall between them |
 | 9 | assert the seam shape on the wire | **Reversed, and the reversal is mine to own.** I argued it was unnecessary because plain resume has no clean state to regress from. The premise went with the path: the anchored seam *is* a clean state, its flag is undocumented, and its failure is silent — so the assertion is now the only guard behind this path's eligibility, and it runs on every resumed segment |

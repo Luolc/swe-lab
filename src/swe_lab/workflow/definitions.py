@@ -227,29 +227,15 @@ CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
     )
 )
 
-# The segment loop's shipped knobs (task 22). `SEGMENT_TURNS` is the owner's
-# number; it lives here rather than as a literal in the loop, which takes it as
-# a parameter. The three ceilings are all mandatory on
-# `SegmentedSupervision` — under segmentation `--max-turns` bounds one segment
-# rather than the run, so the runaway guard is `SEGMENT_CEILING *
-# SEGMENT_TURNS` and a default would be a loop nobody chose. The cost ceiling
-# is read on the host between segments, never passed as `--max-budget-usd`:
-# that flag writes a running balance into the actor's context, and a guard the
-# actor can see is a treatment rather than a guard.
-SEGMENT_TURNS = 5
-SEGMENT_CEILING = 12
-SEGMENT_WALL_CLOCK_S = 3000.0
-SEGMENT_COST_CEILING_USD = 5.0
-
 # Zero rather than `SUPERVISOR_COOLDOWN`, and stated so the inertness is
 # deliberate: cooldown is measured in consumed stream events, and consecutive
 # seams are many events apart, so the gate never closes on this path. Spacing
-# here is `SEGMENT_TURNS`.
+# here is `SegmentedSupervision.turns_per_segment`.
 SEGMENT_COOLDOWN = 0
 
 
-# The second supervision carrier: the actor is stopped every `SEGMENT_TURNS`
-# turns, judged, and resumed, instead of being spoken to on a live stdin. Its
+# The second supervision carrier: the actor is stopped every configured number
+# of turns, judged, and resumed, instead of being spoken to on a live stdin. Its
 # own definition rather than a flag on the two above, for the same reason the
 # native runtime has one: it takes no `supervision_factory` (the policy travels
 # on the harness, since the loop drives `run()` rather than bracketing it) and
@@ -278,10 +264,6 @@ SEGMENTED_ROLLOUT: WorkflowDef = (
                         # turns late each correction was.
                         locate_deviation=True,
                     ),
-                    max_segments=SEGMENT_CEILING,
-                    wall_clock_seconds=SEGMENT_WALL_CLOCK_S,
-                    max_cost_usd=SEGMENT_COST_CEILING_USD,
-                    turns_per_segment=SEGMENT_TURNS,
                 ),
             ),
         ),
@@ -290,6 +272,11 @@ SEGMENTED_ROLLOUT: WorkflowDef = (
             network=True, pass_env=(OAUTH_TOKEN_ENV,)
         ),
     ),
+)
+
+SEGMENTED_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (
+    *SEGMENTED_ROLLOUT,
+    *UNIT_TEST,
 )
 
 
@@ -418,6 +405,9 @@ register_workflow("unit_test", UNIT_TEST)
 register_workflow("rollout_and_unit_test", ROLLOUT_AND_UNIT_TEST)
 register_workflow("gold_unit_test", GOLD_UNIT_TEST)
 register_workflow("segmented_rollout", SEGMENTED_ROLLOUT)
+register_workflow(
+    "segmented_rollout_and_unit_test", SEGMENTED_ROLLOUT_AND_UNIT_TEST
+)
 register_workflow(
     "supervised_rollout_and_unit_test", SUPERVISED_ROLLOUT_AND_UNIT_TEST
 )
