@@ -17,9 +17,13 @@ the run's **values** cross the boundary, and each is here:
   actor's own credential does, so neither value reaches a command line, a
   staged file or any artifact;
 - **the terminal summary** — what the wrapper writes at the end, and the only
-  thing a run may be classified from. Not the exit status: a wrapper that ran
-  cleanly exits with the *actor's* status, so exit 0 says the actor was happy
-  and says nothing about whether supervision happened.
+  thing a run may be classified from. Not the exit status, in **either**
+  direction: a wrapper that ran cleanly exits with the *actor's* status, so
+  exit 0 says the actor was happy and says nothing about whether supervision
+  happened — and a wrapper that could not account for the run exits ``1`` of
+  its own accord, which says nothing about whether the actor succeeded. The
+  exit status describes the wrapper's ability to give an account, not the
+  actor's result.
 
 The boundary carries one thing that is not a value and is not here: the
 **actor's argv**, handed to the wrapper after ``--`` as opaque tokens. That one
@@ -110,6 +114,14 @@ BASE_URL_ENV = "SWE_LAB_SUPERVISOR_BASE_URL"
 #: shell), and removes it from the actor's environment before launching it.
 API_KEY_ENV = "SWE_LAB_SUPERVISOR_API_KEY"
 
+#: A non-secret variable the **wrapper** sets in the actor's environment, not
+#: one we pass in: ``<wrapper pid>-<nanos>``, which it scans ``/proc`` for after
+#: ``killpg`` to find descendants that escaped the process group via ``setsid``.
+#: Named here because the environment boundary is this module's to describe and
+#: because it is the one supervisor variable that must **not** be scrubbed from
+#: the actor — the two above still are.
+MARK_ENV = "SWE_LAB_SUPERVISOR_MARK"
+
 #: The one terminal-summary schema this consumer reads.
 SUMMARY_SCHEMA_VERSION = 1
 
@@ -158,6 +170,8 @@ NUMERIC_FIELDS: Mapping[str, tuple[int, int]] = {
     "model_call_ms": (1, U64_MAX),
     "term_grace_ms": (0, U64_MAX),
     "max_event_line_bytes": (1, U32_MAX),
+    "max_actor_stdout_bytes": (1, U64_MAX),
+    "max_actor_stderr_bytes": (1, U64_MAX),
 }
 
 #: The default ceiling on one judge or writer call, in milliseconds. A
@@ -174,6 +188,17 @@ DEFAULT_TERM_GRACE_MS = 10_000
 #: whole file, so the framing buffer grows to this rather than to a fixed size;
 #: a longer line is still written to the event log and reaches no judgment.
 DEFAULT_MAX_EVENT_LINE_BYTES = 16 * 1024 * 1024
+
+#: The default ceilings on the *whole* of what the actor writes to each stream.
+#: Unlike the per-line ceiling above, reaching one of these ends the run: the
+#: log is truncated at a line boundary (a partial line is not written at all),
+#: the stream is not read again, and the run is reported unhealthy.
+#:
+#: **Not backpressure.** Ceasing to read here is terminal, not a pause the
+#: wrapper later resumes, so it opens none of the freshness window that
+#: blocking the actor mid-judgment would.
+DEFAULT_MAX_ACTOR_STDOUT_BYTES = 1024 * 1024 * 1024
+DEFAULT_MAX_ACTOR_STDERR_BYTES = 256 * 1024 * 1024
 
 
 def _require_type(name: str, value: object, kind: type) -> None:
@@ -235,6 +260,10 @@ class NativeSupervision:
     term_grace_ms: The shutdown grace described at
       :data:`DEFAULT_TERM_GRACE_MS`.
     max_event_line_bytes: The ceiling on one line of actor stdout.
+    max_actor_stdout_bytes: The ceiling on the whole of the actor's stdout, as
+      described at :data:`DEFAULT_MAX_ACTOR_STDOUT_BYTES`. Reaching it ends the
+      run and reports it unhealthy.
+    max_actor_stderr_bytes: The same ceiling for the actor's stderr.
   """
 
   model: str
@@ -246,6 +275,8 @@ class NativeSupervision:
   model_call_ms: int = DEFAULT_MODEL_CALL_MS
   term_grace_ms: int = DEFAULT_TERM_GRACE_MS
   max_event_line_bytes: int = DEFAULT_MAX_EVENT_LINE_BYTES
+  max_actor_stdout_bytes: int = DEFAULT_MAX_ACTOR_STDOUT_BYTES
+  max_actor_stderr_bytes: int = DEFAULT_MAX_ACTOR_STDERR_BYTES
 
   def __post_init__(self) -> None:
     """Refuse a configuration the binary would refuse, here instead.
@@ -347,7 +378,11 @@ class NativeSupervision:
             "model_call_ms": self.model_call_ms,
             "term_grace_ms": self.term_grace_ms,
         },
-        "limits": {"max_event_line_bytes": self.max_event_line_bytes},
+        "limits": {
+            "max_event_line_bytes": self.max_event_line_bytes,
+            "max_actor_stdout_bytes": self.max_actor_stdout_bytes,
+            "max_actor_stderr_bytes": self.max_actor_stderr_bytes,
+        },
     }
 
   def config_bytes(

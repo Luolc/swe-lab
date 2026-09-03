@@ -102,7 +102,11 @@ def test_the_config_document_is_exactly_the_schema_the_binary_reads() -> None:
       },
       "model": {"name": "anthropic/claude-sonnet-5"},
       "timeouts": {"model_call_ms": 180000, "term_grace_ms": 10000},
-      "limits": {"max_event_line_bytes": 16777216},
+      "limits": {
+          "max_event_line_bytes": 16777216,
+          "max_actor_stdout_bytes": 1073741824,
+          "max_actor_stderr_bytes": 268435456,
+      },
   }
 
 
@@ -174,6 +178,9 @@ def test_a_forged_criterion_is_refused_before_a_config_exists(
         ("judge_every_n_assistant_messages", 0),
         ("model_call_ms", 0),
         ("max_event_line_bytes", 0),
+        # `NonZeroU64`: zero is refused by the type, as for the two above.
+        ("max_actor_stdout_bytes", 0),
+        ("max_actor_stderr_bytes", 0),
         ("budget", 2**32),
         ("window", 2**32),
         ("model_call_ms", 2**64),
@@ -182,6 +189,8 @@ def test_a_forged_criterion_is_refused_before_a_config_exists(
         ("budget", True),
         ("window", True),
         ("max_event_line_bytes", True),
+        ("max_actor_stdout_bytes", True),
+        ("max_actor_stderr_bytes", True),
         ("model", 7),
         ("block_actor_while_judging", "true"),
         ("window", 8.0),
@@ -276,6 +285,8 @@ def test_every_value_in_the_document_is_pinned_or_validated() -> None:
       "model_call_ms": "timeouts.model_call_ms",
       "term_grace_ms": "timeouts.term_grace_ms",
       "max_event_line_bytes": "limits.max_event_line_bytes",
+      "max_actor_stdout_bytes": "limits.max_actor_stdout_bytes",
+      "max_actor_stderr_bytes": "limits.max_actor_stderr_bytes",
   }
   # Each table entry has a home in the document, and each document leaf has a
   # rule — asserted as one equality so neither direction can rot alone.

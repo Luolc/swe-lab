@@ -142,6 +142,14 @@ that the deliberately broken ones are refused, so the check can tell the two
 apart. That is a follow-up task, not a claim about today: **as of this writing
 the two sides agree only because they were read against each other.**
 
+The first live instance arrived within the hour. Fixing the wrapper's lifecycle
+defects added two required `limits` fields (`max_actor_stdout_bytes`,
+`max_actor_stderr_bytes`), and whether Python learned about them depended on
+three people: one to write the change down, one to read it, and a reviewer who
+might happen to look at that paragraph. The schema-pinning tests here caught
+the *shape* once the fields were added by hand — they cannot catch a field
+nobody added.
+
 ## 8. Out of scope here
 
 The binary itself (task 20), `capture="stream_replay"`, and the removal of the
