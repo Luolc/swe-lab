@@ -113,13 +113,14 @@ def test_the_driver_gives_unjudged_its_own_row_kind(
 ) -> None:
   """An `Unjudged` decision is its own row kind, never a correction.
 
-  The regression: the driver classified the decision by `is not None`, so the
-  `Unjudged` that `SpeakWhenOffTrack.consider` returns for an empty evidence
-  window was recorded as a `spoke` row whose `text` was then read off it. It
-  raised only because `Unjudged` carries no `text` — the fabricated row kind
-  was already written. Asserted here without the corpus, because the corpus is
-  what the crash hid behind: the run this drives is synthetic and pays for no
-  model call.
+  `SpeakWhenOffTrack.consider` answers three ways, and only one of them is a
+  correction. A driver that classifies the other two together writes a `spoke`
+  row for a boundary at which nothing was decided — a correction asserted by
+  the very artifact whose purpose is to be a faithful replay. The row kinds
+  must therefore be the shipped `Supervisor`'s own.
+
+  Runs without the corpus and pays for no model call, so the whole of this
+  check is reachable wherever the suite runs.
   """
   decisions: list[Intervention | Unjudged | None] = [
       Unjudged(reason="no actor evidence in the window"),
