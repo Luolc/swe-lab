@@ -13,6 +13,15 @@ are drawn from the four shapes that actually happened, not invented ones — a
 real history makes a better negative set than imagination, because it is the
 distribution the next defect is drawn from.
 
+**It covers the CLI contract too, and that is not a bonus.** The flags are a
+second hand-mirrored contract beside the schema — the harness writes them, the
+binary parses them, and nothing compared the two either. Because the check
+spawns the binary with `SUPERVISOR_FLAGS` itself rather than a second
+transcription of it, a flag the harness passes that the binary will not accept
+turns the acceptance arm red in the same run. Measured: against a build of
+`main`, which does not yet accept `--actor-prompt`, this fails exactly as it
+should.
+
 **The observable is a side effect, not an exit code.** Every refusal the
 wrapper makes before the actor exists — a bad config, an unreadable criterion,
 a missing endpoint, an unspawnable actor — exits 3, so the exit code cannot
@@ -36,6 +45,8 @@ from typing import Any
 
 import pytest
 
+from swe_lab.harnesses.claude_code.convert import user_event_line
+from swe_lab.harnesses.claude_code.harness import SUPERVISOR_FLAGS
 from swe_lab.trace_synthesis.native_supervision import (
     API_KEY_ENV,
     BASE_URL_ENV,
@@ -103,28 +114,22 @@ def _run_wrapper(binary: Path, document: object, workdir: Path) -> Path:
   Returns:
     Where the actor would have written its sentinel.
   """
-  config = workdir / "supervisor-config.json"
-  _ = config.write_text(json.dumps(document))
+  # **The harness's own flag set**, not a second transcription of it. The CLI
+  # is a hand-mirrored contract exactly as the config schema is, and sharing
+  # this mapping is what makes one check cover both: a flag the harness passes
+  # that the binary does not accept turns the acceptance arm red, in the same
+  # run, at no extra cost.
+  argv = [str(binary), "run"]
+  for flag, name in SUPERVISOR_FLAGS.items():
+    path = workdir / name
+    if flag == "--config":
+      _ = path.write_text(json.dumps(document))
+    elif flag == "--actor-prompt":
+      _ = path.write_text(user_event_line("Fix the failing test."))
+    argv += [flag, str(path)]
   sentinel = workdir / _SENTINEL_NAME
   _ = subprocess.run(
-      [
-          str(binary),
-          "run",
-          "--config",
-          str(config),
-          "--actor-event-log",
-          str(workdir / "events.jsonl"),
-          "--supervisor-log",
-          str(workdir / "supervisor.jsonl"),
-          "--summary",
-          str(workdir / "summary.json"),
-          "--actor-stderr",
-          str(workdir / "actor.stderr"),
-          "--",
-          "/bin/sh",
-          "-c",
-          f"touch {sentinel}",
-      ],
+      [*argv, "--", "/bin/sh", "-c", f"touch {sentinel}"],
       capture_output=True,
       timeout=120,
       check=False,
