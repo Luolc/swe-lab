@@ -1,10 +1,12 @@
 # Task 21: Native supervision, the Python side
 
 The design of record is
-[issue #375](https://github.com/Luolc/swe-lab/issues/375). Task 20 is the
-binary — the crate under `rust/swe-lab-supervisor/`, its tests and its CI — and
-its §8 lists what it deliberately leaves out. This document is that list: the
-Python half of the same migration, which is everything outside `rust/`.
+[issue #375](https://github.com/Luolc/swe-lab/issues/375).
+[Task 20](task-20-native-supervisor-runtime.md) is the binary — the crate under
+[`rust/swe-lab-supervisor/`](../../../rust/swe-lab-supervisor/), its tests and
+its CI — and its §8 lists what it deliberately leaves out. This document is that
+list: the Python half of the same migration, which is everything outside
+`rust/`.
 
 Status lives in [`README.md`](README.md), not here.
 
@@ -74,6 +76,18 @@ construction becomes a list of tokens with one consumer today and two
 tomorrow — **not** a second construction beside it. A rebuilt argv is a
 supervised run that differs from an unsupervised one by more than the
 supervision, which is the drift the `correction_channel` field exists to avoid.
+
+**The prompt travels beside the argv, not on stdin.** The owner ruled on
+2026-09-03 that the wrapper takes an explicit `--actor-prompt <path>` and writes
+those bytes, unparsed, as the first thing on the actor's stdin — then holds that
+stdin open. Neither alternative survives: folding the prompt into the config's
+`task` binds what the judge measures against to what the actor was told, and
+redirecting a file into the wrapper's own stdin makes a plain file's EOF decide
+when the actor's input channel closes, which `#375`'s failure semantics reserve
+for the wrapper's policy (a quiet result closes it; a correction at a result
+boundary keeps it open). So the invocation script carries **no** stdin
+redirect, and `prompt.stream.json` — still written by the Python side, exactly
+as today — is passed by path.
 
 ## 5. Added alongside, never in place of
 
