@@ -239,7 +239,10 @@ collector can be wrong about which bytes are the trace, both from
 session contains a **prompt-suggestion exchange** whose body is the whole
 conversation plus a user message nobody sent, and reading the *last* proxy
 record picks exactly that one; and where the two captures disagree about a
-message's shape, the **wire** is what the model saw. Both are collector
+message's shape, the **wire** is what the client sent upstream — which is not
+the same as what the model saw (see the `<system_warning>` row in §10) and does
+not rank the two captures
+([ADR-0017](../decisions/ADR-0017-what-a-capture-is-evidence-of.md)). Both are collector
 obligations, not channel properties, and the first is
 [an invariant](#12-invariants-intended-enforced-where-marked) rather than
 advice.

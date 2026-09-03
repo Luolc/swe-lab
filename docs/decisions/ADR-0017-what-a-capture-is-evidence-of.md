@@ -97,13 +97,22 @@ on which capture produced each; this ADR makes no recommendation between them.
   addition: unsupervised traces that previously began without the task text now
   carry it. Anything counting messages or indexing into a converted stream sees
   different values. It needs a release note when the next version is cut.
-- **The measurement's domain is narrower than the change.** Every arm that
-  exercised `--replay-user-messages` also ran `--input-format stream-json`
-  (`streamjson_input/driver.py`, which hardcodes it for all arms). An
-  unsupervised run in this harness feeds a plain prompt file on stdin instead,
-  so the recovery of the opening prompt is measured in the stream-json-input
-  configuration and not in that one. Stated rather than assumed away; the first
-  unsupervised run after this change settles it by reading its own trace.
+- **Every stream run's stdin is stream-json, including an unsupervised one.**
+  The flag is not accepted on its own: the pinned 2.1.212 exits 1 with
+  *"--replay-user-messages requires both --input-format=stream-json and
+  --output-format=stream-json"*. So a stream run passes `--input-format
+  stream-json` and opens with its prompt encoded as one user event
+  (`prompt.stream.json`), the same encoding the correction channel already
+  used; the plain `prompt.txt` is still written beside it as the readable
+  record. Nothing on this path feeds the CLI a plain-text stdin any more.
+- **One difference from the measured arms survives, and it is not the input
+  format.** `streamjson_input/driver.py` fed its arms through a **live pipe**
+  that stayed open across turns; an unsupervised run here redirects from a
+  **regular file** that reaches EOF after the single opening event — which is
+  what ends the run, and is the mechanism the correction channel deliberately
+  removes. Whether replay behaves identically against a finite file is
+  untested; the first unsupervised run after this change settles it by reading
+  its own trace for the task text.
 - **`spec.md` §10's row is rewritten in this change**, as the Status says.
 - **[Task 16](../trace-synthesis/plans/task-16-live-correction-channel-in-the-harness.md)
   §5 still lists "this channel requires proxy capture" among the constraints it
