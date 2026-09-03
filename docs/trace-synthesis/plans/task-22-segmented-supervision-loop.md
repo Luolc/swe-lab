@@ -108,11 +108,12 @@ in the traces it produces**.
 ```python
 @dataclasses.dataclass(frozen=True)
 class SegmentedSupervision:
-  policy: SpeakPolicy
+  policy_factory: Callable[[int], SpeakPolicy]
   max_segments: int = 1_000
   wall_clock_seconds: float = 86_400.0
   max_cost_usd: float = 1_000.0
   turns_per_segment: int = 5
+  cooldown: int = 0
   neutral_continue: str = "Continue."
 ```
 
@@ -139,12 +140,10 @@ segment gets its own argv while the argv is still built in one place.
 
 1. **The event stream is appended, not truncated** (`>` → `>>` under
    segmentation), and the harness truncates it once before segment 1. Safe for
-   every existing reader, and that is measured rather than assumed:
-   `event_stream_outcome` already scans **backwards for the last `result`
-   event**, and `event_stream_usage`'s docstring already states the segmented
-   aggregation rule (`total_cost_usd` cumulative → take the last; `num_turns`
-   per-result → sum). The multi-segment stream is the shape those two were
-   written for.
+   the outcome reader because `event_stream_outcome` scans **backwards for the
+   last `result` event**. The loop slices the appended stream at each seam;
+   each resumed CLI invocation reports its own `total_cost_usd`, so the loop
+   sums those new terminal values for its cumulative host-side ceiling.
 2. **The capture proxy survives a per-segment restart.** Each segment's script
    starts and reaps its own proxy instance, which would lose earlier segments if
    the log were truncated. It is not: `cc-reverse-proxy` opens its `--output`
@@ -423,7 +422,7 @@ pointer here, so the fact does not fall between the two tasks.
 | `harnesses/claude_code/harness.py` | the `segmented` field, the `__post_init__` refusal, `actor_argv(resume_session_id=…)`, the `>>` redirect, `run()`'s one branch, `max_turns`'s docstring |
 | `trace_synthesis/supervisor.py` | `Verdict.deviation_started_at_turn` (optional, defaulted) |
 | `trace_synthesis/judge.py` | `ModelJudge.locate_deviation` (default `False`, prompt byte-identical when off) |
-| `workflow/definitions.py` | one `SEGMENTED_ROLLOUT` definition, `capture="proxy"` and `cooldown=0` |
+| `workflow/definitions.py` | one `SEGMENTED_ROLLOUT` definition, `capture="proxy"`, with the segmented controls late-bound by CLI overrides |
 | `docs/trace-synthesis/plans/README.md` | task 12's pointer (§8) |
 
 **Not touched:** `channel.py` and every caller; `rust/`;

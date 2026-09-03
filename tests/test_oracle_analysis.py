@@ -8,6 +8,7 @@ collection — is exercised while no agent ever spawns.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import dataclasses
 import json
 from pathlib import Path
@@ -19,17 +20,21 @@ import pytest
 from swe_lab.conversation import Conversation
 from swe_lab.datasets.oracle_failures import OracleFailureInstance
 from swe_lab.evaluation.unit_test import ENTRYSCRIPT_NAME
+from swe_lab.git.patch import BASELINE_VERIFY_SCRIPT_NAME
 from swe_lab.harnesses import AgentOutcome, HarnessOutcomeObserver
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
+from swe_lab.harnesses.claude_code.constants import AGENT_SCRIPT_NAME
 from swe_lab.rollout import CodingAgentTask, PROMPT_NAME
 from swe_lab.sandbox import (
     ArtifactSchema,
+    ExecResult,
     merge_output_schemas,
     Mount,
     RunResult,
     RunStatus,
 )
 from swe_lab.sandbox.observers import (
+    BASE_REF_NAME,
     DiffExtractObserver,
     GitHistoryPurgeObserver,
     ResultVerifyObserver,
@@ -62,6 +67,7 @@ class _LocalFakeSandbox(FakeSandbox):
   """A ``FakeSandbox`` that records mount targets and keeps them local."""
 
   mount_targets: list[str] = dataclasses.field(default_factory=list)
+  current_ref: str = ""
 
   @override
   def _mount_one(self, target: str, mount: Mount) -> None:
@@ -72,8 +78,29 @@ class _LocalFakeSandbox(FakeSandbox):
   def _dest(self, target: str) -> epath.Path:
     return epath.Path(self.workspace / target.lstrip("/"))
 
+  @override
+  def run_script(
+      self,
+      name: str,
+      *,
+      timeout: float,
+      env: Mapping[str, str] | None = None,
+  ) -> ExecResult:
+    if name == BASELINE_VERIFY_SCRIPT_NAME:
+      self.calls.append(("run_script", name))
+      self.scripts.append(name)
+      self.script_envs.append(env)
+      recorded = self.read(BASE_REF_NAME).decode().strip()
+      if recorded != self.baseline_sha:
+        return ExecResult(1, "", "baseline mismatch")
+      self.current_ref = recorded
+      return ExecResult(0, "", "")
+    return super().run_script(name, timeout=timeout, env=env)
 
-def _failure(underlying: _Underlying | None = None) -> OracleFailureInstance:
+
+def _failure(
+    underlying: _Underlying | None = None, *, patch_base_ref: str | None = None
+) -> OracleFailureInstance:
   return OracleFailureInstance(
       dataset="fake",
       instance_id="acme__widget-1",
@@ -83,6 +110,7 @@ def _failure(underlying: _Underlying | None = None) -> OracleFailureInstance:
       patch="diff --git a/x b/x\n+wrong\n",
       provenance="{}",
       instance=underlying or _Underlying(),
+      patch_base_ref=patch_base_ref,
   )
 
 
@@ -115,10 +143,11 @@ def _execute(
 # ─── the invariant: phase B is contaminated on purpose, and says so ─────────
 
 
-def test_the_oracle_task_composes_no_purge_no_extractor_and_no_verifier():
-  # The purge would strip the very history the Oracle is given; the verifier
-  # would flag a run that is contaminated by design; a guidebook is not a
-  # patch. Their absence is the design, pinned here rather than incidental.
+def test_the_oracle_has_no_purge_extractor_or_result_verifier():
+  # The purge would strip the very history the Oracle is given; the result
+  # verifier would flag a run that is contaminated by design; a guidebook is
+  # not a patch. Their absence is the design, pinned here rather than
+  # incidental.
   observers = _task().observers(_failure())
   kinds = {type(o) for o in observers}
   assert not kinds & {
@@ -186,6 +215,52 @@ def test_execute_stages_the_failure_the_reference_and_the_grading_procedure(
   assert (workspace / "prompt.txt").read_text() == brief
   # no purge ran: the history is the Oracle's to read
   assert PURGE_SCRIPT_NAME not in sandbox.scripts
+  assert BASELINE_VERIFY_SCRIPT_NAME not in sandbox.scripts
+
+
+def test_a_baseline_failure_verifies_and_restores_its_recorded_tree(
+    tmp_path: Path,
+):
+  recorded_ref = "b" * 40
+  assert recorded_ref != SPEC.base_commit
+  sandbox = _LocalFakeSandbox(
+      spec=SPEC,
+      workspace=epath.Path(tmp_path / "ws"),
+      baseline_sha=recorded_ref,
+      current_ref=SPEC.base_commit,
+  )
+
+  result = _task().execute(
+      sandbox,
+      _failure(patch_base_ref=recorded_ref),
+      output_dir=tmp_path / "out",
+      timeout=60.0,
+  )
+
+  assert result.run.status is RunStatus.SUCCESS
+  assert sandbox.current_ref == recorded_ref
+
+
+def test_a_baseline_failure_with_the_wrong_tree_stops_before_the_oracle(
+    tmp_path: Path,
+):
+  sandbox = _LocalFakeSandbox(
+      spec=SPEC,
+      workspace=epath.Path(tmp_path / "ws"),
+      baseline_sha="c" * 40,
+      current_ref=SPEC.base_commit,
+  )
+
+  result = _task().execute(
+      sandbox,
+      _failure(patch_base_ref="b" * 40),
+      output_dir=tmp_path / "out",
+      timeout=60.0,
+  )
+
+  assert result.run.status is RunStatus.SETUP_ERROR
+  assert BASELINE_VERIFY_SCRIPT_NAME in sandbox.scripts
+  assert AGENT_SCRIPT_NAME not in sandbox.scripts
 
 
 def test_the_brief_carries_the_task_statement_whole_and_names_the_files(

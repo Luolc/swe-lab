@@ -33,7 +33,7 @@ re-implemented, and carries the one failed attempt that phase B analyses.
 | `conversation` | the failed rollout's typed `Conversation`, as JSON; validated on load |
 | `verdict` | the dataset grader's verdict on the failed patch, as JSON: `resolved`, `score`, its `metrics`, its `summary` (which names the failed tests) |
 | `patch` | the patch the failed rollout submitted |
-| `provenance` | where it came from: the run's sweep, timestamp, entry keys, both entries' metrics, when it was built |
+| `provenance` | where it came from: the run's sweep, timestamp, entry keys, both entries' metrics, when it was built, and the pre-agent baseline ref when the source rollout used one |
 
 The data file lives under `datasets/oracle_failures/data/`, gitignored like
 every dataset's data (`datasets/**/data/`); the tracked half is
@@ -43,9 +43,13 @@ every dataset's data (`datasets/**/data/`); the tracked half is
 
 The record holds the underlying dataset's own record (`instance`, resolved on
 load through `load_dataset`) and **forwards** `sandbox_spec`, `prompt`,
-`gold_patch`, `unit_test_spec`, `required_tests` and `solution_sha` to it
-unchanged. The only method it implements itself is `mounts()`, which merges
-the underlying instance's mounts with the three failure files.
+`gold_patch`, `required_tests` and `solution_sha` to it unchanged. It augments
+`mounts()` with the three failure files and, for a baseline-patched source, its
+base ref. `unit_test_spec()` delegates compilation while restoring that same
+baseline contract whenever the captured failed patch is graded. Before the
+Oracle can run that procedure, `OracleAnalysisTask` recognizes the staged base
+ref and composes the existing `BaselineVerifyObserver`, which recomputes,
+verifies and restores the recorded tree.
 
 Why this shape and not a flattened copy of the underlying row plus the
 failure:
@@ -122,6 +126,8 @@ What it does, in order:
    causes* hazard in [`conventions.md`](../../conventions.md#hazards-learned-the-hard-way) requires before an
    unresolved run counts as evidence about reasoning; the fourth — the same
    verdict in every grading attempt — needs the workspaces, and is step 5.
+   Baseline-patched runs are accepted: their `patch.base_ref.txt` is carried
+   in provenance so consumers can recreate the procedure that graded them.
 3. **Reads the artifacts** the record points at (`store/<artifact key>`),
    validates the conversation as a typed `Conversation`, refuses an empty
    patch.

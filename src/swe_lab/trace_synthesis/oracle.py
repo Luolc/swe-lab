@@ -26,7 +26,10 @@ import logging
 from typing import Any, override
 
 from swe_lab.datasets.instance import TaskInstance
-from swe_lab.evaluation.unit_test import ENTRYSCRIPT_NAME
+from swe_lab.evaluation.unit_test import (
+    BaselineVerifyObserver,
+    ENTRYSCRIPT_NAME,
+)
 from swe_lab.harnesses import Harness
 from swe_lab.rollout import outcome_of, PROMPT_NAME
 from swe_lab.sandbox import (
@@ -41,6 +44,7 @@ from swe_lab.sandbox import (
     SandboxFs,
     SandboxObserver,
 )
+from swe_lab.sandbox.observers import BASE_REF_NAME
 from swe_lab.workflow import AttemptResult, InputsBuilder, Task
 
 from .guidebook import GUIDEBOOK_NAME, STAGE_FIELDS, validate_guidebook
@@ -429,20 +433,27 @@ class OracleAnalysisTask(Task):
 
   @override
   def observers(self, instance: TaskInstance[Any]) -> Sequence[SandboxObserver]:
-    """Return the harness's observers, then the guidebook collector.
+    """Return baseline verification, harness observers and the collector.
 
-    Nothing else — in particular no history purge, which would strip the very
-    material the Oracle is given, and no verifier, which would flag a run
-    that is contaminated by design.
+    A baseline-patched failure carries its recorded base ref as an instance
+    mount. Verify and restore that tree before the Oracle can run the exposed
+    grading procedure. Nothing else is added: in particular no history purge,
+    which would strip the material the Oracle is given, and no result verifier,
+    which would flag a run that is contaminated by design.
 
     Args:
-      instance: Unused — the Oracle's observers do not depend on it.
+      instance: The failure record whose mounts identify baseline mode.
 
     Returns:
-      The harness's own observers, then a fresh ``GuidebookObserver``.
+      Optional baseline verification, the harness's observers, then a fresh
+      ``GuidebookObserver``.
     """
-    del instance
-    return (*self.harness.observers(), GuidebookObserver())
+    baseline = (
+        (BaselineVerifyObserver(workdir=instance.sandbox_spec().workdir),)
+        if BASE_REF_NAME in instance.mounts()
+        else ()
+    )
+    return (*baseline, *self.harness.observers(), GuidebookObserver())
 
   @override
   def input_schema(self) -> Sequence[ArtifactSchema]:

@@ -47,6 +47,7 @@ from swe_lab.trace_synthesis.supervisor import (
     Observation,
     PolicyLapseError,
     SpeakAt,
+    SpeakPolicy,
 )
 
 _CUT = "error_max_turns"
@@ -69,7 +70,7 @@ def _segment(
     subtype: The terminal ``result`` event's subtype.
     session: The session id every event carries.
     uuid: The terminal event's own uuid.
-    cost: The cumulative cost the terminal event reports.
+    cost: The cost the terminal event reports for its CLI invocation.
     events_per_message: How many assistant *events* share each message id —
       the real stream splits thinking and ``tool_use`` across events.
 
@@ -173,8 +174,12 @@ def _supervision(policy: Any = None, **overrides: Any) -> SegmentedSupervision:
     The config.
   """
   built = policy or NeverSpeak()
+
+  def policy_factory(_cooldown: int) -> SpeakPolicy:
+    return built
+
   defaults: dict[str, Any] = {
-      "policy_factory": lambda: built,
+      "policy_factory": policy_factory,
       "max_segments": 10,
       "wall_clock_seconds": 10_000.0,
       "max_cost_usd": 100.0,
@@ -362,6 +367,25 @@ def test_a_cost_override_reaches_the_loop_comparison():
   assert _segment_rows(rows)[-1]["stop_reason"] == STOP_MAX_COST
 
 
+def test_a_cooldown_override_reaches_the_policy_factory():
+  """A non-default cooldown reaches the per-run policy construction."""
+  import dataclasses
+
+  supervision = _shipped_supervision("--rollout.harness.segmented.cooldown=6")
+  received: list[int] = []
+
+  def policy_factory(cooldown: int) -> NeverSpeak:
+    received.append(cooldown)
+    return NeverSpeak()
+
+  actor = FakeActor(segments=[_segment(ids=["a"], subtype=_DONE)])
+  _ = _run(
+      actor, dataclasses.replace(supervision, policy_factory=policy_factory)
+  )
+
+  assert received == [6]
+
+
 def test_the_loop_stops_when_the_actor_says_it_is_done():
   """A `success` result ends the run, and nothing is resumed after it."""
   actor = FakeActor(segments=[_segment(ids=["a"], subtype=_DONE)])
@@ -405,6 +429,24 @@ def test_the_cost_ceiling_stops_the_loop():
   rows = _run(actor, _supervision(max_cost_usd=0.5))
 
   assert len(actor.requests) == 1
+  assert _segment_rows(rows)[-1]["stop_reason"] == STOP_MAX_COST
+
+
+def test_small_segment_costs_accumulate_to_the_run_ceiling():
+  """A run stops when individually cheap segments cross the total ceiling."""
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT, cost=0.2),
+          _segment(ids=["b"], subtype=_CUT, cost=0.2),
+          _segment(ids=["c"], subtype=_CUT, cost=0.2),
+          _segment(ids=["d"], subtype=_DONE, cost=0.2),
+      ]
+  )
+
+  rows = _run(actor, _supervision(max_cost_usd=0.5))
+
+  assert len(actor.requests) == 3
+  assert _segment_rows(rows)[-1]["cost_usd"] == pytest.approx(0.6)
   assert _segment_rows(rows)[-1]["stop_reason"] == STOP_MAX_COST
 
 
