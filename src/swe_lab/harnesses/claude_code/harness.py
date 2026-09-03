@@ -689,18 +689,22 @@ class ClaudeCodeHarness(Harness):
         version=version,
         fetch=lambda dest: ensure_claude_binary(version=version, dest=dest),
     )
-    if self.capture != "proxy":
-      return (agent,)
-    assets = [
-        agent,
-        AgentAsset(
-            path=PROXY_BINARY_AT,
-            # cc-reverse-proxy is a single unversioned Go file in a sibling
-            # checkout, so its content hash *is* its release (see the module).
-            version=proxy_source_version(),
-            fetch=lambda dest: ensure_proxy_binary(dest=dest),
-        ),
-    ]
+    assets = [agent]
+    if self.capture == "proxy":
+      assets.append(
+          AgentAsset(
+              path=PROXY_BINARY_AT,
+              # cc-reverse-proxy is a single unversioned Go file in a sibling
+              # checkout, so its content hash *is* its release (see the
+              # module).
+              version=proxy_source_version(),
+              fetch=lambda dest: ensure_proxy_binary(dest=dest),
+          )
+      )
+    # Independent of capture: the wrapper runs the actor, which every capture
+    # mode needs. Nesting this under the proxy branch left a supervised stream
+    # run declaring no wrapper at all — the script would exec a path nothing
+    # had placed, and the run would stop at the `--version` probe.
     if self.native_supervision is not None:
       # The version is read off the binary rather than pinned here: there is
       # no release to pin against yet, and asserting a guess would refuse a

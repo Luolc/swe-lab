@@ -17,6 +17,8 @@ import subprocess
 import pytest
 
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
+from swe_lab.harnesses.claude_code.constants import PROXY_BINARY_AT
+from swe_lab.harnesses.claude_code.proxy import PROXY_SOURCE_ENV
 from swe_lab.rollout import CodingAgentTask
 from swe_lab.trace_synthesis.native_supervision import (
     Blocking,
@@ -272,14 +274,50 @@ def test_only_a_supervised_run_declares_the_wrapper_as_an_asset():
 
   The unsupervised path must not ask for a binary it will never exec — and
   today asking for it would fail the run outright, since there is no release.
+
+  **Stream capture, deliberately.** What is asserted is conditionality on
+  `native_supervision`, and nothing here is about the proxy; asking for proxy
+  capture would drag in `proxy_source_version()`, which reads a sibling
+  checkout this repo does not vendor. That is what turned CI red while the
+  same test passed locally — the check gave two verdicts in two environments,
+  and the one that counts is the one without the sibling.
   """
-  supervised = ClaudeCodeHarness(
-      capture="proxy", native_supervision=_SUPERVISION
-  )
-  plain = ClaudeCodeHarness(capture="proxy")
+  supervised = ClaudeCodeHarness(native_supervision=_SUPERVISION)
+  plain = ClaudeCodeHarness()
 
   assert SUPERVISOR_BINARY_AT in [a.path for a in supervised.assets()]
   assert SUPERVISOR_BINARY_AT not in [a.path for a in plain.assets()]
+
+
+def test_the_wrapper_is_declared_whatever_the_capture_mode_is(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+  """The wrapper runs the actor, so every capture mode needs it.
+
+  It was nested under the proxy branch, which left a supervised *stream* run
+  declaring no wrapper: the script would exec a path nothing had placed. The
+  shipped definition uses proxy capture, so that configuration is covered too
+  — with a synthetic proxy source, the convention this repo already uses for
+  the un-vendored sibling checkout.
+
+  Args:
+    tmp_path: Somewhere to put the synthetic proxy source.
+    monkeypatch: Used to point the proxy at it.
+  """
+  source = tmp_path / "reverse_proxy.go"
+  _ = source.write_text("package main\n")
+  monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
+
+  for capture in ("stream", "proxy"):
+    harness = ClaudeCodeHarness(
+        capture=capture, native_supervision=_SUPERVISION
+    )
+    paths = [a.path for a in harness.assets()]
+
+    assert SUPERVISOR_BINARY_AT in paths, capture
+    # …and the proxy is still conditional on capture, so this did not simply
+    # make every asset unconditional.
+    assert (PROXY_BINARY_AT in paths) == (capture == "proxy"), capture
 
 
 # ─── the definition that actually opens the path (task 21 §3a, step 2) ──────
