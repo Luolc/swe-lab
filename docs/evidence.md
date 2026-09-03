@@ -56,50 +56,67 @@ invariant is an example above, not a rule here.
    narration asserts nothing about now. **Prefer deleting to sourcing**: a
    corrected total buys time until the next merge, while removing it retires a
    class. Put the coordinate *inside* the command (`git grep … <rev> <rev>`
-   stamps each line) so no surrounding prose is load-bearing.
+   stamps each line) so no surrounding prose is load-bearing. (2026-09-03,
+   #405/#407/#408: four findings in one PR body — a fabricated hash, a real
+   count taken before the fix and printed after it, a `<count>` placeholder, and
+   a figure with no command.)
 3. **To learn what a contract change affected, start from the consumers, never
    from the diff.** A diff holds the names that were *edited*; a definition
    change moves the names that *depend* on it, and those did not change by a
-   byte. (#393 moved two definitions; enumerating from the frozen criteria found
-   **four** affected quantities, three of which never appear in that diff.)
+   byte. (2026-09-03, #409: #393 moved two definitions; enumerating from the
+   frozen criteria found **four** affected quantities, three of which never
+   appear in that diff.)
 4. **Frozen means the text is frozen, not that the file is closed.** Never edit a
    registered criterion — "the edit is obviously an improvement" is judged by
    someone who has seen the results, the one input a pre-registration excludes.
    **Append a dated, attributed addendum instead**; editing without saying so
-   destroys the record, and saying nothing sets a trap.
+   destroys the record, and saying nothing sets a trap. (2026-09-03, #409: a
+   frozen criterion's quantities were redefined elsewhere, recorded as an
+   addendum with the criteria text untouched.)
 5. **An LGTM authorizes the version the reviewer saw, not the act of merging.**
    Pinning the approved SHA (cross-repo) guards against the head *moving*; this
    guards against the reviewer's picture being wrong at that head. Trigger for
    re-confirming: **would this change a rational reviewer's conclusion?** — not
    "did any byte change", which is unfalsifiable and decays into ceremony.
+   (2026-09-03, #402: an LGTM was voided because the author knew of a defect the
+   reviewer did not.)
 6. **A finding has four parts that fail independently: instinct, location,
    mechanism, conclusion.** Say which you are accepting. A fix is recorded by the
    diff; an **explanation is cited**, so an untested causal sentence in a merged
    PR becomes the next person's verified premise. The bar for pushing back is not
    "I think they're wrong" but **"I ran an experiment that would have come out
-   differently if they were right"** — then let them reproduce it.
+   differently if they were right"** — then let them reproduce it. (2026-09-03,
+   #409: a finding's instinct and location were right and its conclusion wrong;
+   a merge test with a control arm settled it, and the reviewer re-ran it.)
 7. **Name a check as though the name is its only documentation**, because for a
    gate it is: the output shows the name and nothing else. Where a name is wider
    than its coverage and the coverage is right, **narrow the name** (#408).
    Corollary: a pattern-scanning guard always misfires on prose discussing the
-   pattern — that gap is stated, not closed.
+   pattern — that gap is stated, not closed. (2026-09-03, #408: a hook named
+   for a repo-wide guarantee that scans only `.py`.)
 8. **Do not land a check you know will be red**, unless that red is the only
    thing currently reporting the problem. Test: *if this check did not exist,
    would anyone be unaware?* A known-red check destroys the discriminating power
    of "the suite is red" for everyone, and is how a correct check gets deleted as
-   flaky.
-9. **Once a reviewer has recorded a reviewed head, add commits — never rewrite
-   what they already read.** A re-review reads the `old..new` delta, so
-   rewriting erases their starting point and turns an incremental re-review into
-   a full re-read, on a round where their attention has already been spent once.
-   **Whether rewriting history is permitted at all is not this file's to say** —
-   `~/.agents/AGENTS.md` owns that, and this rule creates no exception to it.
-   (2026-09-03, #410: a reviewer recorded a head while a follow-up was being
-   written; appending left them a one-commit delta to read.)
+   flaky. (2026-09-03, #405: a round-trip check knowingly red until #393
+   landed — queued instead.)
+9. **During ordinary review iteration, update a branch under review by
+   `git merge origin/main` and add commits — not by rebasing or amending what
+   the reviewer already read.** A re-review reads the `old..new` delta; merge
+   keeps the recorded head as an ancestor so that delta stays valid, while a
+   rebase erases the starting point and forces a full re-read on a round where
+   attention has already been spent. The two are equivalent for getting `main`
+   into a branch, and branch shape never reaches `main` — this repo squashes.
+   **This says nothing about when history may be rewritten**;
+   `~/.agents/AGENTS.md` owns that, including cases where it *requires* a
+   rewrite. If the owner's rule requires one, do it and **tell the reviewer their
+   recorded delta is void and a full re-review is needed** (2026-09-03, #410: a
+   head was recorded mid-follow-up, and appending left a one-commit delta).
 10. **Make the machine poorer rather than finding a stricter one.** Scarcity can
     be manufactured locally; abundance cannot. Reproducing a CI failure by
     removing what the local box has is faster and more faithful than reasoning
-    about what CI lacks.
+    about what CI lacks. (2026-09-03, #400: CI red and local green; pointing
+    `CC_REVERSE_PROXY_SRC` at a nonexistent path reproduced it locally at once.)
 11. **Stop adding control arms when the remaining failure mode is loud and
     immediate.** The counter-measure recurses — an arm is itself a check — and
     unbounded that is ritual, paid out of the attention the next real defect
