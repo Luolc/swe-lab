@@ -11,6 +11,7 @@ pub const USAGE: &str = "\
 usage:
   swe-lab-supervisor run \\
       --config <supervisor-config.json> \\
+      --actor-prompt <prompt.stream.json> \\
       --actor-event-log <actor.event_stream.jsonl> \\
       --supervisor-log <supervisor.jsonl> \\
       --summary <supervisor-summary.json> \\
@@ -21,7 +22,9 @@ usage:
   swe-lab-supervisor --help
 
 The actor argv after `--` is executed as given: it is never joined into a
-shell command, and the wrapper adds no flags of its own.";
+shell command, and the wrapper adds no flags of its own. The actor prompt
+file is written on the actor's stdin first, byte for byte, unread by the
+wrapper; the wrapper's own stdin is never read.";
 
 /// What the wrapper was asked to do.
 #[derive(Debug, PartialEq, Eq)]
@@ -41,6 +44,9 @@ pub enum Command {
 pub struct RunArgs {
     /// The schema-versioned, non-secret run settings.
     pub config: PathBuf,
+    /// The bytes written first on the actor's stdin, verbatim: the actor's
+    /// prompt, in whatever framing the actor takes.
+    pub actor_prompt: PathBuf,
     /// Where the actor's stdout lines are written, verbatim.
     pub actor_event_log: PathBuf,
     /// Where the supervisor's own account of the run is written.
@@ -92,6 +98,7 @@ where
     I: Iterator<Item = OsString>,
 {
     let mut config = None;
+    let mut actor_prompt = None;
     let mut actor_event_log = None;
     let mut supervisor_log = None;
     let mut summary = None;
@@ -108,6 +115,7 @@ where
         };
         let slot = match flag {
             "--config" => &mut config,
+            "--actor-prompt" => &mut actor_prompt,
             "--actor-event-log" => &mut actor_event_log,
             "--supervisor-log" => &mut supervisor_log,
             "--summary" => &mut summary,
@@ -129,6 +137,7 @@ where
     }
     Ok(Command::Run(RunArgs {
         config: required(config, "--config")?,
+        actor_prompt: required(actor_prompt, "--actor-prompt")?,
         actor_event_log: required(actor_event_log, "--actor-event-log")?,
         supervisor_log: required(supervisor_log, "--supervisor-log")?,
         summary: required(summary, "--summary")?,
@@ -153,6 +162,8 @@ mod tests {
         "run",
         "--config",
         "c.json",
+        "--actor-prompt",
+        "prompt.stream.json",
         "--actor-event-log",
         "events.jsonl",
         "--supervisor-log",
@@ -174,6 +185,7 @@ mod tests {
             panic!("not a run command");
         };
         assert_eq!(args.config, PathBuf::from("c.json"));
+        assert_eq!(args.actor_prompt, PathBuf::from("prompt.stream.json"));
         assert_eq!(args.summary, PathBuf::from("summary.json"));
         assert_eq!(
             args.actor_argv,

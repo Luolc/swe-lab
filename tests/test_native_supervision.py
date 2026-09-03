@@ -374,6 +374,73 @@ def test_a_well_formed_summary_reads_back_what_the_wrapper_wrote() -> None:
   assert summary.criterion_sha256 == CRITERION_SHA256
 
 
+_FIXTURES = Path(__file__).parent / "fixtures" / "native_supervision"
+
+
+@pytest.mark.parametrize(
+    "arm,expected",
+    [
+        (
+            "clean-exit",
+            {
+                "accounted_for": True,
+                "actor_exit_code": 3,
+                "supervisor_exit": "clean",
+            },
+        ),
+        (
+            "actor-signalled",
+            {
+                "accounted_for": True,
+                "actor_exit_code": 143,
+                "supervisor_exit": "clean",
+            },
+        ),
+        (
+            "cancelled",
+            {"accounted_for": False, "supervisor_exit": "terminated"},
+        ),
+        ("unclean", {"accounted_for": False, "supervisor_exit": "unclean"}),
+    ],
+)
+def test_a_summary_the_binary_wrote_reads_back_as_the_contract_says(
+    arm: str, expected: dict[str, Any]
+) -> None:
+  """Cross-language: summaries the Rust binary wrote, read by this reader.
+
+  One per way a launched run ends — the actor's own exit, the actor dying of
+  a signal (`128 + signal`, an integer here), the wrapper cancelled, and an
+  unclean ending — each produced by the real binary and committed under
+  `tests/fixtures/native_supervision/`; the crate's own test holds the
+  fixtures to the binary's field list, so a field renamed on either side
+  fails on both.
+
+  Args:
+    arm: The fixture's name.
+    expected: The fields that distinguish that ending, and their values.
+  """
+  summary = read_terminal_summary((_FIXTURES / f"{arm}.json").read_text())
+
+  assert isinstance(summary, TerminalSummary), summary
+  for name, value in expected.items():
+    assert getattr(summary, name) == value, name
+  assert len(summary.actor_event_log_sha256) == 64
+  assert len(summary.supervisor_log_sha256) == 64
+
+
+def test_a_refused_run_s_summary_is_unusable_and_says_which_field() -> None:
+  """A run refused before any actor existed has no exit code and no logs.
+
+  The binary writes their slots as `null`, and this reader, which requires
+  every field, reads that as unusable — the same verdict as no summary, which
+  is what a refused run is as evidence about supervision.
+  """
+  summary = read_terminal_summary((_FIXTURES / "refused.json").read_text())
+
+  assert isinstance(summary, UnusableSummary)
+  assert "actor_exit_code" in summary.reason
+
+
 @pytest.mark.parametrize(
     "raw,expected",
     [
