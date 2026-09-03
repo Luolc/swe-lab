@@ -27,10 +27,6 @@ from typing import Any
 import pytest
 
 from swe_lab.rollout import SUPERVISION_LAPSE_METRIC, SUPERVISION_METRIC
-from swe_lab.trace_synthesis.channel import (
-    BOUNDARIES_METRIC,
-    CORRECTIONS_METRIC,
-)
 from swe_lab.trace_synthesis.criterion import (
     CRITERION_PATH,
     CRITERION_SHA256,
@@ -52,6 +48,10 @@ from swe_lab.trace_synthesis.native_supervision import (
     SUPERVISION_STALE_METRIC,
     TerminalSummary,
     UnusableSummary,
+)
+from swe_lab.trace_synthesis.vocabulary import (
+    BOUNDARIES_METRIC,
+    CORRECTIONS_METRIC,
 )
 
 _SUPERVISION = NativeSupervision(

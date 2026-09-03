@@ -1205,7 +1205,7 @@ def test_the_supervised_script_carries_a_correction_to_a_stub_agent(
   (a listener, so the script's readiness probe passes). The pinned binaries are
   not in a plain image, and what is under test is the script that drives them.
   """
-  from swe_lab.harnesses.claude_code.harness import user_event_line
+  from swe_lab.harnesses.claude_code.convert import user_event_line
   from swe_lab.rollout import CodingAgentTask
   from swe_lab.sandbox.backends.host import DockerHostSandbox
   from swe_lab.trace_synthesis.channel import CorrectionChannel

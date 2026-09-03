@@ -11,11 +11,17 @@ the run's **values** cross the boundary, and each is here:
   flag. The binary refuses an unknown field rather than ignoring it, so the
   document this module renders is the schema, not a superset of it;
 - **two environment variables** — :data:`BASE_URL_ENV` and :data:`API_KEY_ENV`,
-  which carry *where the model is* and *how to authenticate to it*. They are
-  not in the document, and a document naming either is refused. They travel
-  into the sandbox by reference (the backend's ``pass_env``), exactly as the
-  actor's own credential does, so neither value reaches a command line, a
-  staged file or any artifact;
+  which carry *where the model is* and *how to authenticate to it*. Neither is
+  in the document, and a document naming either is refused. **They cross
+  asymmetrically, and that asymmetry is the credential boundary:**
+  :data:`API_KEY_ENV` travels by reference (the backend's ``pass_env``, see
+  :data:`SUPERVISOR_PASS_ENV`), so its value reaches no command line, staged
+  file or artifact; :data:`BASE_URL_ENV` is exported by the harness, because it
+  addresses a forwarder the harness itself starts inside the sandbox and no
+  such value exists on the host to forward. Passing the endpoint in would make
+  it host-settable — and since the supervisor's requests carry the credential,
+  a stray same-named variable could then aim an authenticated request at any
+  host;
 - **the terminal summary** — what the wrapper writes at the end, and the only
   thing a run may be classified from. Not the exit status, in **either**
   direction: a wrapper that ran cleanly exits with the *actor's* status, so
@@ -40,11 +46,17 @@ assert the deliberately broken ones refused — needs the binary as a runnable
 artifact and is a follow-up (task 21 §7a). Until it exists, adding a field here
 means reading ``config.rs`` again.
 
-**Nothing here is wired.** This module renders a document, names two
-variables, and reads a summary; declaring the binary as an asset, starting the
-second capture-proxy instance that terminates TLS for it, handing over the
-actor's argv and reporting the metrics below onto a record are the wiring's,
-and land with it.
+**The binary is not yet an asset, and no run can reach it.**
+``ClaudeCodeHarness`` renders this document, starts the second capture-proxy
+instance that terminates TLS for the wrapper, hands over the actor's argv, and
+installs :class:`NativeSupervisionObserver` to classify the run from the
+summary. Two things are still missing, and together they are the switch rather
+than the polish: **nothing places the binary** (no ``AgentAsset`` names it, and
+no code reads any override naming a local build), and **no workflow definition
+passes** ``native_supervision=``. Until both exist there is no configuration
+that produces a natively supervised rollout; a run that tried would stop at the
+script's ``--version`` probe with exit 78, which is the intended refusal rather
+than a silent unsupervised run. Both are task 21 §3a.
 
 **This runtime is deliberately not the Python one's twin.** The owner's ruling
 on [#375] is that the native runtime fixes the three defects the replay
@@ -65,12 +77,13 @@ import dataclasses
 import enum
 import json
 import pathlib
-from typing import Any
+from typing import Any, override
 
 from swe_lab.rollout import SUPERVISION_LAPSE_METRIC, SUPERVISION_METRIC
+from swe_lab.sandbox import Contribution, SandboxFs, SandboxObserver
 
-from .channel import BOUNDARIES_METRIC, CORRECTIONS_METRIC
 from .criterion import CRITERION_PATH, load_criterion
+from .vocabulary import BOUNDARIES_METRIC, CORRECTIONS_METRIC
 
 #: The one config schema the pinned binary reads. It refuses any other version
 #: rather than reading what it recognizes, so this moves only together with the
@@ -122,6 +135,26 @@ API_KEY_ENV = "SWE_LAB_SUPERVISOR_API_KEY"
 #: because it is the one supervisor variable that must **not** be scrubbed from
 #: the actor — the two above still are.
 MARK_ENV = "SWE_LAB_SUPERVISOR_MARK"
+
+#: The variable names a sandbox running the wrapper must inherit **by
+#: reference** — the backend's ``pass_env``, which passes a name and lets the
+#: value cross without a rendered form.
+#:
+#: :data:`BASE_URL_ENV` is deliberately **not** in it. The endpoint is not a
+#: host secret to forward: it is the loopback address of a forwarder the
+#: harness itself starts inside the sandbox, so the harness is the only party
+#: that knows it and it exports the value directly. A host variable of that
+#: name would name something else and would silently take precedence.
+#:
+#: That exclusion is a **security** property, not environment hygiene. The
+#: supervisor sends its requests *with the credential attached*, so an endpoint
+#: the host environment can rewrite is an endpoint a stray same-named variable
+#: can point at any host it likes — a request carrying ``Authorization`` sent
+#: somewhere we did not choose. That is the shape of credential exfiltration,
+#: not of dialling the wrong address. Pinning the endpoint in the harness makes
+#: "the credential only ever reaches the loopback forwarder we started" true by
+#: construction.
+SUPERVISOR_PASS_ENV: tuple[str, ...] = (API_KEY_ENV,)
 
 #: The one terminal-summary schema this consumer reads.
 SUMMARY_SCHEMA_VERSION = 1
@@ -179,9 +212,10 @@ class Blocking(enum.StrEnum):
 
 #: The fields whose Rust type is not a number, and the JSON type each must
 #: have. Checked through :func:`getattr` like the numeric ones rather than off
-#: the attributes directly: the annotations already say ``str`` and ``bool``,
-#: and the point of the check is the caller who is not type-checked — a
-#: downstream consumer, or ``dataclasses.replace``, which takes ``Any``.
+#: the attributes directly: the annotations already say ``str`` and
+#: ``Blocking``, and the point of the check is the caller who is not
+#: type-checked — a downstream consumer, or ``dataclasses.replace``, which
+#: takes ``Any``.
 NON_NUMERIC_FIELDS: Mapping[str, type] = {
     "model": str,
     "block_actor_while_judging": Blocking,
@@ -616,3 +650,65 @@ def supervision_metrics(
   if summary.stale_verdicts_discarded:
     metrics[SUPERVISION_STALE_METRIC] = float(summary.stale_verdicts_discarded)
   return metrics
+
+
+@dataclasses.dataclass
+class NativeSupervisionObserver(SandboxObserver):
+  """Turn the wrapper's terminal summary into the run's supervision metrics.
+
+  The summary is the **only** input. The wrapper exits with the actor's own
+  status when it ran cleanly, so a supervised run that supervised nothing can
+  exit ``0``; classifying from the exit status would let exactly the run this
+  metric exists to catch through as an ordinary result.
+
+  Fail-closed in the absent case too, and that is the case that matters most:
+  no summary, unreadable summary, or one written against a schema this reader
+  does not know all report :data:`~swe_lab.rollout.SUPERVISION_METRIC`. A
+  wrapper that died before writing one supervised an unknown amount of the
+  run, and "we cannot say" has to reach the outside as a failure rather than
+  as silence — an unsupervised success is kept as data, while a failure is
+  discarded.
+
+  Single-run, like every stateful observer: construct a fresh one per run.
+
+  Attributes:
+    summary: What the wrapper reported, once ``before_destroy`` has read it;
+      ``None`` while it has not run. An :class:`UnusableSummary` here names why
+      the run could not be accounted for, which the metric alone does not say.
+  """
+
+  summary: TerminalSummary | UnusableSummary | None = None
+
+  @override
+  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
+    """Read the summary back and report what it says about the run.
+
+    Args:
+      sb: The live sandbox, read for the summary file before it is destroyed
+        with the container.
+
+    Returns:
+      The run's supervision metrics. Never ``None``: a supervised run always
+      says something about its own supervision, and the case with nothing to
+      report is the one that must report the most.
+    """
+    summary: TerminalSummary | UnusableSummary
+    if not sb.exists(SUPERVISOR_SUMMARY_NAME):
+      summary = read_terminal_summary(None)
+    else:
+      try:
+        # **Strict**, and that is the point. Replacing bad bytes with U+FFFD
+        # only guarantees an unusable summary when the damage lands somewhere
+        # the parser looks: a complete, valid summary carrying one bad byte in
+        # a field this reader ignores decodes cleanly and reports healthy. A
+        # file we cannot decode is a file we cannot vouch for, wherever in it
+        # the damage fell.
+        raw = sb.read(SUPERVISOR_SUMMARY_NAME).decode("utf-8")
+      except UnicodeDecodeError as error:
+        summary = UnusableSummary(
+            reason=f"the terminal summary is not UTF-8: {error!r}"
+        )
+      else:
+        summary = read_terminal_summary(raw)
+    self.summary = summary
+    return Contribution(metrics=supervision_metrics(summary))
