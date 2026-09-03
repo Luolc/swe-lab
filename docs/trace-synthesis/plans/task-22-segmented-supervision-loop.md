@@ -374,33 +374,18 @@ guard checks the wire. What the bring-up run adds is the **live control arm** of
 §6.3, plus the transcript leg's agreement with the driver's seam count, plus the
 first §5 latency numbers on a real task.
 
-## 7. The ADR and the spec reconciliation, in this task's PR
+## 7. No ADR, and why not
 
-**An ADR, because ADR-0013 decided *the* delivery channel and this adds a second
-carrier** — a decision, not an implementation detail. It states three things:
+One was written — a second carrier beside ADR-0013, plus a dated addendum to
+`spec.md` §6 recording the owner's relaxation of criterion (b) — and **dropped
+unwritten to `main` on the owner's 2026-09-03 ruling**: the spec tension it
+argued is not something he wants time spent on, and the acceptance for this task
+is a loop that runs.
 
-1. the owner's 2026-09-03 relaxation of criterion **(b)**, its reasoning (this
-   is SFT data generation and post-processing is rich, so a trace need not match
-   the shape an interactive user produces), and who ruled it;
-2. the one requirement that was **not** relaxed;
-3. **why this path does not trip §7's disqualifier** — and precisely on the
-   right ground: **because it does not produce the artifact**, not because (a)
-   was relaxed. (a) was not relaxed; (b) was.
-4. **that the wire assertion is a load-bearing part of that argument**, because
-   the argument depends on the behaviour of an undocumented flag: an argument
-   resting on such a behaviour has to carry a check that fails when the
-   behaviour changes, and §6.3 is that check.
-5. **what is gated**, in the §6.4 wording, which the ADR **points at rather
-   than restates** — that section is its only home, and PR #412's report links
-   to the same place.
-
-**And `spec.md` §6 is reconciled in the same PR**, because it currently says the
-synthetic assistant turn is *"the single artifact that disqualifies the
-stop-and-resume path"* — the reverse of the sentence this task is built on.
-Per `AGENTS.md` and `docs/evidence.md` rule 4, the fix is a **dated, attributed
-addendum**, never an edit to the existing text.
-
----
+Recorded here rather than silently omitted, because "no ADR" and "nobody thought
+about an ADR" look identical afterwards. If one is wanted later it should be
+written against what the bring-up run actually shows, not against the design as
+imagined.
 
 ## 8. Known limitation, carried here and pointed at from task 12
 
@@ -428,7 +413,6 @@ pointer here, so the fact does not fall between the two tasks.
 | `tests/test_segmented_loop.py` | the loop against a fake `SandboxFs` (`sandbox/testing.py` already scripts successive `run_script` results) |
 | `tests/test_transcript_marks.py` | the two arms, plus the forged-record limitation asserted |
 | `tests/data/assistant_record_shapes.json` | the committed shape fixture |
-| `docs/decisions/ADR-00NN-…md` | §7 |
 | this file + its row in `README.md` | |
 
 **Extended**
@@ -439,7 +423,6 @@ pointer here, so the fact does not fall between the two tasks.
 | `trace_synthesis/supervisor.py` | `Verdict.deviation_started_at_turn` (optional, defaulted) |
 | `trace_synthesis/judge.py` | `ModelJudge.locate_deviation` (default `False`, prompt byte-identical when off) |
 | `workflow/definitions.py` | one `SEGMENTED_ROLLOUT` definition, `capture="proxy"` and `cooldown=0` |
-| `docs/trace-synthesis/spec.md` | §7's addendum |
 | `docs/trace-synthesis/plans/README.md` | task 12's pointer (§8) |
 
 **Not touched:** `channel.py` and every caller; `rust/`;
@@ -450,32 +433,23 @@ pointer here, so the fact does not fall between the two tasks.
 
 ## 10. Order of work
 
-1. The transcript leg and its two arms (§6.6), including the control-arm
-   falsification run. Depends on nothing else. **Done** — 7 tests; the mutant
-   that reports every record fails exactly `test_a_real_assistant_record_is_not_reported`
-   and `test_records_of_other_types_are_never_reported`, 5 passing.
-2. `SegmentedSupervision` + `actor_argv` + `__post_init__`, unit-tested against
-   the scripted fake sandbox — no container, no model.
-3. The loop, its caps and the seam record, same level.
-4. `Verdict` / `ModelJudge` opt-in (§5), with the byte-identity control test.
-   **Shared code: the diff is reviewed before it lands.**
-5. The ADR and the spec addendum (§7).
-6. The workflow definition, and **one** bring-up run: **1 instance × 1
-   rollout**, this task's ceiling and tighter than the repo's own ask-first
-   line. It answers, in one go: does the pinned 2.1.212 build compose the flags;
-   does the seam produce the records the report measured; does the guard's live
-   control arm hold (§6.3); does the transcript leg agree
-   with the driver's seam count (§6.6); and what the §5 latency distribution
-   looks like over one real task.
-
----
-
-**Phase 2 — the provenance gate (§6.4), which the training delivery waits on
-and the bring-up does not.** Conditions 1-4: annotate at the
-trace → `conversation.json` boundary, fail the run when provenance cannot be
-established, reconcile against the captured API responses, and one end-to-end
-test from a real dirty-seam fixture asserting both arms. Until it is green, a
-trace this loop produces is a run artifact and **not** training data.
+1. **Done** — the transcript leg and its two arms (§6.6). The mutant that
+   reports every record fails exactly `test_a_real_assistant_record_is_not_reported`
+   and `test_records_of_other_types_are_never_reported`; 5 tests stay green.
+2. **Done** — `SegmentedSupervision`, `actor_argv`, the `__post_init__` refusal,
+   unit-tested against a scripted fake sandbox: no container, no model.
+3. **Done** — the loop, its three ceilings, and the per-segment account.
+4. **Done, reviewed before landing** — `Verdict` / `ModelJudge` opt-in (§5) with
+   the byte-identity control test, and the `bool`-subclasses-`int` case that
+   fails if the check is "corrected" to `isinstance`.
+5. **Done** — the `segmented_rollout` definition, and the seam checks de-gated
+   per the callout: recorded, never enforced.
+6. **The bring-up run: 1 instance × 1 rollout**, this task's ceiling and tighter
+   than the repo's own ask-first line. **Its acceptance is the two points in the
+   callout and nothing else**: the loop completes, and there is quoted evidence
+   that an injected message reached the actor's context and its next behaviour
+   matches. Latency, cost and seam shape are recorded if they fall out and hold
+   nothing up.
 
 ## 11. Where the brief was wrong, and how each was ruled
 
