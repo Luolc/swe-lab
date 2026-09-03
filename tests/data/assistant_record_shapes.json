@@ -1,0 +1,143 @@
+{
+  "kind": "assistant-record-shapes",
+  "source": "shapes reduced from a resumed session transcript by the resume-loop feasibility experiment (PR #412, exp/resume-loop-feasibility, runs/assistant-record-shapes.json); the transcript itself is host-private and not committed",
+  "note": "Shapes only: key names, the model field and block types. No message content, no ids, no paths. The two arms of the model-authored filter are built from these key lists, so a record shape that drifts fails the tests rather than silently changing what the filter keeps.",
+  "real_assistant_examples": [
+    {
+      "record_keys": [
+        "apiBlockIndex",
+        "cwd",
+        "effort",
+        "entrypoint",
+        "gitBranch",
+        "isSidechain",
+        "message",
+        "parentUuid",
+        "requestId",
+        "sessionId",
+        "timestamp",
+        "type",
+        "userType",
+        "uuid",
+        "version"
+      ],
+      "message_keys": [
+        "content",
+        "diagnostics",
+        "id",
+        "model",
+        "role",
+        "stop_details",
+        "stop_reason",
+        "stop_sequence",
+        "type",
+        "usage"
+      ],
+      "model": "claude-sonnet-5",
+      "has_requestId": true,
+      "has_apiBlockIndex": true,
+      "has_effort": true,
+      "has_isApiErrorMessage": false,
+      "content_block_types": [
+        "thinking"
+      ]
+    },
+    {
+      "record_keys": [
+        "apiBlockIndex",
+        "cwd",
+        "effort",
+        "entrypoint",
+        "gitBranch",
+        "isSidechain",
+        "message",
+        "parentUuid",
+        "requestId",
+        "sessionId",
+        "timestamp",
+        "type",
+        "userType",
+        "uuid",
+        "version"
+      ],
+      "message_keys": [
+        "content",
+        "diagnostics",
+        "id",
+        "model",
+        "role",
+        "stop_details",
+        "stop_reason",
+        "stop_sequence",
+        "type",
+        "usage"
+      ],
+      "model": "claude-sonnet-5",
+      "has_requestId": true,
+      "has_apiBlockIndex": true,
+      "has_effort": true,
+      "has_isApiErrorMessage": false,
+      "content_block_types": [
+        "tool_use"
+      ]
+    }
+  ],
+  "synthetic_assistant_examples": [
+    {
+      "record_keys": [
+        "cwd",
+        "entrypoint",
+        "gitBranch",
+        "isApiErrorMessage",
+        "isSidechain",
+        "message",
+        "parentUuid",
+        "sessionId",
+        "timestamp",
+        "type",
+        "userType",
+        "uuid",
+        "version"
+      ],
+      "message_keys": [
+        "container",
+        "content",
+        "context_management",
+        "diagnostics",
+        "id",
+        "model",
+        "role",
+        "stop_details",
+        "stop_reason",
+        "stop_sequence",
+        "type",
+        "usage"
+      ],
+      "model": "<synthetic>",
+      "has_requestId": false,
+      "has_apiBlockIndex": false,
+      "has_effort": false,
+      "has_isApiErrorMessage": true,
+      "content_block_types": [
+        "text"
+      ]
+    }
+  ],
+  "counts": {
+    "real": 8,
+    "synthetic": 1
+  },
+  "domain": {
+    "applies_to": "the actor's own session transcript records",
+    "does_not_apply_to": "the harness stream-json event stream",
+    "why": "the event stream carries no requestId, so the positive chain would drop every assistant record it saw",
+    "measured": {
+      "capture": "~/corpora/swe-lab/first-e2e-2026-09-02/r0/rollout/a0/claude_code.event_stream.jsonl",
+      "when": "2026-09-03",
+      "assistant_events": 59,
+      "assistant_events_with_requestId": 0,
+      "distinct_assistant_message_ids": 32,
+      "result_num_turns": 32
+    }
+  }
+}
