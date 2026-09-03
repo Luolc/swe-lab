@@ -78,11 +78,14 @@ class Arm:
     name: Directory name under `runs/`.
     n: Assistant messages per batch, or `None` for "every event" (today).
     window: How many admitted records the judge sees.
+    budget: How many corrections this arm may deliver. Only the post-hoc
+      control arm moves it; see `PREREGISTRATION.md`.
   """
 
   name: str
   n: int | None
   window: int = WINDOW
+  budget: int = BUDGET
 
 
 # The pre-registered arms, in the pre-registered execution order.
@@ -94,6 +97,14 @@ ARMS: tuple[Arm, ...] = (
     Arm("n6", 6),
     Arm("n10", 10),
     Arm("n10_w15", 10, window=15),
+    # Added after both registered passes had run, and labelled post-hoc in
+    # PREREGISTRATION.md. It is the repo's own control arm
+    # (`definitions.CONTROL_BUDGET`): every event is a boundary, so it differs
+    # from `replicate` only in whether speech happened, and it never speaks, so
+    # it differs from `n1` only in the boundary set. It changes no registered
+    # reading; it exists to separate two differences the registered arms move
+    # together.
+    Arm("replicate_budget0", None, budget=0),
 )
 
 
@@ -548,7 +559,7 @@ def cmd_run(args: argparse.Namespace) -> None:
     policy = supervising_policy(
         model=MODEL,
         transport=transport,
-        budget=BUDGET,
+        budget=arm.budget,
         cooldown=COOLDOWN,
         window=arm.window,
     )
@@ -577,7 +588,7 @@ def cmd_run(args: argparse.Namespace) -> None:
                 "pass": args.pass_id,
                 "n": arm.n,
                 "window": arm.window,
-                "budget": BUDGET,
+                "budget": arm.budget,
                 "cooldown": COOLDOWN,
                 "model_requested": MODEL,
                 "criterion_digest": policy.criterion.digest,

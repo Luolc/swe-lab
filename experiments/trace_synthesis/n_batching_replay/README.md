@@ -31,7 +31,7 @@ every claim here.
 ## How to run
 
 ```sh
-cd experiments/trace_synthesis/n_batching_replay
+cd "$(git rev-parse --show-toplevel)/experiments/trace_synthesis/n_batching_replay"
 
 # Deterministic, no model calls, no credentials:
 uv run python replay.py shape        # batch shape of every N

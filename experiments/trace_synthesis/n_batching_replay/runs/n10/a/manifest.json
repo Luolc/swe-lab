@@ -1,0 +1,21 @@
+{
+  "arm": "n10",
+  "pass": "a",
+  "n": 10,
+  "window": 8,
+  "budget": 3,
+  "cooldown": 4,
+  "model_requested": "anthropic/claude-sonnet-5",
+  "criterion_digest": "ffb2dadfe2b36eb3f44f28c4282a8d51e84e1c943558500787cbb0518e2900a1",
+  "criterion_overlap_checked": false,
+  "task_sha256": "3f42ec7175e3e9bde43eb2fee6e5a740df46703e34c967690f3315f84e8af83a",
+  "task_chars": 3339,
+  "corpus": "/home/ubuntu/corpora/swe-lab/first-e2e-2026-09-02/r0/rollout/a0",
+  "event_stream_sha256": "28abd03ea8d67aa6b313396db9da71f5cb6010ebb9a45a558267cd40d1f55403",
+  "events": 170,
+  "boundaries": 5,
+  "git_sha": "39be140-dirty",
+  "started": "2026-09-03T03:34:19.816911+00:00",
+  "finished": "2026-09-03T03:34:46.299971+00:00",
+  "wall_seconds": 26.5
+}

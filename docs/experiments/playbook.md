@@ -637,6 +637,7 @@ code-quality hooks), grouped by workstream:
 | [trace_synthesis/handmade_instance](../../experiments/trace_synthesis/handmade_instance/) | Full experiment (README + REPORT) | [trace synthesis](../trace-synthesis/) |
 | [trace_synthesis/injection_shape](../../experiments/trace_synthesis/injection_shape/) | Full experiment (README + REPORT) | [trace synthesis](../trace-synthesis/) |
 | [trace_synthesis/instance_screening](../../experiments/trace_synthesis/instance_screening/) | Full experiment (README + REPORT) | [trace synthesis](../trace-synthesis/) / [W3](../workstreams/w3-quality-audit/) |
+| [trace_synthesis/n_batching_replay](../../experiments/trace_synthesis/n_batching_replay/) | Full experiment (README + PREREGISTRATION + REPORT) | [trace synthesis](../trace-synthesis/) |
 
 ## Future: codify this as a skill
 

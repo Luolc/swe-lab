@@ -126,3 +126,39 @@ it is a lower bound on the error class by construction, not by bad luck.
   **would say** on this trajectory; it cannot say what an actor would then do.
 - n = 1 trajectory, 1 instance, 1 actor model, 1 supervisor model.
 - No `N` is selected here.
+
+---
+
+## Amendment 1 — a control arm added after both passes had run
+
+**This amendment was written with both passes' outcomes known.** Recorded that
+way because a rule changed after the data exists is not the same object as one
+frozen before it, and calling it one would be self-certifying.
+
+**What was known when it was written.** Both registered passes had completed.
+Every batched arm had produced zero `off_track` verdicts in 201 answered
+judgments across 12 runs, while `replicate` produced 219 in 280 across 2. The
+prior action set is **not** empty: this arm exists because of that result.
+
+**What it adds.** One arm, `replicate_budget0`: a boundary at every event, as
+`replicate`, and `budget = 0`, which is the repo's own control
+(`workflow.definitions.CONTROL_BUDGET` — it judges every boundary and speaks at
+none). It moves `budget`, which the brief froze; nothing else.
+
+**Why, stated as the thing it separates.** `replicate` and the batched arms
+differ in **two** ways at once — the set of boundaries judged, and whether the
+supervisor had spoken, which puts its own prior corrections into the judge's
+prompt. No registered arm varies one at a time, so the registered design cannot
+attribute the difference to either. `replicate_budget0` differs from
+`replicate` only in the second, and from `n1` only in the first.
+
+**What it may not do.** It changes no reading in the frozen list, adds no free
+parameter, and selects no `N` — there is still no rule by which an `N` wins. It
+is reported as its own arm, never pooled with the registered seven, and every
+sentence that rests on it says so.
+
+**What was considered and rejected:** leaving the confound as an open question
+and shipping the registered arms alone. Rejected because the headline reading —
+zero corrections at every `N ≥ 1` — is uninterpretable without it: a reader
+cannot tell batching from the feedback loop, and the missing arm costs ~$2.6.
+The confound is stated in `REPORT.md` either way.
