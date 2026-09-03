@@ -29,16 +29,20 @@ from swe_lab.trace_synthesis.supervisor import (
     PolicyLapseError,
     SpeakAt,
     SpeakWhenOffTrack,
+    Unjudged,
     Verdict,
 )
 
 
-def observation(cursor: int, *, records: int = 0) -> Observation:
+def observation(cursor: int, *, records: int = 1) -> Observation:
   """Build an observation at a cursor.
 
   Args:
     cursor: How many events have been consumed.
-    records: How many evidence records to synthesize.
+    records: How many evidence records to synthesize. One by default, because
+      a boundary with none is not judged at all — a separate invariant, with
+      its own test below — and every gate here is about a boundary that *is*
+      judged.
 
   Returns:
     An observation a policy can be handed.
@@ -195,8 +199,8 @@ def test_an_actor_already_recovering_is_left_alone() -> None:
 def test_budget_zero_speaks_nothing_and_still_marks_every_deviation() -> None:
   """The marker is recorded before the budget is consulted.
 
-  So the control arm judges every boundary and records where it would have
-  spoken; what that buys is stated once, at
+  So the control arm judges every boundary it has evidence for and records
+  where it would have spoken; what that buys is stated once, at
   `workflow.definitions.CONTROL_BUDGET`.
   """
   speaker, _, _ = policy(OFF_TRACK, budget=0)
@@ -207,8 +211,12 @@ def test_budget_zero_speaks_nothing_and_still_marks_every_deviation() -> None:
   assert [marker.cursor for marker in speaker.markers] == [1, 2, 3, 4, 5]
 
 
-def test_the_judge_runs_at_every_boundary_with_no_budget_to_speak() -> None:
+def test_the_judge_runs_at_every_evidence_bearing_boundary_unbudgeted() -> None:
   """Gate order: judgement precedes the budget, so `budget=0` still judges.
+
+  Every boundary this fixture builds carries a record, which is the whole
+  population the claim is about: a boundary with none is not judged in either
+  arm, and that is pinned separately above.
 
   Call counts only, on the policy alone — no arm is built here. What matched
   judge calls buy a comparison is stated once, at
@@ -255,6 +263,33 @@ def test_the_cooldown_separates_later_interventions() -> None:
   assert too_soon is None
   assert far_enough is not None
   assert len(speaker.markers) == 3
+
+
+def test_a_boundary_with_no_evidence_is_never_put_to_the_judge() -> None:
+  """The judge is not consulted when the window holds nothing.
+
+  What is pinned is the *absence of the call*, not a silent answer: a judge
+  handed zero records still answers, and that answer is about a record it was
+  never shown. Observed rather than imagined — the first end-to-end run's
+  first correction was written at a boundary with zero admitted records, and
+  the actor rebutted it.
+
+  The accounting is pinned with it: such a boundary produces no
+  would-have-spoken marker, spends no budget and starts no cooldown, so the
+  first boundary that does carry evidence is still spoken at.
+  """
+  speaker, judge, writer = policy(OFF_TRACK, budget=1, cooldown=4)
+
+  empty = [speaker.consider(observation(index, records=0)) for index in (1, 2)]
+
+  assert judge.calls == []
+  assert writer.calls == 0
+  assert all(isinstance(one, Unjudged) for one in empty)
+  assert speaker.markers == ()
+  # The budget is whole and the cooldown never started, so the first boundary
+  # carrying evidence is judged and spoken at.
+  assert speaker.consider(observation(3)) is not None
+  assert [marker.cursor for marker in speaker.markers] == [3]
 
 
 def test_the_judge_sees_only_the_window() -> None:

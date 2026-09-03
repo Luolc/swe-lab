@@ -34,9 +34,10 @@ you, because the difference is the whole of what you are inheriting:
   (What has been checked in-sandbox is the *fold* of an injected block,
   [`sandbox_fold_check/`](../../experiments/trace_synthesis/sandbox_fold_check/REPORT.md);
   the live channel itself has not.) [Task 18](plans/README.md) is throughput:
-  the supervisor judges each boundary with a synchronous model call and ran on
-  after the actor stopped, at **~6.6 s per boundary** on the one run measured
-  (170 boundaries). At that rate roughly **547** boundaries fit inside
+  the supervisor judges each evidence-bearing boundary with a synchronous model
+  call and ran on after the actor stopped, at **~6.6 s per boundary** on the one
+  run measured (170 boundaries, every one of them judged — that run predates the
+  empty-window skip). At that rate roughly **547** boundaries fit inside
   `_AGENT_TIMEOUT_S = 3600`, so an instance with enough boundaries **can** hit
   the wall clock because supervision could not keep up — a merely busier
   instance need not; the rate itself is one point and moves with the actor,

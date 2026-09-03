@@ -299,11 +299,19 @@ they are exactly the ones a post-hoc reading would be tempted to soften:
   sources — the policy genuinely saw no off-track boundary, or delivery was
   broken — and **the number alone does not separate them.** Read it against
   `supervision.boundaries`, which `PREREGISTRATION.md` §6 readout 2 reports
-  beside it: `boundaries > 0` with `corrections == 0` is "judged every
-  boundary and stayed silent," which can be legitimate; `boundaries == 0` is
-  "nothing was ever judged," which is not a supervised run at all. **A
-  supervised run that spoke zero times has to be adjudicated in the report;
-  it is never written down as an ordinary result.** Out of
+  beside it: `boundaries == 0` is "nothing was ever judged," which is not a
+  supervised run at all. **`boundaries > 0` with `corrections == 0` no longer
+  means "judged every boundary and stayed silent"** — it did when this bullet
+  was written, and since [#379](https://github.com/luolc/swe-lab/pull/379) it
+  does not: a boundary whose evidence window is empty consults no judge and is
+  still counted here, so the two numbers cannot tell "judged and found nothing"
+  from "never judged". **The account is what separates them.** Open the run's
+  `supervisor.jsonl` and read the `kind` field: a `silent` row is a judgement
+  that found nothing, an `unjudged` row is a boundary nothing was judged at
+  (its `reason` says why). Silence over judged boundaries can be legitimate; a
+  run whose rows are all `unjudged` reports `boundaries > 0` and was never
+  judged at all. **A supervised run that spoke zero times has to be adjudicated
+  in the report; it is never written down as an ordinary result.** Out of
   [#353](https://github.com/luolc/swe-lab/pull/353), whose own failure was
   failure-closed and would have surfaced as `SUPERVISION_FAILED` — but whose
   shape is general: **the treatment arm collapsing silently into the control

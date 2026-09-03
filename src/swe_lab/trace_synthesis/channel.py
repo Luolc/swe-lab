@@ -61,10 +61,19 @@ from .supervisor import (
     Supervisor,
 )
 
-#: How many actor events the supervisor was consulted about. For a policy that
-#: judges every boundary this is also its judge-call count, which is what a
-#: supervised run costs *beyond* the actor — measured separately because the
-#: repo's per-rollout cost figure is the actor's alone.
+#: How many actor events the supervisor was consulted about — one per row of
+#: the account, which is what makes ``boundaries == 0`` read as "never
+#: supervised" rather than "supervised and quiet".
+#:
+#: **Not the judge-call count.** A boundary whose evidence window is empty
+#: consults no judge and is recorded as
+#: :data:`~swe_lab.trace_synthesis.supervisor.LOG_KIND_UNJUDGED`, so for the
+#: shipped policy this count is an *upper bound* on the calls a supervised run
+#: pays for beyond the actor. The gap is those rows and is read off the
+#: account, which is also the only place a `boundaries > 0, corrections == 0`
+#: run says which of "judged and stayed silent" and "never judged" it was.
+#: Counted separately from the actor because the repo's per-rollout cost figure
+#: is the actor's alone.
 BOUNDARIES_METRIC = "supervision.boundaries"
 
 #: How many corrections were delivered. Never absent on a supervised run, so
@@ -384,8 +393,10 @@ class SupervisedRun(SandboxObserver):
 
     A gap and a silence are both ``None`` back from ``observe``, and they mean
     opposite things: one is a decision, the other is a boundary that went
-    unjudged or a correction that was never delivered. Read here because the
-    log is where the supervisor already tells them apart.
+    unsupervised or a correction that was never delivered. Read here because
+    the log is where the supervisor already tells them apart — as it does the
+    third ``None``, a boundary the policy took no decision at, which is neither
+    a decision nor a failure and is counted as neither.
 
     A lapse is the third thing, and it is counted rather than latched: the
     policy named the boundary it could not cover and asserted the next one is

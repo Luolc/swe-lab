@@ -12,6 +12,7 @@ import dataclasses
 import pytest
 
 from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
+from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
 from swe_lab.trace_synthesis.supervisor import (
     evidence_of,
     Intervention,
@@ -20,7 +21,9 @@ from swe_lab.trace_synthesis.supervisor import (
     NeverSpeak,
     Observation,
     PolicyLapseError,
+    SpeakWhenOffTrack,
     Supervisor,
+    Verdict,
 )
 
 # Exactly what a policy may see. Adding a field to Observation must fail this
@@ -503,6 +506,53 @@ def test_a_failing_sink_mutes_but_never_ends_the_run() -> None:
   assert [r["kind"] for r in rows] == ["gap", "gap"]
   assert "broken pipe" in str(rows[0]["reason"])
   assert "not attempted" in str(rows[1]["reason"])
+
+
+def test_a_boundary_with_no_evidence_is_recorded_as_unjudged_not_silent() -> (
+    None
+):
+  """A boundary nothing was judged at is not written as a judgement.
+
+  Two facts, and the log has to keep them apart: the judge said the actor is
+  on track, and the judge was never asked. Recorded as one kind they cannot be
+  told apart afterwards, and a reader counting silences would read boundaries
+  the supervisor never looked at as ones it covered.
+
+  Driven through the real policy, so the claim is about the shipped path: the
+  first event carries no actor record, and the judge is not called for it.
+  """
+  asked: list[Observation] = []
+
+  def spy(observation: Observation, criterion: Criterion) -> Verdict:
+    del criterion
+    asked.append(observation)
+    return Verdict(off_track=False, self_correcting=False, reason="fine")
+
+  def never_written(observation: Observation, criterion: Criterion) -> str:
+    del observation, criterion
+    raise AssertionError("the writer must not be reached")
+
+  rows: list[dict[str, object]] = []
+  supervisor = Supervisor(
+      policy=SpeakWhenOffTrack(
+          judge=spy,
+          writer=never_written,
+          criterion=load_criterion(),
+          budget=1,
+      ),
+      task="the task",
+      sink=lambda _: None,
+      log=lambda row: rows.append(dict(row)),
+  )
+  _ = supervisor.observe({"type": "system", "subtype": "init"})
+  _ = supervisor.observe(assistant_event("I will run the tests"))
+
+  assert [r["kind"] for r in rows] == ["unjudged", "silent"]
+  assert "no actor evidence" in str(rows[0]["reason"])
+  # The judge saw the second boundary only, and the first is accounted for
+  # without it.
+  assert len(asked) == 1
+  assert rows[0]["cursor"] == 1
 
 
 def test_the_log_accounts_for_every_event() -> None:

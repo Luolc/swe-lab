@@ -72,6 +72,20 @@ LOG_KIND_LAPSE = "lapse"
 #: a consumer counts these to say what the run's supervision cost and did.
 LOG_KIND_SPOKE = "spoke"
 
+#: The log row for a boundary the policy **decided** to stay quiet at. It is a
+#: judgement: the policy looked at this boundary and had nothing to say.
+LOG_KIND_SILENT = "silent"
+
+#: The log row for a boundary where **no decision was taken at all**, for a
+#: reason the policy names (:class:`Unjudged`). Separate from
+#: :data:`LOG_KIND_SILENT` on purpose: one row meaning both "judged, nothing
+#: was wrong" and "nothing was judged" cannot be read either way, and a
+#: consumer counting silences as coverage would over-count what the run's
+#: supervision actually looked at. Not a failure either — a lapse is a
+#: boundary that should have been covered and was not, this is one there was
+#: nothing to cover at.
+LOG_KIND_UNJUDGED = "unjudged"
+
 #: Where a correction is written. A borrowed callable — see the module note.
 Sink = Callable[[str], None]
 
@@ -134,6 +148,22 @@ class Intervention:
 
 
 @dataclasses.dataclass(frozen=True)
+class Unjudged:
+  """No decision was taken at this boundary, and why.
+
+  Returned instead of ``None`` so the two can be told apart downstream:
+  ``None`` is a judgement that came out silent, and this is the absence of a
+  judgement. The supervisor records it as :data:`LOG_KIND_UNJUDGED` with the
+  reason, never as a silence.
+
+  Attributes:
+    reason: Why no decision was taken, in the policy's own words.
+  """
+
+  reason: str
+
+
+@dataclasses.dataclass(frozen=True)
 class Observation:
   """Everything a policy is allowed to see.
 
@@ -186,15 +216,18 @@ class SpeakPolicy(Protocol):
     """
     ...
 
-  def consider(self, observation: Observation) -> Intervention | None:
+  def consider(
+      self, observation: Observation
+  ) -> Intervention | Unjudged | None:
     """Decide whether to speak at this point.
 
     Args:
       observation: What the actor has produced so far, and the criterion.
 
     Returns:
-      What to say, or ``None`` to stay silent. Silence is the ordinary case
-      and is not an error.
+      What to say, ``None`` to stay silent, or :class:`Unjudged` when the
+      policy took no decision here at all. Silence is the ordinary case and is
+      not an error; so is declining to decide, for a reason the policy names.
     """
     ...
 
@@ -205,9 +238,10 @@ class NeverSpeak:
 
   For plumbing: it exercises the channel, the pump and the record without a
   model behind them. It is **not** the paired control — that arm is
-  `SpeakWhenOffTrack` with a budget of zero, which judges every boundary and
-  has nothing left to spend. Why it has to be that one and not this one is
-  stated once, at :data:`swe_lab.workflow.definitions.CONTROL_BUDGET`.
+  `SpeakWhenOffTrack` with a budget of zero, which judges every boundary it
+  has evidence for and has nothing left to spend. Why it has to be that one and
+  not this one is stated once, at
+  :data:`swe_lab.workflow.definitions.CONTROL_BUDGET`.
   """
 
   @property
@@ -292,9 +326,10 @@ class WouldHaveSpoken:
   """A deviation the judge found, recorded whether or not speech followed.
 
   This is what the control arm produces: ``SpeakWhenOffTrack(budget=0)`` judges
-  every boundary and speaks at none, so its markers are the points at which the
-  treatment arm would have intervened. What that buys a comparison is stated
-  once, at :data:`swe_lab.workflow.definitions.CONTROL_BUDGET`.
+  every boundary it has evidence for and speaks at none, so its markers are the
+  points at which the treatment arm would have intervened. What that buys a
+  comparison is stated once, at
+  :data:`swe_lab.workflow.definitions.CONTROL_BUDGET`.
 
   Attributes:
     cursor: Where the deviation was found.
@@ -347,10 +382,19 @@ class SpeakAt:
 
 @dataclasses.dataclass
 class SpeakWhenOffTrack:
-  """Judges every boundary; speaks when off track, unrecovering and affordable.
+  """Judges what it has evidence for; speaks when off track and affordable.
 
-  **The budget gates speech, not judgement.** ``consider`` returns ``None``
-  unless every gate passes, in this order:
+  **A boundary with no evidence is not judged at all.** Before the gates
+  below, an empty evidence window returns :class:`Unjudged`: there is nothing
+  for the judge to measure against the criterion, so asking it yields an answer
+  about a record it was never shown. The window is empty only until the actor's
+  first message, so this covers the head of a run and nothing else — which is
+  where it was observed to matter, on the first end-to-end run (the replay is
+  in task 05 §4.3). It is a statement about *zero* evidence and nothing wider:
+  a window holding few records is judged exactly as before.
+
+  **The budget gates speech, not judgement.** Past that precondition,
+  ``consider`` returns ``None`` unless every gate passes, in this order:
 
   1. the judge says off track, else silent;
   2. the judge says it will not self-correct, else silent;
@@ -362,10 +406,12 @@ class SpeakWhenOffTrack:
      boundary and recorded as a lapse. Never a retry.
 
   The cost of that order is stated rather than hidden: the judge runs on every
-  boundary even after the budget is spent, so a ``budget=0`` policy still pays
-  for a judge it can never act on. Why that cost is worth paying — what the two
-  supervised definitions are and are not matched on — is stated once, at
-  :data:`swe_lab.workflow.definitions.CONTROL_BUDGET`.
+  boundary carrying evidence even after the budget is spent, so a ``budget=0``
+  policy still pays for a judge it can never act on. The precondition above
+  does not touch that matching — it depends on the evidence window alone, so
+  two arms fed the same stream skip the same boundaries. Why that cost is worth
+  paying — what the two supervised definitions are and are not matched on — is
+  stated once, at :data:`swe_lab.workflow.definitions.CONTROL_BUDGET`.
 
   The criterion is a constructor argument rather than a field on
   :class:`Observation`, so it never travels the channel the actor's records
@@ -431,7 +477,9 @@ class SpeakWhenOffTrack:
     """
     return tuple(self._markers)
 
-  def consider(self, observation: Observation) -> Intervention | None:
+  def consider(
+      self, observation: Observation
+  ) -> Intervention | Unjudged | None:
     """Decide whether to speak at this boundary.
 
     Args:
@@ -455,7 +503,9 @@ class SpeakWhenOffTrack:
     unclassified and the supervisor records a gap.
 
     Returns:
-      What to say, or ``None``. Silence is the ordinary case.
+      What to say, ``None``, or :class:`Unjudged` when the evidence window was
+      empty and the judge was therefore not consulted. Silence is the ordinary
+      case, and is a judgement; the third answer is the absence of one.
 
     Raises:
       PolicyLapseError: A model call failed, or produced a line
@@ -464,6 +514,8 @@ class SpeakWhenOffTrack:
     windowed = dataclasses.replace(
         observation, evidence=observation.evidence[-self.window :]
     )
+    if not windowed.evidence:
+      return Unjudged(reason="no actor evidence in the window")
     try:
       verdict = self.judge(windowed, self.criterion)
     except Exception as error:  # noqa: BLE001 - re-raised with its scope named
@@ -579,8 +631,9 @@ class Supervisor:
     """Consume one stream event and act on it.
 
     Every call writes exactly one log row, so the account of a run has no
-    silent gaps: a judgement, a silence, a lapse the policy bounded to this one
-    boundary, or a gap of unknown reach.
+    silent gaps: a judgement, a silence, a boundary the policy took no decision
+    at, a lapse the policy bounded to this one boundary, or a gap of unknown
+    reach.
 
     Args:
       event: One decoded ``stream-json`` event.
@@ -600,7 +653,7 @@ class Supervisor:
         said=tuple(self._said),
     )
     try:
-      intervention = self.policy.consider(observation)
+      decision = self.policy.consider(observation)
     except PolicyLapseError as error:
       # The policy bounded this one; the run keeps its evidence value and the
       # next boundary is judged normally.
@@ -610,9 +663,15 @@ class Supervisor:
       self._row(LOG_KIND_GAP, reason=f"policy raised: {error!r}")
       return None
 
-    if intervention is None:
-      self._row("silent")
+    if isinstance(decision, Unjudged):
+      # Not a silence: nothing was judged here, and the reason says what the
+      # policy had instead of a decision.
+      self._row(LOG_KIND_UNJUDGED, reason=decision.reason)
       return None
+    if decision is None:
+      self._row(LOG_KIND_SILENT)
+      return None
+    intervention = decision
     if self._mute:
       self._row(
           LOG_KIND_GAP,
@@ -640,7 +699,8 @@ class Supervisor:
     """Write one row of the run's account.
 
     Args:
-      kind: ``"spoke"``, ``"silent"``, ``"lapse"`` or ``"gap"``.
+      kind: ``"spoke"``, ``"silent"``, ``"unjudged"``, ``"lapse"`` or
+        ``"gap"``.
       **extra: Fields specific to the kind.
     """
     self.log(
