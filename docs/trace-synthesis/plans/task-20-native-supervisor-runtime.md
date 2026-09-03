@@ -133,9 +133,11 @@ to the wrapper, the wrapper's own drop), because a stopped group the wrapper
 leaves behind is a hung sandbox. Both sit behind the reader's gate and the
 `Actor` handle; a config picks one (§2).
 
-The reach of the first mechanism is measured, not assumed (host kernel
-6.17, the `rust:1.97.1` container, a shell producer writing ~119-byte lines
-as fast as it can; three runs, 2026-09-03):
+The reach of the first mechanism is measured, not assumed. **The numbers
+are of the kernel they were measured on** — the host's 6.17, shared by the
+`rust:1.97.1` container; a shell producer writing ~119-byte lines as fast as
+it can; three runs, 2026-09-03. Another kernel, or a pipe whose capacity was
+tuned, gives other numbers; what they quantify does not change.
 
 | What still lands after the gate closes | Events | Bytes |
 | --- | --- | --- |
@@ -156,20 +158,23 @@ past is discarded, one on the current window is delivered. That is what makes
 `sigstop` the exact form and `stdout` the one for a run where a stopped actor
 is unacceptable.
 
-**Decided (2026-09-03), on those numbers: `sigstop` is the mode a run should
-use; `stdout` stays as an option with its blind window documented.** The
-stale gate exists to confirm, before a correction is delivered, that the
-evidence the judgment rests on is still the latest; under `stdout` several
-hundred events can sit unread in the pipe at that moment, so the gate passes
-verdicts it should have failed. That is not a loss of precision, it is the
-gate not holding under that mode, and the README says so in as many words.
-The two modes' real defects, side by side: `stdout` self-releases if the
-wrapper dies and has the blind window above; `sigstop` sees everything the
-actor wrote and leaves the actor stopped if the wrapper dies during a
-judgment — `SIGCONT` on every path out and the handle's drop backstop are the
-mitigation, not a proof. Draining the residual before the check, or shrinking
-the pipe with `F_SETPIPE_SZ`, would narrow `stdout`'s window; neither is
-built, because `sigstop` closes it by construction.
+**Decided (2026-09-03): `sigstop` is the mode a run should use; `stdout`
+stays as an option with its blind window documented.** The reason is the
+mechanism, and the numbers only say how much it costs: the stale gate exists
+to confirm, before a correction is delivered, that the evidence the judgment
+rests on is still the latest, and under `stdout` whatever sits unread in the
+pipe at that moment is invisible to it — the gate passes verdicts it should
+have failed, however large the pipe is. Shrinking the pipe (`F_SETPIPE_SZ`)
+or draining the residual before the check would narrow that window, not
+close it; neither is built, because `sigstop` closes it by construction —
+a stopped actor writes nothing, so there is nothing in the pipe the check
+cannot see. That is not a loss of precision, it is the gate not holding
+under that mode, and the README says so in as many words. The two modes'
+real defects, side by side: `stdout` self-releases if the wrapper dies and
+has the blind window above; `sigstop` sees everything the actor wrote and
+leaves the actor stopped if the wrapper dies during a judgment — `SIGCONT`
+on every path out and the handle's drop backstop are the mitigation, not a
+proof.
 
 Whether a *given actor* actually stalls on a full stdout pipe depends on how
 it writes. A synchronous write does; a runtime that queues writes in memory

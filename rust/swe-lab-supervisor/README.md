@@ -132,10 +132,12 @@ to authenticate to it are not in the file at all — see
   judgment leaves the actor stopped, which the `SIGCONT`-on-every-path and
   the handle's drop backstop mitigate but cannot rule out. `"stdout"` stops
   reading the actor's stdout instead, and self-releases if the wrapper dies,
-  but it is measured to leave a blind window: the actor can still write one
-  pipe (544 events, ~65 KiB in the measurement) after the gate closes, and
-  those events land only after the freshness check — **the stale gate is not
-  guaranteed under `"stdout"`**. `"off"` lets the actor run ahead and relies
+  but it leaves a blind window: the actor can still write one pipe after the
+  gate closes (544 events, ~65 KiB, measured on the host's 6.17 kernel; the
+  size is the kernel's, the window is the mechanism's), and those events
+  land only after the freshness check — **the stale gate is not guaranteed
+  under `"stdout"`**, and a smaller pipe narrows the window without closing
+  it. `"off"` lets the actor run ahead and relies
   on the stale gate alone. The measurement and the reasoning: task 20 §4.
 - `model` — the model name sent on every request, recorded in the summary.
 - `timeouts` — `model_call_ms` bounds one judge or writer call; a call past it
