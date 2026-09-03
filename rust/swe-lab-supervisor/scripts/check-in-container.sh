@@ -10,7 +10,10 @@
 #
 # The image adds the musl target and the lint components on top of the
 # official one, so the container runs as the invoking user and never writes
-# into the toolchain. Cargo's registry and the build output are kept under
+# into the toolchain. Those two lines are a cache, not a second pin: rustup
+# installs whatever rust-toolchain.toml lists when cargo first runs in the
+# crate, so a target added there but not here costs a download per run, not
+# a mismatch. Cargo's registry and the build output are kept under
 # target/container/ on the host, so a second run does not download or rebuild
 # the world. Containers are always `--rm`; nothing is left running.
 set -euo pipefail

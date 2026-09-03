@@ -80,8 +80,7 @@ jobs:
 
   # The Rust runtime under rust/swe-lab-supervisor: the four gates the
   # toolchain gives (format, clippy with warnings as errors, tests, docs with
-  # broken links as errors), then the release artifact itself. The toolchain
-  # version is the one rust-toolchain.toml pins; keep the two in sync.
+  # broken links as errors), then the release artifact itself.
   rust:
     runs-on: ubuntu-latest
     defaults:
@@ -90,11 +89,21 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The toolchain has one home, rust-toolchain.toml: the version, the
+      # components and the target. This job derives the version from it the
+      # way scripts/check-in-container.sh derives its image — the action
+      # needs a version before any cargo runs — and lists nothing else:
+      # rustup installs the file's components and targets on first use.
+      - name: Read the pinned toolchain
+        id: toolchain
+        run: |
+          channel=$(sed -n 's/^channel = "\(.*\)"$/\1/p' rust-toolchain.toml)
+          [ -n "$channel" ] || { echo "no channel in rust-toolchain.toml" >&2; exit 1; }
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: "1.97.1"
-          components: rustfmt, clippy
-          targets: x86_64-unknown-linux-musl
+          toolchain: ${{ steps.toolchain.outputs.channel }}
 
       - uses: Swatinem/rust-cache@v2
         with:

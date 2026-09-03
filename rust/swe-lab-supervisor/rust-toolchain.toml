@@ -1,3 +1,8 @@
+# The one home of the toolchain: CI derives its version from `channel`, the
+# container image is named after it, and rustup installs `components` and
+# `targets` wherever this file is in force — CI and the container list none
+# of them on their own.
 [toolchain]
 channel = "1.97.1"
 components = ["rustfmt", "clippy"]
+targets = ["x86_64-unknown-linux-musl"]
