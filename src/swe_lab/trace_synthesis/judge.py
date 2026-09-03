@@ -137,6 +137,20 @@ def openrouter_transport(payload: Mapping[str, Any]) -> Mapping[str, Any]:
 JUDGE_INSTRUCTIONS = """\
 You are watching an engineer work. Decide two things about the moment shown.
 
+Judge only against the criterion given below. Do not use any other standard,
+and do not reason about what the correct fix would be.
+
+Answer with one JSON object and nothing else:
+{"off_track": bool, "self_correcting": bool, "reason": "<one short sentence>"}
+
+off_track: the work shown is off the criterion's path.
+self_correcting: left alone, the engineer is already returning to it.
+"""
+
+#: The judge contract for a run whose observation carries a guidebook.
+GUIDED_JUDGE_INSTRUCTIONS = """\
+You are watching an engineer work. Decide two things about the moment shown.
+
 Judge against the general-practice criterion and, when present, the guidebook
 given below. The guidebook says which instance-specific route is on track.
 
@@ -147,10 +161,11 @@ off_track: the work shown is off the criterion's path.
 self_correcting: left alone, the engineer is already returning to it.
 """
 
-#: Appended to :data:`JUDGE_INSTRUCTIONS` only when a judge is built with
+#: Appended to the selected judge instructions only when a judge is built with
 #: ``locate_deviation``. Kept as a separate constant so the default
 #: instructions are byte-identical to what every A′ run has sent —
-#: ``test_the_default_judge_prompt_is_unchanged`` is what makes that a check.
+#: ``test_unguided_model_prompts_are_byte_identical_to_the_prior_path`` is what
+#: makes that a check.
 LOCATE_DEVIATION_INSTRUCTION = """
 Also answer "deviation_started_steps_ago": if off_track, how many of the steps
 shown above the deviation began — 0 for the most recent step. Omit it or use
@@ -158,6 +173,16 @@ null when you cannot tell.
 """
 
 WRITER_INSTRUCTIONS = f"""\
+Write one short line to the engineer, as someone watching over their shoulder.
+
+Hedged and offhand, pointing at what to look at — never what to do. Do not
+name a fix, a function, a file to edit, or a solution. No code, no diff.
+At most {MAX_INTERVENTION_CHARS} characters. Answer with the line and nothing
+else.
+"""
+
+#: The writer contract for a run whose observation carries a guidebook.
+GUIDED_WRITER_INSTRUCTIONS = f"""\
 Write one short line to the engineer, as someone watching over their shoulder.
 
 Hedged and offhand, pointing at what to look at — never what to do. Do not
@@ -309,11 +334,11 @@ class ModelJudge:
     locate_deviation: Ask, in addition, how far back the deviation started.
       **Off by default, and the default prompt is byte-identical to the one
       every A′ run has sent** — pinned by
-      ``test_the_default_judge_prompt_is_unchanged``, because a supervision arm
-      whose judge prompt quietly changed would move the thing it measures. On
-      only for the segmented loop, which records the answer so that how many
-      turns late its corrections were is a measured distribution rather than a
-      recollection.
+      ``test_unguided_model_prompts_are_byte_identical_to_the_prior_path``,
+      because a supervision arm whose judge prompt quietly changed would move
+      the thing it measures. On only for the segmented loop, which records the
+      answer so that how many turns late its corrections were is a measured
+      distribution rather than a recollection.
     calls: What answered each request, in order.
   """
 
@@ -337,9 +362,11 @@ class ModelJudge:
       JudgeAnswerError: The answer was not one JSON object with the two
         booleans. Not retried.
     """
-    instructions = JUDGE_INSTRUCTIONS + (
-        LOCATE_DEVIATION_INSTRUCTION if self.locate_deviation else ""
-    )
+    instructions = (
+        GUIDED_JUDGE_INSTRUCTIONS
+        if observation.guidebook is not None
+        else JUDGE_INSTRUCTIONS
+    ) + (LOCATE_DEVIATION_INSTRUCTION if self.locate_deviation else "")
     payload = {
         "model": self.model,
         "max_tokens": self.max_tokens,
@@ -431,7 +458,14 @@ class ModelWriter:
         "model": self.model,
         "max_tokens": self.max_tokens,
         "messages": [
-            {"role": "system", "content": WRITER_INSTRUCTIONS},
+            {
+                "role": "system",
+                "content": (
+                    GUIDED_WRITER_INSTRUCTIONS
+                    if observation.guidebook is not None
+                    else WRITER_INSTRUCTIONS
+                ),
+            },
             {"role": "user", "content": _prompt(observation, criterion)},
         ],
     }

@@ -450,23 +450,44 @@ def test_a_missing_provider_key_says_so_without_naming_a_value():
 # --- locating a deviation, opt-in and only opt-in (task 22 §5) --------------
 
 
-def test_the_default_judge_prompt_is_unchanged() -> None:
-  """The control arm on which the whole opt-in rests.
+def test_unguided_model_prompts_are_byte_identical_to_the_prior_path() -> None:
+  """The control arm on which guidebook-aware prompting rests.
 
-  A supervision arm whose judge prompt quietly changed would move the very
-  thing it measures, and the two A′ arms are matched on the judging side. So
-  "the default is untouched" is asserted byte-for-byte rather than reasoned
-  about: the system message a default judge sends is ``JUDGE_INSTRUCTIONS``
-  exactly, with nothing appended.
+  The expected bytes are literals rather than the production constants: a
+  test that derives its expected value from the changed value stays green on
+  the regression it is meant to catch. The writer is exercised too because an
+  off-track unguided call must not mention a guidebook it was never given.
   """
-  transport = RecordingTransport(answers=[ON_TRACK_JSON])
-  judge = ModelJudge(model="m", transport=transport)
+  expected_judge = """\
+You are watching an engineer work. Decide two things about the moment shown.
 
-  _ = judge(observation(), load_criterion())
+Judge only against the criterion given below. Do not use any other standard,
+and do not reason about what the correct fix would be.
 
-  system = transport.payloads[0]["messages"][0]
-  assert system["content"] == JUDGE_INSTRUCTIONS
-  assert LOCATE_DEVIATION_INSTRUCTION not in system["content"]
+Answer with one JSON object and nothing else:
+{"off_track": bool, "self_correcting": bool, "reason": "<one short sentence>"}
+
+off_track: the work shown is off the criterion's path.
+self_correcting: left alone, the engineer is already returning to it.
+"""
+  expected_writer = f"""\
+Write one short line to the engineer, as someone watching over their shoulder.
+
+Hedged and offhand, pointing at what to look at — never what to do. Do not
+name a fix, a function, a file to edit, or a solution. No code, no diff.
+At most {MAX_INTERVENTION_CHARS} characters. Answer with the line and nothing
+else.
+"""
+  transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])
+  built = supervising_policy(
+      model="m", transport=transport, budget=1, cooldown=0
+  )
+
+  _ = built.consider(observation())
+
+  assert len(transport.payloads) == 2
+  assert transport.payloads[0]["messages"][0]["content"] == expected_judge
+  assert transport.payloads[1]["messages"][0]["content"] == expected_writer
 
 
 def test_a_judge_asked_to_locate_a_deviation_says_so_in_its_prompt() -> None:
