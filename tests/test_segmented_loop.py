@@ -314,6 +314,29 @@ def test_a_segment_that_wrote_no_result_event_is_not_read_as_a_cut():
   assert _segment_rows(rows)[-1]["stop_reason"] == STOP_NO_RESULT_EVENT
 
 
+def test_a_result_less_segment_after_a_cut_is_not_read_as_another_cut():
+  """The reading is the segment's own, not the newest one anywhere in the file.
+
+  The stream is appended to across segments, so a backwards scan of the whole
+  file answers "what was the last ending" with the *previous* segment's when
+  the current one wrote none — and a stale `error_max_turns` reads exactly
+  like a fresh cut, so the loop resumes a segment that never ended. The
+  control arm is the test above: with no cut anywhere, whole-file and
+  per-segment readings agree, so it passes either way.
+  """
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          '{"type": "system", "subtype": "init"}\n',
+      ]
+  )
+
+  rows = _run(actor, _supervision())
+
+  assert len(actor.requests) == 2
+  assert _segment_rows(rows)[-1]["stop_reason"] == STOP_NO_RESULT_EVENT
+
+
 def test_an_error_ending_stops_the_loop_rather_than_resuming():
   """Only the turn limit is a cut; every other error subtype ends the run."""
   actor = FakeActor(

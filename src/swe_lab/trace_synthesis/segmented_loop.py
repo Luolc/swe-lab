@@ -282,18 +282,28 @@ def turns_taken(events: Sequence[Mapping[str, Any]]) -> int:
   return len(ids)
 
 
-def last_ending(events: Sequence[Mapping[str, Any]]) -> SegmentEnding:
-  """Read the most recent segment's terminal ``result`` event.
+def last_ending(
+    events: Sequence[Mapping[str, Any]], *, since: int = 0
+) -> SegmentEnding:
+  """Read one segment's terminal ``result`` event.
+
+  ``since`` is what makes the reading the segment's own. The stream file is
+  appended to across segments, so a scan of the whole thing answers "how did
+  this segment end" with the *previous* segment's ending whenever the current
+  one wrote no ``result`` — and a stale ``error_max_turns`` is indistinguishable
+  from a fresh cut, so the loop would resume a segment that never ended.
 
   Args:
-    events: The decoded stream, in order.
+    events: The decoded stream, in order — every segment's, appended.
+    since: Index of this segment's first event. Events before it belong to
+      earlier segments and are not this segment's ending.
 
   Returns:
-    What that event says, with every field ``None`` when there is no ``result``
-    event at all — a segment that wrote none ended in a way this loop must not
-    read as a cut.
+    What that event says, with every field ``None`` when this segment wrote no
+    ``result`` event at all — an ending this loop must not read as a cut.
+    ``event_index`` is an index into ``events``, not into the slice.
   """
-  for index in range(len(events) - 1, -1, -1):
+  for index in range(len(events) - 1, since - 1, -1):
     event = events[index]
     if event.get("type") != "result":
       continue
@@ -442,6 +452,11 @@ class SegmentedRun:
     anchor: str | None = None
     last: ExecResult = ExecResult(0, "", "")
     cost = 0.0
+    # How much of the appended stream belongs to earlier segments. Counted
+    # forward from zero rather than measured before each launch: segment 0
+    # truncates the file *inside* `launch`, so a pre-launch read would count a
+    # previous run's leftovers and skip past this run's own first ending.
+    consumed = 0
 
     while True:
       elapsed = (self.now() - started).total_seconds()
@@ -462,7 +477,7 @@ class SegmentedRun:
       self._segments += 1
 
       events = parse_events(self.read_stream())
-      ending = last_ending(events)
+      ending = last_ending(events, since=consumed)
       turns = turns_taken(events)
       if ending.cost_usd is not None:
         cost = ending.cost_usd
@@ -495,6 +510,7 @@ class SegmentedRun:
       if stop is not None:
         return last
 
+      consumed = len(events)
       prompt = self._seam_prompt(events, turns=turns, index=request.index)
 
   def _seam_reading(self, request: SegmentRequest) -> SeamReading | None:
