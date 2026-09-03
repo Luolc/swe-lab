@@ -1,0 +1,18 @@
+skip replicate/a: already run
+skip n1/a: already run
+skip n3/a: already run
+skip n5/a: already run
+skip n6/a: already run
+skip n10/a: already run
+skip n10_w15/a: already run
+replicate_budget0/a: 170 boundaries
+  done in 747s; spoke=0 lapse=4
+skip replicate/b: already run
+skip n1/b: already run
+skip n3/b: already run
+skip n5/b: already run
+skip n6/b: already run
+skip n10/b: already run
+skip n10_w15/b: already run
+replicate_budget0/b: 170 boundaries
+  done in 755s; spoke=0 lapse=6

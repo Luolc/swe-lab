@@ -1,0 +1,14 @@
+replicate/a: 170 boundaries
+  done in 892s; spoke=3 lapse=29
+n1/a: 59 boundaries
+  done in 274s; spoke=0 lapse=4
+n3/a: 19 boundaries
+  done in 96s; spoke=0 lapse=3
+n5/a: 11 boundaries
+  done in 60s; spoke=0 lapse=2
+n6/a: 9 boundaries
+  done in 46s; spoke=0 lapse=1
+n10/a: 5 boundaries
+  done in 26s; spoke=0 lapse=0
+n10_w15/a: 5 boundaries
+  done in 24s; spoke=0 lapse=0
