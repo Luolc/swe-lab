@@ -173,9 +173,25 @@ test for is a wish, and it silently decays into a lie.
   (`SandboxSpec` / `UnitTestSpec` — what a dataset compiles its record into), or
   the report contract; re-hosting or renaming the HF dataset repos; the deferred
   `outputs/` restructure; deleting anything under `outputs/` (it is a committed
-  deliverable); **any experiment touching more than 10 SWE-bench Pro instances,
-  or more than 2 rollouts per instance** — running the full set at scale belongs
-  to the downstream consumer, whose quota and sandboxes are sized for it.
+  deliverable); **any experiment touching more than 10 SWE-bench Pro
+  instances** — that ceiling guards coverage, and it is a number; **and any
+  number of rollouts beyond the magnitude below, or that you are not sure is
+  inside it**.
+
+  The rollout half is **an empirical constraint you reason from, not a
+  threshold you compute against**, so it is written as a reference point. The
+  first principle under it: **do not scale a paid operation at will.** The
+  money is the downstream consumer's — their quota, their sandboxes — and
+  running the full set at scale belongs to them. The magnitude the owner has
+  accepted is `10 instances × 2 rollouts`; `4 × 5` and `5 × 4` are the same
+  magnitude and equally fine (owner, 2026-09-03, on
+  [#413](https://github.com/Luolc/swe-lab/pull/413#issuecomment-5530287922),
+  which also records the run that prompted the change). **Do not turn that into
+  arithmetic:** `1 × 20` has the same product and is plainly not the same
+  thing, which is exactly why the rule is not a product. **Being unsure whether
+  you are inside the magnitude is itself the trigger to ask** — a rule that
+  asks for judgement owes you somewhere to go when you cannot make it, and
+  asking costs a message where guessing wrong costs someone else's quota.
 - **Never:** commit secrets / OAuth tokens / `.envrc.local` (enforced by the
   gitleaks hook + the CI history scan — see [Quality bar](#quality-bar));
   commit dataset data files or large trace records (gitignored / off-repo on HF

@@ -25,9 +25,12 @@ the difference is the whole of what you are inheriting:
   that is evidence for neither
   ([REPORT §4](../../experiments/trace_synthesis/pipeline_end_to_end/REPORT.md#4-what-this-run-does-not-claim)).
   Measuring how large the supervision effect is belongs to whoever has the
-  quota and sandboxes to run the full set (owner, 2026-09-01); this repo is
-  capped at **10 SWE-bench Pro instances × 2 rollouts** and will not produce an
-  effect estimate.
+  quota and sandboxes to run the full set (owner, 2026-09-01); this repo runs
+  at the magnitude its **Ask first** boundary describes
+  ([`AGENTS.md`](../../AGENTS.md#boundaries)) and will not produce an effect
+  estimate. That boundary was a fixed pair of numbers when this note was
+  written and is a reference magnitude now; the number is not repeated here,
+  because a second copy of it is a second thing to update.
 - **One run proved the path, it did not exercise yours.** Three known gaps, each
   owned by a task row rather than restated here.
   [Task 13](plans/README.md) is the one on your path: **every measurement of the
