@@ -1,0 +1,458 @@
+//! The binary as a subprocess around a fake actor, with a scripted model
+//! endpoint on loopback: the whole path, launch to terminal summary.
+//!
+//! The actor is a shell script that behaves like a `stream-json` actor: it
+//! takes its prompt on stdin, emits events, blocks on stdin until the
+//! correction arrives, echoes the injected user event back as Claude Code
+//! does, ends its turn with a `result`, and exits on EOF. The endpoint
+//! answers the judge and the writer from a script and hands every request to
+//! the test together with the actor's process state at the moment it
+//! answered. No real provider is contacted. The same script runs under each
+//! of the three blocking modes.
+
+// An integration test's helpers are not inside a `#[test]` function, so the
+// tests-only unwrap allowance in clippy.toml does not reach them; a panic is
+// the right failure signal here as in any test.
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
+use std::fs;
+use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::sync::mpsc;
+use std::thread;
+
+use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
+
+const KEY_SENTINEL: &str = "KEY_SENTINEL_MUST_NOT_BE_LOGGED";
+const TASK: &str = "Fix the flaky test in the scheduler.";
+const CORRECTION: &str = "Run the test suite before you declare the change done.";
+const MARKER: &str = "declared done without running the tests";
+const CRITERION_SHA256: &str = "ffb2dadfe2b36eb3f44f28c4282a8d51e84e1c943558500787cbb0518e2900a1";
+
+/// The fake actor. `printf`, not `echo`: the echoed user event carries JSON
+/// escapes that a shell `echo` would interpret. The probes on the first two
+/// lines report presence only, never a value. The watchdog bounds a wrapper
+/// that never speaks or never closes stdin; its descriptors are detached so
+/// the actor's stdout closes when the actor exits, not when the watchdog does.
+const ACTOR: &str = r#"
+[ -n "$SWE_LAB_SUPERVISOR_API_KEY" ] && echo "LEAK: the api key is in the actor's environment" >&2
+[ -n "$SWE_LAB_SUPERVISOR_BASE_URL" ] && echo "LEAK: the base url is in the actor's environment" >&2
+( sleep 30; kill -TERM $$ ) >/dev/null 2>&1 </dev/null &
+read -r prompt || exit 90
+case "$prompt" in *"Fix the flaky test in the scheduler."*) ;; *) exit 92 ;; esac
+printf '%s\n' '{"type":"system","subtype":"init","model":"fake"}'
+printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Done; I will not run the tests."}]}}'
+printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"Bash","input":{"command":"git commit -am done"}}]}}'
+read -r note || exit 91
+printf '%s\n' "$note"
+printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Running the tests now."}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","is_error":false}'
+cat >/dev/null
+echo "actor: stdin closed, exiting" >&2
+exit 0
+"#;
+
+/// One request the endpoint answered, and what the actor was doing then.
+struct Answered {
+    request: String,
+    actor_states: Vec<char>,
+}
+
+/// Read one whole request — head and `Content-Length` body — off a socket.
+fn read_request(socket: &mut TcpStream) -> Vec<u8> {
+    let mut request = Vec::new();
+    let mut buffer = [0u8; 4096];
+    loop {
+        let n = socket.read(&mut buffer).unwrap();
+        assert!(n > 0, "the client closed before finishing its request");
+        request.extend_from_slice(&buffer[..n]);
+        if let Some(split) = request.windows(4).position(|w| w == b"\r\n\r\n") {
+            let head = String::from_utf8_lossy(&request[..split]).to_string();
+            let length: usize = head
+                .lines()
+                .find_map(|l| l.strip_prefix("Content-Length: "))
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0);
+            if request.len() >= split + 4 + length {
+                return request;
+            }
+        }
+    }
+}
+
+/// The state letter of every process running `script` under `/bin/sh`: the
+/// actor and its watchdog subshell, never the wrapper (whose argv also names
+/// the script, after `--`).
+fn actor_states(script: &Path) -> Vec<char> {
+    let mut states = Vec::new();
+    for entry in fs::read_dir("/proc").unwrap().flatten() {
+        let name = entry.file_name();
+        let Some(pid) = name
+            .to_str()
+            .filter(|p| p.bytes().all(|b| b.is_ascii_digit()))
+        else {
+            continue;
+        };
+        let Ok(cmdline) = fs::read(format!("/proc/{pid}/cmdline")) else {
+            continue;
+        };
+        let mut argv = cmdline.split(|b| *b == 0);
+        if argv.next() != Some(b"/bin/sh")
+            || argv.next() != Some(script.as_os_str().as_encoded_bytes())
+        {
+            continue;
+        }
+        let Ok(stat) = fs::read_to_string(format!("/proc/{pid}/stat")) else {
+            continue;
+        };
+        // `pid (comm) S ...` — the state is the first field after the last `)`.
+        if let Some(state) = stat
+            .rsplit_once(')')
+            .and_then(|(_, rest)| rest.trim_start().chars().next())
+        {
+            states.push(state);
+        }
+    }
+    states
+}
+
+/// The actor's state while a request is being answered. `SIGSTOP` is sent
+/// just before the judge is called, and the kernel stops each member of the
+/// group a moment later, so a stopped actor is waited for; an unstopped one
+/// is sampled as is.
+fn settled_actor_states(script: &Path, expect_stopped: bool) -> Vec<char> {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    loop {
+        let states = actor_states(script);
+        let settled = !expect_stopped || (!states.is_empty() && states.iter().all(|s| *s == 'T'));
+        if settled || std::time::Instant::now() > deadline {
+            return states;
+        }
+        thread::sleep(std::time::Duration::from_millis(5));
+    }
+}
+
+/// A chat-completions endpoint on loopback that answers requests, in order,
+/// with the given assistant contents, and every further request with a 500.
+fn endpoint(
+    script: PathBuf,
+    expect_stopped: bool,
+    contents: Vec<String>,
+) -> (u16, mpsc::Receiver<Answered>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(move || {
+        let mut contents = contents.into_iter();
+        loop {
+            let (mut socket, _) = listener.accept().unwrap();
+            let request = read_request(&mut socket);
+            let states = settled_actor_states(&script, expect_stopped);
+            let (http_status, content) = match contents.next() {
+                Some(content) => ("200 OK", content),
+                None => (
+                    "500 Internal Server Error",
+                    "unscripted request".to_string(),
+                ),
+            };
+            let body = json!({
+                "model": "fake-model",
+                "choices": [{"finish_reason": "stop",
+                             "message": {"role": "assistant", "content": content}}],
+            })
+            .to_string();
+            write!(
+                socket,
+                "HTTP/1.1 {http_status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            )
+            .unwrap();
+            let answered = Answered {
+                request: String::from_utf8_lossy(&request).into_owned(),
+                actor_states: states,
+            };
+            if tx.send(answered).is_err() {
+                return;
+            }
+        }
+    });
+    (port, rx)
+}
+
+struct Run {
+    dir: PathBuf,
+    status: Option<i32>,
+    wrapper_stderr: String,
+    actor_stderr: String,
+    event_log: String,
+    supervisor_log: String,
+    summary: String,
+    answered: Vec<Answered>,
+}
+
+fn supervise(blocking: &str) -> Run {
+    let dir = std::env::temp_dir().join(format!(
+        "swe-lab-supervisor-e2e-{blocking}-{}",
+        std::process::id()
+    ));
+    fs::create_dir_all(&dir).unwrap();
+    let script = dir.join("actor.sh");
+    fs::write(&script, ACTOR).unwrap();
+    let config = dir.join("config.json");
+    fs::write(
+        &config,
+        json!({
+            "schema_version": 1,
+            "task": TASK,
+            "criterion": {"name": "general-practice", "sha256": CRITERION_SHA256},
+            "policy": {
+                "kind": "speak-when-off-track",
+                "budget": 1,
+                "cooldown": 1,
+                "window": 8,
+                "judge_every_n_assistant_messages": 2,
+                "block_actor_while_judging": blocking,
+            },
+            "model": {"name": "fake-model"},
+            "timeouts": {"model_call_ms": 10_000, "term_grace_ms": 2_000},
+            "limits": {"max_event_line_bytes": 65_536},
+        })
+        .to_string(),
+    )
+    .unwrap();
+    let (port, answers) = endpoint(
+        script.clone(),
+        blocking == "sigstop",
+        vec![
+            json!({"off_track": true, "self_correcting": false, "reason": MARKER}).to_string(),
+            CORRECTION.to_string(),
+            json!({"off_track": false, "self_correcting": false, "reason": "the tests are running"})
+                .to_string(),
+        ],
+    );
+    let output = Command::new(env!("CARGO_BIN_EXE_swe-lab-supervisor"))
+        .arg("run")
+        .arg("--config")
+        .arg(&config)
+        .arg("--actor-event-log")
+        .arg(dir.join("events.jsonl"))
+        .arg("--supervisor-log")
+        .arg(dir.join("supervisor.jsonl"))
+        .arg("--summary")
+        .arg(dir.join("summary.json"))
+        .arg("--actor-stderr")
+        .arg(dir.join("actor.stderr"))
+        .arg("--")
+        .arg("/bin/sh")
+        .arg(&script)
+        .env(
+            "SWE_LAB_SUPERVISOR_BASE_URL",
+            format!("http://127.0.0.1:{port}/v1"),
+        )
+        .env(
+            "SWE_LAB_SUPERVISOR_API_KEY",
+            format!("{KEY_SENTINEL},second-key-never-sent"),
+        )
+        .output()
+        .unwrap();
+    let read = |name: &str| fs::read_to_string(dir.join(name)).unwrap_or_default();
+    Run {
+        status: output.status.code(),
+        wrapper_stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+        actor_stderr: read("actor.stderr"),
+        event_log: read("events.jsonl"),
+        supervisor_log: read("supervisor.jsonl"),
+        summary: read("summary.json"),
+        answered: answers.try_iter().collect(),
+        dir,
+    }
+}
+
+fn sha256_of(path: &Path) -> String {
+    format!("{:x}", Sha256::digest(fs::read(path).unwrap()))
+}
+
+/// The user prompt of one chat-completions request.
+fn prompt_of(answered: &Answered) -> String {
+    let (_, body) = answered.request.split_once("\r\n\r\n").unwrap();
+    let body: Value = serde_json::from_str(body).unwrap();
+    body["messages"][1]["content"].as_str().unwrap().to_string()
+}
+
+fn rows_of(text: &str) -> Vec<Value> {
+    text.lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect()
+}
+
+/// The actor's side: prompted, corrected, released, its environment clean.
+fn check_actor(run: &Run, context: &str) {
+    let events = rows_of(&run.event_log);
+    assert_eq!(events.len(), 6, "{context}");
+    assert_eq!(events[3]["type"], "user", "{context}");
+    assert_eq!(
+        events[3]["message"]["content"][0]["text"],
+        format!("<supervisor_note>\n{CORRECTION}\n</supervisor_note>"),
+        "{context}"
+    );
+    assert!(
+        run.actor_stderr.contains("actor: stdin closed, exiting"),
+        "{context}"
+    );
+    assert!(!run.actor_stderr.contains("LEAK"), "{context}");
+}
+
+/// The account: one boundary spoken, one silent, everything else observed.
+fn check_account(run: &Run, context: &str) {
+    let rows = rows_of(&run.supervisor_log);
+    let kinds: Vec<&str> = rows.iter().map(|r| r["kind"].as_str().unwrap()).collect();
+    assert_eq!(
+        kinds,
+        [
+            "observed", "observed", "spoke", "observed", "observed", "silent"
+        ],
+        "{context}"
+    );
+    let spoke = &rows[2];
+    assert_eq!(spoke["boundary"], 1, "{context}");
+    assert_eq!(spoke["cursor"], 3, "{context}");
+    assert_eq!(spoke["marker"], MARKER, "{context}");
+    assert_eq!(spoke["text"], CORRECTION, "{context}");
+    let purposes: Vec<&str> = spoke["calls"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["purpose"].as_str().unwrap())
+        .collect();
+    assert_eq!(purposes, ["judge", "writer"], "{context}");
+    assert!(
+        spoke.get("blocking").is_none(),
+        "blocking failed: {context}"
+    );
+    assert_eq!(
+        rows[3]["evidence"], "excluded-own-intervention",
+        "{context}"
+    );
+    let silent = &rows[5];
+    assert_eq!(silent["boundary"], 2, "{context}");
+    assert_eq!(silent["cursor"], 6, "{context}");
+    assert!(silent.get("marker").is_none(), "{context}");
+}
+
+fn check_summary(run: &Run, context: &str) {
+    let summary: Value = serde_json::from_str(&run.summary).unwrap();
+    for (field, expected) in [
+        ("accounted_for", json!(true)),
+        ("supervisor_exit", json!("clean")),
+        ("actor_exit_code", json!(0)),
+        ("events", json!(6)),
+        ("undecodable_lines", json!(0)),
+        ("oversized_lines", json!(0)),
+        ("boundaries", json!(2)),
+        ("corrections", json!(1)),
+        ("silent", json!(1)),
+        ("unjudged", json!(0)),
+        ("lapses", json!(0)),
+        ("gaps", json!(0)),
+        ("stale_verdicts_discarded", json!(0)),
+        ("model", json!("fake-model")),
+        ("criterion_sha256", json!(CRITERION_SHA256)),
+        (
+            "actor_event_log_sha256",
+            json!(sha256_of(&run.dir.join("events.jsonl"))),
+        ),
+        (
+            "supervisor_log_sha256",
+            json!(sha256_of(&run.dir.join("supervisor.jsonl"))),
+        ),
+    ] {
+        assert_eq!(summary[field], expected, "{field}: {context}");
+    }
+    assert!(!run.dir.join("summary.json.partial").exists(), "{context}");
+}
+
+/// The endpoint's side: the credential, the prompts, the actor's state.
+fn check_endpoint(run: &Run, blocking: &str, context: &str) {
+    assert_eq!(run.answered.len(), 3, "{context}");
+    for answered in &run.answered {
+        assert!(
+            answered
+                .request
+                .contains(&format!("Authorization: Bearer {KEY_SENTINEL}\r\n")),
+            "{context}"
+        );
+        assert!(!answered.request.contains("second-key"), "{context}");
+    }
+    let first_judge = prompt_of(&run.answered[0]);
+    assert!(
+        first_judge.contains("<tool_use name=\"Bash\">"),
+        "{first_judge}"
+    );
+    assert!(first_judge.contains("git commit -am done"), "{first_judge}");
+    assert!(!first_judge.contains("already said"), "{first_judge}");
+    let writer = prompt_of(&run.answered[1]);
+    assert!(
+        writer.contains("# What you have already said to them"),
+        "{writer}"
+    );
+    let second_judge = prompt_of(&run.answered[2]);
+    assert!(
+        second_judge.contains("Running the tests now."),
+        "{second_judge}"
+    );
+    assert!(!second_judge.contains(CORRECTION), "{second_judge}");
+    assert!(!second_judge.contains("already said"), "{second_judge}");
+    let states = &run.answered[0].actor_states;
+    assert!(!states.is_empty(), "no actor process found while judging");
+    if blocking == "sigstop" {
+        assert!(states.iter().all(|s| *s == 'T'), "not stopped: {states:?}");
+    } else {
+        assert!(states.iter().all(|s| *s != 'T'), "stopped: {states:?}");
+    }
+}
+
+fn check(run: &Run, blocking: &str) {
+    let context = format!(
+        "[{blocking}] wrapper stderr:\n{}\nactor stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
+        run.wrapper_stderr, run.actor_stderr, run.supervisor_log, run.summary
+    );
+    assert_eq!(run.status, Some(0), "{context}");
+    check_actor(run, &context);
+    check_account(run, &context);
+    check_summary(run, &context);
+    check_endpoint(run, blocking, &context);
+    // The credential reached no artifact and no stream.
+    for text in [
+        &run.wrapper_stderr,
+        &run.actor_stderr,
+        &run.event_log,
+        &run.supervisor_log,
+        &run.summary,
+    ] {
+        assert!(!text.contains(KEY_SENTINEL), "{context}");
+    }
+}
+
+fn supervise_and_check(blocking: &str) {
+    let run = supervise(blocking);
+    check(&run, blocking);
+    fs::remove_dir_all(&run.dir).unwrap();
+}
+
+#[test]
+fn a_run_is_supervised_end_to_end() {
+    supervise_and_check("off");
+}
+
+#[test]
+fn a_run_is_supervised_end_to_end_while_gating_the_actor_stdout() {
+    supervise_and_check("stdout");
+}
+
+#[test]
+fn a_run_is_supervised_end_to_end_while_stopping_the_actor() {
+    supervise_and_check("sigstop");
+}

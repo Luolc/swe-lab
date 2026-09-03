@@ -17,7 +17,6 @@ use std::io::{self, BufWriter, Read, Write};
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::{Child, ChildStdin, ChildStdout, Command, ExitStatus, Stdio};
-use std::sync::mpsc::Sender;
 use std::sync::{Arc, Condvar, Mutex, PoisonError};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -37,13 +36,6 @@ const EXIT_POLL_INTERVAL: Duration = Duration::from_millis(20);
 
 /// What the stdout reader reports to the supervisor loop.
 #[derive(Debug)]
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the payloads are read by the supervision loop, the next slice"
-    )
-)]
 pub enum Event {
     /// One complete stdout line within the ceiling, newline excluded, already
     /// appended to the event log.
@@ -74,10 +66,6 @@ impl Gate {
         }
     }
 
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "used by the supervision loop, the next slice")
-    )]
     /// Stop the reader before its next read.
     pub fn close(&self) {
         *self.open.lock().unwrap_or_else(PoisonError::into_inner) = false;
@@ -148,13 +136,16 @@ impl Actor {
     /// # Errors
     ///
     /// A log file cannot be created, or the actor cannot be spawned.
-    pub fn spawn(
+    pub fn spawn<F>(
         mut command: Command,
         event_log: &Path,
         stderr_log: &Path,
         max_line_bytes: usize,
-        events: Sender<Event>,
-    ) -> io::Result<Self> {
+        events: F,
+    ) -> io::Result<Self>
+    where
+        F: Fn(Event) + Send + 'static,
+    {
         let event_log = File::create(event_log)?;
         let mut stderr_log = File::create(stderr_log)?;
         command
@@ -182,8 +173,7 @@ impl Actor {
                 max_line_bytes,
                 &events,
             );
-            // The loop being gone means the wrapper is already on its way out.
-            let _ = events.send(Event::StdoutClosed(result.map_err(|e| e.to_string())));
+            events(Event::StdoutClosed(result.map_err(|e| e.to_string())));
         });
         let _stderr_reader = thread::spawn(move || {
             // A stderr log that cannot be written changes nothing about the
@@ -200,20 +190,13 @@ impl Actor {
         })
     }
 
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "used by the supervision loop, the next slice")
-    )]
     /// The reader's gate, to close while a judgment is in flight.
     #[must_use]
     pub fn gate(&self) -> Arc<Gate> {
         Arc::clone(&self.gate)
     }
 
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "used by the supervision loop, the next slice")
-    )]
+    #[cfg_attr(not(test), expect(dead_code, reason = "exercised by the tests"))]
     /// The actor's pid, which is also its process group id.
     #[must_use]
     pub fn pid(&self) -> u32 {
@@ -244,20 +227,13 @@ impl Actor {
         self.stdin = None;
     }
 
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "used by the supervision loop, the next slice")
-    )]
+    #[cfg_attr(not(test), expect(dead_code, reason = "exercised by the tests"))]
     /// Whether stdin is still open for corrections.
     #[must_use]
     pub fn stdin_open(&self) -> bool {
         self.stdin.is_some()
     }
 
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "used by the supervision loop, the next slice")
-    )]
     /// `SIGSTOP` the whole group. The stdout pipe keeps draining, so nothing
     /// the actor already wrote is lost, and it writes nothing more until
     /// [`Actor::thaw`].
@@ -285,10 +261,7 @@ impl Actor {
         signal_group(self.group, Signal::SIGCONT)
     }
 
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "used by the supervision loop, the next slice")
-    )]
+    #[cfg_attr(not(test), expect(dead_code, reason = "exercised by the tests"))]
     /// Whether the group is currently stopped by [`Actor::freeze`].
     #[must_use]
     pub fn frozen(&self) -> bool {
@@ -386,7 +359,7 @@ fn drain_stdout(
     gate: &Gate,
     mut log: BufWriter<File>,
     ceiling: usize,
-    events: &Sender<Event>,
+    events: &dyn Fn(Event),
 ) -> io::Result<()> {
     let mut framer = Framer::new(ceiling);
     let mut chunk = vec![0u8; READ_CHUNK_BYTES];
@@ -410,7 +383,7 @@ fn drain_stdout(
 fn relay(
     frames: &mut Vec<Frame>,
     log: &mut BufWriter<File>,
-    events: &Sender<Event>,
+    events: &dyn Fn(Event),
 ) -> io::Result<()> {
     for frame in frames.drain(..) {
         match frame {
@@ -418,14 +391,14 @@ fn relay(
                 log.write_all(&line)?;
                 log.write_all(b"\n")?;
                 log.flush()?;
-                let _ = events.send(Event::Line(line));
+                events(Event::Line(line));
             }
             Frame::Oversized { part, last } => {
                 log.write_all(&part)?;
                 if last {
                     log.write_all(b"\n")?;
                     log.flush()?;
-                    let _ = events.send(Event::Oversized);
+                    events(Event::Oversized);
                 }
             }
         }
@@ -466,7 +439,11 @@ mod tests {
             &dir.join("events.jsonl"),
             &dir.join("stderr.log"),
             ceiling,
-            tx,
+            move |event| {
+                // The test may have stopped listening; that is not the
+                // reader's problem.
+                let _ = tx.send(event);
+            },
         )
         .unwrap();
         (actor, rx)

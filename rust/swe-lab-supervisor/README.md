@@ -11,32 +11,10 @@ implementation made where #375 leaves a choice open are in
 
 ## Status
 
-The crate lands in slices, and this section says what the binary at this
-revision actually does; the rest of this README is the contract the slices
-build towards.
-
-- **Complete:** `criteria`, `--version`, `--help`; the config file and its
-  validation ([Config](#config)); the criterion digest check; the endpoint
-  and credential variables ([Environment](#environment)); and the process
-  wrapper — `run` launches the actor in its own process group with the two
-  environment variables scrubbed, writes the task on its stdin as one
-  `stream-json` user event, drains its stdout to `--actor-event-log` and its
-  stderr to `--actor-stderr`, ends it deliberately (`SIGTERM`, `term_grace_ms`,
-  `SIGKILL`; also on `SIGTERM` / `SIGINT` to the wrapper), and exits as the
-  actor did.
-- **Not yet:** no judgment is made and no correction is written, so every
-  run is the actor alone, with its stdin closed right after the prompt.
-  `--supervisor-log` and `--summary` are accepted and **not written**. The
-  judgment loop (boundaries, judge, corrections, the log and the summary) is
-  the next slice, which rewrites this section.
-
-The policy it runs descends from the one `src/swe_lab/trace_synthesis/` runs
-on the host — the same evidence filter, the same criterion artifact (compiled
-in from the same file, so the two cannot drift without the digest saying so),
-the same two model calls — with the three defects the replay experiment
-measured in the host runtime fixed rather than reproduced (task 20 §7). What
-the binary adds is what only a process wrapper can do: continuous draining,
-actor blocking, stale-verdict discard, and one owner for the actor's shutdown.
+Complete: everything this README describes is implemented, and the crate's
+end-to-end test runs it — a canned actor and a canned endpoint on loopback,
+launch to summary, under each blocking mode. What is measured but not yet
+decided about the reach of `stdout` blocking is in task 20 §4.
 
 ## Usage
 
@@ -61,8 +39,32 @@ the Python side.
 (`128 + signal` when the actor died of a signal), so a script that records
 `$?` sees what it would have seen without the wrapper. `2` is a usage error and
 `3` a refused run (unusable config, a criterion whose digest is not the pinned
-one) — both before any actor process exists. Never classify a run from the exit status alone:
-the terminal summary is written for that.
+one, an unusable endpoint, an actor that could not be launched) — all before
+any actor process exists, or before it took its prompt. `1` is the one case
+the wrapper's own status replaces the actor's: the actor ran but the summary
+could not be written. Never classify a run from the exit status alone: the
+terminal summary is written for that.
+
+## Artifacts
+
+Four files, at the paths given on the command line:
+
+- `--actor-event-log` — the actor's stdout, line by line, verbatim, flushed
+  per line; a line over `max_event_line_bytes` is written too, and counted.
+- `--actor-stderr` — the actor's stderr, verbatim.
+- `--supervisor-log` — the supervisor's account, one JSON object per line:
+  every actor event consumed (`observed`) and every boundary's outcome
+  (`spoke`, `silent`, `unjudged`, `lapse`, `stale`, `gap`), each with its
+  cursor, time, the origin filter's disposition of the event, and the model
+  calls made. The row shape and what each kind means: task 20 §6.
+- `--summary` — the terminal summary, written to a temporary name and renamed
+  when the run ends, so it is either whole or absent: schema version,
+  `accounted_for`, how the wrapper and the actor ended, the counts (events,
+  boundaries, corrections, silent, unjudged, lapses, gaps, stale verdicts,
+  undecodable and oversized lines), the maximum decision lag, the model and
+  criterion digest, and the sha256 of the two logs. A refused run writes one
+  too, with `supervisor_exit: "refused"` and the reason, whenever the summary
+  path itself is writable.
 
 ## Config
 

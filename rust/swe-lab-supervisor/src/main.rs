@@ -5,37 +5,41 @@
 //! `stream-json` output while a judge model is consulted at configured
 //! boundaries, and write short corrections on the actor's stdin.
 //!
-//! **What this slice does.** `criteria`, `--version` and `--help` are
-//! complete, and so is the process wrapper: `run` validates the config,
-//! the criterion digest and the endpoint, launches the actor in its own
-//! process group with the two endpoint variables scrubbed from its
-//! environment, writes the task on its stdin as one `stream-json` user
-//! event, drains its stdout to the event log and its stderr to the stderr
-//! log, and ends it deliberately (`SIGTERM`, the configured grace,
-//! `SIGKILL`) — on its own exit, on `SIGTERM` / `SIGINT` to the wrapper, or
-//! after its stdout closes — exiting as the actor did. **No judgment is
-//! made and no correction is written**, and there is no supervisor log or
-//! summary yet: the judgment loop is the next slice, which rewrites this
-//! paragraph.
+//! Every part of that is implemented: the process wrapper (`actor`), the
+//! framing of its output (`framing`), the evidence filter (`evidence`), the
+//! prompts (`prompt`), the model calls over plain HTTP (`http`, `model`),
+//! the policy (`policy`), the loop that ties them together and keeps the
+//! account (`supervisor`), and the terminal summary (`summary`). The crate
+//! README is the operational contract; the design record is task 20 in
+//! `docs/trace-synthesis/plans/`.
 
 mod actor;
 mod cli;
 mod config;
 mod criterion;
+mod evidence;
 mod framing;
+mod http;
+mod model;
+mod policy;
+mod prompt;
 mod signals;
 mod stream;
+mod summary;
+mod supervisor;
 
 use std::os::unix::process::ExitStatusExt;
 use std::process::{ExitCode, ExitStatus};
-use std::sync::atomic::Ordering;
-use std::sync::mpsc;
 use std::time::Duration;
 
-use actor::{Actor, Event};
+use summary::Summary;
 
 /// The command line could not be used as given.
 const EXIT_USAGE: u8 = 2;
+/// The actor was supervised to its end, but the summary — the artifact a run
+/// is classified from — could not be written; the exit status is the
+/// wrapper's, not the actor's.
+const EXIT_UNWRITTEN: u8 = 1;
 /// The run was refused before the actor was launched: an unusable config, or a
 /// criterion that is not the one the config pins.
 const EXIT_REFUSED: u8 = 3;
@@ -66,69 +70,83 @@ fn main() -> ExitCode {
         }
         cli::Command::Run(args) => match run(&args) {
             Ok(code) => code,
-            Err(refusal) => {
-                eprintln!("swe-lab-supervisor: refusing to start: {refusal}");
+            Err(Failed::Refused(reason)) => {
+                eprintln!("swe-lab-supervisor: refusing to start: {reason}");
                 ExitCode::from(EXIT_REFUSED)
+            }
+            Err(Failed::SummaryUnwritten(reason)) => {
+                eprintln!("swe-lab-supervisor: {reason}");
+                ExitCode::from(EXIT_UNWRITTEN)
             }
         },
     }
 }
 
-/// Validate the run's inputs, then run the actor under the wrapper.
+/// How a `run` did not end with the actor's exit status.
+enum Failed {
+    /// Refused before any actor process existed.
+    Refused(String),
+    /// The actor ran, and the summary could not be written.
+    SummaryUnwritten(String),
+}
+
+/// Validate the run's inputs, run the actor under supervision, write the
+/// summary, and exit as the actor did.
 ///
 /// Everything that can refuse the run happens before any actor process
-/// exists: a run that cannot be supervised as configured is not started.
-///
-/// Until the policy lands, the wrapper is transparent: the task prompt is
-/// the first message on the actor's stdin, stdin is then closed so the actor
-/// runs one turn, and every line of its output is drained to the event log.
-fn run(args: &cli::RunArgs) -> Result<ExitCode, String> {
-    let config = config::load(&args.config)?;
-    let _criterion = criterion::select(&config.criterion.name, &config.criterion.sha256)?;
-    let _endpoint = config::Endpoint::from_env()?;
-    let _credential = config::api_key_from_env();
-    let stop = signals::termination_requested().map_err(|e| format!("signal handler: {e}"))?;
-    let (events, inbox) = mpsc::channel();
-    let command = actor::command(
+/// exists: a run that cannot be supervised as configured is not started, and
+/// the summary says so — so that a reader classifies a refusal from the
+/// artifact rather than from a missing file. Nothing the caller passed is
+/// repeated in a diagnostic: a misplaced token in the actor argv, the config
+/// path or the environment would otherwise land in a log.
+fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
+    let refused = |reason: String, model: &str, digest: &str| -> Failed {
+        // Best effort: the refusal is already the answer, and a summary that
+        // cannot be written leaves the reader with a missing file, which the
+        // consumer treats the same way.
+        let _ = Summary::refused(&reason, model, digest).write(&args.summary);
+        Failed::Refused(reason)
+    };
+    let config = config::load(&args.config).map_err(|e| refused(e, "", ""))?;
+    let selected = criterion::select(&config.criterion.name, &config.criterion.sha256)
+        .map_err(|e| refused(e, &config.model.name, &config.criterion.sha256))?;
+    let endpoint = config::Endpoint::from_env()
+        .map_err(|e| refused(e, &config.model.name, &selected.digest))?;
+    let model = model::Model {
+        name: config.model.name.clone(),
+        endpoint,
+        bearer: config::api_key_from_env(),
+        call_timeout: Duration::from_millis(config.timeouts.model_call_ms),
+    };
+    let stop = signals::termination_requested().map_err(|e| {
+        refused(
+            format!("signal handler: {e}"),
+            &config.model.name,
+            &selected.digest,
+        )
+    })?;
+    let paths = supervisor::Paths {
+        actor_event_log: args.actor_event_log.clone(),
+        supervisor_log: args.supervisor_log.clone(),
+        actor_stderr: args.actor_stderr.clone(),
+    };
+    let digest = selected.digest.clone();
+    let model_name = config.model.name.clone();
+    let ended = supervisor::run(
+        config,
+        selected.text,
+        &digest,
+        model,
         &args.actor_argv,
-        &[config::BASE_URL_ENV, config::API_KEY_ENV],
+        &paths,
+        &stop,
     )
-    .map_err(|e| format!("actor command: {e}"))?;
-    let max_line_bytes = usize::try_from(config.limits.max_event_line_bytes.get())
-        .map_err(|_| "limits.max_event_line_bytes does not fit".to_string())?;
-    let mut actor = Actor::spawn(
-        command,
-        &args.actor_event_log,
-        &args.actor_stderr,
-        max_line_bytes,
-        events,
-    )
-    .map_err(|e| format!("launching the actor: {e}"))?;
-    let grace = Duration::from_millis(config.timeouts.term_grace_ms);
-
-    if let Err(error) = actor.write_stdin(stream::user_event_line(&config.task).as_bytes()) {
-        let status = actor
-            .end(grace)
-            .map_err(|e| format!("ending the actor: {e}"))?;
-        return Err(format!(
-            "the actor did not take its prompt ({error}); it ended with {status}"
-        ));
-    }
-    actor.close_stdin();
-
-    loop {
-        if stop.load(Ordering::Relaxed) {
-            break;
-        }
-        match inbox.recv_timeout(Duration::from_millis(100)) {
-            Ok(Event::StdoutClosed(_)) | Err(mpsc::RecvTimeoutError::Disconnected) => break,
-            Ok(Event::Line(_) | Event::Oversized) | Err(mpsc::RecvTimeoutError::Timeout) => {}
-        }
-    }
-    let status = actor
-        .end(grace)
-        .map_err(|e| format!("ending the actor: {e}"))?;
-    Ok(exit_code_of(status))
+    .map_err(|e| refused(e, &model_name, &digest))?;
+    ended
+        .summary
+        .write(&args.summary)
+        .map_err(|e| Failed::SummaryUnwritten(format!("writing the summary: {e}")))?;
+    Ok(ended.status.map_or(ExitCode::FAILURE, exit_code_of))
 }
 
 /// The wrapper exits as the actor did, so a script recording `$?` sees what
