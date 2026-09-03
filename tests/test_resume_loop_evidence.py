@@ -41,6 +41,21 @@ STREAMJSON = (
 )
 
 
+def _filter_module() -> Any:
+  """Load the experiment's synthetic-message filter.
+
+  Returns:
+    The loaded module.
+  """
+  spec = importlib.util.spec_from_file_location(
+      "resume_loop_synthetic_filter", EXPERIMENT / "synthetic_filter.py"
+  )
+  assert spec is not None and spec.loader is not None
+  module = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(module)
+  return module
+
+
 def _evidence_module() -> Any:
   """Load the experiment's evidence builder from the checkout this test is in.
 
@@ -227,3 +242,92 @@ def test_the_real_rollout_control_carries_its_denominator() -> None:
   gate = witness["credential_gate"]
   assert gate["redaction_marker_occurrences"] > 0
   assert set(gate["credential_shapes"].values()) == {0}
+
+
+def _record(model: str | None, *, request_id: str | None) -> dict[str, Any]:
+  """Build an assistant record with the fields the filter's chain reads.
+
+  Args:
+    model: the `message.model` value, or None to omit it.
+    request_id: the `requestId` value, or None to omit it.
+
+  Returns:
+    One transcript record.
+  """
+  message: dict[str, Any] = {
+      "role": "assistant",
+      "content": [{"type": "text", "text": "some text"}],
+  }
+  if model is not None:
+    message["model"] = model
+  record: dict[str, Any] = {"type": "assistant", "message": message}
+  if request_id is not None:
+    record["requestId"] = request_id
+  return record
+
+
+def test_the_synthetic_assistant_turn_is_removed() -> None:
+  """Positive arm: the record the model never wrote does not survive.
+
+  This is the owner's one hard constraint after criterion (b) was relaxed on
+  2026-09-03, so it is asserted rather than described.
+  """
+  synthetic = _record("<synthetic>", request_id=None)
+  kept = _filter_module().strip_synthetic_assistants([synthetic])
+  assert kept == []
+
+
+def test_a_real_assistant_turn_is_kept() -> None:
+  """Control arm: a filter that drops everything passes the positive arm too.
+
+  Without this, `strip_synthetic_assistants` could `return []` and the arm
+  above would still be green — indistinguishable from a correct filter.
+  """
+  real = _record("claude-sonnet-5", request_id="req_abc")
+  kept = _filter_module().strip_synthetic_assistants([real])
+  assert kept == [real]
+
+
+def test_the_filter_keeps_order_and_passes_other_records_through() -> None:
+  """A mixed transcript loses exactly the synthetic record and nothing else."""
+  real_one = _record("claude-sonnet-5", request_id="req_1")
+  synthetic = _record("<synthetic>", request_id=None)
+  real_two = _record("claude-sonnet-5", request_id="req_2")
+  user = {"type": "user", "message": {"role": "user", "content": "hi"}}
+  attachment = {"type": "attachment", "attachment": {"type": "budget_usd"}}
+  kept = _filter_module().strip_synthetic_assistants(
+      [user, real_one, synthetic, attachment, real_two]
+  )
+  assert kept == [user, real_one, attachment, real_two]
+
+
+def test_the_chain_is_positive_not_an_exclusion_list() -> None:
+  """An assistant record missing its provenance fields is dropped, not kept.
+
+  An exclusion list keyed on the literal `<synthetic>` marker would keep every
+  one of these, and the marker is not promised by any interface.
+  """
+  module = _filter_module()
+  for record in (
+      _record(None, request_id="req_1"),
+      _record("", request_id="req_1"),
+      _record("claude-sonnet-5", request_id=None),
+      {"type": "assistant"},
+      {"type": "assistant", "message": "not a dict"},
+  ):
+    assert module.strip_synthetic_assistants([record]) == []
+
+
+def test_the_committed_shape_fixture_matches_what_the_filter_reads() -> None:
+  """The real/synthetic distinction the filter uses is the observed one.
+
+  Guards against the filter drifting away from the records it was written for:
+  the fixture is reduced from a real resumed session.
+  """
+  fixture = _witness("assistant-record-shapes.json")
+  synthetic = fixture["synthetic_assistant_examples"][0]
+  assert synthetic["model"] == "<synthetic>"
+  assert synthetic["has_requestId"] is False
+  real = fixture["real_assistant_examples"][0]
+  assert real["model"] != "<synthetic>"
+  assert real["has_requestId"] is True

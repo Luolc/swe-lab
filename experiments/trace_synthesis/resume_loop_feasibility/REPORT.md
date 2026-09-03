@@ -90,28 +90,49 @@ reversal is the finding.
    this report called the anchored seam "the harness's own mid-turn fold", and
    the repository's own pinned control says it is not.
 
-**Recommendation — weaker than the previous revision of this file claimed.**
-The segmented loop is mechanically sound and markedly simpler than A′ (no
-concurrency barrier, no descendant freeze, no judge cancellation, no
-read-gate). `--resume-session-at` removes the criterion-(a) violation — the
-synthetic assistant turn the model never wrote. **What it does not do is make
-the trace's shape one that inference produces**, which was the criterion used to
-prefer a carrier in the first place. On the evidence here A′ remains the only
-carrier whose injected shape is *measured* to match an interactive user's.
+> ### Criterion (b) was relaxed on 2026-09-03 — by the owner, and here is why
+>
+> **Who:** the project owner. **When:** 2026-09-03, after the measurements below
+> were taken and reported. **Why:** a first-principles argument that this is
+> **SFT data generation** and rich post-processing is available, so a trace need
+> not match the shape an interactive user produces — a bare or dirty record is
+> acceptable. The `bare minimum` named was: stop every N turns (N=5), let a
+> judge decide inject-or-not, continue to the end.
+>
+> **Nothing measured in this report changed.** Statement ③ is still true and its
+> numbers are untouched. What changed is its **status**: from a *blocking
+> objection* to a *measured cost*. Recorded in full because a relaxed criterion
+> with no record of who relaxed it, when, and on what argument reads six months
+> later as though the problem was never found.
+>
+> **One requirement was not relaxed, and it is now the only hard one:** the
+> synthetic assistant record must never be trained on. See §12.
 
-Carry the segmented loop forward as the documented backup it was commissioned
-as. **Do not commission Phase 1 on a claim of shape-equivalence**; the open
-move is a control that produces `[tool_result, text]` at inference time, or an
-accepted argument that this layout is harmless.
+**Recommendation (revised 2026-09-03 under the ruling above).** Take the
+segmented loop forward and get it running end to end. It is mechanically sound,
+markedly simpler than A′ (no concurrency barrier, no descendant freeze, no judge
+cancellation, no read-gate), and the objections that stood against it in the
+previous revision are objections under a criterion its owner has now set aside.
 
-**Three conditions on that recommendation, and they are not decoration:**
+Under the ruling, these are **costs to record, not blockers**:
 
-- **The `[tool_result, text]` layout is supervision-only on this evidence.**
-  What is *not* established is that it never occurs at inference time: the
-  control is `N=1`, one toy task, `--safe-mode`, and in that run the
-  `<system-reminder>` blocks happened to attach to the opening messages rather
-  than to a tool result. A production session that attaches a reminder to a
-  tool result would produce this layout naturally, and that was not tested.
+- `[tool_result, text]` differing from A′'s trailing `system` message (§9.1);
+- the correction blocks accumulating 0/1/2/3 per seam (§9.1) — still tracked as
+  a **context cost**, since it grows with rollout length;
+- the plain-`--resume` dirty seam (§6), which no longer has to be cleaned to be
+  usable;
+- `Q8` (§13), which drops from *possibly decisive* to *nice-to-have* and should
+  not hold up bring-up.
+
+**The one thing that does gate it** is §12's filter — a filter with a test,
+rather than a sentence in a document.
+
+**Conditions that survive the relaxation** — setting (b) aside does not touch
+these:
+
+- **The synthetic assistant record must not reach training.** The owner's one
+  remaining hard requirement, now carrying a named filter and a two-armed test
+  (§12). This is not a caveat; it is the gate.
 
 - **`--resume-session-at` is an undocumented flag** (`hideHelp()`), so the
   clean seam rests on behaviour that carries no compatibility promise. A build
@@ -833,3 +854,51 @@ block list, and whether `correction_text_blocks` still accumulates 0/1/2/3.
 naming, because both are real: this question could rescue a design the report
 has just marked down, and it arrives immediately after a result that went
 against it. Neither is a reason to run it, or not to.
+
+
+---
+
+# 12. The one hard constraint, as a filter with a test
+
+Criterion (b) was relaxed (see the Verdict). **This was not:** the model must not
+take loss on tokens it never generated, and the resume seam inserts exactly such
+a record — an `assistant` message reading `No response requested.` that no model
+wrote (§6.1). Under the relaxation it is the **only** blocking requirement left,
+which is precisely why it may not live as a sentence in a document.
+
+`synthetic_filter.py` implements it as a **positive chain** — a record is kept
+only if it can be *shown* to be model-authored:
+
+1. it is an `assistant` record;
+2. `message.model` is present, a non-empty string, and not `<synthetic>`;
+3. it carries `requestId`, which a record built from a real API response has.
+
+It never asks *"does this look synthetic?"*. An exclusion list keyed on the
+literal `<synthetic>` marker would cover only the cases its author thought of,
+and that marker is promised by no interface — a build that renamed it would
+silently start training on the fabricated turn with every existing check green.
+
+**Both arms are tested**, because a filter that drops everything passes the
+positive arm exactly as well as a correct one:
+
+| test | arm | what it catches |
+| --- | --- | --- |
+| `test_the_synthetic_assistant_turn_is_removed` | positive | the record surviving |
+| `test_a_real_assistant_turn_is_kept` | **control** | a filter that drops everything |
+| `test_the_filter_keeps_order_and_passes_other_records_through` | control | collateral damage to the rest of the transcript |
+| `test_the_chain_is_positive_not_an_exclusion_list` | positive | a marker-only check |
+| `test_the_committed_shape_fixture_matches_what_the_filter_reads` | — | the filter drifting from the records it was written for |
+
+**The control arm was verified to discriminate, not assumed to.** Replacing the
+filter body with `return []` fails `test_a_real_assistant_turn_is_kept` and
+`test_the_filter_keeps_order_and_passes_other_records_through` while the
+positive arm stays green (2 failed, 13 passed). **A two-armed check whose
+control has never been observed to fail is one arm.**
+
+`runs/assistant-record-shapes.json` is the committed fixture — key names, the
+`model` field and block types reduced from a real resumed session, with no
+content, ids or paths.
+
+**This lives in the experiment directory, not the product path.** Phase 1 must
+move it into the trace-synthesis code **with its tests**; a filter whose test
+stayed behind is a filter nobody will notice breaking.
