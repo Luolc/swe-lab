@@ -6,10 +6,16 @@
 //! boundaries, and write short corrections on the actor's stdin.
 //!
 //! **What this slice does.** `criteria`, `--version` and `--help` are
-//! complete. `run` loads and validates the config, verifies the criterion
-//! digest and reads the endpoint from the environment, then **refuses with
-//! exit 3**: no actor is launched and no artifact is written. The process
-//! wrapper and the judgment loop are the following slices; each moves this
+//! complete, and so is the process wrapper: `run` validates the config,
+//! the criterion digest and the endpoint, launches the actor in its own
+//! process group with the two endpoint variables scrubbed from its
+//! environment, writes the task on its stdin as one `stream-json` user
+//! event, drains its stdout to the event log and its stderr to the stderr
+//! log, and ends it deliberately (`SIGTERM`, the configured grace,
+//! `SIGKILL`) — on its own exit, on `SIGTERM` / `SIGINT` to the wrapper, or
+//! after its stdout closes — exiting as the actor did. **No judgment is
+//! made and no correction is written**, and there is no supervisor log or
+//! summary yet: the judgment loop is the next slice, which rewrites this
 //! paragraph.
 
 mod actor;

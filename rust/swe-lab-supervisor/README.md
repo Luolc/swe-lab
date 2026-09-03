@@ -17,12 +17,18 @@ build towards.
 
 - **Complete:** `criteria`, `--version`, `--help`; the config file and its
   validation ([Config](#config)); the criterion digest check; the endpoint
-  and credential variables ([Environment](#environment)).
-- **Not yet:** `run` never launches an actor. After validating everything
-  above it **refuses with exit 3**, and writes no artifact. The process
-  wrapper (launch, draining, blocking, shutdown) and the judgment loop
-  (boundaries, judge, corrections, the log and the summary) are the next two
-  slices, each of which rewrites this section.
+  and credential variables ([Environment](#environment)); and the process
+  wrapper — `run` launches the actor in its own process group with the two
+  environment variables scrubbed, writes the task on its stdin as one
+  `stream-json` user event, drains its stdout to `--actor-event-log` and its
+  stderr to `--actor-stderr`, ends it deliberately (`SIGTERM`, `term_grace_ms`,
+  `SIGKILL`; also on `SIGTERM` / `SIGINT` to the wrapper), and exits as the
+  actor did.
+- **Not yet:** no judgment is made and no correction is written, so every
+  run is the actor alone, with its stdin closed right after the prompt.
+  `--supervisor-log` and `--summary` are accepted and **not written**. The
+  judgment loop (boundaries, judge, corrections, the log and the summary) is
+  the next slice, which rewrites this section.
 
 The policy it runs descends from the one `src/swe_lab/trace_synthesis/` runs
 on the host — the same evidence filter, the same criterion artifact (compiled
@@ -55,8 +61,7 @@ the Python side.
 (`128 + signal` when the actor died of a signal), so a script that records
 `$?` sees what it would have seen without the wrapper. `2` is a usage error and
 `3` a refused run (unusable config, a criterion whose digest is not the pinned
-one, or — at this revision — every run, see [Status](#status)) — both before
-any actor process exists. Never classify a run from the exit status alone:
+one) — both before any actor process exists. Never classify a run from the exit status alone:
 the terminal summary is written for that.
 
 ## Config
@@ -77,7 +82,7 @@ to authenticate to it are not in the file at all — see
     "cooldown": 4,
     "window": 8,
     "judge_every_n_assistant_messages": 3,
-    "block_actor_while_judging": true
+    "block_actor_while_judging": "stdout"
   },
   "model": { "name": "anthropic/claude-sonnet-5" },
   "timeouts": { "model_call_ms": 180000, "term_grace_ms": 10000 },
@@ -95,10 +100,12 @@ to authenticate to it are not in the file at all — see
   many of the actor's most recent admitted records the judge sees.
   `judge_every_n_assistant_messages` is the batch size `N` of #375 — a
   boundary falls every `N` admitted assistant messages and at every actor
-  `result` with new evidence behind it. `block_actor_while_judging` selects
-  whether the wrapper stops reading the actor's stdout while a judgment is in
-  flight (the actor blocks on its next write) or lets it run ahead and
-  discards overtaken verdicts as stale.
+  `result` with new evidence behind it. `block_actor_while_judging` is what
+  the wrapper does to the actor while a judgment is in flight: `"off"` lets
+  it run ahead (overtaken verdicts are discarded as stale), `"stdout"` stops
+  reading its stdout (the actor blocks on its next write once the pipe is
+  full), `"sigstop"` stops its process group with `SIGSTOP` and resumes it
+  with `SIGCONT` — always, on every path out, before the wrapper exits.
 - `model` — the model name sent on every request, recorded in the summary.
 - `timeouts` — `model_call_ms` bounds one judge or writer call; a call past it
   is one recorded lapse. `term_grace_ms` bounds shutdown: how long the actor's
