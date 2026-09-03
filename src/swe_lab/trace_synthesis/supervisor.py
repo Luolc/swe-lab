@@ -109,7 +109,33 @@ class PolicyLapseError(Exception):
   classify on its behalf — an exception that does not carry it is unbounded by
   definition, and the run is excluded. That default is the honest one: silence
   about scope is not a claim of a small one.
+
+  Attributes:
+    finish_reason: The model call's ``finish_reason`` when the lapse traces to
+      one, carried over from a :class:`~swe_lab.trace_synthesis.judge.
+      JudgeAnswerError`'s own attribute of the same name. ``"length"`` means
+      the token budget ran out before an answer could be produced or parsed —
+      a configuration problem — while anything else means the model finished
+      and the answer was still unusable — a judgment-quality problem.
+      ``None`` when the lapse did not come from a judge answer at all (a
+      transport error, or the writer's line being empty or too long). Folding
+      both causes into one undifferentiated lapse is exactly what made every
+      lapse in a 902-call replay look the same until someone read the raw
+      calls by hand (issue #383); this field is how ``supervisor.jsonl`` tells
+      them apart without a rerun.
   """
+
+  finish_reason: str | None
+
+  def __init__(self, message: str, *, finish_reason: str | None = None) -> None:
+    """Record the lapse together with the finish reason behind it, if any.
+
+    Args:
+      message: What went wrong.
+      finish_reason: See the class attribute.
+    """
+    super().__init__(message)
+    self.finish_reason = finish_reason
 
 
 @dataclasses.dataclass(frozen=True)
@@ -488,7 +514,11 @@ class SpeakWhenOffTrack:
     Both calls out to a model are bounded to this boundary: any ``Exception``
     they raise — an upstream error, an unparseable answer, or a line
     :class:`Intervention` rejects as empty or over the cap — becomes a
-    :class:`PolicyLapseError`, and the supervisor records a lapse. A
+    :class:`PolicyLapseError`, and the supervisor records a lapse. When the
+    judge's failure carries a ``finish_reason`` (see
+    :class:`~swe_lab.trace_synthesis.judge.JudgeAnswerError`), it travels onto
+    the :class:`PolicyLapseError` unchanged, so the record can tell a
+    token-budget lapse from an unparseable one. A
     ``BaseException`` is not caught: an interrupt is not this policy's to
     reinterpret as a small hole. The bound
     comes from *where* the failure happened rather than from what was raised: a
@@ -519,7 +549,10 @@ class SpeakWhenOffTrack:
     try:
       verdict = self.judge(windowed, self.criterion)
     except Exception as error:  # noqa: BLE001 - re-raised with its scope named
-      raise PolicyLapseError(f"judge call failed: {error!r}") from error
+      raise PolicyLapseError(
+          f"judge call failed: {error!r}",
+          finish_reason=getattr(error, "finish_reason", None),
+      ) from error
     if not verdict.off_track or verdict.self_correcting:
       return None
 
@@ -656,8 +689,15 @@ class Supervisor:
       decision = self.policy.consider(observation)
     except PolicyLapseError as error:
       # The policy bounded this one; the run keeps its evidence value and the
-      # next boundary is judged normally.
-      self._row(LOG_KIND_LAPSE, reason=f"policy lapsed: {error!r}")
+      # next boundary is judged normally. finish_reason distinguishes a
+      # token-budget lapse ("length") from an unparseable-answer one (any
+      # other value, or None when the lapse was not a judge answer at all) —
+      # see PolicyLapseError.
+      self._row(
+          LOG_KIND_LAPSE,
+          reason=f"policy lapsed: {error!r}",
+          finish_reason=error.finish_reason,
+      )
       return None
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
       self._row(LOG_KIND_GAP, reason=f"policy raised: {error!r}")
