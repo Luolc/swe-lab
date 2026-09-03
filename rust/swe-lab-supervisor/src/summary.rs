@@ -175,7 +175,42 @@ pub fn digest(file: &mut File) -> io::Result<String> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeSet;
+
     use super::*;
+
+    /// The summaries committed for the Python reader's tests
+    /// (`tests/fixtures/native_supervision/`, written by this binary via
+    /// `scripts/summary-fixtures.sh`) carry exactly this struct's keys: a
+    /// field added or renamed here fails this test until the fixtures are
+    /// regenerated, and the Python test on the other side of them fails
+    /// until its reader follows.
+    #[test]
+    fn the_committed_fixtures_carry_exactly_the_summary_s_keys() {
+        let ours: BTreeSet<String> = serde_json::to_value(Summary::refused("r", "m", "c"))
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect();
+        let fixtures =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/native_supervision");
+        for (arm, exit) in [
+            ("clean-exit", "clean"),
+            ("actor-signalled", "clean"),
+            ("cancelled", "terminated"),
+            ("unclean", "unclean"),
+            ("refused", "refused"),
+        ] {
+            let text = std::fs::read_to_string(fixtures.join(format!("{arm}.json"))).unwrap();
+            let fixture: serde_json::Value = serde_json::from_str(&text).unwrap();
+            let keys: BTreeSet<String> = fixture.as_object().unwrap().keys().cloned().collect();
+            assert_eq!(keys, ours, "{arm}");
+            assert_eq!(fixture["schema_version"], SCHEMA_VERSION, "{arm}");
+            assert_eq!(fixture["supervisor_exit"], exit, "{arm}");
+        }
+    }
 
     /// An `Outputs` with the summary's two names reserved, as the wrapper
     /// does at the start.

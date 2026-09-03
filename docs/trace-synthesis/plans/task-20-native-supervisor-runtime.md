@@ -150,13 +150,23 @@ judgment and is caught by the freshness check (§5). The pipe's content lands
 when the gate reopens — which is *after* the freshness check, because the
 loop opens the gate and compares revisions in the same step — so up to one
 pipe of events written during the judgment is neither in the window nor
-counted against the verdict. Under `sigstop` the actor writes nothing while
-stopped and the reader keeps draining, so by the time the judge answers,
-everything the actor wrote before it stopped has been admitted and the
-freshness check is exact: a verdict on a window the actor had already moved
-past is discarded, one on the current window is delivered. That is what makes
-`sigstop` the exact form and `stdout` the one for a run where a stopped actor
-is unacceptable.
+counted against the verdict. Under `sigstop` the judge is not started until
+the stop is confirmed and the reader has caught up: `killpg` names the
+members it finds, and a member in the middle of a fork when it is sent has a
+child a moment later that the signal never reached, so the group is read
+from `/proc` until two looks in a row find the same members with every
+thread of each stopped (a look that finds one running sends the signal
+again), and then the stdout reader is asked for a barrier, which it reports
+behind everything it had to read. The snapshot is taken when the barrier
+arrives — a boundary line and whatever the actor wrote in the same breath
+are both in it — and the group stays stopped through the freshness check
+and the correction's write, so the check is exact: a verdict on a window
+the actor had already moved past is discarded, one on the current window is
+delivered, and nothing lands in between. A group that cannot be confirmed
+stopped within two seconds (a member deep in disk I/O stops only when that
+I/O completes) leaves the boundary unjudged, with the reason. That is what
+makes `sigstop` the exact form and `stdout` the one for a run where a
+stopped actor is unacceptable.
 
 **Decided (2026-09-03): `sigstop` is the mode a run should use; `stdout`
 stays as an option with its blind window documented.** The reason is the
@@ -191,11 +201,19 @@ depend on it.
   the judgment's evidence revision is compared with the current one: equal,
   deliver; newer admitted evidence, record `stale` and neither deliver nor
   spend budget. Events the filter excluded do not bump the revision.
-- A boundary that falls while a judgment is in flight is recorded as
-  `unjudged` (reason: in flight) and marks a pending latest boundary; when
-  the judgment completes, one judgment starts on the *current* snapshot — not
-  one per skipped boundary. A latest-value channel, as #375 says, not a
-  queue of prefixes.
+- Under `sigstop` a boundary first waits for the reader's barrier (§4); a
+  line that arrives before it — including a `result` — is in its snapshot
+  and is no boundary of its own.
+- A boundary that falls while a judgment is in flight keeps the ordinal it
+  is given and waits; when the judgment completes, its judgment starts on
+  the *current* snapshot — not one per skipped boundary, and not a fresh
+  ordinal on completion. A further boundary before then supersedes it, on
+  record as `unjudged`; a `result` before then is covered by it and counts
+  as no boundary. A latest-value channel, as #375 says, not a queue of
+  prefixes. The judge runs on a named thread whose outcome reaches the loop
+  whatever happens — a panic reports as such and is unclean — and which is
+  joined once it has reported; a cancellation does not wait for one still
+  running (its call has a deadline of its own).
 - **Parallel judgments are not built**: response completion order would
   become an unstated policy.
 
@@ -213,7 +231,9 @@ per-kind fields. The kinds:
 - **`silent`** — judged, nothing to say; with `marker` when the judge found a
   deviation and a gate (budget, cooldown) held the correction back.
 - **`unjudged`** — a boundary at which no judge was consulted; `reason` is
-  an empty window (§3) or a judgment in flight (§5).
+  an empty window (§3), a boundary superseded before its judgment could
+  start (§5), an actor whose group could not be confirmed stopped (§4), a
+  judge that could not be started or panicked, or a run that ended first.
 - **`lapse`** — a failed or unusable model call, bounded to that boundary:
   `reason`, `calls`.
 - **`stale`** — a correction newer evidence overtook: `reason`, `text`.
@@ -226,14 +246,24 @@ the one that answered, `max_tokens` sent, `finish_reason`, the raw answer,
 duration — so a ceiling hit, a refusal and an unparseable answer are told
 apart from the account alone.
 
+The account is capped at `limits.max_actor_stdout_bytes` — the cap of the
+stdout it accounts for, shared on purpose rather than a key of its own that
+the Python side would mirror by hand — and a row that would cross it, or a
+write that fails, is a fault: the run ends, not accounted for. A supervisor
+that has lost its own account would be producing supervision without
+evidence.
+
 The terminal summary is the shape in #375 (schema-versioned, written to a
 temporary name and renamed), and it is what the Python side classifies from:
 `accounted_for` is true only when there was no `gap`, the wrapper ended
-cleanly, and at least one actor event was consumed. The line between the two
-failure words: a bad judge or writer answer, a call past `model_call_ms`, or a
-line the intervention cap refuses, is one **lapse** — the next boundary is
-judged normally; a failed actor-stdin write, a broken loop state or an
-unclean ending is a **gap** — the run is not evidence about supervision.
+cleanly, at least one actor event was consumed, and both logs have a digest
+— each read back through the descriptor the wrapper wrote it by, so it is
+the digest of the file the wrapper wrote, whatever is at the name by then.
+The line between the two failure words: a bad judge or writer answer, a call
+past `model_call_ms`, or a line the intervention cap refuses, is one
+**lapse** — the next boundary is judged normally; a failed actor-stdin
+write, a broken loop state, an account that cannot be kept or an unclean
+ending is a **gap** — the run is not evidence about supervision.
 
 ## 7. Three measured defects, fixed here rather than reproduced
 

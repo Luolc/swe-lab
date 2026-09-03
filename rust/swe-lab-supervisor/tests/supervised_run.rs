@@ -389,10 +389,6 @@ fn check_account(run: &Run, context: &str) {
         .map(|c| c["purpose"].as_str().unwrap())
         .collect();
     assert_eq!(purposes, ["judge", "writer"], "{context}");
-    assert!(
-        spoke.get("blocking").is_none(),
-        "blocking failed: {context}"
-    );
     assert_eq!(
         rows[4]["evidence"], "excluded-own-intervention",
         "{context}"

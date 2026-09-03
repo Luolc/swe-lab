@@ -88,7 +88,11 @@ Four files, at the paths given on the command line:
   every actor event consumed (`observed`) and every boundary's outcome
   (`spoke`, `silent`, `unjudged`, `lapse`, `stale`, `gap`), each with its
   cursor, time, the origin filter's disposition of the event, and the model
-  calls made. The row shape and what each kind means: task 20 §6.
+  calls made. The row shape and what each kind means: task 20 §6. It is
+  capped at `max_actor_stdout_bytes` — deliberately the cap of the stdout it
+  accounts for, not a key of its own — and a row that would cross the cap,
+  or a write that fails, ends the run as not accounted for: an account the
+  wrapper can no longer keep is not evidence about supervision.
 - `--summary` — the terminal summary, written to a staging name
   (`<summary>.partial`) and renamed into place when the run ends, so it is
   either whole or absent — nothing exists at its name until then; the name
@@ -99,7 +103,10 @@ Four files, at the paths given on the command line:
   it), the counts (events, boundaries, corrections, silent, unjudged,
   lapses, gaps, stale verdicts, undecodable and oversized lines), the
   maximum decision lag, the model and criterion digest, and the sha256 of
-  the two logs. Every run in which an actor existed ends in one — a stop
+  the two logs — each read back through the descriptor the wrapper wrote it
+  by, so it is the digest of the file the wrapper wrote, whatever is at the
+  name by then; `accounted_for` requires both. Every run in which an actor
+  existed ends in one — a stop
   that arrives while the prompt is still being written is `terminated`, a
   prompt the actor did not take is `unclean` — and a refused run writes one
   too, with `supervisor_exit: "refused"` and the reason, whenever the
@@ -157,10 +164,19 @@ to authenticate to it are not in the file at all — see
   `result` with new evidence behind it. `block_actor_while_judging` is what
   the wrapper does to the actor while a judgment is in flight, and
   **`"sigstop"` is the mode a run should use**: the process group is stopped
-  with `SIGSTOP` when the judgment starts and resumed with `SIGCONT` when it
-  completes — and on every other path out, before the wrapper exits — so the
-  actor produces nothing while judged and the freshness check sees all of
-  its evidence. Its cost is a real state: a wrapper that dies during a
+  with `SIGSTOP` when a boundary falls, and the judge is not started until
+  the stop is confirmed — the group read from `/proc` until two looks in a
+  row find the same members, every thread of each stopped, with the signal
+  sent again after a look that finds one running (for the child a member
+  mid-fork had that the first signal never reached) — and the stdout reader
+  has reported a barrier behind everything the actor had written. The
+  snapshot is taken then, so nothing the actor wrote before it stopped is
+  missing from it; the group stays stopped through the freshness check and
+  the correction's write, and is resumed with `SIGCONT` after — and on
+  every other path out, before the wrapper exits. A group that cannot be
+  confirmed stopped within two seconds leaves that boundary unjudged, with
+  the reason, rather than judged on evidence that may still be moving. Its
+  cost is a real state: a wrapper that dies during a
   judgment leaves the actor stopped, which the `SIGCONT`-on-every-path and
   the handle's drop backstop mitigate but cannot rule out. `"stdout"` stops
   reading the actor's stdout instead, and self-releases if the wrapper dies,
@@ -183,14 +199,17 @@ to authenticate to it are not in the file at all — see
   stdout. Framing uses a growable buffer up to it; a longer line is still
   written to the event log verbatim but reaches no judgment, and the summary
   counts it. `max_actor_stdout_bytes` and `max_actor_stderr_bytes` cap the
-  two logs, exact to the byte: a record that would cross the cap is not
+  two actor logs (and the first the supervisor log too, see Artifacts),
+  exact to the byte: a record that would cross the cap is not
   written (an oversized one already begun is rolled back whole), the stream
   is not read further, and the run is ended and reported as not accounted
   for. The event log is the actor's stdout byte for byte, a last line left
   unterminated included. Without them an actor that never stops writing fills
   the sandbox before the summary can be written. The wrapper's own memory is
-  bounded independently: one line up to the ceiling, plus at most 16 lines
-  queued ahead of the loop.
+  bounded independently: one line up to the ceiling, at most 16 lines
+  queued ahead of the loop, the policy's `window` of admitted records and
+  no more, and a rendered prompt bounded by its budget — records the budget
+  cannot reach are omitted under one line that says how many.
 
 ## Environment
 
