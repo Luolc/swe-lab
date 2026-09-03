@@ -1110,8 +1110,21 @@ mod tests {
         }
     }
 
+    /// The test process's own start time: the floor the wrapper would use.
+    /// A hosted CI runner has live processes of the job's uid, older than
+    /// the job, whose environment it may not read; the floor is what keeps
+    /// a sweep from tripping over them, in the tests as in the wrapper.
+    fn floor() -> u64 {
+        match start_time(Pid::this()) {
+            Probe::Present(started) => started,
+            other => panic!("the test's own start time: {other:?}"),
+        }
+    }
+
+    /// How many live processes carry `PROBE=<value>` in their environment —
+    /// the test's own mark on an actor, set on its command.
     fn probes_alive(value: &str) -> usize {
-        marked_processes(&format!("PROBE={value}"), 0)
+        marked_processes(&format!("PROBE={value}"), floor())
             .unwrap()
             .len()
     }
@@ -1673,7 +1686,7 @@ mod tests {
         .unwrap();
         let group = Pid::from_raw(i32::try_from(actor.pid()).unwrap());
         let escaped = || {
-            marked_processes(&format!("PROBE={probe}"), 0)
+            marked_processes(&format!("PROBE={probe}"), floor())
                 .unwrap()
                 .iter()
                 .any(|m| m.group != group)
@@ -1762,14 +1775,17 @@ mod tests {
         assert!(matches!(probe(Ok(7), what), Probe::Present(7)));
     }
 
-    /// Other users' processes are not this wrapper's to read, and a box
-    /// has them (on CI the wrapper is not root, and PID 1 is); they are a
-    /// conclusion drawn from their owner, not a fault — a sweep over such a
-    /// box is an answer.
+    /// Other users' processes are not this wrapper's to read, and a box has
+    /// them (on CI the wrapper is not root, and PID 1 is): a conclusion
+    /// drawn from their owner, not a fault. A hosted runner also has
+    /// processes of the job's own uid that it may not read, older than the
+    /// job: the floor is what keeps them out. Either way a sweep over such
+    /// a box is an answer — the hosted-runner control case, red there with
+    /// a floor of zero (CI at 9fcdc86) and green with the floor.
     #[test]
     fn a_box_with_other_users_processes_still_gets_a_sweep_answer() {
         assert!(matches!(own(1), Probe::Present(_)), "PID 1 is always there");
-        marked_processes("PROBE=nobody-has-this", 0).unwrap();
+        marked_processes("PROBE=nobody-has-this", floor()).unwrap();
     }
 
     /// A child that exited and is not yet reaped is a zombie: exited by the
@@ -1831,7 +1847,7 @@ mod tests {
                 .iter()
                 .any(|m| m.pid.as_raw() == i32::try_from(child.id()).unwrap())
         };
-        assert!(found(0), "no floor: the child is found");
+        assert!(found(floor()), "the test's own floor: the child is found");
         assert!(found(stat.started), "the same tick is kept");
         assert!(!found(stat.started + 1), "one tick later: excluded");
         child.kill().unwrap();
