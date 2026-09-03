@@ -153,6 +153,47 @@ CORRECTION_UNCLEAN_NAME = "claude.correction_channel.unclean"
 # process that fails silently leaves no other trace.
 CORRECTION_RELAY_LOG_NAME = "claude.correction_channel.log"
 
+# ─── the native supervision runtime (task 21) ───────────────────────────────
+
+# The upstream the *supervisor's* proxy instance forwards to. The `/api`
+# segment is folded into the target rather than into the request path, because
+# cc-reverse-proxy appends whatever path it is given to `--target` as-is: the
+# wrapper asks for `/v1/chat/completions` and that is what reaches OpenRouter.
+OPENROUTER_API = "https://openrouter.ai/api"
+
+# The second cc-reverse-proxy instance: the one the in-sandbox supervisor
+# speaks to. It exists because the wrapper carries no TLS — every dependency of
+# that binary is pure Rust, and both mainstream TLS stacks carry C — so it
+# speaks plain HTTP to loopback and something in the sandbox has to terminate
+# TLS. That something is a second copy of the proxy we already ship, started
+# with a different `--target`. No new component.
+#
+# Its own port, a constant for the same reason the actor's is: the sandbox has
+# its own network namespace, so nothing outside this run can collide with it,
+# and the two only have to differ from each other.
+SUPERVISOR_PROXY_PORT = 9528
+
+# What the wrapper is told to dial. The `/v1` belongs here rather than in the
+# binary: the binary appends `/chat/completions` to whatever base URL it is
+# given, and the proxy forwards the resulting path unchanged.
+SUPERVISOR_PROXY_BASE_URL = f"http://127.0.0.1:{SUPERVISOR_PROXY_PORT}/v1"
+
+# The supervisor proxy's capture log and its own output, named apart from the
+# actor's so a reader of a finished run can tell whose traffic is whose.
+# Credential headers are `[REDACTED]` in both, by the proxy's default.
+SUPERVISOR_PROXY_LOG_NAME = "supervisor.proxy.jsonl"
+SUPERVISOR_PROXY_STDERR_NAME = "supervisor.proxy.log"
+
+# The wrapper's own stdout and stderr — kept apart from the actor's, which the
+# wrapper writes itself via `--actor-event-log` and `--actor-stderr`. Mixing
+# them would make the one account of a failed supervision unreadable.
+SUPERVISOR_STDERR_NAME = "supervisor.stderr.log"
+
+# The wrapper's own account of which build ran, captured from `--version`
+# before the actor starts. Same role as `claude.info` for the agent: the run
+# says which binary produced it, and the container is gone afterwards.
+SUPERVISOR_INFO_NAME = "supervisor.info"
+
 # The prompt, encoded as the one stream-json user event that starts the run.
 # Under `--input-format stream-json` the prompt cannot be a plain file: every
 # message on that channel is a JSON line, and the task prompt is simply the

@@ -30,7 +30,7 @@ from swe_lab.harnesses.claude_code.constants import (
     EVENT_STREAM_NAME,
     STREAM_JSON_PROMPT_NAME,
 )
-from swe_lab.harnesses.claude_code.harness import user_event_line
+from swe_lab.harnesses.claude_code.convert import user_event_line
 from swe_lab.rollout import (
     CodingAgentTask,
     rollout_outcome,
@@ -527,11 +527,11 @@ def test_the_channel_works_in_a_real_container(tmp_path: Path):
   A stand-in stands in for the capture proxy: the pinned proxy binary is not in
   a plain image, and what is under test is the reaping, not the proxy.
   """
+  from swe_lab.harnesses.claude_code.convert import user_event_line
   from swe_lab.harnesses.claude_code.harness import (
       _reap,
       _reaper_lines,
       _relay_start_lines,
-      user_event_line,
   )
   from swe_lab.sandbox.backends.host import DockerHostSandbox
 

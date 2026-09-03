@@ -41,7 +41,7 @@ from swe_lab.harnesses.claude_code.constants import (
     CORRECTION_UNCLEAN_NAME,
     EVENT_STREAM_NAME,
 )
-from swe_lab.harnesses.claude_code.harness import user_event_line
+from swe_lab.harnesses.claude_code.convert import user_event_line
 from swe_lab.rollout import SUPERVISION_LAPSE_METRIC, SUPERVISION_METRIC
 from swe_lab.sandbox import (
     ArtifactSchema,
