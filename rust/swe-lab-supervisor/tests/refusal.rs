@@ -198,6 +198,34 @@ fn a_bad_base_url_is_refused_without_the_url() {
     std::fs::remove_file(&config).unwrap();
 }
 
+#[test]
+fn a_missing_configured_api_key_is_refused_before_the_actor_starts() {
+    let config = valid_config();
+    let paths = output_paths();
+    let actor_marker = paths[0].parent().unwrap().join("actor-started");
+    let mut command = wrapper();
+    command
+        .args(["run", "--config"])
+        .arg(&config)
+        .args(["--actor-prompt", "/dev/null"])
+        .args(output_args(&paths))
+        .args(["--", "sh", "-c", "touch \"$ACTOR_MARKER\""])
+        .env("ACTOR_MARKER", &actor_marker)
+        .env("SWE_LAB_SUPERVISOR_BASE_URL", "http://127.0.0.1:9")
+        .env(
+            "SWE_LAB_SUPERVISOR_API_KEY_ENV",
+            "MISSING_TEST_SUPERVISOR_KEY",
+        )
+        .env_remove("MISSING_TEST_SUPERVISOR_KEY");
+
+    let (code, stderr) = stderr_of(command);
+
+    assert_eq!(code, 3, "{stderr}");
+    assert!(stderr.contains("MISSING_TEST_SUPERVISOR_KEY"), "{stderr}");
+    assert!(!actor_marker.exists());
+    std::fs::remove_file(&config).unwrap();
+}
+
 /// Two outputs on one file — here the summary and the supervisor log — are
 /// refused before any actor exists, whichever two: every output goes through
 /// the same door. The refusal names the fault, not the path.

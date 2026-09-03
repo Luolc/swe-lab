@@ -281,13 +281,13 @@ def test_the_adopted_credential_source_lands_on_the_record():
   from the machine-wide pool from one exported deliberately for that run.
   """
   task = CodingAgentTask(harness=ClaudeCodeHarness())
-  record_adoption("SWE_LAB_SUPERVISOR_API_KEY", "OPENROUTER_API_KEYS")
+  record_adoption("ANTHROPIC_API_KEY", "CUSTOM_SUPERVISOR_API_KEY")
   try:
     extra = task.record_extra(_attempt(AgentOutcome.FINISHED))
   finally:
     forget_adoptions()
   assert extra["credential_env_adopted_from"] == {
-      "SWE_LAB_SUPERVISOR_API_KEY": "OPENROUTER_API_KEYS"
+      "ANTHROPIC_API_KEY": "CUSTOM_SUPERVISOR_API_KEY"
   }
   # The control arm: with nothing adopted the key is absent rather than empty,
   # so a reader never has to tell "adopted nothing" from "recorded nothing".

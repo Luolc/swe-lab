@@ -144,7 +144,7 @@ to authenticate to it are not in the file at all — see
     "judge_every_n_assistant_messages": 3,
     "block_actor_while_judging": "sigstop"
   },
-  "model": { "name": "anthropic/claude-sonnet-5" },
+  "model": { "name": "claude-sonnet-5" },
   "timeouts": { "model_call_ms": 180000, "term_grace_ms": 10000 },
   "limits": {
     "max_event_line_bytes": 16777216,
@@ -227,15 +227,23 @@ to authenticate to it are not in the file at all — see
 
 ## Environment
 
-Two variables, read by the binary in-process and removed from the actor's
-environment before it is launched. They travel into the sandbox the way the
-actor's own `ANTHROPIC_BASE_URL` and token do — by reference, never on a
+The Python host supervisor calls an HTTPS Anthropic Messages endpoint directly;
+it needs only a configurable base URL, API-key environment variable, and model.
+It does not require a proxy. The Rust supervisor binary has no TLS stack, so its
+native in-sandbox path requires a loopback forwarding proxy. The harness starts
+that optional native-only proxy with configurable target, port, credential
+variable name, and log names.
+
+The binary reads the variables below in-process and removes them, including the
+configured API-key variable, from the actor's environment before launch. The
+key travels into the sandbox by environment-variable reference, never on a
 command line.
 
 | Variable | Meaning |
 | --- | --- |
-| `SWE_LAB_SUPERVISOR_BASE_URL` | **Required.** The base URL of an OpenAI-shaped chat-completions API, `http://<loopback ip>:<port>/v1`; the binary appends `/chat/completions`. **Plain HTTP, to loopback, by number** — `https://` is refused with the reason (the binary carries no TLS), and so is any hostname, `localhost` included, or any address that is not loopback: the binary sends a bearer token in clear, and it speaks to a loopback forwarder in the sandbox (the `cc-reverse-proxy` instance the Python side starts with `--target https://openrouter.ai/api`), which terminates TLS and forwards the bytes unchanged. A hostname would be resolved, and what it resolves to is the box's business; a numeric loopback address is checked on the spot, so no stray environment variable can point a request carrying `Authorization` off the box. |
-| `SWE_LAB_SUPERVISOR_API_KEY` | Optional. The bearer credential the endpoint needs, put in the `Authorization` header by the binary and forwarded by the proxy. Several keys may be comma-separated; the first is used, split in-process. Unset or empty, no header is sent. It appears in no config, argv, log or summary. |
+| `SWE_LAB_SUPERVISOR_BASE_URL` | **Required.** The forwarding proxy's base URL, `http://<loopback ip>:<port>[/base]`; the binary appends `/v1/messages`. **Plain HTTP, to loopback, by number** — `https://` is refused because the binary carries no TLS, and so is any hostname, `localhost` included, or any address that is not loopback. The proxy terminates TLS and forwards the Anthropic Messages request upstream. A hostname would be resolved, and what it resolves to is the box's business; a numeric loopback address is checked on the spot, so no stray environment variable can point a request carrying `x-api-key` off the box. |
+| `SWE_LAB_SUPERVISOR_API_KEY_ENV` | Optional non-secret name of the environment variable that holds the supervisor API key. Defaults to `ANTHROPIC_API_KEY`. |
+| `ANTHROPIC_API_KEY` (or the configured name) | **Required.** The supervisor's own API key. The binary sends it as `x-api-key` together with `anthropic-version`; it does not reuse the actor's OAuth token. It appears in no config, argv, log, or summary. |
 
 ## Building
 

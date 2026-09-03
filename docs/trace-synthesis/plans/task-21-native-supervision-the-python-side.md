@@ -18,7 +18,8 @@ them, and each is a place the two can drift silently:
 | What | Direction | Where it lives |
 | --- | --- | --- |
 | the config document | Python writes, the binary reads | `native_supervision.py` |
-| `SWE_LAB_SUPERVISOR_API_KEY` | Python passes by reference, the binary reads in-process | the sandbox's `pass_env` |
+| the configured supervisor API-key variable (default `ANTHROPIC_API_KEY`) | Python passes by reference, the binary reads in-process | the sandbox's `pass_env` |
+| `SWE_LAB_SUPERVISOR_API_KEY_ENV` | Python exports the non-secret variable name, the binary reads it | the invocation script (§2) |
 | `SWE_LAB_SUPERVISOR_BASE_URL` | the harness exports it, the binary reads in-process | the invocation script (§2) |
 | the terminal summary | the binary writes, Python classifies from | `native_supervision.py` |
 | the actor's argv | Python hands over, the binary execs | the harness's `actor_argv` (§4) |
@@ -56,12 +57,10 @@ the binary refuses a document naming either. On this side that means:
   proxy. This is a **credential boundary, not environment hygiene** — the
   supervisor sends its requests with the credential attached, so an endpoint
   the host environment could rewrite is one a stray same-named variable could
-  aim at any host, sending a request carrying `Authorization` somewhere we did
+  aim at any host, sending a request carrying `x-api-key` somewhere we did
   not choose. Pinning it in the harness makes "the credential only ever reaches
   the forwarder we started" true by construction;
-- the binary splits a comma-separated list of keys **in-process**. No shell
-  takes it apart, which is the failure mode the cross-repo rules name
-  explicitly;
+- the binary reads the whole API key **in-process**. No shell takes it apart;
 - the config document is a workspace artifact, so a credential in it is a
   credential on disk. Its absence is asserted, against a document first shown
   to be a real one.
@@ -72,13 +71,14 @@ The binary carries no TLS — every dependency is pure Rust, and both mainstream
 TLS stacks carry C — so it speaks plain HTTP to loopback and refuses an
 `https://` base URL with the reason. The TLS termination is a **second
 `cc-reverse-proxy` instance** inside the sandbox, started by the invocation
-script on its own port with `--target https://openrouter.ai/api`.
+script on its own configurable port and HTTPS target. The target defaults to
+the Anthropic API.
 
-Nothing about the proxy changes: it already supports that target, and the
-harness already parameterises it (`proxy_target`). What the Python side adds is
-a second instance — its own port, its own log, its own readiness poll, its own
-entry in the script's single `EXIT` trap. The actor's first instance is
-untouched.
+The supervisor proxy has its own configurable target, port, log, readiness
+poll, and entry in the script's single `EXIT` trap. The actor's first instance
+is untouched. Host-side Python supervision calls its configurable HTTPS base
+URL directly and does not start or require this proxy; only the TLS-less native
+binary needs it.
 
 ## 4. The actor argv is handed over, never rebuilt
 

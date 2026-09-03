@@ -46,7 +46,8 @@ const CRITERION_SHA256: &str = "ffb2dadfe2b36eb3f44f28c4282a8d51e84e1c9435585007
 /// that never speaks or never closes stdin; its descriptors are detached so
 /// the actor's stdout closes when the actor exits, not when the watchdog does.
 const ACTOR: &str = r#"
-[ -n "$SWE_LAB_SUPERVISOR_API_KEY" ] && echo "LEAK: the api key is in the actor's environment" >&2
+[ -n "$CUSTOM_SUPERVISOR_KEY" ] && echo "LEAK: the api key is in the actor's environment" >&2
+[ -n "$SWE_LAB_SUPERVISOR_API_KEY_ENV" ] && echo "LEAK: the api key name is in the actor's environment" >&2
 [ -n "$SWE_LAB_SUPERVISOR_BASE_URL" ] && echo "LEAK: the base url is in the actor's environment" >&2
 ( sleep 30; kill -TERM $$ ) >/dev/null 2>&1 </dev/null &
 read -r prompt || exit 90
@@ -154,7 +155,7 @@ fn settled_actor_states(script: &Path, expect_stopped: bool) -> Vec<char> {
     }
 }
 
-/// A chat-completions endpoint on loopback that answers requests, in order,
+/// An Anthropic Messages endpoint on loopback that answers requests, in order,
 /// with the given assistant contents — each after `delay` — and every
 /// further request with a 500.
 fn endpoint(
@@ -182,8 +183,8 @@ fn endpoint(
             };
             let body = json!({
                 "model": "fake-model",
-                "choices": [{"finish_reason": "stop",
-                             "message": {"role": "assistant", "content": content}}],
+                "content": [{"type": "text", "text": content}],
+                "stop_reason": "end_turn",
             })
             .to_string();
             // A client that gave up on the call before the answer has
@@ -328,12 +329,10 @@ fn supervise_scenario(scenario: &Scenario<'_>) -> Run {
         .arg(&script)
         .env(
             "SWE_LAB_SUPERVISOR_BASE_URL",
-            format!("http://127.0.0.1:{port}/v1"),
+            format!("http://127.0.0.1:{port}"),
         )
-        .env(
-            "SWE_LAB_SUPERVISOR_API_KEY",
-            format!("{KEY_SENTINEL},second-key-never-sent"),
-        )
+        .env("SWE_LAB_SUPERVISOR_API_KEY_ENV", "CUSTOM_SUPERVISOR_KEY")
+        .env("CUSTOM_SUPERVISOR_KEY", KEY_SENTINEL)
         .envs(scenario.hold_before_summary.map(|hold| {
             (
                 "SWE_LAB_SUPERVISOR_DEBUG_HOLD_BEFORE_SUMMARY_MS",
@@ -370,11 +369,11 @@ fn sha256_of(path: &Path) -> String {
     format!("{:x}", Sha256::digest(fs::read(path).unwrap()))
 }
 
-/// The user prompt of one chat-completions request.
+/// The user prompt of one Anthropic Messages request.
 fn prompt_of(answered: &Answered) -> String {
     let (_, body) = answered.request.split_once("\r\n\r\n").unwrap();
     let body: Value = serde_json::from_str(body).unwrap();
-    body["messages"][1]["content"].as_str().unwrap().to_string()
+    body["messages"][0]["content"].as_str().unwrap().to_string()
 }
 
 fn rows_of(text: &str) -> Vec<Value> {
@@ -493,10 +492,16 @@ fn check_endpoint(run: &Run, blocking: &str, context: &str) {
         assert!(
             answered
                 .request
-                .contains(&format!("Authorization: Bearer {KEY_SENTINEL}\r\n")),
+                .contains(&format!("x-api-key: {KEY_SENTINEL}\r\n")),
             "{context}"
         );
-        assert!(!answered.request.contains("second-key"), "{context}");
+        assert!(
+            answered
+                .request
+                .contains("anthropic-version: 2023-06-01\r\n"),
+            "{context}"
+        );
+        assert!(!answered.request.contains("Authorization"), "{context}");
     }
     let first_judge = prompt_of(&run.answered[0]);
     assert!(
@@ -890,7 +895,7 @@ fn a_boundary_row_that_would_cross_the_cap_keeps_the_call_and_drops_the_raw_answ
     assert_eq!(judged["kind"], "silent", "{context}");
     let call = &judged["calls"][0];
     assert_eq!(call["purpose"], "judge", "{context}");
-    assert_eq!(call["finish_reason"], "stop", "{context}");
+    assert_eq!(call["finish_reason"], "end_turn", "{context}");
     assert!(call["raw"].is_null(), "{context}");
     assert!(
         call["raw_omitted"].as_str().unwrap().contains("not kept"),

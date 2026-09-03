@@ -330,8 +330,13 @@ impl Loop {
         let log = supervisor_log.file;
         let (outbox, inbox) = actor::event_queue();
         let (judge_outbox, judge_inbox) = mpsc::sync_channel(1);
-        let command = actor::command(argv, &[config::BASE_URL_ENV, config::API_KEY_ENV])
-            .map_err(|e| format!("actor command: {e}"))?;
+        let hidden_env = [
+            config::BASE_URL_ENV,
+            config::API_KEY_NAME_ENV,
+            model.api_key_env.as_str(),
+        ];
+        let command =
+            actor::command(argv, &hidden_env).map_err(|e| format!("actor command: {e}"))?;
         let limits = actor::Limits {
             line: usize::try_from(config.limits.max_event_line_bytes.get())
                 .map_err(|_| "limits.max_event_line_bytes does not fit".to_string())?,
@@ -1445,8 +1450,9 @@ mod tests {
         };
         let model = Model {
             name: "m".to_string(),
-            endpoint: config::Endpoint::parse("http://127.0.0.1:9/v1").unwrap(),
-            bearer: None,
+            endpoint: config::Endpoint::parse("http://127.0.0.1:9").unwrap(),
+            api_key: None,
+            api_key_env: "TEST_API_KEY".to_string(),
             call_timeout: Duration::from_secs(1),
             stop: Arc::new(AtomicUsize::new(0)),
         };

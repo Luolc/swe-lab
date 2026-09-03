@@ -53,6 +53,9 @@ from swe_lab.trace_synthesis.native_supervision import (
     API_KEY_ENV as SUPERVISOR_API_KEY_ENV,
 )
 from swe_lab.trace_synthesis.native_supervision import (
+    API_KEY_NAME_ENV as SUPERVISOR_API_KEY_NAME_ENV,
+)
+from swe_lab.trace_synthesis.native_supervision import (
     BASE_URL_ENV as SUPERVISOR_BASE_URL_ENV,
 )
 from swe_lab.trace_synthesis.native_supervision import (
@@ -85,10 +88,10 @@ from .constants import (
     CORRECTION_RELAY_LOG_NAME,
     CORRECTION_UNCLEAN_NAME,
     DEFAULT_MODEL,
+    DEFAULT_SUPERVISOR_PROXY_PORT,
     EVENT_STREAM_NAME,
     INFO_ARTIFACT,
     MAX_PROMPT_BYTES,
-    OPENROUTER_API,
     PROMPT_FILENAME,
     PROXY_BASE_URL,
     PROXY_BINARY_AT,
@@ -97,9 +100,7 @@ from .constants import (
     PROXY_STDERR_NAME,
     STREAM_JSON_PROMPT_NAME,
     SUPERVISOR_INFO_NAME,
-    SUPERVISOR_PROXY_BASE_URL,
     SUPERVISOR_PROXY_LOG_NAME,
-    SUPERVISOR_PROXY_PORT,
     SUPERVISOR_PROXY_STDERR_NAME,
     SUPERVISOR_STDERR_NAME,
     UNATTENDED_DENIED_TOOLS,
@@ -362,7 +363,7 @@ def _relay_start_lines() -> list[str]:
   ]
 
 
-def _supervisor_probe_lines() -> list[str]:
+def _supervisor_probe_lines(api_key_env: str) -> list[str]:
   """Return the lines that prove a supervised run can be supervised, or stop.
 
   Two preconditions, both checked before the actor exists, because the failure
@@ -384,6 +385,10 @@ def _supervisor_probe_lines() -> list[str]:
   that rendered it would put it in the script, the script in the workspace,
   and the workspace in the run's artifacts.
 
+  Args:
+    api_key_env: Name of the environment variable holding the supervisor API
+      key. The rendered script checks its presence without printing its value.
+
   Returns:
     The lines, in order. The version answer is also the run's record of which
     build supervised it, which the container does not outlive.
@@ -391,8 +396,8 @@ def _supervisor_probe_lines() -> list[str]:
   binary = shlex.quote(SUPERVISOR_BINARY_AT)
   info = f'"$SANDBOX_WORKSPACE"/{SUPERVISOR_INFO_NAME}'
   return [
-      f'if [ -z "${{{SUPERVISOR_API_KEY_ENV}:-}}" ]; then',
-      f'  echo "FATAL: {SUPERVISOR_API_KEY_ENV} is unset or empty; the'
+      f'if [ -z "${{{api_key_env}:-}}" ]; then',
+      f'  echo "FATAL: {api_key_env} is unset or empty; the'
       f" supervisor cannot reach its model. Pass it to the sandbox by"
       f' reference (pass_env)." >&2',
       f"  exit {_MISCONFIGURED_EXIT}",
@@ -562,6 +567,14 @@ class ClaudeCodeHarness(Harness):
       forked harness lets them drift in flags, denied tools or capture wiring
       invisibly. Mutually exclusive with both other mechanisms — see
       :meth:`__post_init__`.
+    supervisor_proxy_target: Upstream for the optional native-supervisor proxy.
+      Defaults to the Anthropic API and is unused without native supervision.
+    supervisor_proxy_port: Loopback port for that proxy.
+    supervisor_api_key_env: Environment variable holding the supervisor's API
+      key. Only its name is rendered; the value reaches the sandbox through
+      ``pass_env`` and is removed before the actor starts.
+    supervisor_proxy_log_name: Workspace capture log for that proxy.
+    supervisor_proxy_stderr_name: Workspace stderr log for that proxy.
   """
 
   model: str = DEFAULT_MODEL
@@ -576,6 +589,11 @@ class ClaudeCodeHarness(Harness):
   correction_channel: bool = False
   native_supervision: NativeSupervision | None = None
   segmented: SegmentedSupervision | None = None
+  supervisor_proxy_target: str = ANTHROPIC_API
+  supervisor_proxy_port: int = DEFAULT_SUPERVISOR_PROXY_PORT
+  supervisor_api_key_env: str = SUPERVISOR_API_KEY_ENV
+  supervisor_proxy_log_name: str = SUPERVISOR_PROXY_LOG_NAME
+  supervisor_proxy_stderr_name: str = SUPERVISOR_PROXY_STDERR_NAME
 
   def __post_init__(self) -> None:
     """Refuse the one configuration in which two components own the actor.
@@ -595,7 +613,8 @@ class ClaudeCodeHarness(Harness):
     named rather than discovered as a run that ended at a moment neither chose.
 
     Raises:
-      ValueError: More than one of the three supervision mechanisms is on.
+      ValueError: More than one supervision mechanism is on, or native
+        supervisor deployment settings cannot produce a valid invocation.
     """
     if self.native_supervision is not None and self.correction_channel:
       raise ValueError(
@@ -611,6 +630,12 @@ class ClaudeCodeHarness(Harness):
           " when it stops; correction_channel and native_supervision each"
           " attach to one long-lived actor process, so neither composes with it"
       )
+    if self.native_supervision is not None:
+      _ = env_exports({self.supervisor_api_key_env: ""})
+      if not 1 <= self.supervisor_proxy_port <= 65535:
+        raise ValueError("supervisor_proxy_port must be between 1 and 65535")
+      if self.capture == "proxy" and self.supervisor_proxy_port == PROXY_PORT:
+        raise ValueError("the actor and supervisor proxies need distinct ports")
 
   @property
   def _stdin_is_stream_json(self) -> bool:
@@ -1001,8 +1026,8 @@ class ClaudeCodeHarness(Harness):
           "supervisor_summary.json": SUPERVISOR_SUMMARY_NAME,
           "supervisor_stderr.log": SUPERVISOR_STDERR_NAME,
           "supervisor.info": SUPERVISOR_INFO_NAME,
-          "supervisor_proxy_log.jsonl": SUPERVISOR_PROXY_LOG_NAME,
-          "supervisor_proxy_stderr.log": SUPERVISOR_PROXY_STDERR_NAME,
+          "supervisor_proxy_log.jsonl": self.supervisor_proxy_log_name,
+          "supervisor_proxy_stderr.log": self.supervisor_proxy_stderr_name,
       }
     if self.segmented is not None:
       # The loop's own account: one row per segment ending and one per seam
@@ -1249,21 +1274,26 @@ class ClaudeCodeHarness(Harness):
     if self.native_supervision is not None:
       # The supervisor's own upstream, terminated inside the sandbox: the
       # wrapper carries no TLS and refuses an https:// base URL, so it speaks
-      # plain HTTP to this instance and this instance speaks TLS to OpenRouter.
+      # plain HTTP to this optional proxy and the proxy speaks TLS upstream.
       lines += _proxy_start_lines(
-          target=OPENROUTER_API,
-          port=SUPERVISOR_PROXY_PORT,
-          log_name=SUPERVISOR_PROXY_LOG_NAME,
-          own_log_name=SUPERVISOR_PROXY_STDERR_NAME,
+          target=self.supervisor_proxy_target,
+          port=self.supervisor_proxy_port,
+          log_name=self.supervisor_proxy_log_name,
+          own_log_name=self.supervisor_proxy_stderr_name,
           name="supervisor_proxy",
           label="supervisor",
       )
-      # The endpoint is ours to state; the credential is passed by reference
-      # into the sandbox and is never named here with a value.
+      # Both exports are non-secret: one is the loopback proxy address and the
+      # other is the *name* of the credential variable passed by reference.
       lines.append(
-          f"export {SUPERVISOR_BASE_URL_ENV}={SUPERVISOR_PROXY_BASE_URL}"
+          f"export {SUPERVISOR_BASE_URL_ENV}=http://127.0.0.1:"
+          f"{self.supervisor_proxy_port}"
       )
-      lines += _supervisor_probe_lines()
+      lines.append(
+          f"export {SUPERVISOR_API_KEY_NAME_ENV}="
+          f"{shlex.quote(self.supervisor_api_key_env)}"
+      )
+      lines += _supervisor_probe_lines(self.supervisor_api_key_env)
     if self._narrates_event_stream:
       # Streamed, and to a file: a supervisor reads this while the actor is
       # still running, so it has to exist during the run rather than be

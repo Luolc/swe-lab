@@ -107,7 +107,8 @@ fn wrapper_logging(
         .arg("--actor-stderr")
         .arg(stderr_log)
         .args(["--", "sh", "-c", script])
-        .env("SWE_LAB_SUPERVISOR_BASE_URL", "http://127.0.0.1:9/v1")
+        .env("SWE_LAB_SUPERVISOR_BASE_URL", "http://127.0.0.1:9")
+        .env("ANTHROPIC_API_KEY", "test-supervisor-key")
         .env("PROBE", probe);
     command
 }

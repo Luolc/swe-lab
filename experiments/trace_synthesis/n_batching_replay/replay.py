@@ -33,7 +33,6 @@ from swe_lab.trace_synthesis.judge import (
     _prompt,
     _render,
     JUDGE_INSTRUCTIONS,
-    openrouter_transport,
     supervising_policy,
     Transport,
 )
@@ -50,6 +49,7 @@ from swe_lab.trace_synthesis.supervisor import (
     SpeakWhenOffTrack,
     Unjudged,
 )
+from swe_lab.workflow.definitions import SUPERVISOR_MODEL, SUPERVISOR_TRANSPORT
 
 HERE = pathlib.Path(__file__).parent
 RUNS = HERE / "runs"
@@ -77,7 +77,7 @@ CONVERSATION = CORPUS / "conversation.json"
 # Carried over from the real run without change (AGENTS-level: `N` is the only
 # variable). Model: `swe_lab.workflow.definitions.SUPERVISOR_MODEL`. Budget:
 # `SUPERVISOR_BUDGET`. Cooldown and window: `supervising_policy` defaults.
-MODEL = "anthropic/claude-sonnet-5"
+MODEL = SUPERVISOR_MODEL
 BUDGET = 3
 COOLDOWN = 4
 WINDOW = 8
@@ -213,7 +213,7 @@ class RecordingTransport:
     seen: One entry per call made since the last `drain`.
   """
 
-  send: Transport = openrouter_transport
+  send: Transport = SUPERVISOR_TRANSPORT
   prompts: list[str] = dataclasses.field(default_factory=list)
   seen: list[dict[str, Any]] = dataclasses.field(default_factory=list)
 

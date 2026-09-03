@@ -5,7 +5,7 @@ allow-expect-in-tests = true
 
 # Proper nouns that trip `doc_markdown` (pedantic) but are not code. `..`
 # extends clippy's built-in list rather than replacing it.
-doc-valid-idents = ["OpenAI", "OpenRouter", ".."]
+doc-valid-idents = ["OpenAI", ".."]
 
 # Every file the wrapper writes is opened through `outputs::Outputs::create`,
 # which refuses two outputs on one file. A file created anywhere else is a
