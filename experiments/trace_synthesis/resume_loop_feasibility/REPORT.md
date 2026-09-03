@@ -11,7 +11,7 @@ seeing a number. One amendment was made mid-run and is labelled as such
 | Model requested | alias `sonnet`; **the response reported `claude-sonnet-5`** on every call |
 | Sampling parameters | none sent — the CLI exposes no temperature/top-p knob; *recorded as absent* |
 | Ran | 2026-09-03, ~15:30–16:10 Z, one host, no container |
-| Spend | **$0.49 of the $5.00 ceiling** (`runs/ledger.jsonl`) |
+| Spend | **$0.70 of the $5.00 ceiling** (`runs/ledger.jsonl`, 24 non-zero entries summing to $0.6989024) |
 | Task | the 5-step nonce fixture in `toy_task.py`, not a SWE-bench instance |
 
 ---
@@ -44,34 +44,61 @@ reversal is the finding.
    `No response requested.` Deleting them removes the *cause* of text the trace
    keeps (`Q3b`), and deletion alone does not even restore the shape — it leaves
    **two adjacent `user` messages**, which no unsegmented run produces.
-5. **`--resume-session-at <message id>` removes the seam entirely.** Measured on
-   the wire across a four-segment loop: **0** seam text blocks, **0** synthetic
-   assistant messages, `<system-reminder>` count unchanged at the baseline 3,
-   and the role sequence growing `user, system, assistant, user, …` — the shape
-   of an uninterrupted run. The correction arrives as a **text block appended to
-   the message carrying the `tool_result`**, which is the harness's own
-   mid-turn fold.
+5. **`--resume-session-at <message id>` removes both default-resume
+   artifacts — and introduces a third shape of its own.** Measured on the wire
+   across a four-segment loop: **0** `Continue from where you left off.` blocks,
+   **0** synthetic assistant messages, `<system-reminder>` count unchanged at the
+   baseline 3, role sequence growing `user, system, assistant, user, …`.
 
-   **So `Q3a` passes with no post-processing, and `Q3b` does not arise.** The
-   structural disadvantage this experiment believed it had found in §6.2 is
-   removed by §9 — for this flag, at this build, at N=1 per shape.
+   **But the correction lands as `[tool_result, text]` — a block layout neither
+   control produces**, and one seam accumulates per segment (mixed messages at
+   indices `[3]`, `[3,5]`, `[3,5,7]`):
 
-**Recommendation.** The segmented loop is mechanically sound, markedly simpler
-than A′ (no concurrency barrier, no descendant freeze, no judge cancellation,
-no read-gate), and — *with `--resume-session-at`* — produces a wire shape
-indistinguishable from a continuous run. It is worth carrying forward as the
-parallel implementation it was commissioned as.
+   | path | how the correction appears | measured in |
+   | --- | --- | --- |
+   | unsegmented, same task | last message `user [tool_result]` | `q3wire-evidence.json` |
+   | **A′ mid-turn — `-p` stdin *and* the real TUI** | a separate trailing **`system`** message, `[text]`, `len 440`, `sha256 3ba88726…` | `streamjson_input/runs/{proxy,tui}-midturn` |
+   | **anchored resume seam** | `user [tool_result, text]` | `q7loop-evidence.json` |
 
-**Two conditions on that recommendation, and they are not decoration:**
+   So `Q3a` is **not** established: the two default artifacts are gone, and the
+   correction's **inference-time equivalence is unestablished**. A′'s fold is a
+   trailing `system` message; ours is a text block inside the tool-result
+   message. **They are not the same shape, and this report previously said they
+   were.**
+
+**Recommendation — weaker than the previous revision of this file claimed.**
+The segmented loop is mechanically sound and markedly simpler than A′ (no
+concurrency barrier, no descendant freeze, no judge cancellation, no
+read-gate). `--resume-session-at` removes the criterion-(a) violation — the
+synthetic assistant turn the model never wrote. **What it does not do is make
+the trace's shape one that inference produces**, which was the criterion used to
+prefer a carrier in the first place. On the evidence here A′ remains the only
+carrier whose injected shape is *measured* to match an interactive user's.
+
+Carry the segmented loop forward as the documented backup it was commissioned
+as. **Do not commission Phase 1 on a claim of shape-equivalence**; the open
+move is a control that produces `[tool_result, text]` at inference time, or an
+accepted argument that this layout is harmless.
+
+**Three conditions on that recommendation, and they are not decoration:**
+
+- **The `[tool_result, text]` layout is supervision-only on this evidence.**
+  What is *not* established is that it never occurs at inference time: the
+  control is `N=1`, one toy task, `--safe-mode`, and in that run the
+  `<system-reminder>` blocks happened to attach to the opening messages rather
+  than to a tool result. A production session that attaches a reminder to a
+  tool result would produce this layout naturally, and that was not tested.
 
 - **`--resume-session-at` is an undocumented flag** (`hideHelp()`), so the
   clean seam rests on behaviour that carries no compatibility promise. A build
   that changes it silently returns the design to §6.2's dirty seam, which is
   *not* a loud failure — it is a quiet change in the training data. Any
   implementation must **assert the seam shape on the wire**, not assume it.
-- **`Q5b` found a cost cliff, and it is closer than the field name suggests**
-  (§8.2). A seam after ~6 minutes of supervisor deliberation cost **3.7×** a
-  seam taken immediately.
+- **`Q5b` observed one confounded pair at 3.7×** (§8.2) — a seam after ~6
+  minutes of deliberation against one taken immediately. Whether delay *caused*
+  it, and where any boundary lies, is **could not determine**; the registered
+  perturbation control was not run. Any design that depends on a deliberation
+  budget must measure its own.
 
 **What this does not say.** Nothing here measures whether supervision helps.
 That is the paired-arm resolved-rate question, and it is untouched by which
@@ -115,7 +142,7 @@ unit is the whole exchange and the flag buys no granularity.
 
 | arm | assistant messages | `tool_use` | `tool_result` | `subtype` | `terminal_reason` | exit | task complete |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `--max-turns 1` | **1** | 1 | 1 | `error_max_turns` | — | 1 | no |
+| `--max-turns 1` | **1** | 1 | 1 | `error_max_turns` | `max_turns` | 1 | no |
 | `--max-turns 2` | **2** | 2 | 2 | `error_max_turns` | `max_turns` | 1 | no |
 | `--max-turns 3` | **3** | 3 | 3 | `error_max_turns` | `max_turns` | 1 | no |
 | unbounded (control) | **12** | 11 | 11 | `success` | `completed` | 0 | **yes, 5/5 nonces** |
@@ -377,10 +404,20 @@ Two arms identical but for the pause before the final segment (`N=1` per arm):
 | `q5b-nodelay` | ~0 s | **24 058** | **205** | **$0.00765** |
 | `q5b-delay` | **380 s** | 18 428 | **5 901** | **$0.02857** |
 
-**A seam taken after ~6.3 minutes cost 3.7× a seam taken immediately.** The
-conversation-specific prefix had to be re-created (`cache_creation` 205 →
-5 901); the 18 428 tokens still read from cache are the system prompt and tool
-definitions, which are shared across sessions and survived.
+**Observed: one pair, differing 3.7×**, with the conversation-specific prefix
+re-created in the delayed arm (`cache_creation` 205 → 5 901) while the 18 428
+tokens still read from cache are the system prompt and tool definitions.
+
+**That is the whole of the result, and it is less than a cliff.** `loop_arm()`
+gives the two arms **different sessions, different working directories and
+different random nonce and tool-result content**, and unrelated runs of this
+experiment were in flight on the same account throughout. With `N=1` the pause
+is not isolated from any of that. So:
+
+- **Reportable:** one confounded pair at 3.7×.
+- **Could not determine:** whether deliberation time *caused* it, and where the
+  boundary lies. In particular **this report does not establish that the
+  boundary is below one hour** — an earlier revision said it was.
 
 **A correction I owe to my own earlier reading.** Every `cache_creation` in this
 experiment is reported under `ephemeral_1h_input_tokens`, with
@@ -390,12 +427,22 @@ behaviour does not support that**: the conversation prefix was gone at 380 s.
 The field name and the observed retention disagree, and this report goes with
 the observation. What the field means is **not** established here.
 
-**Limits.** `N=1` per arm, and the two arms are different sessions. Unrelated
-runs of this experiment were in flight on the same account during the pause,
-which is a confound that cannot be excluded from an `N=1` pair. What is safe to
-carry is the direction and the rough size, not the exact boundary: **the cliff
-exists and is nearer than an hour**. The eventual design should measure its own
-number rather than inherit this one.
+**A registered control arm was not run, and that is a protocol deviation.**
+README.md's Q5a registered a perturbation arm — deliberately changing the
+dynamic system-prompt inputs between segments — whose job was to show that this
+instrument can *see* a cache miss at all. `loop_arm(perturb=True)` exists and
+**has no caller**; no ledger row corresponds to it. It was not run, and its
+absence was not previously reported.
+
+What partly covers that gap arrived by accident rather than by design: the
+delayed arm above **did** move the fields (`cache_read` 24 058 → 18 428,
+`cache_creation` 205 → 5 901), so the reader is not blind to a miss. That is
+weaker than the registered control in the way that matters — it was not
+constructed to vary one thing, so it demonstrates the instrument responds while
+leaving *what it responds to* confounded.
+
+**The eventual design must measure its own number.** Nothing here supports
+inheriting one.
 
 ## 9. Q7 — the hidden flags ★
 
@@ -418,17 +465,23 @@ A four-segment loop, `--max-turns 1` per segment, segment *n* resuming with
 Credential gate first, both directions: `[REDACTED]` **25** occurrences,
 credential shapes **0**.
 
-Five requests were captured for the four segments; the two smallest are
-auxiliary calls (1 and 2 messages) rather than main-loop turns, and the table
-below is **captured requests**, not a per-segment mapping:
+Five requests were captured for four segments. **Exactly one is auxiliary** —
+it carries no `tools` array; the other four each carry 25 tools and correspond
+to the four segments at 2, 4, 6 and 8 messages. An earlier revision called the
+2-message request a second auxiliary call, which discarded the capture's own
+within-run baseline; `has_tools` is now recorded in the witness rather than
+guessed from message counts, following `streamjson_input`'s selection rule.
 
-| captured request | messages | role sequence | seam text blocks | synthetic assistant | `<system-reminder>` |
-| --- | --- | --- | --- | --- | --- |
-| 1 | 1 | `user` | **0** | **0** | 0 |
-| 2 | 2 | `user, system` | **0** | **0** | 3 |
-| 3 | 4 | `user, system, assistant, user` | **0** | **0** | 3 |
-| 4 | 6 | `user, system, assistant, user, assistant, user` | **0** | **0** | 3 |
-| 5 | 8 | `user, system, assistant, user, assistant, user, assistant, user` | **0** | **0** | 3 |
+| request | kind | msgs | last message blocks | seam text | synthetic assistant | `<system-reminder>` |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | auxiliary (0 tools) | 1 | `[text]` | **0** | **0** | 0 |
+| 2 | agent-loop (25 tools) | 2 | `[text]` (role `system`) | **0** | **0** | 3 |
+| 3 | agent-loop | 4 | **`[tool_result, text]`** | **0** | **0** | 3 |
+| 4 | agent-loop | 6 | **`[tool_result, text]`** | **0** | **0** | 3 |
+| 5 | agent-loop | 8 | **`[tool_result, text]`** | **0** | **0** | 3 |
+
+Mixed `tool_result`+`text` messages accumulate across the loop — `[3]`, then
+`[3,5]`, then `[3,5,7]` — so each seam leaves one permanently in the history.
 
 **Both detectors demonstrably fire, and on this same code path.** The zeros
 above are produced by `run_matrix.wire_shapes()`; running *that same function*
@@ -446,16 +499,34 @@ the repair; regenerate it with:
 python -c "import run_matrix, pathlib; print(run_matrix.wire_shapes(pathlib.Path('<scratch>/wire/proxy.jsonl')))"
 ```
 
-The correction's landing shape, from the request body:
+### 9.1a The landing shape — and why the earlier reading was wrong
 
 ```
 5 user [tool_result, text]   [tool_result] + "Continue."
 ```
 
-It is appended to the message carrying the `tool_result` — **the harness's own
-mid-turn fold**, no wrapper and no synthetic turn. This is the same *kind* of
-shape A′ was shown to produce; **it was not compared byte-for-byte against A′'s
-`len 440 / sha256 3ba88726…fb90c8` block, and no such equality is claimed here.**
+An earlier revision called this "the harness's own mid-turn fold". **That was
+wrong, and the instrument used to support it could not have seen the error.**
+`wire_shapes()` compares role sequences and counts two fixed literals; block
+composition *within* a message is invisible to both, and block composition is
+exactly where these paths differ:
+
+| path | last message | measured in |
+| --- | --- | --- |
+| unsegmented, same task | `user [tool_result]` | `q3wire-evidence.json` req 3 |
+| A′ mid-turn, `-p` stdin | trailing `system [text]`, `len 440`, `sha256 3ba88726…` | `streamjson_input/runs/proxy-midturn` |
+| A′ mid-turn, **real TUI** | trailing `system [text]`, same digest | `streamjson_input/runs/tui-midturn` |
+| **anchored resume seam** | `user [tool_result, text]` | `q7loop-evidence.json` |
+
+The TUI row is the one that matters: it is the **inference-time** path, it is
+committed evidence, and `tests/test_streamjson_input_evidence.py` pins its role
+and digest. **Our seam is not that shape.**
+
+**Established:** the two default-resume artifacts are absent under
+`--resume-session-at`. **Not established:** that the correction arrives in a
+shape inference produces.
+`tests/test_resume_loop_evidence.py::test_the_three_correction_shapes_are_distinct`
+pins all three so a later revision cannot quietly re-merge them.
 
 Per-segment cost with the anchor, which is *cheaper* than the dirty seam because
 there are no seam records to cache:
@@ -487,6 +558,18 @@ there are no seam records to cache:
   **The decisive measurement in this report (§9.1) is the one that mistake very
   nearly cost.**
 - **A guard the actor can see is a treatment** (§8.1).
+- **When a check reports a violation, suspect the checker first.** `evidence.py`
+  refused to write every witness, reporting an Anthropic-key shape. The shape
+  was in **its own output**: the credential gate keyed its counters by the regex
+  patterns themselves, so the artifact reporting "0 occurrences" contained the
+  pattern text and tripped the scan. The raw captures contain 0. A checker that
+  fires on every input is worth exactly as much as one that never fires, and
+  both look like diligence.
+- **An instrument can be sound and still be aimed at the wrong proposition.**
+  `wire_shapes()` was independently confirmed to have discriminating power on
+  the literals it counts — and the P0 above is that its output was used to
+  support a *block-shape* claim it cannot observe. Fixing a detector's
+  sensitivity does not widen what it can speak to.
 - **Counting events is not counting messages** (§2).
 - **The reversal is the shape to expect.** §6.2 was a correct measurement whose
   scope was one flag wider than the sentence it was about to be written into.
@@ -514,3 +597,13 @@ launch rather than by anyone remembering it. Per-run figures are in
 - **`--resume-session-at` under compaction, parallel tool calls and sub-agents**
   is untested, and those are exactly where a turn's boundary is least like the
   simple case measured here.
+- **Whether `[tool_result, text]` ever occurs at inference time.** The control
+  says it did not in one toy task under `--safe-mode`; that is not the same
+  sentence. A production session attaching a `<system-reminder>` to a tool
+  result would produce this layout without any supervision, and settling that
+  would settle whether the seam is a defect at all.
+- **What `--resume-drops-turn` does**, which is the one flag that might make the
+  seam A′-shaped rather than merely artifact-free.
+- **The `ls` incident in §10 has no committed trace.** It is disclosed
+  self-report, not evidence, and is recorded as a method note rather than a
+  finding.

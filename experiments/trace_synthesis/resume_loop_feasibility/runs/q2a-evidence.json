@@ -1,0 +1,119 @@
+{
+  "kind": "q2a-turn-unit",
+  "derivation": "driver.summarize() over each run's events.jsonl",
+  "arms": [
+    {
+      "arm": "1",
+      "max_turns": 1,
+      "exit_code": 1,
+      "events_sha256": "03c7b7fcb1878e91ec484e8895b04c013752ae4b00cf17c8eef57431a58c367e",
+      "events_bytes": 8483,
+      "assistant_events": 2,
+      "assistant_messages": 1,
+      "tool_use_blocks": 1,
+      "tool_result_blocks": 1,
+      "tool_names": [
+        "Bash"
+      ],
+      "result_subtype": "error_max_turns",
+      "result_terminal_reason": "max_turns",
+      "result_is_error": true,
+      "result_num_turns": 2,
+      "model_ids_in_response": [
+        "claude-sonnet-5"
+      ],
+      "total_cost_usd": 0.0282566,
+      "claude_version": "2.1.259 (Claude Code)",
+      "task_complete": false,
+      "nonces_in_result": 0
+    },
+    {
+      "arm": "2",
+      "max_turns": 2,
+      "exit_code": 1,
+      "events_sha256": "4a9658aa3dadd75b0c5ea607bf32577600fa47975c582d482789a767ac419690",
+      "events_bytes": 14332,
+      "assistant_events": 4,
+      "assistant_messages": 2,
+      "tool_use_blocks": 2,
+      "tool_result_blocks": 2,
+      "tool_names": [
+        "Read",
+        "Bash"
+      ],
+      "result_subtype": "error_max_turns",
+      "result_terminal_reason": "max_turns",
+      "result_is_error": true,
+      "result_num_turns": 3,
+      "model_ids_in_response": [
+        "claude-sonnet-5"
+      ],
+      "total_cost_usd": 0.035967599999999995,
+      "claude_version": "2.1.259 (Claude Code)",
+      "task_complete": false,
+      "nonces_in_result": 0
+    },
+    {
+      "arm": "3",
+      "max_turns": 3,
+      "exit_code": 1,
+      "events_sha256": "2889443d2ef37c2168e4fddb574ea30e03d657b08c3da92042f6c64f8388752e",
+      "events_bytes": 14811,
+      "assistant_events": 5,
+      "assistant_messages": 3,
+      "tool_use_blocks": 3,
+      "tool_result_blocks": 3,
+      "tool_names": [
+        "Read",
+        "Bash",
+        "Read"
+      ],
+      "result_subtype": "error_max_turns",
+      "result_terminal_reason": "max_turns",
+      "result_is_error": true,
+      "result_num_turns": 4,
+      "model_ids_in_response": [
+        "claude-sonnet-5"
+      ],
+      "total_cost_usd": 0.043238200000000004,
+      "claude_version": "2.1.259 (Claude Code)",
+      "task_complete": false,
+      "nonces_in_result": 0
+    },
+    {
+      "arm": "none",
+      "max_turns": null,
+      "exit_code": 0,
+      "events_sha256": "a7366d5e35819ce08e651203dc1eb996c5cd4acaf27e8b9f663f59c229c9ec52",
+      "events_bytes": 35296,
+      "assistant_events": 15,
+      "assistant_messages": 12,
+      "tool_use_blocks": 11,
+      "tool_result_blocks": 11,
+      "tool_names": [
+        "Bash",
+        "Read",
+        "Bash",
+        "Read",
+        "Bash",
+        "Read",
+        "Bash",
+        "Read",
+        "Bash",
+        "Read",
+        "Write"
+      ],
+      "result_subtype": "success",
+      "result_terminal_reason": "completed",
+      "result_is_error": false,
+      "result_num_turns": 12,
+      "model_ids_in_response": [
+        "claude-sonnet-5"
+      ],
+      "total_cost_usd": 0.107195,
+      "claude_version": "2.1.259 (Claude Code)",
+      "task_complete": true,
+      "nonces_in_result": 5
+    }
+  ]
+}

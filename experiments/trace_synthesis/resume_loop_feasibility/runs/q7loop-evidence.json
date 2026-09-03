@@ -1,83 +1,100 @@
 {
-  "segments": [
-    {
-      "segment": 1,
-      "anchor_used": false,
-      "exit_code": 1,
-      "result_subtype": "error_max_turns",
-      "tools": [
-        "Read"
-      ],
-      "cache_read_input_tokens": 31375,
-      "cache_creation_input_tokens": 8422,
-      "total_cost_usd": 0.044083000000000004
-    },
-    {
-      "segment": 2,
-      "anchor_used": true,
-      "exit_code": 1,
-      "result_subtype": "error_max_turns",
-      "tools": [
-        "Bash"
-      ],
-      "cache_read_input_tokens": 39797,
-      "cache_creation_input_tokens": 195,
-      "total_cost_usd": 0.0098034
-    },
-    {
-      "segment": 3,
-      "anchor_used": true,
-      "exit_code": 1,
-      "result_subtype": "error_max_turns",
-      "tools": [
-        "Read"
-      ],
-      "cache_read_input_tokens": 39992,
-      "cache_creation_input_tokens": 127,
-      "total_cost_usd": 0.0095904
-    },
-    {
-      "segment": 4,
-      "anchor_used": true,
-      "exit_code": 1,
-      "result_subtype": "error_max_turns",
-      "tools": [
-        "Bash"
-      ],
-      "cache_read_input_tokens": 40119,
-      "cache_creation_input_tokens": 163,
-      "total_cost_usd": 0.009529800000000001
-    }
-  ],
+  "source_sha256": "bb4e0fad1bcf3981fe9f1b64bbb8220f16d8d7dff4d0b325f896b169c7552edd",
+  "source_bytes": 132820,
   "credential_gate": {
     "redaction_marker_occurrences": 25,
     "credential_shapes": {
-      "sk_ant": 0,
+      "anthropic_key_prefix": 0,
       "bearer_jwt": 0,
       "jwt_shaped": 0
     }
   },
-  "wire": [
+  "requests": [
     {
+      "index": 0,
+      "has_tools": false,
+      "tool_count": 0,
+      "kind": "auxiliary",
       "messages": 1,
       "role_sequence": [
         "user"
       ],
+      "message_shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 535,
+              "sha256": "41fb20b0c2793db9c3e1ea5db046e8fab45371cc72dc3dae25cecc9ce6e69777"
+            }
+          ]
+        }
+      ],
+      "last_message_blocks": [
+        "text"
+      ],
+      "mixed_tool_result_and_text_indices": [],
       "seam_user_text_blocks": 0,
       "seam_synthetic_assistant": 0,
       "system_reminder_blocks": 0
     },
     {
+      "index": 1,
+      "has_tools": true,
+      "tool_count": 25,
+      "kind": "agent-loop",
       "messages": 2,
       "role_sequence": [
         "user",
         "system"
       ],
+      "message_shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 587,
+              "sha256": "59afdf410bfc08968791dd26782b444e1bd7b5cc138000dbc8f678ffd4929f1f"
+            },
+            {
+              "len": 334,
+              "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "blocks": [
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 7957,
+              "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
+            }
+          ]
+        }
+      ],
+      "last_message_blocks": [
+        "text"
+      ],
+      "mixed_tool_result_and_text_indices": [],
       "seam_user_text_blocks": 0,
       "seam_synthetic_assistant": 0,
       "system_reminder_blocks": 3
     },
     {
+      "index": 2,
+      "has_tools": true,
+      "tool_count": 25,
+      "kind": "agent-loop",
       "messages": 4,
       "role_sequence": [
         "user",
@@ -85,11 +102,74 @@
         "assistant",
         "user"
       ],
+      "message_shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 587,
+              "sha256": "59afdf410bfc08968791dd26782b444e1bd7b5cc138000dbc8f678ffd4929f1f"
+            },
+            {
+              "len": 334,
+              "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "blocks": [
+            "str"
+          ],
+          "text_digests": [
+            {
+              "len": 7957,
+              "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use:Read"
+          ],
+          "text_digests": []
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ]
+        }
+      ],
+      "last_message_blocks": [
+        "tool_result",
+        "text"
+      ],
+      "mixed_tool_result_and_text_indices": [
+        3
+      ],
       "seam_user_text_blocks": 0,
       "seam_synthetic_assistant": 0,
       "system_reminder_blocks": 3
     },
     {
+      "index": 3,
+      "has_tools": true,
+      "tool_count": 25,
+      "kind": "agent-loop",
       "messages": 6,
       "role_sequence": [
         "user",
@@ -99,11 +179,96 @@
         "assistant",
         "user"
       ],
+      "message_shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 587,
+              "sha256": "59afdf410bfc08968791dd26782b444e1bd7b5cc138000dbc8f678ffd4929f1f"
+            },
+            {
+              "len": 334,
+              "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "blocks": [
+            "str"
+          ],
+          "text_digests": [
+            {
+              "len": 7957,
+              "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use:Read"
+          ],
+          "text_digests": []
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use:Bash"
+          ],
+          "text_digests": []
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ]
+        }
+      ],
+      "last_message_blocks": [
+        "tool_result",
+        "text"
+      ],
+      "mixed_tool_result_and_text_indices": [
+        3,
+        5
+      ],
       "seam_user_text_blocks": 0,
       "seam_synthetic_assistant": 0,
       "system_reminder_blocks": 3
     },
     {
+      "index": 4,
+      "has_tools": true,
+      "tool_count": 25,
+      "kind": "agent-loop",
       "messages": 8,
       "role_sequence": [
         "user",
@@ -115,10 +280,112 @@
         "assistant",
         "user"
       ],
+      "message_shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 587,
+              "sha256": "59afdf410bfc08968791dd26782b444e1bd7b5cc138000dbc8f678ffd4929f1f"
+            },
+            {
+              "len": 334,
+              "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "blocks": [
+            "str"
+          ],
+          "text_digests": [
+            {
+              "len": 7957,
+              "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use:Read"
+          ],
+          "text_digests": []
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use:Bash"
+          ],
+          "text_digests": []
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "tool_use:Read"
+          ],
+          "text_digests": []
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ]
+        }
+      ],
+      "last_message_blocks": [
+        "tool_result",
+        "text"
+      ],
+      "mixed_tool_result_and_text_indices": [
+        3,
+        5,
+        7
+      ],
       "seam_user_text_blocks": 0,
       "seam_synthetic_assistant": 0,
       "system_reminder_blocks": 3
     }
   ],
-  "ledger_total_usd": 0.6989
+  "label": "anchored-resume-session-at"
 }
