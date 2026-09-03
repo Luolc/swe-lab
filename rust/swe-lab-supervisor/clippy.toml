@@ -6,3 +6,31 @@ allow-expect-in-tests = true
 # Proper nouns that trip `doc_markdown` (pedantic) but are not code. `..`
 # extends clippy's built-in list rather than replacing it.
 doc-valid-idents = ["OpenAI", "OpenRouter", ".."]
+
+# Every file the wrapper writes is opened through `outputs::Outputs::create`,
+# which refuses two outputs on one file. A file created anywhere else is a
+# second door that check does not guard — so there is none: the gate treats
+# this lint as an error. Tests (unit and integration) are allowed to write
+# their fixtures, at their crate roots.
+disallowed-methods = [
+    # Every way a file gets created, and the two ways one gets moved onto
+    # another's path. An enumeration, so it may be short a name — and a new
+    # name cannot appear on its own: the toolchain is pinned in
+    # `rust-toolchain.toml` (its one home; CI and the container derive theirs
+    # from it), so a new way to create a file in std can only arrive with a
+    # bump of that file. When bumping it, re-check this list against the
+    # release notes for new file-creating entry points (`std::fs`, `File`);
+    # likewise when bumping `nix` in `Cargo.toml`.
+    { path = "std::fs::File::create", reason = "open an output through outputs::Outputs, which refuses two outputs on one file" },
+    { path = "std::fs::File::create_new", reason = "open an output through outputs::Outputs, which refuses two outputs on one file" },
+    { path = "std::fs::File::options", reason = "open an output through outputs::Outputs, which refuses two outputs on one file" },
+    { path = "std::fs::OpenOptions::new", reason = "open an output through outputs::Outputs, which refuses two outputs on one file" },
+    { path = "std::fs::OpenOptions::open", reason = "open an output through outputs::Outputs, which refuses two outputs on one file" },
+    { path = "std::fs::write", reason = "open an output through outputs::Outputs, which refuses two outputs on one file" },
+    { path = "std::fs::copy", reason = "open an output through outputs::Outputs, which refuses two outputs on one file" },
+    { path = "std::fs::hard_link", reason = "open an output through outputs::Outputs, which refuses two outputs on one file" },
+    { path = "std::os::unix::fs::symlink", reason = "open an output through outputs::Outputs, which refuses two outputs on one file" },
+    { path = "std::fs::rename", reason = "replace an output through outputs::Outputs::replace, the door's own rename" },
+    { path = "nix::fcntl::open", reason = "open an output through outputs::Outputs, which refuses two outputs on one file" },
+    { path = "nix::fcntl::openat", reason = "open an output through outputs::Outputs, which refuses two outputs on one file" },
+]

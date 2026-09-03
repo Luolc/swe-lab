@@ -8,6 +8,7 @@
 //! reference and read in-process. A credential never appears in the file, on
 //! the command line, or in any artifact.
 
+use std::net::{IpAddr, SocketAddr};
 use std::num::{NonZeroU32, NonZeroU64};
 use std::path::Path;
 
@@ -222,10 +223,10 @@ fn is_sha256_hex(digest: &str) -> bool {
 /// apart, with the chat-completions path appended.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Endpoint {
-    /// The host to connect to, as written.
-    pub host: String,
-    /// The port, `80` when the URL gives none.
-    pub port: u16,
+    /// Where to connect: a loopback address and a port, both given as
+    /// numbers in the URL — nothing here is resolved, so nothing about it
+    /// depends on the environment the binary runs in.
+    pub address: SocketAddr,
     /// The request target: the base URL's path plus `/chat/completions`.
     pub path: String,
 }
@@ -248,15 +249,23 @@ impl Endpoint {
         }
     }
 
-    /// Take an `http://host[:port][/base]` URL apart and append the
-    /// chat-completions path.
+    /// Take an `http://<loopback ip>:<port>[/base]` URL apart and append
+    /// the chat-completions path.
+    ///
+    /// Loopback only, by number: the supervisor sends a bearer token in
+    /// clear, and the design has a forwarder on this host terminate TLS.
+    /// A hostname — `localhost` included — would be resolved, and what it
+    /// resolves to depends on the box; a numeric loopback address is a
+    /// fact the binary can check on the spot. So no stray environment
+    /// variable can point a request carrying `Authorization` off the box:
+    /// that is a property of the type, not of the deployment.
     ///
     /// # Errors
     ///
     /// Any other scheme — `https://` is refused with the reason, since the
-    /// binary carries no TLS — an empty host, or an unparseable port. The
-    /// message names the fault, never the value: a URL can carry a signed
-    /// token or a private host.
+    /// binary carries no TLS — a hostname or a non-loopback address, or a
+    /// missing or unparseable port. The message names the fault, never
+    /// the value: a URL can carry a signed token or a private host.
     pub fn parse(url: &str) -> Result<Self, String> {
         if url.starts_with("https://") {
             return Err(
@@ -271,20 +280,24 @@ impl Endpoint {
             Some(at) => (&rest[..at], rest[at..].trim_end_matches('/')),
             None => (rest, ""),
         };
-        let (host, port) = match authority.rsplit_once(':') {
-            Some((host, port)) => (
-                host,
-                port.parse::<u16>()
-                    .map_err(|_| "the port is not a port number".to_string())?,
-            ),
-            None => (authority, 80),
+        let Some((host, port)) = authority.rsplit_once(':') else {
+            return Err("the URL gives no port".to_string());
         };
-        if host.is_empty() {
-            return Err("the URL has no host".to_string());
+        let port = port
+            .parse::<u16>()
+            .map_err(|_| "the port is not a port number".to_string())?;
+        // `[::1]` as the URL writes it; `127.0.0.1` as is.
+        let ip = host
+            .strip_prefix('[')
+            .and_then(|h| h.strip_suffix(']'))
+            .unwrap_or(host)
+            .parse::<IpAddr>()
+            .map_err(|_| "the host is not a numeric IP address".to_string())?;
+        if !ip.is_loopback() {
+            return Err("the address is not loopback".to_string());
         }
         Ok(Self {
-            host: host.to_string(),
-            port,
+            address: SocketAddr::new(ip, port),
             path: format!("{base}/chat/completions"),
         })
     }
@@ -411,20 +424,20 @@ pub(crate) mod tests {
         assert_eq!(
             Endpoint::parse("http://127.0.0.1:8080/v1").unwrap(),
             Endpoint {
-                host: "127.0.0.1".to_string(),
-                port: 8080,
+                address: "127.0.0.1:8080".parse().unwrap(),
                 path: "/v1/chat/completions".to_string(),
             }
         );
         assert_eq!(
-            Endpoint::parse("http://judge/api/v1/").unwrap().path,
+            Endpoint::parse("http://127.0.0.1:8080/api/v1/")
+                .unwrap()
+                .path,
             "/api/v1/chat/completions"
         );
         assert_eq!(
-            Endpoint::parse("http://judge").unwrap(),
+            Endpoint::parse("http://[::1]:8080").unwrap(),
             Endpoint {
-                host: "judge".to_string(),
-                port: 80,
+                address: "[::1]:8080".parse().unwrap(),
                 path: "/chat/completions".to_string(),
             }
         );
@@ -435,15 +448,48 @@ pub(crate) mod tests {
         );
         // The fault is named; the value never is, whatever it carries.
         for (url, fault) in [
-            ("http://:8080/", "no host"),
+            ("http://:8080/", "numeric IP"),
             ("http://host:notaport/", "port"),
             ("judge:8080", "not an http://"),
             ("http://sk-SECRET-TOKEN@host:x/", "port"),
+            ("http://127.0.0.1/v1", "no port"),
         ] {
             let error = Endpoint::parse(url).unwrap_err();
             assert!(error.contains(fault), "{url}: {error}");
             assert!(!error.contains("SECRET"), "{url}: {error}");
             assert!(!error.contains("notaport"), "{url}: {error}");
+        }
+    }
+
+    /// Anything that is not a numeric loopback address is refused before
+    /// a connection could be attempted — a hostname, `localhost` among
+    /// them, since what it resolves to is the box's business; and a
+    /// numeric address off the box. The reason names the fault, not the
+    /// host.
+    #[test]
+    fn only_a_numeric_loopback_address_is_an_endpoint() {
+        for (url, fault) in [
+            ("http://judge:8080/v1", "numeric IP"),
+            ("http://localhost:8080/v1", "numeric IP"),
+            ("http://attacker.example:80/v1", "numeric IP"),
+            ("http://10.0.0.7:8080/v1", "not loopback"),
+            ("http://[fe80::1]:8080/v1", "not loopback"),
+            ("http://0.0.0.0:8080/v1", "not loopback"),
+        ] {
+            let error = Endpoint::parse(url).unwrap_err();
+            assert!(error.contains(fault), "{url}: {error}");
+            assert!(!error.contains("attacker"), "{url}: {error}");
+            assert!(!error.contains("10.0.0.7"), "{url}: {error}");
+        }
+        for url in [
+            "http://127.0.0.1:1/v1",
+            "http://127.255.255.254:65535",
+            "http://[::1]:1",
+        ] {
+            assert!(
+                Endpoint::parse(url).unwrap().address.ip().is_loopback(),
+                "{url}"
+            );
         }
     }
 }

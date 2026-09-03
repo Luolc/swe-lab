@@ -404,6 +404,26 @@ def _supervisor_probe_lines() -> list[str]:
   ]
 
 
+#: Every flag the wrapper is given, and the workspace file each names. Module
+#: scope rather than a local, so that a check can hand the **binary itself**
+#: this exact flag set: the CLI is a second hand-mirrored contract beside the
+#: config schema, and the round-trip that exercises one covers the other for
+#: free only if both use this mapping rather than a second transcription of it.
+SUPERVISOR_FLAGS: Mapping[str, str] = {
+    "--config": SUPERVISOR_CONFIG_NAME,
+    "--actor-event-log": EVENT_STREAM_NAME,
+    "--supervisor-log": SUPERVISOR_LOG_NAME,
+    "--summary": SUPERVISOR_SUMMARY_NAME,
+    "--actor-stderr": AGENT_STDERR_NAME,
+    # The prompt travels by path, not on stdin. The wrapper writes these bytes
+    # unparsed as the first thing the actor reads and then holds that stdin
+    # open, because when it closes is the wrapper's policy to decide — a quiet
+    # result closes it, a correction at a result boundary keeps it open — and a
+    # plain file's EOF must not decide instead.
+    "--actor-prompt": STREAM_JSON_PROMPT_NAME,
+}
+
+
 def _supervisor_command(actor_argv: Sequence[str]) -> str:
   """Return the one command line that runs the actor under the wrapper.
 
@@ -429,21 +449,9 @@ def _supervisor_command(actor_argv: Sequence[str]) -> str:
   Returns:
     The command line, without redirects.
   """
-  flags = {
-      "--config": SUPERVISOR_CONFIG_NAME,
-      "--actor-event-log": EVENT_STREAM_NAME,
-      "--supervisor-log": SUPERVISOR_LOG_NAME,
-      "--summary": SUPERVISOR_SUMMARY_NAME,
-      "--actor-stderr": AGENT_STDERR_NAME,
-      # The prompt travels by path, not on stdin. The wrapper writes these
-      # bytes unparsed as the first thing the actor reads and then holds that
-      # stdin open, because when it closes is the wrapper's policy to decide —
-      # a quiet result closes it, a correction at a result boundary keeps it
-      # open — and a plain file's EOF must not decide instead.
-      "--actor-prompt": STREAM_JSON_PROMPT_NAME,
-  }
   named = " ".join(
-      f'{flag} "$SANDBOX_WORKSPACE"/{name}' for flag, name in flags.items()
+      f'{flag} "$SANDBOX_WORKSPACE"/{name}'
+      for flag, name in SUPERVISOR_FLAGS.items()
   )
   return (
       f"{shlex.quote(SUPERVISOR_BINARY_AT)} run {named}"

@@ -70,11 +70,23 @@ than in #375:
   chosen silently by a binary. The replay experiment
   ([`experiments/trace_synthesis/n_batching_replay/`](../../../experiments/trace_synthesis/n_batching_replay/REPORT.md))
   measured no effect of `N` — and found why it could not (#381).
-- **`policy.block_actor_while_judging` is a required boolean.** Blocking and
-  the stale gate are two answers to the same lag; a run says which it uses.
-  Off, the actor runs ahead and overtaken verdicts are discarded. On, the
-  wrapper stops reading the actor's stdout for the duration of a judgment
-  (§4). Neither is a default.
+- **`policy.block_actor_while_judging` is required, and three-way.** Blocking
+  and the stale gate are two answers to the same lag; a run says which it
+  uses. `off`: the actor runs ahead and overtaken verdicts are discarded.
+  `stdout`: the wrapper stops reading the actor's stdout for the duration of
+  a judgment. `sigstop`: the wrapper stops the actor's process group and
+  resumes it. None is a default in the binary; **`sigstop` is the one a run
+  should choose**, for the reason measured in §4.
+- **`task` is the judge's, and the actor's prompt is a file.** The config's
+  `task` is the goal statement quoted to the judge and the writer. The actor's
+  prompt — `instance.prompt()`, long, with repository detail and format
+  requirements — is a file the wrapper is given as `--actor-prompt`, writes
+  on the actor's stdin byte for byte before anything else, and never reads.
+  Binding the two would mean that editing what the judge measures against
+  changes what the actor was told, a semantic error, not an inconvenience.
+  Forwarding the wrapper's own stdin instead would tie the actor's stdin to a
+  file's end, when its closing is the loop's decision (§3, ending); the
+  wrapper's stdin plays no part.
 
 `model` carries only the name. The endpoint and the credential are the
 environment's (§1); a local stub needs no credential, and the binary sends
@@ -82,49 +94,135 @@ no `Authorization` header when the variable is unset.
 
 ## 3. Judgment boundaries under batching
 
+This section is the one definition of a boundary — of what
+`summary.boundaries` counts; the crate's module docs and README point here.
+
 - **A boundary falls at every `N`-th admitted assistant message**, counted
   from the last boundary, **and at every actor `result` event that has new
   admitted evidence behind it** — the turn's end is the last moment a
   correction can reach the actor before its stdin decides the run's fate, so
   the partial batch is judged rather than dropped. A `result` with nothing
   new since the last judgment is not judged again on an identical window.
-- **`N = 1` is "every assistant message", not "every event".** The Python
-  runtime consults the policy at every stream event; no `N` reproduces that,
-  and it is not meant to — every-event judging is what #375 §2 batches away.
-- **`cooldown` is counted in judgment boundaries.** The Python docstring says
-  "how many boundaries must pass between interventions" and implements it as
-  a cursor difference, which under every-event judging is the same thing.
-  Under batching the two diverge, and the docstring's meaning is the one
-  kept: a boundary is a judgment, whatever its outcome (a lapse or a stale
-  verdict still passes).
+- **The one exception: a `result` is covered by a boundary that has yet to
+  take its snapshot.** A boundary pending behind the judgment in flight, or
+  one waiting for the `sigstop` barrier (§4), judges the current snapshot
+  when its turn comes — the evidence the `result` closes is in it — so the
+  `result` is no boundary of its own and is not counted. Counting it would
+  count a judgment point that does not exist: every boundary counted is a
+  point at which the policy was asked, or a point on record for why it was
+  not (§5 has the mechanics).
+- **`N = 1` is "every assistant message", not "every event".** Events that
+  are not admitted assistant messages — the actor's echo of a user turn,
+  system events, a `result` — count towards no boundary; every-event judging
+  is what #375 §2 batches away, and no `N` reproduces it.
+- **`cooldown` is counted in judgment boundaries.** A boundary is a
+  judgment, whatever its outcome — a lapse, a silent verdict or a stale one
+  all pass — and `cooldown` is how many of them must fall between two
+  deliveries. The budget, by contrast, is spent only on delivery: a stale
+  verdict costs nothing.
 - **The empty-window invariant holds ahead of the gates** — a boundary whose
   window holds no admitted evidence consults no judge and is recorded as
-  `unjudged`, the same word and the same reason as Python's `Unjudged`
-  ([#379](https://github.com/Luolc/swe-lab/pull/379)), and it has the same
-  named test.
+  `unjudged` (`policy::tests::an_empty_evidence_window_never_consults_the_judge`
+  is the named test; the reason it was first stated is
+  [#379](https://github.com/Luolc/swe-lab/pull/379)).
+- **A boundary and a judgment are one thread apart.** The loop owns the
+  evidence, the policy state, the actor's stdin and the log; a judgment is a
+  pure function of a snapshot (window, task, what has been said, the gate
+  state) and runs on its own thread, so draining never waits on a model call.
+  The two model calls of one judgment happen in order on that thread, and
+  neither is retried.
 
-## 4. Blocking the actor: the absence of a read
+## 4. Blocking the actor: two mechanisms behind one gate
 
-The first mechanism of #375's first comment: **stop reading the actor's
+#375's first comment names the first mechanism: **stop reading the actor's
 stdout.** The pipe fills, the actor's next write blocks, resuming the read
 releases it. Nothing to time out, no signal to get wrong, and it self-releases
-if the wrapper dies. `SIGSTOP` / `SIGCONT` on the process group is not
-implemented in the first release: it is a real state the wrapper would have to
-guarantee it exits, and no run has yet needed the precision. The reader
-thread's gate is the seam; a second mechanism would sit behind it.
+if the wrapper dies. The second, `sigstop`, is the exact form: `SIGSTOP` to
+the actor's process group when a judgment starts, `SIGCONT` when it completes
+— and on every other path out of the wrapper (a failed judgment, a stop signal
+to the wrapper, the wrapper's own drop), because a stopped group the wrapper
+leaves behind is a hung sandbox. A marked descendant that has left the group
+is stopped by pid and held with the start time it had then; the `SIGCONT` to
+it is sent only once the pid is checked to still be that process — a pid
+reused since names another, which is left alone — and every held
+continuation and the group's are attempted whatever another did, the
+failures counted in one error. The actor's end takes every step whatever an
+earlier one did — the continuation, the gate, `SIGTERM`, the grace,
+`SIGKILL`, the reap, the sweep — and then settles both drains before it
+returns anything, an error included: one grace for the two to reach end of
+file; a reader still going then (something the sweep could not find holds
+its pipe) is told to stop and woken, comes back at once and is joined, the
+drain on record as stopped short. The one reader no wake-up reaches is one
+stuck in a write to its log; it is left behind after a further bound (one
+second), the drain on record as unfinished, and **the event log gets no
+digest** — a digest of a file a reader may still write looks exactly like a
+correct one, so none is published: null rather than false (the crate's
+`no_digest_is_taken_of_an_event_log_whose_reader_was_left_behind` is the
+named test). Never an unbounded wait: a held pipe must not become a hung wrapper. What went
+wrong on the way is carried out and makes the run unclean. Both
+mechanisms sit behind the reader's gate and the `Actor` handle; a config
+picks one (§2).
 
-Two facts about the mechanism's reach are recorded rather than assumed:
+The reach of the first mechanism is measured, not assumed. **The numbers
+are of the kernel they were measured on** — the host's 6.17, shared by the
+`rust:1.97.1` container; a shell producer writing ~119-byte lines as fast as
+it can; three runs, 2026-09-03. Another kernel, or a pipe whose capacity was
+tuned, gives other numbers; what they quantify does not change.
 
-- The pipe buffer (64 KiB on Linux) and whatever the reader had already
-  pulled in are processed before the actor stalls, so a judgment started at
-  a boundary can still be overtaken by a few events. The stale gate (§5) is
-  what makes that safe; blocking narrows the window, it does not close it.
-- Whether a *given actor* actually stalls on a full stdout pipe depends on
-  how it writes. A synchronous write does; a runtime that queues writes in
-  memory continues working. The fake actor in the crate's tests writes
-  synchronously and proves the wrapper's side; **whether Claude Code's stdout
-  writes stall on a full pipe is an empirical question about the actor**, to
-  be read off a real run before a deployment relies on blocking alone.
+| What still lands after the gate closes | Events | Bytes |
+| --- | --- | --- |
+| Frames the reader had already pulled in (the rest of its 64 KiB read chunk) | 35 – 453 | 4 – 54 KiB |
+| What the actor can still write before it stalls (the default pipe) | 544 | 64.8 – 65.1 KiB |
+
+So a judgment started under `stdout` blocking can be overtaken by up to
+~128 KiB of events the judge never saw. The chunk in hand lands during the
+judgment and is caught by the freshness check (§5). The pipe's content lands
+when the gate reopens — which is *after* the freshness check, because the
+loop opens the gate and compares revisions in the same step — so up to one
+pipe of events written during the judgment is neither in the window nor
+counted against the verdict. Under `sigstop` the judge is not started until
+the stop is confirmed and the reader has caught up: `killpg` names the
+members it finds, and a member in the middle of a fork when it is sent has a
+child a moment later that the signal never reached, so the group is read
+from `/proc` until two looks in a row find the same members with every
+thread of each stopped (a look that finds one running sends the signal
+again), and then the stdout reader is asked for a barrier, which it reports
+behind everything it had to read. The snapshot is taken when the barrier
+arrives — a boundary line and whatever the actor wrote in the same breath
+are both in it — and the group stays stopped through the freshness check
+and the correction's write, so the check is exact: a verdict on a window
+the actor had already moved past is discarded, one on the current window is
+delivered, and nothing lands in between. A group that cannot be confirmed
+stopped within two seconds (a member deep in disk I/O stops only when that
+I/O completes) leaves the boundary unjudged, with the reason. That is what
+makes `sigstop` the exact form and `stdout` the one for a run where a
+stopped actor is unacceptable.
+
+**Decided (2026-09-03): `sigstop` is the mode a run should use; `stdout`
+stays as an option with its blind window documented.** The reason is the
+mechanism, and the numbers only say how much it costs: the stale gate exists
+to confirm, before a correction is delivered, that the evidence the judgment
+rests on is still the latest, and under `stdout` whatever sits unread in the
+pipe at that moment is invisible to it — the gate passes verdicts it should
+have failed, however large the pipe is. Shrinking the pipe (`F_SETPIPE_SZ`)
+or draining the residual before the check would narrow that window, not
+close it; neither is built, because `sigstop` closes it by construction —
+a stopped actor writes nothing, so there is nothing in the pipe the check
+cannot see. That is not a loss of precision, it is the gate not holding
+under that mode, and the README says so in as many words. The two modes'
+real defects, side by side: `stdout` self-releases if the wrapper dies and
+has the blind window above; `sigstop` sees everything the actor wrote and
+leaves the actor stopped if the wrapper dies during a judgment — `SIGCONT`
+on every path out and the handle's drop backstop are the mitigation, not a
+proof.
+
+Whether a *given actor* actually stalls on a full stdout pipe depends on how
+it writes. A synchronous write does; a runtime that queues writes in memory
+continues working. The fake actor in the crate's tests writes synchronously
+and proves the wrapper's side; **whether Claude Code's stdout writes stall on
+a full pipe is an empirical question about the actor**, to be read off a real
+run before a deployment relies on `stdout` blocking alone. `sigstop` does not
+depend on it.
 
 ## 5. Freshness: one judgment in flight, latest value wins
 
@@ -133,32 +231,115 @@ Two facts about the mechanism's reach are recorded rather than assumed:
   the judgment's evidence revision is compared with the current one: equal,
   deliver; newer admitted evidence, record `stale` and neither deliver nor
   spend budget. Events the filter excluded do not bump the revision.
-- A boundary that falls while a judgment is in flight is recorded as
-  `unjudged` (reason: in flight) and marks a pending latest boundary; when
-  the judgment completes, one judgment starts on the *current* snapshot — not
-  one per skipped boundary. A latest-value channel, as #375 says, not a
-  queue of prefixes.
+- Under `sigstop` a boundary first waits for the reader's barrier (§4); a
+  line that arrives before it — including a `result` — is in its snapshot,
+  and a `result` among them is covered by it (§3's exception).
+- A boundary that falls while a judgment is in flight keeps the ordinal it
+  is given and waits; when the judgment completes, its judgment starts on
+  the *current* snapshot — not one per skipped boundary, and not a fresh
+  ordinal on completion. A further boundary before then supersedes it, on
+  record as `unjudged`; a `result` before then is covered by it (§3's
+  exception). A latest-value channel, as #375 says, not a queue of
+  prefixes. The judge runs on a named thread whose outcome reaches the loop
+  whatever happens — a panic reports as such and is unclean — and which is
+  joined once it has reported. Its word comes by a channel of its own, one
+  deep and never behind the actor's events: a full event queue cannot hold
+  the word, so the join is bounded by the calls' cancellation (next).
+- **A cancellation reaches the judge.** The wrapper's stop flag travels with
+  the model: every wait on the socket — the connect included — is a slice
+  of at most 100 ms, and a call in progress returns as cancelled within
+  that of the stop; the writer is not asked after it. On the way out the
+  loop joins the judge and settles its word like any other — every call it
+  made on record, a correction it wrote recorded `stale` and not delivered,
+  nothing started behind it — before the actor is ended and the summary
+  written.
+- **The run's fate is decided once.** When the loop ends it says what
+  stopped it — the signal, or nothing — and the summary's `supervisor_exit`
+  and the wrapper's exit status both follow that one decision; a signal
+  raised after it, while the actor is torn down or the logs digested,
+  changes neither. Debug builds hold between the actor's end and the
+  summary for `SWE_LAB_SUPERVISOR_DEBUG_HOLD_BEFORE_SUMMARY_MS` milliseconds,
+  for the test of exactly that; the release binary reads no such thing.
 - **Parallel judgments are not built**: response completion order would
   become an unstated policy.
 
 ## 6. The account and the terminal summary
 
-`supervisor.jsonl` keeps Python's row shape (`cursor`, `at`, `policy`,
-`kind`, `evidence`, and per-kind fields) and its kinds — `spoke`, `silent`,
-`unjudged`, `lapse`, `gap` — plus two the wrapper needs: **`observed`** for an
-event consumed at which no decision was sought (batching makes these the
-majority), and **`stale`** for §5. A boundary's row is written when its
-judgment completes, carrying the boundary's cursor and `decision_lag_ms`, so
-rows are in time order, not cursor order.
+`supervisor.jsonl` is one JSON object per line: `cursor` (the actor event the
+row is about, counted from 1), `at` (UTC, millisecond ISO-8601), `policy`,
+`kind`, `evidence` (the origin filter's disposition of that event), and
+per-kind fields. The kinds:
+
+- **`observed`** — an event consumed at which no decision was sought (under
+  batching, the majority).
+- **`correction`** — the policy wrote a correction and it is about to be
+  sent: `boundary`, `marker`, `text`, `calls`, `decision_lag_ms`. On disk,
+  flushed, *before* anything reaches the actor's stdin; the delivery's
+  outcome follows as a row of its own (`spoke` or `gap`) for the same
+  `boundary`. **The pair is read by `boundary`:** a `correction` row with
+  no `spoke` or `gap` behind it is a delivery the record does not vouch for
+  — the wrapper ended between the two writes (no summary, or an unclean one
+  naming the supervisor log). A log that cannot take the `correction` row
+  keeps the correction from being sent: the run faults, and the actor saw
+  nothing.
+- **`spoke`** — a correction delivered: `boundary`, `cursor`; the correction
+  itself is the `correction` row before it.
+- **`silent`** — judged, nothing to say; with `marker` when the judge found a
+  deviation and a gate (budget, cooldown) held the correction back.
+- **`unjudged`** — a boundary at which no judge was consulted; `reason` is
+  an empty window (§3), a boundary superseded before its judgment could
+  start (§5), an actor whose group could not be confirmed stopped (§4), a
+  judge that could not be started or panicked, or a run that ended first.
+- **`lapse`** — a failed or unusable model call, bounded to that boundary:
+  `reason`, `calls`.
+- **`stale`** — a correction newer evidence overtook: `reason`, `text`.
+- **`gap`** — a correction that could not be written: `reason`, `boundary`
+  (behind a `correction` row when the write to stdin was attempted; alone
+  when stdin was already known unusable).
+
+A boundary's row is written when its judgment completes, carrying the
+boundary's cursor, so rows are in time order, not cursor order. `calls`
+records every model call of that boundary — purpose, the model requested and
+the one that answered, `max_tokens` sent, `finish_reason`, the raw answer
+(when the room allows it, below), duration — so a ceiling hit, a refusal and
+an unparseable answer are told apart from the account alone.
+
+The account is capped at `limits.max_actor_stdout_bytes` — the cap of the
+stdout it accounts for, shared on purpose rather than a key of its own that
+the Python side would mirror by hand — and a row that would cross it, or a
+write that fails, is a fault: the run ends, not accounted for. A supervisor
+that has lost its own account would be producing supervision without
+evidence.
+
+**A boundary's row is the one exception the cap makes room for.** 16 KiB is
+held for it from the moment its judge starts until the row is written: a
+judge is not started unless that room is there (the boundary is `unjudged`
+with the reason, and the run faults), and no other row may take it while
+the judge is out — the actor's events fault the run at the cap less the
+reserve. When the row is written, every string of it that came from outside
+— the judge's reason (`marker`), the decision's `reason`, each call's
+`requested_model`, `response_model`, `finish_reason` and `error` — is bounded
+to 256 characters, control characters replaced, an ellipsis marking a cut;
+and if the row still would not fit, the raw answers go: `calls[].raw` is
+null and `calls[].raw_omitted` says why. The call, its error and the marker
+are never dropped, and the row is fitted *before* any correction is written
+— as it will be written, its kind on it — so an intervention is never
+without its record. A row so cut is under the reserve with the delivery's
+outcome row behind it, by construction (the crate's
+`a_boundary_row_at_every_ceiling_fits_the_room_held_for_it` is the named
+test).
 
 The terminal summary is the shape in #375 (schema-versioned, written to a
 temporary name and renamed), and it is what the Python side classifies from:
-`accounted_for` is false on any `gap`, on an unclean wrapper ending, or when
-no usable actor event was ever consumed (Python's `saw_events`). The lapse /
-gap line of v0.3.0 is kept exactly: a bad judge or writer answer, a call past
-`model_call_ms`, or a line the intervention cap refuses, is one **lapse**; a
-failed actor-stdin write, a broken policy state or an unclean ending is a
-**gap**.
+`accounted_for` is true only when there was no `gap`, the wrapper ended
+cleanly, at least one actor event was consumed, and both logs have a digest
+— each read back through the descriptor the wrapper wrote it by, so it is
+the digest of the file the wrapper wrote, whatever is at the name by then.
+The line between the two failure words: a bad judge or writer answer, a call
+past `model_call_ms`, or a line the intervention cap refuses, is one
+**lapse** — the next boundary is judged normally; a failed actor-stdin
+write, a broken loop state, an account that cannot be kept or an unclean
+ending is a **gap** — the run is not evidence about supervision.
 
 ## 7. Three measured defects, fixed here rather than reproduced
 
