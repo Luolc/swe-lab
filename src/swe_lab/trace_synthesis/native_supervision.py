@@ -11,11 +11,17 @@ the run's **values** cross the boundary, and each is here:
   flag. The binary refuses an unknown field rather than ignoring it, so the
   document this module renders is the schema, not a superset of it;
 - **two environment variables** — :data:`BASE_URL_ENV` and :data:`API_KEY_ENV`,
-  which carry *where the model is* and *how to authenticate to it*. They are
-  not in the document, and a document naming either is refused. They travel
-  into the sandbox by reference (the backend's ``pass_env``), exactly as the
-  actor's own credential does, so neither value reaches a command line, a
-  staged file or any artifact;
+  which carry *where the model is* and *how to authenticate to it*. Neither is
+  in the document, and a document naming either is refused. **They cross
+  asymmetrically, and that asymmetry is the credential boundary:**
+  :data:`API_KEY_ENV` travels by reference (the backend's ``pass_env``, see
+  :data:`SUPERVISOR_PASS_ENV`), so its value reaches no command line, staged
+  file or artifact; :data:`BASE_URL_ENV` is exported by the harness, because it
+  addresses a forwarder the harness itself starts inside the sandbox and no
+  such value exists on the host to forward. Passing the endpoint in would make
+  it host-settable — and since the supervisor's requests carry the credential,
+  a stray same-named variable could then aim an authenticated request at any
+  host;
 - **the terminal summary** — what the wrapper writes at the end, and the only
   thing a run may be classified from. Not the exit status, in **either**
   direction: a wrapper that ran cleanly exits with the *actor's* status, so
@@ -40,13 +46,17 @@ assert the deliberately broken ones refused — needs the binary as a runnable
 artifact and is a follow-up (task 21 §7a). Until it exists, adding a field here
 means reading ``config.rs`` again.
 
-**The binary is not yet an asset.** ``ClaudeCodeHarness`` renders this
-document, starts the second capture-proxy instance that terminates TLS for the
-wrapper, hands over the actor's argv, and installs
-:class:`NativeSupervisionObserver` to classify the run from the summary. What
-remains is placing the binary itself: until it is a released artifact with a
-pinned checksum, ``SWE_LAB_SUPERVISOR_BINARY`` points at a local build and the
-script's ``--version`` probe is what refuses a run without one.
+**The binary is not yet an asset, and no run can reach it.**
+``ClaudeCodeHarness`` renders this document, starts the second capture-proxy
+instance that terminates TLS for the wrapper, hands over the actor's argv, and
+installs :class:`NativeSupervisionObserver` to classify the run from the
+summary. Two things are still missing, and together they are the switch rather
+than the polish: **nothing places the binary** (no ``AgentAsset`` names it, and
+no code reads any override naming a local build), and **no workflow definition
+passes** ``native_supervision=``. Until both exist there is no configuration
+that produces a natively supervised rollout; a run that tried would stop at the
+script's ``--version`` probe with exit 78, which is the intended refusal rather
+than a silent unsupervised run. Both are task 21 §3a.
 
 **This runtime is deliberately not the Python one's twin.** The owner's ruling
 on [#375] is that the native runtime fixes the three defects the replay

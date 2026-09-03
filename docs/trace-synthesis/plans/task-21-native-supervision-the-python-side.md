@@ -134,10 +134,28 @@ The binary is being written in parallel, and most of this does not wait on it:
    name and the script's fail-closed probe for it, the wrapper launch, the
    config written into the workspace, the artifacts registered, and the summary
    consumed onto the run's record through `NativeSupervisionObserver`. Landed
-   without the binary: `SWE_LAB_SUPERVISOR_BINARY` points at a local build, and
-   the script's `--version` probe refuses a run that has none.
-3a. **The `AgentAsset`** for the binary, split out of the wiring because it is
-   the one part that genuinely needs a release to pin a checksum against.
+   without the binary; a run attempted before slice 3a stops at the script's
+   `--version` probe with exit 78, which is the refusal working.
+3a. **Placing the binary and opening the path.** Split out of the wiring
+   because it is the part that needs a release to pin a checksum against — but
+   it is **the switch, not the finishing touches**: until both steps below
+   exist, no combination of settings produces a natively supervised rollout.
+
+   - [ ] **Declare an `AgentAsset` for the wrapper**, so something puts a
+         binary at `SUPERVISOR_BINARY_AT`. Today `ClaudeCodeHarness.assets()`
+         declares the agent binary and, under proxy capture, the proxy — and
+         nothing else. There is no environment override either: no code reads
+         one, so exporting a variable to point at a local build does nothing
+         today. Fetching from a release with a pinned checksum, or from a local
+         build, is this step's to decide.
+   - [ ] **Pass `native_supervision=` from a workflow definition.**
+         `definitions.py` names it nowhere, so no shipped workflow can take
+         this path however the harness is configured.
+
+   The asset's validation is a positive chain, not a list of exclusions, and
+   **the "a real artifact is still accepted" arm is tested with the rest** —
+   a gate that rejects everything is green on every negative arm and
+   indistinguishable from a correct one.
 4. **The round-trip schema check** (§7a). Needs the binary to be runnable, and
    should follow the wiring closely: every slice after it adds config fields.
 
