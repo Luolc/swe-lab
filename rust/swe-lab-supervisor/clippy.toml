@@ -14,8 +14,13 @@ doc-valid-idents = ["OpenAI", "OpenRouter", ".."]
 # their fixtures, at their crate roots.
 disallowed-methods = [
     # Every way a file gets created, and the two ways one gets moved onto
-    # another's path. An enumeration, so it may be short a name: when a new
-    # way to create a file appears in std or in nix, it belongs here.
+    # another's path. An enumeration, so it may be short a name — and a new
+    # name cannot appear on its own: the toolchain is pinned in
+    # `rust-toolchain.toml` (its one home; CI and the container derive theirs
+    # from it), so a new way to create a file in std can only arrive with a
+    # bump of that file. When bumping it, re-check this list against the
+    # release notes for new file-creating entry points (`std::fs`, `File`);
+    # likewise when bumping `nix` in `Cargo.toml`.
     { path = "std::fs::File::create", reason = "open an output through outputs::Outputs::create, which refuses two outputs on one file" },
     { path = "std::fs::File::create_new", reason = "open an output through outputs::Outputs::create, which refuses two outputs on one file" },
     { path = "std::fs::File::options", reason = "open an output through outputs::Outputs::create, which refuses two outputs on one file" },
