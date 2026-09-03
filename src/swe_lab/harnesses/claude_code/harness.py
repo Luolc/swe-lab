@@ -161,8 +161,16 @@ def _reap(pid_var: str) -> str:
   return f'{_REAPED_PIDS_VAR}="${pid_var} ${_REAPED_PIDS_VAR}"'
 
 
-def _proxy_start_lines(target: str) -> list[str]:
-  """Return the script lines that start the in-sandbox recording proxy.
+def _proxy_start_lines(
+    *,
+    target: str,
+    port: int,
+    log_name: str,
+    own_log_name: str,
+    name: str,
+    label: str,
+) -> list[str]:
+  """Return the script lines that start one in-sandbox recording proxy.
 
   Three things have to be true before the agent may run, and each is a line
   here rather than an assumption:
@@ -190,38 +198,57 @@ def _proxy_start_lines(target: str) -> list[str]:
   written is a complete record. A killed run yields *partial* capture, never a
   corrupt file.
 
+  **A run may start more than one.** The actor's calls and the in-sandbox
+  supervisor's go to different upstreams, so each gets its own instance, its
+  own port and its own log — one function rather than two, because everything
+  that makes an instance safe (the readiness poll, the liveness check, the
+  registration with the single trap) has to be true of both, and a second copy
+  is a second place for one of them to be forgotten.
+
   Args:
     target: The upstream API base URL to forward to.
+    port: The loopback port this instance listens on. Private to the sandbox's
+      own network namespace, so two instances need only differ from each other.
+    log_name: The workspace file this instance records exchanges into.
+    own_log_name: The workspace file this instance's own output goes to.
+    name: What this instance is called in the script. It prefixes the shell
+      variables holding its pid and its wait counter, which have to be distinct
+      per instance: a second start reusing the first's pid variable would leave
+      the trap reaping one process twice and the other never.
+    label: What this instance records, in the failure messages — the only thing
+      a reader of a dead proxy has to tell the two apart. Separate from
+      ``name`` because one of them is shell syntax and the other is English.
 
   Returns:
     The lines, in order.
   """
   binary = shlex.quote(PROXY_BINARY_AT)
-  log = f'"$SANDBOX_WORKSPACE"/{PROXY_LOG_NAME}'
-  own_log = f'"$SANDBOX_WORKSPACE"/{PROXY_STDERR_NAME}'
+  log = f'"$SANDBOX_WORKSPACE"/{log_name}'
+  own_log = f'"$SANDBOX_WORKSPACE"/{own_log_name}'
+  pid_var = f"{name}_pid"
+  wait_var = f"{name}_wait"
   # Bash's /dev/tcp is the only TCP probe that needs nothing installed in the
   # image; `curl` and `nc` are not present in every instance image. A shell
   # without it fails every attempt and hits the loud timeout below rather than
   # running the agent against a proxy nobody confirmed.
-  probe = f"(exec 3<>/dev/tcp/127.0.0.1/{PROXY_PORT}) 2>/dev/null"
+  probe = f"(exec 3<>/dev/tcp/127.0.0.1/{port}) 2>/dev/null"
   return [
       (
-          f"{binary} --port {PROXY_PORT} --target {shlex.quote(target)}"
+          f"{binary} --port {port} --target {shlex.quote(target)}"
           f" --output {log} > {own_log} 2>&1 &"
       ),
-      "proxy_pid=$!",
-      _reap("proxy_pid"),
-      "proxy_wait=0",
+      f"{pid_var}=$!",
+      _reap(pid_var),
+      f"{wait_var}=0",
       f"until {probe}; do",
-      '  if ! kill -0 "$proxy_pid" 2>/dev/null; then',
-      f'    echo "FATAL: the capture proxy exited; see {PROXY_STDERR_NAME}"'
-      " >&2",
+      f'  if ! kill -0 "${pid_var}" 2>/dev/null; then',
+      f'    echo "FATAL: the {label} proxy exited; see {own_log_name}" >&2',
       f"    exit {_MISCONFIGURED_EXIT}",
       "  fi",
-      "  proxy_wait=$((proxy_wait+1))",
-      f'  if [ "$proxy_wait" -ge {_PROXY_READY_ATTEMPTS} ]; then',
-      f'    echo "FATAL: the capture proxy never listened on port'
-      f' {PROXY_PORT}; see {PROXY_STDERR_NAME}" >&2',
+      f"  {wait_var}=$(({wait_var}+1))",
+      f'  if [ "${wait_var}" -ge {_PROXY_READY_ATTEMPTS} ]; then',
+      f'    echo "FATAL: the {label} proxy never listened on port'
+      f' {port}; see {own_log_name}" >&2',
       f"    exit {_MISCONFIGURED_EXIT}",
       "  fi",
       f"  sleep {_PROXY_READY_INTERVAL_S}",
@@ -807,7 +834,14 @@ class ClaudeCodeHarness(Harness):
     # and a supervised run needs both — the proxy log is the trace, and the
     # event stream is the only *live* view of the actor there is.
     if self.capture == "proxy":
-      lines += _proxy_start_lines(self.proxy_target)
+      lines += _proxy_start_lines(
+          target=self.proxy_target,
+          port=PROXY_PORT,
+          log_name=PROXY_LOG_NAME,
+          own_log_name=PROXY_STDERR_NAME,
+          name="proxy",
+          label="capture",
+      )
       lines.append(f"export ANTHROPIC_BASE_URL={PROXY_BASE_URL}")
     if self._narrates_event_stream:
       # Streamed, and to a file: a supervisor reads this while the actor is
