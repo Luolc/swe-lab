@@ -362,7 +362,19 @@ impl Drop for Actor {
 }
 
 /// Signal the group, treating a group that no longer exists as done.
+///
+/// A group id at or below one is refused before any call: `killpg(0, …)`
+/// signals the caller's own group — this wrapper and whatever shares its
+/// group in the sandbox — and `1` is init's. Neither can be the actor's, so
+/// reaching here with one is a wrapper bug, and the safe answer to a bug on
+/// a signalling path is to send nothing.
 fn signal_group(group: Pid, signal: Signal) -> io::Result<()> {
+    if group.as_raw() <= 1 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "refusing to signal a process group at or below 1",
+        ));
+    }
     match killpg(group, signal) {
         Ok(()) | Err(Errno::ESRCH) => Ok(()),
         Err(errno) => Err(io::Error::from(errno)),
@@ -588,7 +600,12 @@ mod tests {
             // closing parenthesis.
             stat.rsplit(") ").next().unwrap().chars().next().unwrap()
         };
-        thread::sleep(Duration::from_millis(50));
+        // The stop takes effect when the process next returns to user mode,
+        // which can be after the read that follows it — so poll.
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while state() != 'T' && Instant::now() < deadline {
+            thread::sleep(Duration::from_millis(20));
+        }
         assert_eq!(state(), 'T', "SIGSTOP did not stop the group");
         // TERM alone would queue behind the stop; `end` lifts it first, so
         // the actor dies of the TERM within the grace rather than of the KILL.
@@ -645,6 +662,17 @@ mod tests {
             drain(&rx).last(),
             Some(Event::StdoutClosed(Ok(())))
         ));
+    }
+
+    #[test]
+    fn a_degenerate_group_id_is_never_signalled() {
+        // Sending to group 0 would signal this test process's own group.
+        for raw in [0, 1, -1] {
+            let error = signal_group(Pid::from_raw(raw), Signal::SIGTERM).unwrap_err();
+            assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+        }
+        // A group that once existed and is gone is not an error.
+        signal_group(Pid::from_raw(i32::MAX), Signal::SIGTERM).unwrap();
     }
 
     #[test]
