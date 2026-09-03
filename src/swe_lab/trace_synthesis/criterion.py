@@ -1,19 +1,16 @@
-r"""The judge's criterion: one committed artifact, identical for every instance.
+r"""The judge's general-practice criterion: one committed shared artifact.
 
-:class:`~swe_lab.trace_synthesis.supervisor.Observation` guards the entrance
-facing the actor. The judge has a second one — the standard it measures
-against — and material derived from the answer pierces the barrier from behind:
-a criterion written for one instance by someone who has read its fix steers the
-actor down that fix's path without ever quoting it, and no field check on the
-observation can see it, because it never travels that channel.
+In a guidebook-guided run this criterion remains beside the complete validated
+phase-B guidebook. The guidebook supplies the instance-specific route; this
+artifact supplies a reviewed standard for general engineering conduct. Raw
+privileged artifacts still have no independent supervisor input.
 
 **What the digest check does and does not establish**, because a barrier
 described more strongly than it is, is worse than none:
 
 - It **does** guarantee that every load yields the same criterion: one
   artifact, one digest, so a per-instance criterion cannot be swapped in
-  without :func:`load_criterion` rejecting it. Whether that reaches a *run*
-  needs the caller described below, which does not exist yet.
+  without :func:`load_criterion` rejecting it.
 - It does **not** establish that the one shared artifact is free of solution
   knowledge. A single committed criterion could carry the fixes for every
   instance and still be byte-identical everywhere, and the optional
@@ -25,17 +22,6 @@ The digest is therefore what makes the content question *answerable once*:
 review the artifact in its pull request, and the check keeps that reviewed text
 in force until someone re-pins it deliberately and visibly.
 
-**This is not a startup gate.** What this module enforces is that
-:func:`load_criterion` **rejects an artifact** whose digest is not the pinned
-one, and that a :class:`Criterion` cannot misdescribe its own text. Nothing
-here stops a run, because nothing in a rollout path calls it — `rg -n
-"supervising_policy\(" src tests` finds only tests and the definition.
-
-**[U]** The run-level refusal is unwired and does **not** belong to the judge:
-it lands where a supervised run is assembled (task 01's dependency ③,
-acceptance point 2b, owned by the wiring PR), because a refusal to start can
-only be tested where the run is constructed. Until a non-test caller exists,
-treat this as a helper that rejects, not a gate that stops anything.
 """
 
 from __future__ import annotations
@@ -57,8 +43,7 @@ CRITERION_SHA256 = (
 
 Changing the criterion without changing this constant makes every
 :func:`load_criterion` call reject, which is the point: the two move together
-only by someone's decision. Whether that reaches a *run* depends on a caller
-that does not exist yet — see the module note.
+only by someone's decision.
 """
 
 # Long enough that ordinary English prose does not collide by chance, short
@@ -95,9 +80,8 @@ class Criterion:
       needs the gold patch to be available where the check runs; for a dataset
       that records none it cannot run, and the digest carries the invariant
       alone. That is the weaker state, and this flag is how the returned
-      criterion records which of the two happened. **[U]** No reporting path
-      reads it yet — that consumer arrives with the wiring PR, and until then
-      nothing surfaces the distinction to a reader of results.
+      criterion records which of the two happened. No persisted report field
+      exposes that distinction today.
   """
 
   text: str
@@ -117,7 +101,7 @@ class Criterion:
       )
 
 
-def _shingles(text: str) -> set[tuple[str, ...]]:
+def shingles(text: str) -> set[tuple[str, ...]]:
   """Return the set of word n-grams in a text.
 
   Args:
@@ -184,7 +168,7 @@ def load_criterion(
         f"criterion names {len(shared_paths)} path(s) changed by the gold patch"
     )
 
-  shared = _shingles(text) & _shingles(gold_patch)
+  shared = shingles(text) & shingles(gold_patch)
   if shared:
     raise CriterionRejectedError(
         f"criterion shares {len(shared)} {SHINGLE_WORDS}-word run(s) with the"

@@ -38,6 +38,10 @@ def _field_pattern(name: str) -> re.Pattern[str]:
 _FIELD_PATTERNS = {name: _field_pattern(name) for name in STAGE_FIELDS}
 
 
+class GuidebookRejectedError(RuntimeError):
+  """Raised when a guidebook-guided run lacks a usable guidebook."""
+
+
 def validate_guidebook(text: str) -> list[str]:
   """Check a guidebook's structure; return every problem found.
 
@@ -61,3 +65,19 @@ def validate_guidebook(text: str) -> list[str]:
       if pattern.search(body) is None:
         problems.append(f"stage {number}: missing the '{name}' field")
   return problems
+
+
+def require_valid_guidebook(text: str) -> None:
+  """Reject a missing or structurally invalid guidebook.
+
+  Args:
+    text: The phase-B artifact about to be handed to phase C.
+
+  Raises:
+    GuidebookRejectedError: The artifact is missing or fails its schema check.
+  """
+  problems = validate_guidebook(text)
+  if problems:
+    raise GuidebookRejectedError(
+        "guidebook rejected before actor start: " + "; ".join(problems)
+    )

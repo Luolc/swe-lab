@@ -940,7 +940,10 @@ class ClaudeCodeHarness(Harness):
 
     guidebook: str | None = None
     if self.segmented.guidebook_name is not None:
+      from swe_lab.trace_synthesis.guidebook import require_valid_guidebook
+
       guidebook = read_text(sb, self.segmented.guidebook_name)
+      require_valid_guidebook(guidebook)
       _ = sb.run_command(
           f'rm -f -- "${WORKSPACE_ENV}"/'
           f"{shlex.quote(self.segmented.guidebook_name)}",

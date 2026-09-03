@@ -12,6 +12,12 @@ Three properties are structural rather than advisory, and each has a test:
   guided workflow supplies one. The shared criterion remains beside it as the
   standard for general engineering practice; the guidebook supplies the
   instance-specific route.
+- **Speech has a shallow mechanical floor.** Corrections are non-empty and at
+  most 400 characters; the policy also rejects fenced code, diff hunks
+  and eight-word copying from the guidebook. These checks do not establish that
+  a semantic paraphrase is safe. `supervisor.jsonl` keeps the guidebook
+  identity, judge request/reason and emitted text so a person can audit that
+  judgement.
 - **When to speak is a seam.** It is the open variable of the design, so a
     :class:`SpeakPolicy` is replaceable without touching the consumer, the
     intervention, or the log.
@@ -25,7 +31,9 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 import dataclasses
 import datetime
+import hashlib
 import json
+import re
 from typing import Any, Protocol
 
 from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
@@ -33,6 +41,7 @@ from swe_lab.trace_synthesis.criterion import (
     Criterion,
     CRITERION_SHA256,
     CriterionRejectedError,
+    shingles,
 )
 
 # The cap is the enforceable part of the intervention's shape. "Short,
@@ -87,6 +96,28 @@ LogWriter = Callable[[Mapping[str, Any]], None]
 
 class InterventionTooLongError(ValueError):
   """Raised when a policy produces text over :data:`MAX_INTERVENTION_CHARS`."""
+
+
+class WriterOutputRejectedError(ValueError):
+  """Raised when writer output matches a mechanically blocked shape."""
+
+
+_FENCED_CODE = re.compile(r"^[ \t]*(?:>[ \t]*)*(?:```|~~~)", re.MULTILINE)
+_DIFF_HUNK = re.compile(r"^@{2,}(?:[ \t]|[-+])", re.MULTILINE)
+
+
+def _check_writer_output(text: str, guidebook: str | None) -> None:
+  """Reject shallow answer-like forms without claiming semantic safety."""
+  if _FENCED_CODE.search(text):
+    raise WriterOutputRejectedError(
+        "writer output contains a fenced code block"
+    )
+  if _DIFF_HUNK.search(text):
+    raise WriterOutputRejectedError("writer output contains a diff hunk header")
+  if guidebook is not None and shingles(text) & shingles(guidebook):
+    raise WriterOutputRejectedError(
+        "writer output copies an eight-word guidebook shingle"
+    )
 
 
 class PolicyLapseError(Exception):
@@ -185,10 +216,11 @@ class Unjudged:
 class Observation:
   """Everything a policy is allowed to see.
 
-  A guidebook-guided workflow supplies the complete phase-B artifact here so
-  the judge and writer can steer toward its instance-specific route. Workflows
-  without one leave :attr:`guidebook` unset and retain the general-practice
-  criterion alone.
+  A guidebook-guided workflow validates and supplies the complete phase-B
+  artifact here so the judge and writer can steer toward its instance-specific
+  route. Workflows without one leave :attr:`guidebook` unset and retain the
+  general-practice criterion alone. Raw gold/reference/test patches and hidden
+  tests have no separate field.
 
   Attributes:
     task: What the actor was asked to do, handed over at construction by
@@ -306,12 +338,15 @@ class Verdict:
       Converting here would manufacture a precise-looking number out of an
       estimate, so the raw answer is carried and the reader is told what it
       counts.
+    judge_input: The exact credential-free model request behind the verdict,
+      when the judge exposes one for the host-side audit log.
   """
 
   off_track: bool
   self_correcting: bool
   reason: str = ""
   deviation_started_steps_ago: int | None = None
+  judge_input: Mapping[str, Any] | None = None
 
 
 class Judge(Protocol):
@@ -369,11 +404,14 @@ class WouldHaveSpoken:
       different quantities: this record is written where a deviation was
       noticed, and a supervisor that only knows that cannot say how late it
       was.
+    judge_input: The exact credential-free model request behind the judgement,
+      when available.
   """
 
   cursor: int
   reason: str
   deviation_started_steps_ago: int | None = None
+  judge_input: Mapping[str, Any] | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -571,6 +609,7 @@ class SpeakWhenOffTrack:
             cursor=observation.cursor,
             reason=verdict.reason,
             deviation_started_steps_ago=verdict.deviation_started_steps_ago,
+            judge_input=verdict.judge_input,
         )
     )
 
@@ -582,7 +621,9 @@ class SpeakWhenOffTrack:
       return None
 
     try:
-      intervention = Intervention(text=self.writer(windowed, self.criterion))
+      text = self.writer(windowed, self.criterion)
+      _check_writer_output(text, observation.guidebook)
+      intervention = Intervention(text=text)
     except Exception as error:  # noqa: BLE001 - re-raised with its scope named
       unusable = f"writer produced no usable line: {error!r}"
       raise PolicyLapseError(unusable) from error
@@ -709,6 +750,11 @@ class Supervisor:
         said=tuple(self._said),
         guidebook=self.guidebook,
     )
+    marker_count = (
+        len(self.policy.markers)
+        if isinstance(self.policy, SpeakWhenOffTrack)
+        else 0
+    )
     try:
       decision = self.policy.consider(observation)
     except PolicyLapseError as error:
@@ -721,10 +767,15 @@ class Supervisor:
           LOG_KIND_LAPSE,
           reason=f"policy lapsed: {error!r}",
           finish_reason=error.finish_reason,
+          **self._marker_audit_after(marker_count),
       )
       return None
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
-      self._row(LOG_KIND_GAP, reason=f"policy raised: {error!r}")
+      self._row(
+          LOG_KIND_GAP,
+          reason=f"policy raised: {error!r}",
+          **self._marker_audit_after(marker_count),
+      )
       return None
 
     if isinstance(decision, Unjudged):
@@ -733,7 +784,7 @@ class Supervisor:
       self._row(LOG_KIND_UNJUDGED, reason=decision.reason)
       return None
     if decision is None:
-      self._row(LOG_KIND_SILENT)
+      self._row(LOG_KIND_SILENT, **self._marker_audit_after(marker_count))
       return None
     intervention = decision
     if self._mute:
@@ -741,6 +792,7 @@ class Supervisor:
           LOG_KIND_GAP,
           reason="sink unusable; not attempted",
           text=intervention.text,
+          **self._marker_audit_after(marker_count),
       )
       return None
 
@@ -751,13 +803,33 @@ class Supervisor:
       # keep accounting for every later event.
       self._mute = True
       self._row(
-          LOG_KIND_GAP, reason=f"sink raised: {error!r}", text=intervention.text
+          LOG_KIND_GAP,
+          reason=f"sink raised: {error!r}",
+          text=intervention.text,
+          **self._marker_audit_after(marker_count),
       )
       return None
 
     self._said.append(intervention)
-    self._row(LOG_KIND_SPOKE, text=intervention.text)
+    self._row(
+        LOG_KIND_SPOKE,
+        text=intervention.text,
+        **self._marker_audit_after(marker_count),
+    )
     return intervention
+
+  def _marker_audit_after(self, count: int) -> dict[str, object]:
+    """Return audit fields for the marker created by this decision, if any."""
+    if not isinstance(self.policy, SpeakWhenOffTrack):
+      return {}
+    markers = self.policy.markers
+    if len(markers) <= count:
+      return {}
+    marker = markers[-1]
+    return {
+        "judge_input": marker.judge_input,
+        "judge_reason": marker.reason,
+    }
 
   def _row(self, kind: str, **extra: object) -> None:
     """Write one row of the run's account.
@@ -774,6 +846,11 @@ class Supervisor:
             "policy": self.policy.name,
             "kind": kind,
             "evidence": self._disposition,
+            "guidebook_sha256": (
+                hashlib.sha256(self.guidebook.encode()).hexdigest()
+                if self.guidebook is not None
+                else None
+            ),
             **extra,
         }
     )

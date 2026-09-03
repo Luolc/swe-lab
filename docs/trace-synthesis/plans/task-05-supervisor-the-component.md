@@ -104,42 +104,37 @@ Two inputs, and they are different in kind:
   would let it read its output as the actor's behaviour. The filter is
   **stateless**, so where a supervisor attached cannot change its verdict on a
   message.
-- **Criterion — the pinned artifact**, built into the judge rather than
-  travelling this channel; see [§3.1](#31-the-barriers-second-half-what-the-judge-may-reason-from).
-  **Not** phase B's guidebook: `oracle.py` writes that one with the reference
-  patch, the exact grading procedure and the repository's unpurged history in
-  hand, so a supervisor reading it would steer down the fix's path without ever
-  quoting it. `Observation` has no field for it —
-  **[C]** `test_supervisor_input_carries_no_privileged_field` asserts the field
-  set against an exact allowlist, and the field was **deleted** rather than left
-  unused, because a field nobody may fill is a hole waiting for the next
-  person.
+- **Guidebook — the validated phase-B artifact.** `Observation.guidebook`
+  carries the complete Markdown to both judge and writer. The constructor's
+  exact allowlist is `task`, `evidence`, `cursor`, `said`, `guidebook`; its
+  negative-control test separately attempts `gold_patch`, `reference_patch`,
+  `test_patch`, `hidden_tests`, `fail_to_pass`, `pass_to_pass` and
+  `fix_commit`. The guidebook is the one reviewed derivative allowed through,
+  not a general opening for raw privileged artifacts.
+- **Criterion — the pinned general-practice artifact**, built into the judge
+  rather than travelling this channel; see
+  [§3.1](#31-the-barriers-second-half-what-the-judge-may-reason-from). It
+  remains beside, and does not replace, the guidebook.
 
 **The barrier's claim, stated plainly because one described more strongly than
 it is, is worse than none:**
 
-> The supervisor never receives the gold patch, the reference patch, the test
-> patch, the hidden tests, or a phase-B guidebook — there is no field on its
-> input that can carry them, and no code path that fills one. What it measures
-> against is one pinned criterion, so **no run selects a different criterion per
-> instance**. What remains outside the claim: whether that shared text is itself
-> free of solution knowledge is settled by reviewing the artifact, not by the
-> digest; and the judge and the writer are model calls, with nothing here
-> bounding what a model infers from the actor's own records.
+> The supervisor receives the complete validated guidebook but has no separate
+> input for the gold patch, reference patch, test patch or hidden tests. What
+> crosses into the actor is only the writer's tagged correction. The writer is
+> intended to teach rather than recite; shallow checks cover named surface
+> forms, while semantic paraphrase remains a human-audit question.
 
 ### 3.1 The barrier's second half: what the *judge* may reason from
 
-**`Observation` guards one entrance, and it is the one facing the actor. The
-judge has a second one — its criterion — and material derived from the answer
-pierces the barrier from behind.**
-
-The concrete case is not hypothetical. SWE-bench instances carry **no
-per-instance guidebook**. If one is written for an instance by someone who has
-read the gold patch, the supervisor is *paraphrasing the answer*: it will never
-say "the fix is X", and it will still push the actor down X's path. That is the
-leak the whole design exists to prevent, arriving through a different door — and
-**no field test on `Observation` can see it, because it never travels that
-channel.**
+**`Observation` guards the raw-input entrance; the writer guards what is said.**
+The guidebook deliberately contains a derivative written with privileged
+material in view, so excluding it would also exclude the instance-specific
+reason for a useful nudge. ADR-0018 moves the boundary from access to speech:
+both model calls may read the guidebook, while only the writer's checked output
+can enter the actor conversation. This does not make paraphrase mechanically
+safe; it makes the residual risk auditable rather than pretending a field
+projection solved it.
 
 **The rule, in the form that can be checked:**
 
@@ -163,18 +158,12 @@ scope, the second half has the same four parts as the first:
 | **rejection** | `CriterionRejectedError`. Neither a recorded gap nor a lapse — both are boundaries a *running* supervisor could not cover, and this is refused before one runs: a criterion that is not the reviewed one leaves nothing to judge against |
 | **named test** | `test_a_criterion_quoting_the_gold_patch_is_rejected` — a criterion that quotes the fix must make the check fail |
 
-**[U] The startup gate is not wired, and this row says so rather than implying
-otherwise.** `supervising_policy` loads the criterion and refuses a forged one,
-but **nothing in a rollout path calls it**, so that refusal is helper-level. An
-earlier draft said the gate "lands with the judge"; the judge is written and
-does not wire it, because the criterion is loaded where a *supervised run* is
-assembled — task 16's channel and the rollout workflow — which is where the
-run-level test belongs. What is enforced today is narrower and is the whole
-of the current claim: **`SpeakWhenOffTrack` refuses to construct unless its
-criterion's digest is the pinned one, and passes that criterion to the judge on
-every call.** Hand-off is the whole of it — a protocol cannot compel an
-implementation to use a parameter, so *what the judge measures against* is a
-judge-implementation invariant whose named behavioural test belongs to that PR.
+**The startup gates are wired.** `supervising_policy` loads the pinned criterion,
+and a guidebook-guided harness validates the declared guidebook before its first
+actor script is launched. Missing or malformed guidebooks raise
+`GuidebookRejectedError`; they never select the unguided prompt as a fallback.
+`SpeakWhenOffTrack` passes the criterion and the observation carrying the
+guidebook to both model calls.
 `SpeakAt` takes none and judges nothing — it is the timing knob, and applying a
 criterion gate to a policy with no judgement would be theatre.
 
@@ -190,8 +179,8 @@ That is a weaker state and the run should say so rather than reporting a check
 it did not perform.
 
 **When this check fires, that is the design working.** The day someone genuinely
-needs a per-instance criterion, the hash stops matching and `load_criterion`
-rejects — and once the `[U]` run-level consumer exists, the run stops with it.
+needs a per-instance criterion, the hash stops matching, `load_criterion`
+rejects, and the run-level construction path stops with it.
 That is the moment the barrier has to be re-examined by a person — **not an
 obstacle to route around**, and the rejection path is deliberately loud so that
 routing around it takes a visible decision rather than a quiet edit.
@@ -202,19 +191,19 @@ it, and by this repo's own rule an untestable *must* is either given a test or
 downgraded. It is kept here because it says **why** the artifact is pinned, and
 it no longer does any of the load-bearing work.
 
-**Tests that must land with the code** (per `AGENTS.md`: an invariant needs a
-test or the sentence is downgraded):
+**Tests that hold the implemented boundary** (per `AGENTS.md`: an invariant
+needs a test or the sentence is downgraded):
 
-- `test_supervisor_input_carries_no_privileged_field` — the input type's field
-  names are asserted against an **exact allowlist**, so *adding* a field is what
-  fails the test, not merely adding one of today's forbidden names. A denylist
-  of `{gold_patch, reference_patch, test_patch, hidden_tests, fail_to_pass,
-  pass_to_pass, fix_commit}` catches the names we thought of; an allowlist
-  catches the one we did not.
-- `test_a_criterion_quoting_the_gold_patch_is_rejected` — §3.1's second half:
-  the loader rejects rather than recording a gap. **This is a loader test, not
-  a run-level one** — the startup gate is `[U]` and lands where a supervised
-  run is assembled, not in the supervisor component.
+- `test_supervisor_input_carries_the_guidebook` — the input type's five field
+  names are asserted against an **exact allowlist**, and the positive artifact
+  handoff is exercised.
+- `test_supervisor_input_rejects_separate_privileged_material` — each raw
+  privileged name is an actual constructor attempt, so arbitrary keyword
+  acceptance does not pass merely because the guidebook arm passes.
+- `test_a_criterion_quoting_the_gold_patch_is_rejected` — §3.1's criterion
+  half: the loader rejects rather than recording a gap.
+- `test_a_guided_run_rejects_an_unusable_guidebook_before_actor_start` — both
+  missing and malformed guidebooks refuse the run before an actor script.
 - `test_a_forged_criterion_cannot_build_the_policy` and
   `test_the_judge_is_handed_the_canonical_criterion_every_call` — what *is*
   enforced today: `SpeakWhenOffTrack` refuses any criterion whose digest is not
@@ -375,8 +364,9 @@ once, at `workflow.definitions.CONTROL_BUDGET`.
 
 ### 4.5 What it writes
 
-A second model call, given the same `Observation` and nothing else. The shape is
-the user's, quoted because paraphrasing it loses the thing that matters:
+A second model call, given the same `Observation` — including the complete
+guidebook — and the same general-practice criterion. The shape is the user's,
+quoted because paraphrasing it loses the thing that matters:
 
 > "不对不对，你不太应该看那些 fail，我觉得看这些是更相关一点的" — a person
 > watching over your shoulder, hedged and offhand.
@@ -388,26 +378,27 @@ think…", "I'd look at…"), **points at a direction** already visible in the
 actor's own work, and **names no fix**. Three of those are prose properties. The
 checkable ones are stated as checks and the rest is stated as unenforced:
 
-§5 already fixes what *any* intervention must satisfy — the length cap, the
-tag, and the ban on fabricating an observation — and those are properties of the
-`Intervention` type, not of this writer. **What the writer adds are two checks
-of its own**, and they are the only two worth adding because they rule out
-failures a length cap does not:
+The writer takes its reason primarily from `Justification`; `Goal`, `Actions`
+and `Expected observations` locate the current stage, while `Edits` and `Tests`
+inform private judgement rather than text to relay. That source discipline is
+intended, not mechanically parsed. §5 fixes what *any* intervention must
+satisfy — the length cap, the tag, and the ban on fabricating an observation.
+The writer adds two checks that rule out failures a length cap does not:
 
 | Writer check | What it actually rules out |
 | --- | --- |
 | no fenced code block and no diff hunk header | the most literal form of handing over the answer |
-| no verbatim n-gram shared with the criterion (n≈8 words) | the criterion being **pasted through** the channel into the actor's context |
+| no verbatim eight-word shingle shared with the complete guidebook | any guidebook section being **pasted through** the channel into the actor's context; eight reuses `criterion.py`'s established `SHINGLE_WORDS`, rather than introducing another unexplained threshold |
 
 A third property — *not a repeat of what it already said* — belongs to the
 policy rather than the writer: `said` is in the `Observation` precisely so the
 judgement can decline to speak again, and rejecting a duplicate after paying for
 it would be the wrong layer.
 
-**The n-gram guard is a floor, not a proof.** A paraphrase defeats it, and it is
-worth having anyway: it catches the failure that would actually happen, which is
-a writer quoting the criterion because the criterion is the most relevant text
-in its context.
+**The shingle guard is a floor, not a proof.** A paraphrase, short constant or
+decisive identifier defeats it. It catches literal copying from `Edits`,
+`Tests`, `Justification`, or any other guidebook section without inventing a
+second parsed representation of the artifact.
 
 **What a policy can actually see about timing** is bounded by the channel, and
 the plan says so rather than letting an implementer discover it: **[M]** the
@@ -424,16 +415,19 @@ channel does not sell.
 
 ### 4.6 The leak audit is a human's, and the record has to support it
 
-The two writer checks in 4.5 are automatic and shallow by construction. **The
-real guard on leakage is that a person can go back and read what happened**, so
-every intervention is recorded together with **the judge's input and its stated
-reason** — not only the line that was sent. Without the input, an audit can see
-that a nudge looked innocuous and cannot see that the judgement behind it was
-made from material it should never have had.
+The writer checks in 4.5 are automatic and shallow by construction. **Semantic
+leakage remains a human judgement**, so each intervention row in the existing
+declared `supervisor.jsonl` artifact records the guidebook SHA-256, the exact
+credential-free judge request, its stated reason and the line sent. This
+extends a native diagnostic artifact; it does not add or change a report field.
+Without the input, an audit can see that a nudge looked innocuous and cannot see
+what privileged derivative informed it.
 
-This is also what makes §3.1 reviewable after the fact rather than only at
-design time: a criterion that quietly acquired instance-specific knowledge shows
-up in the judge's reasoning long before it shows up in the text of a nudge.
+The guidebook itself is removed from the actor workspace before launch and is
+not added to the serialized `Conversation`. The invariant test distinguishes a
+real leak from task text the Oracle repeated: it subtracts any 12-word
+guidebook/conversation shingle also found in the task prompt, and includes both
+a shared-source control and a guidebook-only contamination control.
 
 ### 4.7 A retrospective check that costs no rollouts, and its ceiling
 
@@ -514,7 +508,7 @@ quoted.
 | --- | --- | --- |
 | **Bounded length** | a named constant, enforced on construction; over-cap text raises rather than truncates | testable → `test_an_over_length_intervention_is_refused` |
 | **Identifiable as external** | the provenance tag the compliance batch used; **[M]** 0 of 37 interventions were challenged as unattributed ([report §6.2](../../../experiments/trace_synthesis/mid_turn_compliance/REPORT.md)) | testable → `test_every_intervention_carries_its_tag` |
-| **Directional, not a solution** | **read by a human, not asserted by a checker** | **intended, not enforced** |
+| **Directional, not a solution** | the writer prompt uses guidebook `Justification`; shallow checks reject fenced code, diff hunks and eight-word guidebook copying; a human reads semantic content | **intended; surface forms enforced, semantic paraphrase not enforced** |
 | **Never a fabricated observation** | the supervisor emits only its own message; it never rewrites, replaces or attributes anything to a tool | testable → `test_the_supervisor_emits_only_its_own_message` |
 
 The third row is deliberately downgraded. "Short, directional, no solution
@@ -524,11 +518,15 @@ the intervention into one naming a concrete next action — "already close to
 handing over the answer"
 ([report §6.1](../../../experiments/trace_synthesis/mid_turn_compliance/REPORT.md)).
 Writing it here as an enforced invariant would repeat the mistake one layer
-down. It is a review property with a length cap underneath it.
+down. It is a review property with independently tested length, fenced-code,
+diff-hunk and literal-copy floors underneath it. Short directional prose and an
+inline file reference are acceptance controls, so those floors cannot pass by
+rejecting every useful line.
 
 **Every intervention is written to a log, one row each**, with: the cursor it
-was decided at, the wall clock, the policy that produced it, the text as sent,
-and whether the write succeeded. **[M]** The precedent for needing this is a
+was decided at, the wall clock, the policy that produced it, the guidebook
+identity, judge request and reason, the text as sent, and whether the write
+succeeded. **[M]** The precedent for needing this is a
 recorded failure, not a hypothetical: in the steered re-run the polling thread
 died on a malformed reply at boundary 13 and every later boundary went unjudged
 with nothing in the record to say so ([`spec.md` §11](../spec.md#11-open-questions)).
@@ -635,6 +633,12 @@ that added it).
 - **Every named test above exists and fails when its invariant is violated.**
   The count is deliberately not written here: it has grown twice already, and a
   number in this line would be wrong before the code lands.
+- The guidebook-guided harness refuses missing or invalid guidebooks before its
+  first actor launch, passes the exact valid artifact to both model calls, and
+  records the audit tuple in its existing supervisor log.
+- Each shallow writer check has a rejection arm and a useful-output acceptance
+  arm; the length in the unguided byte-compatibility fixture is a literal rather
+  than derived from the production constant.
 - A `SpeakPolicy` can be replaced without touching the stream consumer, the
   intervention type, or the log — demonstrated by `NeverSpeak` and the real
   policy sharing every other line.
@@ -646,9 +650,10 @@ that added it).
 
 ## 8. What this task is not
 
-- **Not the harness wiring.** The FIFO, the relay, the reaping order and the
-  termination rule are [task 16](task-16-live-correction-channel-in-the-harness.md),
-  which remains design-only.
+- **Not the channel plumbing.** The FIFO, relay, reaping order and termination
+  rule belong to [task 16](task-16-live-correction-channel-in-the-harness.md).
+  This task owns only the guidebook preflight and handoff at the existing
+  segmented-harness seam.
 - **Not the experiment.** Task selection, the baseline sweep and the paired arms
   belong to the rig; this component is what the rig consumes.
 - **Not a judge-quality study.** Whether the judge is any good is
@@ -676,8 +681,9 @@ that added it).
 ## 10. Dependencies and scope
 
 **Dependencies:** [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
-(this PR) for the attribution. **No longer** dependent on
-[task 04](task-04-oracle-analysis-task.md): the judge measures against the
-pinned criterion, not against phase B's guidebook. **Not** blocked on task 16,
-by §1's seam.
-**Scope:** M.
+for attribution, [ADR-0018](../../decisions/ADR-0018-the-supervisor-reads-the-guidebook-but-must-not-recite-the-answer.md)
+for the speech boundary, and
+[task 04](task-04-oracle-analysis-task.md) for the validated phase-B artifact.
+It is not blocked on task 16 because the segmented harness already owns its
+delivery seam.
+**Scope:** L.

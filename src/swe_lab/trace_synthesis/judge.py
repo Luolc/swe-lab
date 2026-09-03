@@ -9,16 +9,9 @@ Every guarantee stated here has an attack test that must fail — a claim withou
 one is downgraded rather than written, because a guarantee that has not been
 attacked is a wish (see the experiment playbook's entry on guards).
 
-- **[U] The startup gate is not wired.** :func:`supervising_policy` is the
-  construction helper that loads the criterion, and **nothing in a rollout path
-  calls it yet**, so a forged artifact stops this helper and not a run. The
-  run-level refusal lands when the supervised run is assembled, which is task
-  01's dependency ③ (*the pinned criterion sha and its refusal path, for
-  acceptance point 2b*) and belongs to the wiring PR: the refusal can only be
-  tested where the run is constructed, so it disappears by acquiring a consumer
-  rather than by being reworded.
-  ``test_a_forged_criterion_is_refused_by_the_construction_helper`` tests the
-  helper, not a run.
+- **Startup refuses unusable artifacts.** :func:`supervising_policy` loads the
+  pinned criterion while the run is assembled, and the guidebook-guided harness
+  validates its phase-B artifact before the first actor script is launched.
 - **The judge prompts with the criterion it was handed**, not one it fetches
   for itself — the layer above hand-off, which the policy cannot enforce.
   ``test_the_judge_prompts_with_the_criterion_it_was_handed``.
@@ -419,6 +412,7 @@ class ModelJudge:
         # boolean wearing a measurement's clothes, with nothing to catch it.
         # A lint pass "correcting" this to `isinstance` turns no light red.
         deviation_started_steps_ago=(started if type(started) is int else None),
+        judge_input=dict(payload),
     )
 
 
@@ -446,9 +440,9 @@ class ModelWriter:
       criterion: The standard, used verbatim.
 
     Returns:
-      The line, unvalidated here — :class:`Intervention` rejects an unusable
-      one, and the policy bounds that rejection to the boundary it happened at:
-      a recorded **lapse**, not a gap. One bad line costs one boundary.
+      The model's line. :class:`SpeakWhenOffTrack` applies the shallow
+      answer-form checks and :class:`Intervention` applies the non-empty and
+      length bounds; the policy records either rejection as one bounded lapse.
     """
     payload = {
         "model": self.model,

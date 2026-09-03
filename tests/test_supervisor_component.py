@@ -8,6 +8,7 @@ in that plan without a test below is a wish, per ``AGENTS.md``.
 from __future__ import annotations
 
 import dataclasses
+from typing import Any
 
 import pytest
 
@@ -169,6 +170,35 @@ def test_supervisor_input_carries_the_guidebook() -> None:
   )
   _ = supervisor.observe(assistant_event("working"))
   assert seen == ["GUIDEBOOK-SENTINEL-a81f"]
+
+
+@pytest.mark.parametrize(
+    "privileged_field",
+    [
+        "gold_patch",
+        "reference_patch",
+        "test_patch",
+        "hidden_tests",
+        "fail_to_pass",
+        "pass_to_pass",
+        "fix_commit",
+    ],
+)
+def test_supervisor_input_rejects_separate_privileged_material(
+    privileged_field: str,
+) -> None:
+  """The guidebook is the only privileged derivative in the interface."""
+  values: dict[str, Any] = {
+      "task": "the task",
+      "evidence": (),
+      "cursor": 0,
+      "said": (),
+      "guidebook": "the reviewed derivative",
+      privileged_field: "PRIVILEGED-SENTINEL",
+  }
+
+  with pytest.raises(TypeError, match=privileged_field):
+    Observation(**values)
 
 
 def test_the_task_is_given_not_read_off_the_stream() -> None:
