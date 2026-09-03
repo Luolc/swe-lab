@@ -233,6 +233,35 @@ fn a_missing_configured_api_key_is_refused_before_the_actor_starts() {
 }
 
 #[test]
+fn an_explicitly_empty_selector_does_not_fall_back_to_the_default_key() {
+    const DEFAULT_KEY: &str = "DEFAULT-KEY-SENTINEL-MUST-NOT-LEAK";
+    let config = valid_config();
+    let paths = output_paths();
+    let actor_marker = paths[0].parent().unwrap().join("actor-started");
+    let mut command = wrapper();
+    command
+        .args(["run", "--config"])
+        .arg(&config)
+        .args(["--actor-prompt", "/dev/null"])
+        .args(output_args(&paths))
+        .args(["--", "sh", "-c", "touch \"$ACTOR_MARKER\""])
+        .env("ACTOR_MARKER", &actor_marker)
+        .env("SWE_LAB_SUPERVISOR_BASE_URL", "http://127.0.0.1:9")
+        .env("SWE_LAB_SUPERVISOR_API_KEY_ENV", "")
+        .env("ANTHROPIC_API_KEY", DEFAULT_KEY);
+
+    let (code, stderr) = stderr_of(command);
+    let summary = std::fs::read_to_string(&paths[2]).unwrap();
+
+    assert_eq!(code, 3, "{stderr}");
+    assert!(stderr.contains("not a variable name"), "{stderr}");
+    assert!(!stderr.contains(DEFAULT_KEY), "{stderr}");
+    assert!(!summary.contains(DEFAULT_KEY), "{summary}");
+    assert!(!actor_marker.exists());
+    std::fs::remove_file(&config).unwrap();
+}
+
+#[test]
 fn an_api_key_misplaced_in_the_selector_reaches_neither_diagnostic() {
     const MISPLACED_KEY: &str = "MISPLACED-CREDENTIAL-SENTINEL-MUST-NOT-LEAK";
     let config = valid_config();
