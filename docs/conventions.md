@@ -25,6 +25,10 @@ uv run pytest                        # run the test suite
 git add -A                           # --all-files means all TRACKED files
 uv run pre-commit run --all-files    # the full hook set — see Formatting & lint
 
+# The Rust runtime (rust/swe-lab-supervisor/): its README lists the four gates
+# CI runs and the static build. Needs the pinned toolchain via rustup.
+(cd rust/swe-lab-supervisor && cargo test)
+
 # The engine CLI — one entry point, per-subcommand modules (cli/<name>.py).
 # `run` takes a REGISTERED WORKFLOW and an instance; any field of it is
 # adjustable for that invocation by naming its path.
@@ -345,6 +349,7 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | `.cache/` | **Gitignored** — cloned repos, the pinned Claude Code linux-x64 binary, batch logs. Reproducible, never committed. |
 | `packaging/claude-code-bundle/` | Builds the portable Claude Code tarball (agent + glibc + loader + `rg`) that runs on musl/Alpine, ancient glibc and distroless. `build.sh` resolves + pins the version, `Dockerfile.bundle` is the hermetic builder, `smoke-test.sh` is the target matrix. Output lands in `dist/` (**gitignored**). The artifact is **internal-use only** — private channels, never published. Design: [task 24](horizontal/plans/task-24-claude-code-portable-bundle.md). |
 | `tests/` | pytest suite over the engine, axes, and tasks. |
+| `rust/swe-lab-supervisor/` | The **in-sandbox supervision runtime** ([issue #375](https://github.com/Luolc/swe-lab/issues/375)), a static musl binary that wraps the actor and runs the trace-synthesis supervision policy where the actor runs. Its own [README](../rust/swe-lab-supervisor/README.md) has the CLI, config schema, build and checks; its design record is [task 20](trace-synthesis/plans/task-20-native-supervisor-runtime.md). Pure-Rust dependencies only, plain HTTP to the model endpoint, checked by CI's `rust` job. |
 
 ## What may be committed as evidence
 

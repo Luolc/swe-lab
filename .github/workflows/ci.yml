@@ -17,7 +17,7 @@ permissions:
   contents: read
 
 jobs:
-  check:
+  python:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -77,3 +77,58 @@ jobs:
       # against .venv, so this runs after `uv sync`.
       - name: Format / lint / type-check
         run: uv run pre-commit run --all-files --show-diff-on-failure
+
+  # The Rust runtime under rust/swe-lab-supervisor: the four gates the
+  # toolchain gives (format, clippy with warnings as errors, tests, docs with
+  # broken links as errors), then the release artifact itself. The toolchain
+  # version is the one rust-toolchain.toml pins; keep the two in sync.
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rust/swe-lab-supervisor
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.97.1"
+          components: rustfmt, clippy
+          targets: x86_64-unknown-linux-musl
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust/swe-lab-supervisor
+
+      # The gates themselves live in one file, shared with the container
+      # script a toolchain-less machine uses: fmt, clippy with warnings as
+      # errors, tests, docs with broken links as errors, a pure-Rust dependency
+      # tree, the static musl build, and the structural check that the binary
+      # has no PT_INTERP header (why not `file` or `ldd`: their wording moves).
+      - name: Gates
+        run: scripts/gates.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swe-lab-supervisor-x86_64-unknown-linux-musl
+          path: rust/swe-lab-supervisor/target/x86_64-unknown-linux-musl/release/swe-lab-supervisor
+          if-no-files-found: error
+
+  # The one status branch protection requires. It exists so that the required
+  # check keeps its name while the work behind it is split across jobs that
+  # run in parallel; it fails if any of them did not succeed (a skipped or
+  # cancelled job is not a pass).
+  check:
+    needs: [python, rust]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every gate succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -euo pipefail
+          echo "job results: $RESULTS"
+          for result in $RESULTS; do
+            [ "$result" = success ] || exit 1
+          done

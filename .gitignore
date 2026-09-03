@@ -68,3 +68,6 @@ experiments/trace_synthesis/handmade_instance/frozen/
 # internal-use only (see docs/horizontal/plans/task-24-*.md §0). Never commit,
 # never publish; they are built on demand and uploaded to a private channel.
 packaging/*/dist/
+
+# Rust build output (rust/<crate>/target/): compiled artifacts, never committed.
+rust/**/target/
