@@ -51,6 +51,12 @@ pub struct RunArgs {
 }
 
 /// Parse the arguments after the program name.
+///
+/// # Errors
+///
+/// The arguments are not one of the commands above. The message names the
+/// category of the fault and never repeats a token: a misplaced value on the
+/// command line would otherwise be copied into a log by the diagnostic.
 pub fn parse<I>(args: I) -> Result<Command, String>
 where
     I: IntoIterator<Item = OsString>,
@@ -64,7 +70,7 @@ where
         Some("criteria") => reject_extra(args, Command::Criteria),
         Some("--version" | "-V") => reject_extra(args, Command::Version),
         Some("--help" | "-h") => Err("help requested".to_string()),
-        _ => Err(format!("unknown command {}", first.display())),
+        _ => Err("unknown command".to_string()),
     }
 }
 
@@ -74,7 +80,7 @@ where
 {
     match args.next() {
         None => Ok(command),
-        Some(extra) => Err(format!("unexpected argument {}", extra.display())),
+        Some(_) => Err("unexpected argument after the command".to_string()),
     }
 }
 
@@ -95,7 +101,7 @@ where
             break;
         }
         let Some(flag) = arg.to_str() else {
-            return Err(format!("unexpected argument {}", arg.display()));
+            return Err("unexpected argument before `--`".to_string());
         };
         let slot = match flag {
             "--config" => &mut config,
@@ -103,7 +109,7 @@ where
             "--supervisor-log" => &mut supervisor_log,
             "--summary" => &mut summary,
             "--actor-stderr" => &mut actor_stderr,
-            _ => return Err(format!("unknown flag {flag}")),
+            _ => return Err("unknown flag before `--`".to_string()),
         };
         let Some(value) = args.next() else {
             return Err(format!("{flag} needs a value"));
@@ -198,6 +204,20 @@ mod tests {
 
         let without_actor = &FULL[..FULL.iter().position(|a| *a == "--").unwrap()];
         assert!(parse(os(without_actor)).unwrap_err().contains("actor"));
+    }
+
+    #[test]
+    fn a_usage_error_never_repeats_the_offending_token() {
+        const SENTINEL: &str = "sk-SENTINEL-MUST-NOT-BE-ECHOED";
+        let mut with_unknown_flag = FULL.to_vec();
+        with_unknown_flag.insert(1, SENTINEL);
+        with_unknown_flag.insert(2, "value");
+        let with_extra = vec!["criteria", SENTINEL];
+        let with_unknown_command = vec![SENTINEL];
+        for argv in [&with_unknown_flag, &with_extra, &with_unknown_command] {
+            let error = parse(os(argv)).unwrap_err();
+            assert!(!error.contains("SENTINEL"), "{error}");
+        }
     }
 
     #[test]
