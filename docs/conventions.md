@@ -196,6 +196,18 @@ the one prose copy of it (`AGENTS.md` links here rather than restating it):
   session transcript. Findings are never silenced with a path or rule
   exclusion; `.gitleaksignore` holds immutable fingerprints only, under the rule
   in its header.
+- **no-operator-home-paths** (local) — the second PII scan, over the files of
+  the commit being made: an absolute home directory path
+  (`/home/<user>`, `/Users/<user>`) must not be committed. Its repo-wide twin
+  is `tests/test_operator_home_paths.py`, which reads every tracked file on
+  every `pytest` run — the same staged-versus-everything split gitleaks has,
+  for the same reason, and one implementation
+  (`tests/operator_home_paths.py`) behind both. It is the one hook with **no
+  `experiments/` exemption**, because that directory is where all 89 committed
+  home paths it was written for actually were. A home directory that is
+  genuinely nobody's (upstream dataset text, a redaction fixture) is listed in
+  `NON_OPERATOR_HOMES` by value with its reason — never by file, which would
+  also exempt the next real leak to land there.
 - **pyink** — the formatter (Google's black fork): **line length 80, 2-space
   indent, majority quotes**, `py313`. Not ruff-format (ruff's formatter is
   disabled for `.py` in `pyproject.toml`).
@@ -460,7 +472,11 @@ append-only per the playbook: new variant, new directory, never an overwrite.
 and enforced elsewhere rather than judged here: **no secrets** (the gitleaks
 hook and the CI history scan — see [Quality bar](../AGENTS.md#quality-bar)) and
 **no operator PII** in any committed record — home paths, names, emails,
-account or organization identifiers. The other #304 P0, which was *not*
+account or organization identifiers. The home-path half of that is mechanical
+and is now checked as such, in the same two domains as the secret scan: the
+`no-operator-home-paths` hook over the files of a commit, and
+`tests/test_operator_home_paths.py` over every tracked file. The other kinds
+are still judgement. The other #304 P0, which was *not*
 withdrawn, was exactly this: raw transcript snapshots carrying an operator home
 path. A capture that must be redacted before it can be committed is redacted
 first and verified after ([the redaction
@@ -830,7 +846,7 @@ retroactively (owner's calibration, 2026-09-01).
   survived in git (2026-09-01; re-harvesting it cost three rollouts). So
   anything worth keeping does **not** live in a worktree: put it on a stable
   path outside every checkout (this box uses
-  `/home/ubuntu/dev/swe-lab-artifacts/`) and commit a pointer plus a sha256
+  `~/dev/swe-lab-artifacts/`) and commit a pointer plus a sha256
   manifest instead.
 - **`docker rm` on a failed run can be irreversible evidence destruction.** Only
   `/workspace` is bind-mounted, so everything the actor writes elsewhere — its

@@ -34,6 +34,27 @@ repos:
     hooks:
       - id: gitleaks
         args: ["--redact", "--no-banner", "."]
+  # The same split, over a second class of thing that must not be committed:
+  # an operator home path (docs/conventions.md -> "no operator PII"). This half
+  # sees the files of the commit being made, which is the only moment removing
+  # one is a single edit rather than a rewrite of an artifact somebody has
+  # since cited; `tests/test_operator_home_paths.py` scans every tracked file
+  # instead, and catches what got in through `--no-verify`, through a clone
+  # where nobody ran `pre-commit install`, or before this hook existed. One
+  # implementation, read by both.
+  #
+  # Deliberately carries no `exclude`: experiments/ is where every one of the
+  # 89 committed home paths this hook was written for actually lived, so the
+  # exemption every other hook here takes is the one thing this hook must not.
+  - repo: local
+    hooks:
+      - id: no-operator-home-paths
+        name: no operator home path in a committed file
+        language: system
+        entry: python3 tests/operator_home_paths.py
+        # Binary files cannot hold a record anybody reads, and the scanner
+        # skips what it cannot decode anyway; this keeps them off its argv.
+        types: [text]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.7
     hooks:

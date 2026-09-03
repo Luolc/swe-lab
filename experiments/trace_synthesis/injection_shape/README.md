@@ -83,7 +83,7 @@ the user*, and *the proxy program* from *the `ANTHROPIC_BASE_URL` variable*.
 
 ```sh
 # all variants, four replicates each; existing runs are skipped, not re-run
-direnv exec /home/ubuntu/dev/swe-lab \
+direnv exec ~/dev/swe-lab \
   python3 experiments/trace_synthesis/injection_shape/run_experiment.py --repeat 4 all
 
 # regenerate every number in the report

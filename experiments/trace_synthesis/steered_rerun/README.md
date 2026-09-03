@@ -228,7 +228,7 @@ and nothing else. The guidebook agent is built against it; see
 [`REPORT.md`](REPORT.md#8-the-failure-sample-is-the-workflows-input-contract).
 
 **Large artifacts live outside every git worktree**, at
-`/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/`, with
+`~/dev/swe-lab-artifacts/trace_synthesis/`, with
 [`MANIFEST.md`](MANIFEST.md) pointing at them by sha256. Not fastidiousness: the
 previous round's frozen tree was gitignored *inside* a worktree and
 `git worktree remove` deleted it without a word

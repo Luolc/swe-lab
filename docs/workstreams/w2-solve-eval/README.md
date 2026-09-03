@@ -35,7 +35,7 @@ Two decoupled flows over a shared Docker layer:
 
 ## Reference
 
-Official harness cloned at `/Users/luoliangchen/dev/3p/scaleapi/SWE-bench_Pro-os`
+Official harness cloned at `~/dev/3p/scaleapi/SWE-bench_Pro-os`
 (MIT). We **reuse** its prebuilt per-instance Docker Hub images
 (`jefzda/sweap-images:<dockerhub_tag>`), its per-instance `run_script.sh` +
 `parser.py`, and its grading rule; we **port** its `create_entryscript` logic. We

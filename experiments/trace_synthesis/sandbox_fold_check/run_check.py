@@ -44,7 +44,9 @@ WORKDIR = "/tmp/fold-check"
 # inject agent instructions, and IS_SANDBOX signals the throwaway container to
 # builds that otherwise refuse --dangerously-skip-permissions as root.
 AGENT_HOME = "/agent-home"
-OUT = pathlib.Path(os.environ.get("FOLD_CHECK_OUT", "/home/ubuntu/dev/swe-lab-artifacts/sandbox_fold_check"))
+OUT = pathlib.Path(
+    os.environ.get("FOLD_CHECK_OUT", "~/dev/swe-lab-artifacts/sandbox_fold_check")
+).expanduser()
 
 
 def load(path: pathlib.Path, name: str):

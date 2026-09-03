@@ -15,7 +15,7 @@ rather than copied throughout this repo's docs.
 
 ## 0. Where this runs
 
-**The main checkout, `/home/ubuntu/dev/swe-lab` — never a worktree.**
+**The main checkout, `~/dev/swe-lab` — never a worktree.**
 `--output-root` (the flag that would let a worktree point its output
 elsewhere) **landed** with [#351](https://github.com/luolc/swe-lab/pull/351)
 on 2026-09-02 — `main` = `5875077`, `src/swe_lab/cli/run.py:100`. This
@@ -37,7 +37,7 @@ every box below is re-verified immediately before pressing the button in
       appears in the script body:
 
       ```
-      cd /home/ubuntu/dev/swe-lab
+      cd ~/dev/swe-lab
       uv run python3 -c "
       from swe_lab.harnesses.claude_code.harness import ClaudeCodeHarness
       from swe_lab.harnesses.claude_code.constants import EVENT_STREAM_NAME, AGENT_SCRIPT_NAME
@@ -66,7 +66,7 @@ every box below is re-verified immediately before pressing the button in
       workspace, and assert the drop directory exists and belongs to us:
 
       ```
-      cd /home/ubuntu/dev/swe-lab
+      cd ~/dev/swe-lab
       uv run python3 -c "
       import dataclasses, os, tempfile
       from etils import epath
@@ -106,8 +106,8 @@ every box below is re-verified immediately before pressing the button in
       indistinguishable, and an hour of wall clock and a few dollars buy a
       result nobody can attribute. Fixed in
       [#353](https://github.com/luolc/swe-lab/pull/353).
-- [ ] `#349` is merged: `git -C /home/ubuntu/dev/swe-lab fetch origin && git
-      -C /home/ubuntu/dev/swe-lab log --oneline -1 origin/main` names a
+- [ ] `#349` is merged: `git -C ~/dev/swe-lab fetch origin && git
+      -C ~/dev/swe-lab log --oneline -1 origin/main` names a
       commit that closes #349, and `git rev-parse main` ==
       `git rev-parse origin/main` in the main checkout. **Merged 2026-09-02**
       (`main` = `5145510`) — still a launch-time check, not a fact to carry
@@ -145,7 +145,7 @@ every box below is re-verified immediately before pressing the button in
 - [ ] The dataset loads and has the expected count:
 
       ```
-      cd /home/ubuntu/dev/swe-lab
+      cd ~/dev/swe-lab
       uv run python -c "
       from swe_lab.datasets.loader import load_dataset
       ds = load_dataset('swebench_pro')
@@ -165,7 +165,7 @@ every box below is re-verified immediately before pressing the button in
       checks it:
 
       ```
-      cd /home/ubuntu/dev/swe-lab
+      cd ~/dev/swe-lab
       uv run python -c "
       import subprocess, sys
       from swe_lab.datasets import load_dataset
@@ -219,7 +219,7 @@ not a fix for a break — the two readings above are each true only in the
 shell that produced them, and neither generalizes past it.
 
 ```
-cd /home/ubuntu/dev/swe-lab
+cd ~/dev/swe-lab
 uv run python -m swe_lab run supervised_rollout_and_unit_test \
   instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb
 ```
