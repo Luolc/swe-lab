@@ -146,8 +146,14 @@ is stopped by pid and held with the start time it had then; the `SIGCONT` to
 it is sent only once the pid is checked to still be that process — a pid
 reused since names another, which is left alone — and every held
 continuation and the group's are attempted whatever another did, the
-failures counted in one error. Both mechanisms sit behind the reader's gate
-and the `Actor` handle; a config picks one (§2).
+failures counted in one error. The actor's end takes every step whatever an
+earlier one did — the continuation, the gate, `SIGTERM`, the grace,
+`SIGKILL`, the reap, the sweep — and returns nothing, an error included,
+before both drains are joined, bounded by one grace for the two: a reader
+still running would be writing the event log the summary digests next.
+What went wrong on the way is carried out and makes the run unclean. Both
+mechanisms sit behind the reader's gate and the `Actor` handle; a config
+picks one (§2).
 
 The reach of the first mechanism is measured, not assumed. **The numbers
 are of the kernel they were measured on** — the host's 6.17, shared by the
@@ -258,8 +264,18 @@ per-kind fields. The kinds:
 
 - **`observed`** — an event consumed at which no decision was sought (under
   batching, the majority).
-- **`spoke`** — a correction delivered: `boundary`, `marker`, `text`, `calls`,
-  `decision_lag_ms`.
+- **`correction`** — the policy wrote a correction and it is about to be
+  sent: `boundary`, `marker`, `text`, `calls`, `decision_lag_ms`. On disk,
+  flushed, *before* anything reaches the actor's stdin; the delivery's
+  outcome follows as a row of its own (`spoke` or `gap`) for the same
+  `boundary`. **The pair is read by `boundary`:** a `correction` row with
+  no `spoke` or `gap` behind it is a delivery the record does not vouch for
+  — the wrapper ended between the two writes (no summary, or an unclean one
+  naming the supervisor log). A log that cannot take the `correction` row
+  keeps the correction from being sent: the run faults, and the actor saw
+  nothing.
+- **`spoke`** — a correction delivered: `boundary`, `cursor`; the correction
+  itself is the `correction` row before it.
 - **`silent`** — judged, nothing to say; with `marker` when the judge found a
   deviation and a gate (budget, cooldown) held the correction back.
 - **`unjudged`** — a boundary at which no judge was consulted; `reason` is
@@ -269,7 +285,9 @@ per-kind fields. The kinds:
 - **`lapse`** — a failed or unusable model call, bounded to that boundary:
   `reason`, `calls`.
 - **`stale`** — a correction newer evidence overtook: `reason`, `text`.
-- **`gap`** — a correction that could not be written: `reason`.
+- **`gap`** — a correction that could not be written: `reason`, `boundary`
+  (behind a `correction` row when the write to stdin was attempted; alone
+  when stdin was already known unusable).
 
 A boundary's row is written when its judgment completes, carrying the
 boundary's cursor, so rows are in time order, not cursor order. `calls`

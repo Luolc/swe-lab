@@ -154,6 +154,10 @@ pub struct Ended {
     /// killed, and killed — or why the sweep could not prove there are none
     /// left, which makes the run not accounted for.
     pub stragglers: Result<usize, String>,
+    /// What went wrong on the way out, in order — a continuation, an
+    /// observation of the leader, a signal — each step taken all the same.
+    /// Empty when nothing did; any entry makes the run not accounted for.
+    pub teardown: Vec<String>,
 }
 
 /// The stdout reader's gate. Closed, the reader takes nothing off the pipe;
@@ -585,27 +589,70 @@ impl Actor {
     /// A signal or the final wait failed for a reason other than the group
     /// being already gone.
     pub fn end(mut self, grace: Duration) -> io::Result<Ended> {
-        self.thaw()?;
+        // Every step is taken whatever the ones before it did; what went
+        // wrong is carried out, not returned early — nothing leaves here
+        // while a drain may still write the logs the caller digests next.
+        let mut teardown = Vec::new();
+        note(&mut teardown, "SIGCONT", self.thaw());
         self.gate.open();
-        if !self.exited()? {
-            signal_group(self.group, Signal::SIGTERM)?;
-            let deadline = Instant::now() + grace;
-            while !self.exited()? && Instant::now() < deadline {
-                thread::sleep(EXIT_POLL_INTERVAL);
+        let exited = match self.exited() {
+            Ok(exited) => exited,
+            Err(error) => {
+                note(&mut teardown, "observing the actor", Err(error));
+                false
+            }
+        };
+        if !exited {
+            match signal_group(self.group, Signal::SIGTERM) {
+                Ok(()) => {
+                    let deadline = Instant::now() + grace;
+                    loop {
+                        match self.exited() {
+                            Ok(false) if Instant::now() < deadline => {
+                                thread::sleep(EXIT_POLL_INTERVAL);
+                            }
+                            // Exited, or the grace is spent.
+                            Ok(_) => break,
+                            Err(error) => {
+                                note(&mut teardown, "observing the actor", Err(error));
+                                break;
+                            }
+                        }
+                    }
+                }
+                Err(error) => note(&mut teardown, "SIGTERM", Err(error)),
             }
         }
-        signal_group(self.group, Signal::SIGKILL)?;
-        let status = self.child.wait()?;
-        self.reaped = true;
+        note(
+            &mut teardown,
+            "SIGKILL",
+            signal_group(self.group, Signal::SIGKILL),
+        );
+        let status = self.child.wait();
+        self.reaped = status.is_ok();
         let stragglers = sweep(&self.mark, self.group, self.started);
+        // Bounded: one `grace` for both drains together, from here. A drain
+        // that has not ended by then — a writer the sweep could not find
+        // still holds its pipe — is reported `None`, a fault upstream, and
+        // its thread is left behind; it is never waited for without bound,
+        // which would turn a held pipe into a hung wrapper.
         let deadline = Instant::now() + grace;
         let stdout = finish(&mut self.stdout_drain, deadline);
         let stderr = finish(&mut self.stderr_drain, deadline);
+        let status = status.map_err(|error| {
+            let earlier = if teardown.is_empty() {
+                String::new()
+            } else {
+                format!(" (after: {})", teardown.join("; "))
+            };
+            io::Error::other(format!("reaping the leader: {error}{earlier}"))
+        })?;
         Ok(Ended {
             status,
             stdout,
             stderr,
             stragglers,
+            teardown,
         })
     }
 }
@@ -624,6 +671,13 @@ impl Drop for Actor {
         let _ = self.child.wait();
         self.reaped = true;
         let _ = sweep(&self.mark, self.group, self.started);
+    }
+}
+
+/// A teardown step's failure, noted and moved past.
+fn note(teardown: &mut Vec<String>, step: &str, result: io::Result<()>) {
+    if let Err(error) = result {
+        teardown.push(format!("{step}: {error}"));
     }
 }
 
@@ -1534,6 +1588,62 @@ mod tests {
             end(descendant);
             end(leader);
         }
+    }
+
+    /// The actor's end takes every step whatever an earlier one did, and
+    /// returns nothing before both drains are joined, bounded by the grace:
+    /// an actor whose event log is a pipe nobody reads has a stdout drain
+    /// that cannot finish, and `end` — its continuation failing, injected —
+    /// returns after the grace, the failure carried in `teardown`, the
+    /// drain `None`, the leader reaped. Before, the failure returned at
+    /// once, the drain left running over a log the caller digests next.
+    #[test]
+    fn ending_an_actor_takes_every_step_and_joins_its_drains_within_the_grace() {
+        use std::os::unix::fs::OpenOptionsExt;
+        let dir = scratch("end-teardown");
+        let fifo = dir.join("events.fifo");
+        mkfifo(&fifo, Mode::S_IRWXU).unwrap();
+        // The read end is held open and never read: the writer fills the
+        // pipe and then blocks in its write.
+        let reader = File::options()
+            .read(true)
+            .custom_flags(OFlag::O_NONBLOCK.bits())
+            .open(&fifo)
+            .unwrap();
+        let log = File::options().write(true).open(&fifo).unwrap();
+        let (tx, _rx) = mpsc::channel();
+        let mut actor = Actor::spawn(
+            command(&sh("while :; do echo flood; done"), &[]).unwrap(),
+            log,
+            File::create(dir.join("stderr.log")).unwrap(),
+            LIMITS,
+            move |event| {
+                let _ = tx.send(event);
+            },
+        )
+        .unwrap();
+        thread::sleep(Duration::from_millis(300));
+        actor.frozen = true;
+        actor.held.push(Held {
+            pid: actor.group,
+            started: 0,
+        });
+        FAIL_NEXT_CONTINUE.with(|fail| fail.set(true));
+        let grace = Duration::from_millis(500);
+        let started = Instant::now();
+        let ended = actor.end(grace).unwrap();
+        assert!(started.elapsed() >= grace, "{:?}", started.elapsed());
+        assert!(started.elapsed() < grace * 4, "{:?}", started.elapsed());
+        assert!(
+            ended.teardown.iter().any(|step| step.contains("injected")),
+            "{:?}",
+            ended.teardown
+        );
+        assert_eq!(ended.stdout, None, "a drain nobody reads finished?");
+        assert!(ended.stderr.is_some());
+        assert!(!ended.status.success());
+        drop(reader);
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     /// One continuation failing stops none of the others: the second held

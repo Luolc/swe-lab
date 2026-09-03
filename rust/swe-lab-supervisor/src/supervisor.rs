@@ -39,6 +39,12 @@
 //! ends: a stop raised after that changes neither the summary nor the exit
 //! status — the two are one decision, not two readings of a flag.
 //!
+//! **The record comes first.** Nothing reaches the actor's stdin before its
+//! record is on disk: a correction is written to the log as a `correction`
+//! row and flushed, then to the actor, and the delivery's outcome follows
+//! as a row of its own — a log that cannot be written keeps the correction
+//! from being sent, never the other way round.
+//!
 //! **Failure semantics.** A failed judge or writer call is one lapse; the
 //! next boundary is judged normally. A failed stdin write is a gap: the loop
 //! stops speaking, keeps accounting, and the run is not evidence about
@@ -796,20 +802,14 @@ impl Loop {
         if !self.fits(&row, DELIVERY_MARGIN) {
             reduce(&mut row);
         }
-        let mut delivered = false;
-        let kind = match decided {
-            Ok(kind) => kind,
-            Err(text) => {
-                let (kind, reason) = self.deliver(boundary, text);
-                delivered = kind == "spoke";
-                if let Some(reason) = reason {
-                    row.insert("reason".into(), json!(bounded(&reason)));
-                }
-                kind
+        let delivered = match decided {
+            Ok(kind) => {
+                row.insert("kind".into(), json!(kind));
+                self.write_row(row);
+                false
             }
+            Err(text) => self.speak(boundary, row, text),
         };
-        row.insert("kind".into(), json!(kind));
-        self.write_row(row);
         // The actor was held — stopped, or gated — through the freshness
         // check and the stdin write above; only now is it let go.
         self.release();
@@ -903,40 +903,77 @@ impl Loop {
             && signals::requested(&self.stop).is_none()
     }
 
-    /// Deliver a line the policy wrote, unless it is stale or the channel is
-    /// gone. Returns the row kind and, when not delivered, the reason.
-    fn deliver(&mut self, boundary: &InFlight, text: String) -> (&'static str, Option<String>) {
+    /// The policy wrote a correction. Stale, or the channel gone, is one row
+    /// saying which, and nothing is sent. Otherwise nothing reaches the
+    /// actor's stdin before its record is on disk: `row` — the decision,
+    /// its calls, the text — is written first as a `correction` row and
+    /// flushed; a log that cannot take it keeps the correction from being
+    /// sent (the fault is set). Then the correction is written to the
+    /// actor, and the delivery's outcome follows as a row of its own —
+    /// `spoke`, or `gap` — for the same boundary. A `correction` row with
+    /// no outcome row behind it is a delivery the record does not vouch
+    /// for: the wrapper ended between the two writes (§6). Returns whether
+    /// the correction was delivered.
+    fn speak(&mut self, boundary: &InFlight, mut row: Map<String, Value>, text: String) -> bool {
+        if let Err((kind, reason)) = self.deliverable(boundary) {
+            row.insert("kind".into(), json!(kind));
+            row.insert("reason".into(), json!(reason));
+            self.write_row(row);
+            return false;
+        }
+        row.insert("kind".into(), json!("correction"));
+        if !self.write_row(row) {
+            return false;
+        }
+        let (kind, reason) = self.write_correction(boundary, text);
+        let mut outcome = self.row(kind, boundary.disposition);
+        outcome.insert("cursor".into(), json!(boundary.trigger_cursor));
+        outcome.insert("boundary".into(), json!(boundary.ordinal));
+        if let Some(reason) = reason {
+            outcome.insert("reason".into(), json!(bounded(&reason)));
+        }
+        self.write_row(outcome);
+        kind == "spoke"
+    }
+
+    /// Whether a correction for `boundary` may be written to the actor now:
+    /// not once the wrapper was told to stop, not on evidence newer than the
+    /// snapshot it was written for, not to an actor that is gone, and not
+    /// to a stdin already found unusable. The row kind and the reason, when
+    /// not.
+    fn deliverable(&mut self, boundary: &InFlight) -> Result<(), (&'static str, String)> {
         if signals::requested(&self.stop).is_some() {
             self.counts.stale += 1;
-            return (
-                "stale",
-                Some("the run was cancelled before delivery".to_string()),
-            );
+            return Err(("stale", "the run was cancelled before delivery".to_string()));
         }
         if boundary.revision != self.revision {
             self.counts.stale += 1;
-            return (
+            return Err((
                 "stale",
-                Some(format!(
+                format!(
                     "admitted evidence moved from revision {} to {}",
                     boundary.revision, self.revision
-                )),
-            );
+                ),
+            ));
         }
         if self.stdout_closed || self.leader_exited_at.is_some() {
             self.counts.stale += 1;
-            return (
-                "stale",
-                Some("the actor was gone before delivery".to_string()),
-            );
+            return Err(("stale", "the actor was gone before delivery".to_string()));
         }
         if self.mute {
             self.counts.gaps += 1;
-            return (
-                "gap",
-                Some("actor stdin unusable; not attempted".to_string()),
-            );
+            return Err(("gap", "actor stdin unusable; not attempted".to_string()));
         }
+        Ok(())
+    }
+
+    /// Write a correction to the actor's stdin. Returns the outcome's row
+    /// kind and, when it could not be written, the reason.
+    fn write_correction(
+        &mut self,
+        boundary: &InFlight,
+        text: String,
+    ) -> (&'static str, Option<String>) {
         let rendered = format!("<{INTERVENTION_TAG}>\n{text}\n</{INTERVENTION_TAG}>");
         let grace = Duration::from_millis(self.config.timeouts.term_grace_ms);
         let stop = Arc::clone(&self.stop);
@@ -980,12 +1017,12 @@ impl Loop {
     /// borrows the stdout cap rather than add a config key that the Python
     /// side would have to mirror by hand. If a use for tuning it apart ever
     /// appears, it gets a key of its own then.
-    fn write_row(&mut self, row: Map<String, Value>) {
+    fn write_row(&mut self, row: Map<String, Value>) -> bool {
         let mut line = match serde_json::to_vec(&Value::Object(row)) {
             Ok(line) => line,
             Err(error) => {
                 self.fault(format!("rendering a supervisor log row: {error}"));
-                return;
+                return false;
             }
         };
         line.push(b'\n');
@@ -1004,12 +1041,18 @@ impl Loop {
             self.fault(format!(
                 "the supervisor log reached its cap of {cap} bytes{held}"
             ));
-            return;
+            return false;
         };
         let written = self.log.write_all(&line).and_then(|()| self.log.flush());
         match written {
-            Ok(()) => self.log_written = after,
-            Err(error) => self.fault(format!("writing the supervisor log: {error}")),
+            Ok(()) => {
+                self.log_written = after;
+                true
+            }
+            Err(error) => {
+                self.fault(format!("writing the supervisor log: {error}"));
+                false
+            }
         }
     }
 
@@ -1073,6 +1116,11 @@ impl Loop {
         let grace = Duration::from_millis(config.timeouts.term_grace_ms);
         let (status, stragglers) = match actor.end(grace) {
             Ok(ended) => {
+                if !ended.teardown.is_empty() {
+                    unclean.get_or_insert_with(|| {
+                        format!("ending the actor: {}", ended.teardown.join("; "))
+                    });
+                }
                 for (stream, drain) in [("stdout", ended.stdout), ("stderr", ended.stderr)] {
                     if let Some(reason) = drain_fault(stream, drain) {
                         unclean.get_or_insert(reason);
@@ -1438,8 +1486,8 @@ mod tests {
                 run.complete(ordinal, outcome);
             }
             let row = last_row(&dir);
-            assert_eq!(row["marker"], json!("marker"), "{row:?}");
             if cancelled {
+                assert_eq!(row["marker"], json!("marker"), "{row:?}");
                 assert_eq!(row["kind"], json!("stale"), "{row:?}");
                 assert!(
                     row["reason"].as_str().unwrap().contains("cancelled"),
@@ -1447,8 +1495,86 @@ mod tests {
                 );
                 assert_eq!((run.counts.stale, run.counts.corrections), (1, 0));
             } else {
+                // The outcome row, behind the `correction` row.
                 assert_eq!(row["kind"], json!("spoke"), "{row:?}");
+                assert_eq!(row["boundary"], json!(1), "{row:?}");
                 assert_eq!((run.counts.stale, run.counts.corrections), (0, 1));
+            }
+            std::fs::remove_dir_all(dir).unwrap();
+        }
+    }
+
+    /// Nothing reaches the actor's stdin before its record is on disk: with
+    /// the supervisor log unwritable, a correction the policy wrote is not
+    /// delivered — the actor here is `cat`, which echoes what it is sent
+    /// into the event log, and echoes nothing — and the run faults naming
+    /// the log. The control is the same correction with the log writable:
+    /// the actor echoes it, and the log holds the `correction` row and then
+    /// the `spoke` row for the boundary.
+    #[test]
+    fn no_correction_reaches_the_actor_before_its_record_is_on_disk() {
+        for writable in [false, true] {
+            let (mut run, dir) = quiet_loop(if writable {
+                "write-ahead-control"
+            } else {
+                "write-ahead"
+            });
+            if !writable {
+                run.log = BufWriter::new(File::options().write(true).open("/dev/full").unwrap());
+            }
+            let boundary = in_flight(1, thread::spawn(|| {}));
+            run.settle(
+                &boundary,
+                Ok(Judged {
+                    decision: Decision::Speak("stop".to_string()),
+                    marker: Some("marker".to_string()),
+                    calls: Vec::new(),
+                }),
+            );
+            let echoed = || {
+                std::fs::read_to_string(dir.join("events.jsonl"))
+                    .unwrap()
+                    .contains("stop")
+            };
+            if writable {
+                let started = Instant::now();
+                while !echoed() {
+                    assert!(
+                        started.elapsed() < Duration::from_secs(5),
+                        "the actor did not echo the correction"
+                    );
+                    thread::sleep(Duration::from_millis(20));
+                }
+                assert_eq!(run.counts.corrections, 1);
+                assert!(!run.faulted);
+                let log = std::fs::read_to_string(dir.join("supervisor.jsonl")).unwrap();
+                let rows: Vec<Map<String, Value>> = log
+                    .lines()
+                    .map(|l| serde_json::from_str(l).unwrap())
+                    .collect();
+                let kinds: Vec<&str> = rows.iter().map(|r| r["kind"].as_str().unwrap()).collect();
+                assert_eq!(kinds, ["correction", "spoke"]);
+                assert_eq!(rows[0]["text"], json!("stop"));
+                assert_eq!(rows[0]["marker"], json!("marker"));
+                assert_eq!(
+                    (&rows[0]["boundary"], &rows[1]["boundary"]),
+                    (&json!(1), &json!(1))
+                );
+            } else {
+                thread::sleep(Duration::from_millis(300));
+                assert!(
+                    !echoed(),
+                    "a correction reached the actor with no record of it"
+                );
+                assert_eq!(run.counts.corrections, 0);
+                assert!(run.faulted);
+                assert!(
+                    run.unclean
+                        .as_deref()
+                        .is_some_and(|u| u.contains("supervisor log")),
+                    "{:?}",
+                    run.unclean
+                );
             }
             std::fs::remove_dir_all(dir).unwrap();
         }

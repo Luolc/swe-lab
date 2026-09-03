@@ -86,7 +86,8 @@ Four files, at the paths given on the command line:
 - `--actor-stderr` — the actor's stderr, verbatim.
 - `--supervisor-log` — the supervisor's account, one JSON object per line:
   every actor event consumed (`observed`) and every boundary's outcome
-  (`spoke`, `silent`, `unjudged`, `lapse`, `stale`, `gap`), each with its
+  (`correction` then `spoke` or `gap`, `silent`, `unjudged`, `lapse`,
+  `stale`), each with its
   cursor, time, the origin filter's disposition of the event, and the model
   calls made. The row shape and what each kind means: task 20 §6. It is
   capped at `max_actor_stdout_bytes` — deliberately the cap of the stdout it

@@ -408,24 +408,35 @@ fn check_actor(run: &Run, context: &str) {
     assert!(!run.actor_stderr.contains("LEAK"), "{context}");
 }
 
-/// The account: one boundary spoken, one silent, everything else observed.
+/// The account: one boundary spoken — its `correction` row on disk before
+/// the correction was sent, the `spoke` row behind it — one silent,
+/// everything else observed.
 fn check_account(run: &Run, context: &str) {
     let rows = rows_of(&run.supervisor_log);
     let kinds: Vec<&str> = rows.iter().map(|r| r["kind"].as_str().unwrap()).collect();
     assert_eq!(
         kinds,
         [
-            "observed", "observed", "observed", "spoke", "observed", "observed", "silent"
+            "observed",
+            "observed",
+            "observed",
+            "correction",
+            "spoke",
+            "observed",
+            "observed",
+            "silent"
         ],
         "{context}"
     );
     assert_eq!(rows[0]["evidence"], "excluded-external-text", "{context}");
-    let spoke = &rows[3];
-    assert_eq!(spoke["boundary"], 1, "{context}");
-    assert_eq!(spoke["cursor"], 4, "{context}");
-    assert_eq!(spoke["marker"], MARKER, "{context}");
-    assert_eq!(spoke["text"], CORRECTION, "{context}");
-    let purposes: Vec<&str> = spoke["calls"]
+    let correction = &rows[3];
+    assert_eq!(correction["boundary"], 1, "{context}");
+    assert_eq!(correction["cursor"], 4, "{context}");
+    assert_eq!(correction["marker"], MARKER, "{context}");
+    assert_eq!(correction["text"], CORRECTION, "{context}");
+    assert_eq!(rows[4]["boundary"], 1, "{context}");
+    assert_eq!(rows[4]["cursor"], 4, "{context}");
+    let purposes: Vec<&str> = correction["calls"]
         .as_array()
         .unwrap()
         .iter()
@@ -433,10 +444,10 @@ fn check_account(run: &Run, context: &str) {
         .collect();
     assert_eq!(purposes, ["judge", "writer"], "{context}");
     assert_eq!(
-        rows[4]["evidence"], "excluded-own-intervention",
+        rows[5]["evidence"], "excluded-own-intervention",
         "{context}"
     );
-    let silent = &rows[6];
+    let silent = &rows[7];
     assert_eq!(silent["boundary"], 2, "{context}");
     assert_eq!(silent["cursor"], 7, "{context}");
     assert!(silent.get("marker").is_none(), "{context}");
@@ -1084,16 +1095,28 @@ fn a_correction_is_delivered_only_once_its_row_is_committed_to() {
     );
     assert_eq!(run.status, Some(0), "{context}");
     let rows = rows_of(&run.supervisor_log);
-    let spoke = rows.iter().find(|r| r["kind"] == "spoke").expect(&context);
-    assert_eq!(spoke["text"], CORRECTION, "{context}");
-    let marker = spoke["marker"].as_str().unwrap();
+    let correction = rows
+        .iter()
+        .find(|r| r["kind"] == "correction")
+        .expect(&context);
+    assert_eq!(correction["text"], CORRECTION, "{context}");
+    let marker = correction["marker"].as_str().unwrap();
     assert!(
         marker.chars().count() < 300 && marker.ends_with('…'),
         "{context}"
     );
-    assert_eq!(spoke["calls"].as_array().unwrap().len(), 2, "{context}");
-    assert!(spoke["calls"][0]["raw"].is_null(), "{context}");
-    assert!(spoke["calls"][0]["raw_omitted"].is_string(), "{context}");
+    assert_eq!(
+        correction["calls"].as_array().unwrap().len(),
+        2,
+        "{context}"
+    );
+    assert!(correction["calls"][0]["raw"].is_null(), "{context}");
+    assert!(
+        correction["calls"][0]["raw_omitted"].is_string(),
+        "{context}"
+    );
+    let spoke = rows.iter().find(|r| r["kind"] == "spoke").expect(&context);
+    assert_eq!(spoke["boundary"], correction["boundary"], "{context}");
     assert!(run.event_log.contains(CORRECTION), "{context}");
     let summary: Value = serde_json::from_str(&run.summary).unwrap();
     assert_eq!(summary["corrections"], 1, "{context}");
