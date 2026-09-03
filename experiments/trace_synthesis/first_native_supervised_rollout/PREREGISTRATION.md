@@ -70,27 +70,49 @@ rule, fixed here:** an assistant message is identified by the concatenation of
 its text blocks with trailing whitespace stripped, and by the `name` of each
 tool-use block in order. Two messages correspond when those agree.
 
-8. **Forward — nothing the wrapper logged was invented.** Every assistant
-   message in the wrapper's actor event log corresponds to one in the
-   transcript.
-9. **Reverse — nothing the actor produced was dropped.** Every assistant
-   message in the transcript corresponds to one in the wrapper's actor event
-   log, and the two counts are equal. Both counts are reported.
+8. **The two records are the same record.** The sequence of identities read
+   off the wrapper's actor event log **equals**, element by element and in
+   order, the sequence read off the transcript. Equal length, equal order,
+   equal multiplicity.
+9. **Both sequences are reported**, as per-identity counts plus their lengths,
+   so a reader can see the comparison rather than take its verdict.
 
-   *(8 alone is satisfied by a wrapper that drops half the actor's output: the
-   dropped messages never enter the set it quantifies over, so everything it
-   did log is faithfully witnessed and the reading is true while the wrapper
-   watched half the run. The reviewer's control world for it: the actor emits
-   four assistant messages, the wrapper records only the first and third and
-   hashes that truncated log — 8 true, the digest check true, and half the run
-   unsupervised. **This is the same one-directional defect as asserting a
-   subset instead of set equality**, which this repo has now met in three
-   places; the fix is the same one, in both directions.)*
+   *(Three drafts of this criterion failed, each to a weaker form of the same
+   defect, and the progression is the point:*
 
-10. **The witness is present and non-empty.** The transcript archive exists and
-    yields ≥ 1 assistant message. If it does not, C **fails** — it does not
-    quietly fall back to 8 alone. A correspondence assertion over an empty
-    witness is true of everything.
+   - *"the wrapper's log matches what the actor produced" — **same-source**:
+     the wrapper is the only reader of that stdout, so both sides came from
+     it;*
+   - *"every message the wrapper logged has an outside witness" — **one
+     direction**: a wrapper that drops half passes, because the dropped
+     messages never enter the set it quantifies over. Control world: the actor
+     emits four, the wrapper records the first and third and hashes that
+     truncated log — true, and half the run unsupervised;*
+   - *"both directions, and equal counts" — **set-like, not multiset**:
+     repeated identities let both directions hold many-to-one. Control world,
+     from review: transcript `[A, A, B]`, wrapper log `[A, B, B]`. Counts
+     agree at 3, every entry on each side corresponds to one on the other, and
+     yet an `A` was dropped and a `B` invented.*
+
+   *Each fix was tighter and each was still a subset assertion in disguise.
+   Sequence equality is not one more tightening — it is the **structural**
+   form, which compares everything at once and has no next loophole to find.
+   This repo keeps arriving here: prefer the structural comparison first, and
+   the enumerated one only where no structure is available.)*
+
+10. **If the two sequences differ for a structural reason** — one record
+    legitimately carrying assistant messages the other never represents — that
+    is reported as **C failed**, together with the difference observed. It is
+    **not** grounds for relaxing 8 during or after this run. A criterion
+    weakened to accommodate what a run produced is not a criterion, and this
+    is the conservative direction on purpose: a criterion that fails for a
+    benign reason costs one re-run, while one that passes for a bad reason
+    enters the record as data. A revised rule belongs to the next experiment.
+
+11. **The witness is present and non-empty.** The transcript archive exists
+    and yields ≥ 1 assistant message. If it does not, C **fails** — it does not
+    quietly fall back to the wrapper's own account. An equality assertion over
+    two empty sequences is true and says nothing.
 
 *(The first draft of this criterion asked whether the wrapper's log matched
 "what the actor produced". **There is no such observation except through the
@@ -99,19 +121,19 @@ comparison came from it. A wrapper that read the stream, dropped half, and
 hashed the half it kept would have passed. A comparison whose two sides share
 a source is an echo.)*
 
-11. `summary.actor_event_log_sha256` matches the digest of the persisted event
+12. `summary.actor_event_log_sha256` matches the digest of the persisted event
     log. **This is integrity, not authenticity** — it establishes that the file
     was not altered after the wrapper closed it, and says nothing about
     whether its contents are what the actor emitted. That is what 8 and 9 are
     for, and this is not a substitute for either.
-12. `summary.criterion_sha256` equals the digest of the criterion rendered into
+13. `summary.criterion_sha256` equals the digest of the criterion rendered into
     the config.
 
 **D. Two upstreams, kept apart.**
 
-13. `claude.proxy.jsonl` has ≥ 1 record with a 2xx response.
-14. `supervisor.proxy.jsonl` has ≥ 1 record with a 2xx response.
-15. For one record from each log, the **response headers are reproduced in
+14. `claude.proxy.jsonl` has ≥ 1 record with a 2xx response.
+15. `supervisor.proxy.jsonl` has ≥ 1 record with a 2xx response.
+16. For one record from each log, the **response headers are reproduced in
     full and verbatim** in the report, and then read for which upstream
     answered. The response is the far end's own output, so it is evidence;
     `--target` is our configuration, and proving it against itself is an echo.
@@ -128,12 +150,12 @@ a source is an echo.)*
     the effective criterion, which is screening the observation through the
     expectation.
 
-*(14 is the only artifact-level evidence that the supervisor's model calls
+*(15 is the only artifact-level evidence that the supervisor's model calls
 happened at all. **A known weakness, recorded rather than papered over:** the
 proxy's log format has no field naming where a request went — it records
 request headers/body and response status/headers only, and **not** the
 response body, so headers are the only place the far end speaks for itself. So
-15 is read off the response after the fact rather than asserted in advance,
+16 is read off the response after the fact rather than asserted in advance,
 and the first run reports what it saw.
 
 If that turns out not to discriminate, **the fix is a field in the proxy's
@@ -144,17 +166,17 @@ experiment.)*
 
 **E. No credential is anywhere in the record.**
 
-16. **Every file under the run's output directory** is scanned — traversed,
+17. **Every file under the run's output directory** is scanned — traversed,
     not listed. No artifact is named here on purpose: a list omits whatever is
     added next, and what is added next is exactly what a list would miss.
     Neither credential's value appears in any of them. Checked by reading the
     values inside a process and printing **only a boolean** — never echoed,
     never an argument, never through a shell.
-17. `authorization` appears as `[REDACTED]` in both proxy logs — the positive
-    half, so that 16 passing cannot be explained by the proxy having recorded
+18. `authorization` appears as `[REDACTED]` in both proxy logs — the positive
+    half, so that 17 passing cannot be explained by the proxy having recorded
     no headers at all.
 
-*(**The boundary of 16, written down because an unwritten boundary is read as
+*(**The boundary of 17, written down because an unwritten boundary is read as
 "already checked":** it finds a credential only in its literal form. A copy
 that was base64'd, URL-encoded, or split across a line boundary is invisible
 to it. Not widened for a first end-to-end run — the point is to say what this
@@ -162,28 +184,44 @@ check does and does not cover, not to build a scanner.)*
 
 ## When an invocation counts, and what it may be called
 
-Frozen here because the alternative is choosing after seeing the output which
-runs were "real". Read as **first match wins**; the list is exhaustive by
-construction, since its last arm has no condition.
+**A censoring rule exists to exclude noise. It must not exclude our own
+defects.** A rule that files "our wiring is broken" as *doesn't count* makes
+the experiment permanently blind to the failure it was built to find — and
+then spends a re-run driving into the same wall, because the wall is not
+random.
+
+The test is mechanical: **could a re-run plausibly give a different result?**
+If yes, it is noise. If no, it is a result, however unwelcome.
+
+**The burden falls on exclusion, not inclusion.** An invocation **counts** by
+default. Not counting it requires naming, in the report, the specific external
+transient cause and why a re-run could plausibly differ. Read as first match:
 
 | # | condition, in order | counts? | may be re-run? |
 |---|---|---|---|
-| 1 | no sandbox run started (setup/harness error before the agent exec) | no | yes |
-| 2 | the invocation script exited **78** — a fail-closed probe fired (no wrapper, no credential) | no | yes, after fixing what it named |
-| 3 | `rollout_outcome` is `SYSTEM_FAILED` or `OOM_KILLED` | no | yes |
-| 4 | `rollout_outcome` is `TIMED_OUT` | **yes** | no |
-| 5 | `rollout_outcome` is `SUPERVISION_FAILED` | **yes** | no |
-| 6 | anything else | **yes** | no |
+| 1 | the invocation script exited **78** — a fail-closed probe fired: no wrapper binary at its path, or an empty credential | **yes** | no, not before a fix |
+| 2 | a named external transient — image pull failure, docker daemon unavailable, network unreachable, OOM kill — quoted verbatim in the report | no | once |
+| 3 | anything else, `TIMED_OUT` and `SUPERVISION_FAILED` included | **yes** | no |
 
-Arms 1–3 are failures of the machinery around the experiment, not readings
-about supervision; arm 2 is in fact evidence the guard works. Arms 4 and 5 are
-real supervised runs that ended badly, and **a bad ending is a result** — they
-are evaluated against the criteria exactly as arm 6 is, and will fail several.
+**Arm 1 is the one this rule exists for.** Exit 78 is *our* probe firing: the
+binary is not where the asset was supposed to put it, or the credential did not
+cross. That is task 21 §3a failing, and §3a is part of what this run is
+checking. A re-run cannot differ — the binary is still not there — so it is a
+result, and its verdict is `not-supervised` with the specific reading **"§3a is
+not in effect"**. Fix, then run again as a new invocation.
 
-**At most one re-run**, and only for arms 1–3. A second occurrence of the same
-arm stops and goes to the user rather than becoming a third attempt: the
-1×1 scale is not a budget to spend down. A re-run never replaces a run that
-counted.
+Arm 2 is the only exclusion, and it is not self-executing: the cause must be
+named and quoted. "It failed for an unrelated reason" without the reason is the
+judgement this document refuses everywhere else.
+
+Arm 3 counts because a bad ending is a result. `TIMED_OUT` and
+`SUPERVISION_FAILED` are real supervised runs that ended badly; they are
+evaluated against the criteria exactly as a clean run is, and will fail
+several.
+
+**At most one re-run**, available only to arm 2. A second occurrence of arm 2
+stops and goes to the user rather than becoming a third attempt: 1×1 is not a
+budget to spend down. A re-run never replaces an invocation that counted.
 
 ## The one sentence each result licenses
 
@@ -194,8 +232,9 @@ call that hands the choice back to whoever writes the report.
 
 | verdict | condition | the sentence it licenses, and no stronger |
 |---|---|---|
-| `supervised` | every criterion 1–17 passes | "One rollout was supervised end to end by the in-sandbox wrapper: its own account says so, an independent witness confirms it watched the whole actor stream, and both upstreams answered." |
+| `supervised` | every criterion 1–18 passes | "One rollout was supervised end to end by the in-sandbox wrapper: its own account says so, an independent witness confirms it watched the whole actor stream, and both upstreams answered." |
 | `not-supervised` | any criterion fails | "This run did not demonstrate supervision. The criteria that failed were: …" — naming every one, not the first. |
+| `not-supervised (§3a is not in effect)` | the run exited 78 (arm 1 above) | "The wrapper was never placed, or its credential never crossed, so the run refused to start unsupervised. The fail-closed guard worked; the wiring did not." |
 
 Neither sentence may be widened to the runtime. **`n = 1`**: this says a
 supervised rollout happened once, not that the native supervisor works, is
@@ -227,9 +266,8 @@ same producer, the row is an echo and not a check.
 | 3 | no `supervision.unhealthy` | our observer, reading the wrapper |
 | 4 | `rollout_outcome` | the classifier, reading the metrics |
 | 7 | boundaries vs assistant messages | the wrapper, and the actor's own log |
-| 8 | the wrapper invented nothing | **the transcript — never the wrapper** |
-| 9 | the wrapper dropped nothing | **the transcript — never the wrapper** |
-| 10 | the witness exists at all | the agent CLI, which wrote it |
-| 11 | the file is unaltered | the wrapper, about its own file (integrity only) |
-| 15 | which upstream answered | the upstream, in its response headers |
-| 17 | headers were recorded | the proxy |
+| 8 | nothing dropped, nothing invented | **the transcript — never the wrapper** |
+| 11 | the witness exists at all | the agent CLI, which wrote it |
+| 12 | the file is unaltered | the wrapper, about its own file (integrity only) |
+| 16 | which upstream answered | the upstream, in its response headers |
+| 18 | headers were recorded | the proxy |
