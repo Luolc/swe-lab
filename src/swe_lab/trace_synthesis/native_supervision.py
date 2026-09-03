@@ -168,6 +168,29 @@ DEFAULT_TERM_GRACE_MS = 10_000
 DEFAULT_MAX_EVENT_LINE_BYTES = 16 * 1024 * 1024
 
 
+def _require_type(name: str, value: object, kind: type) -> None:
+  """Refuse a value whose JSON type the binary's slot for it would refuse.
+
+  A free function taking ``object`` rather than a check written inline: the
+  annotations already say ``str`` and ``bool``, so an inline ``isinstance``
+  reads as dead code to a type checker and would be removed. The caller this
+  guards is the one nothing type-checked — a downstream consumer, or
+  ``dataclasses.replace``, whose keywords are ``Any``.
+
+  Args:
+    name: The field's name, for the message.
+    value: What the caller supplied.
+    kind: The Python type of the Rust slot it lands in.
+
+  Raises:
+    ValueError: The value is not that type.
+  """
+  if not isinstance(value, kind):
+    raise ValueError(
+        f"{name} must be a {kind.__name__}, not a {type(value).__name__}"
+    )
+
+
 @dataclasses.dataclass(frozen=True)
 class NativeSupervision:
   """One run's supervision, as the native runtime is configured for it.
@@ -235,11 +258,7 @@ class NativeSupervision:
         the field.
     """
     for name, kind in NON_NUMERIC_FIELDS.items():
-      value = getattr(self, name)
-      if not isinstance(value, kind):
-        raise ValueError(
-            f"{name} must be a {kind.__name__}, not a {type(value).__name__}"
-        )
+      _require_type(name, getattr(self, name), kind)
     if not self.model:
       raise ValueError("model must name a model")
     for name, (low, high) in NUMERIC_FIELDS.items():
@@ -276,7 +295,19 @@ class NativeSupervision:
       and there are no others — it refuses an unknown field rather than
       ignoring it.
 
+    Refuses rather than renders in two cases, both of which would otherwise
+    become the binary's problem inside a paid-for sandbox: a ``task`` that is
+    not a string raises ``ValueError`` (the slot is a Rust ``String``), and an
+    artifact that is not the pinned criterion raises ``CriterionRejectedError``
+    out of :func:`~.criterion.load_criterion`. Neither is a ``Raises:`` section
+    because neither ``raise`` is written here — the first is in
+    :func:`_require_type`, whose ``object`` parameter is what makes the check
+    survive a type checker, and the second is the loader's.
     """
+    # `task` is an argument rather than a field, so `__post_init__` never sees
+    # it — and it reaches the document exactly as every field does. Checked
+    # against the Rust type for the same reason they are.
+    _require_type("task", task, str)
     # Propagates `CriterionRejectedError` from `load_criterion`: an artifact
     # that is not the pinned one leaves nothing to configure, and refusing
     # here is what keeps the refusal ahead of the sandbox.

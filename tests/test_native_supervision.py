@@ -22,6 +22,7 @@ from __future__ import annotations
 import dataclasses
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -191,6 +192,74 @@ def test_a_zero_shutdown_grace_is_accepted_because_the_binary_accepts_it() -> (
   )
 
   assert rendered["timeouts"]["term_grace_ms"] == 0
+
+
+def test_the_task_is_checked_like_every_other_value_in_the_document() -> None:
+  """`task` is an argument, not a field, and lands in the document all the same.
+
+  `config.rs` deserializes it into a `String`; a number there is a document
+  refused once the sandbox exists, which is the cost this validation avoids.
+  Typed `Any` because that is the caller this guards — the one whose types
+  nothing checked.
+  """
+  not_a_string: Any = 7
+
+  with pytest.raises(ValueError, match="task"):
+    _ = _SUPERVISION.config_document(task=not_a_string)
+
+
+def _leaf_paths(document: object, prefix: str = "") -> set[str]:
+  """Return every leaf of a JSON document, as a dotted path.
+
+  Args:
+    document: The document, or a subtree of one.
+    prefix: The path to this subtree.
+
+  Returns:
+    One dotted path per value that is not itself an object.
+  """
+  if not isinstance(document, dict):
+    return {prefix}
+  found: set[str] = set()
+  for key, value in document.items():
+    child = f"{prefix}.{key}" if prefix else str(key)
+    found |= _leaf_paths(value, child)
+  return found
+
+
+def test_every_value_in_the_document_is_pinned_or_validated() -> None:
+  """No value reaches the binary on Python's word alone.
+
+  Every leaf is one of four things: a constant this side pins, a digest read
+  off the verified criterion artifact, the checked `task`, or a field checked
+  against the Rust type it deserializes into. A value in none of those buckets
+  is one whose refusal happens inside a paid-for sandbox.
+  """
+  document = _SUPERVISION.config_document(task="Fix the failing test.")
+
+  validated = {
+      "model": "model.name",
+      "block_actor_while_judging": "policy.block_actor_while_judging",
+      "budget": "policy.budget",
+      "cooldown": "policy.cooldown",
+      "window": "policy.window",
+      "judge_every_n_assistant_messages": (
+          "policy.judge_every_n_assistant_messages"
+      ),
+      "model_call_ms": "timeouts.model_call_ms",
+      "term_grace_ms": "timeouts.term_grace_ms",
+      "max_event_line_bytes": "limits.max_event_line_bytes",
+  }
+  # Each table entry has a home in the document, and each document leaf has a
+  # rule — asserted as one equality so neither direction can rot alone.
+  assert set(validated) == set(NUMERIC_FIELDS) | set(NON_NUMERIC_FIELDS)
+  assert _leaf_paths(document) == set(validated.values()) | {
+      "schema_version",  # pinned to CONFIG_SCHEMA_VERSION
+      "policy.kind",  # pinned to POLICY_KIND
+      "criterion.name",  # the artifact's own filename
+      "criterion.sha256",  # the digest load_criterion just computed
+      "task",  # checked in config_document
+  }
 
 
 def test_every_configurable_field_is_checked_against_a_rust_type() -> None:
