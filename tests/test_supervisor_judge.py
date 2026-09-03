@@ -381,12 +381,26 @@ def test_a_fenced_code_block_from_the_writer_is_rejected() -> None:
   assert _accepted_writer_line("Maybe inspect `value = parse(raw)` again.")
 
 
+def test_a_blockquoted_fenced_code_block_is_still_rejected() -> None:
+  """Markdown quote prefixes do not disguise a fenced answer."""
+  cause = _writer_lapse("> context\n> ```python\n> return 1\n> ```")
+  assert isinstance(cause, WriterOutputRejectedError)
+  assert "fenced code" in str(cause)
+
+
 def test_a_diff_hunk_from_the_writer_is_rejected() -> None:
   """A diff hunk is independently rejected without relying on a code fence."""
   cause = _writer_lapse("Look here:\n@@ -12,2 +12,2 @@\n reconsider it")
   assert isinstance(cause, WriterOutputRejectedError)
   assert "diff hunk" in str(cause)
   assert _accepted_writer_line("Could the diff point to an earlier assumption?")
+
+
+def test_a_combined_diff_hunk_from_the_writer_is_rejected() -> None:
+  """A combined diff's three-at-sign header is still a hunk header."""
+  cause = _writer_lapse("Look here:\n@@@ -12,2 -20,2 +12,2 @@@\nreconsider it")
+  assert isinstance(cause, WriterOutputRejectedError)
+  assert "diff hunk" in str(cause)
 
 
 def test_an_eight_word_guidebook_copy_from_the_writer_is_rejected() -> None:

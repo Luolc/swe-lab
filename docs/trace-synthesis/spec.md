@@ -972,12 +972,13 @@ for it. Two consequences, and neither is negotiable:
    — "an explicit owner decision on the alternative" — was taken: the default is
    an uninterfered rollout with the guidebook as a **post-hoc grader / filter**
    ([§5](#5-the-mechanism-decisions)).
-2. A guidebook-guided workflow is runnable, but steer-to-pass remains an
-   **empirical question, not an implementation precondition**. No current
-   comparison establishes whether adding the guidebook is the main cause of
-   more frequent or better-timed judgements, or whether guided speech improves
-   the actor's verdict. The production default therefore remains undecided by
-   ADR-0018.
+2. ~~On at least one instance, a supervisor holding a good guidebook steers a
+   blind actor from a known failure to a passing verdict.~~ **Remains withdrawn
+   as a precondition.** ADR-0018 implements the guidebook-guided interface and
+   its speech boundary; it explicitly does not promote interface availability
+   into a success criterion or decide the production default. Whether the
+   guidebook causes more frequent or better-timed judgements, or improves the
+   actor's verdict, remains an empirical question for a controlled comparison.
 3. Sampled traces read as honest: each assistant turn is explicable from the
    turns before it, judged by a human reader.
 4. Every oracle-guided record carries the policy stamp, and no aggregation

@@ -102,8 +102,8 @@ class WriterOutputRejectedError(ValueError):
   """Raised when writer output matches a mechanically blocked shape."""
 
 
-_FENCED_CODE = re.compile(r"^[ \t]*(?:```|~~~)", re.MULTILINE)
-_DIFF_HUNK = re.compile(r"^@@(?:[ \t]|[-+])", re.MULTILINE)
+_FENCED_CODE = re.compile(r"^[ \t]*(?:>[ \t]*)*(?:```|~~~)", re.MULTILINE)
+_DIFF_HUNK = re.compile(r"^@{2,}(?:[ \t]|[-+])", re.MULTILINE)
 
 
 def _check_writer_output(text: str, guidebook: str | None) -> None:
