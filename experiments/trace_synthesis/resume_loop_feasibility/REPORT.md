@@ -131,20 +131,32 @@ Under the ruling, these are **costs to record, not blockers**:
 - `Q8` (§13), which drops from *possibly decisive* to *nice-to-have* and should
   not hold up bring-up.
 
-**One requirement has no enforcement point yet, and it binds the consumer, not
-the build.** §12's requirement — the synthetic assistant never reaching training
-— is **not** enforced by anything in this report. Producing a trace is not
-training on it, and this component's spec puts training out of scope
-(`spec.md`: *"This component produces traces; running SFT on them is somebody
-else's pipeline"*). So the scoping is:
+**One requirement has no enforcement point yet.** §12's requirement — the
+synthetic assistant never reaching training — is **not** enforced by anything in
+this report. The narrowest defensible split:
 
-- **Phase 1 bring-up: not blocked.** Build it, run it end to end.
-- **The traces it produces: not deliverable as training corpus** until the
-  provenance gate in §12 exists.
+- **Implementation and diagnostic runs may proceed** under the orchestra ruling
+  of 2026-09-03, quarantined.
+- **Producer-side Phase-1 acceptance, and any publication or delivery of the
+  traces, remain gated** until the §12 provenance gate exists. Artifacts
+  produced before then are **marked ineligible**, not merely unused.
 
-*(That split is an orchestra ruling of 2026-09-03 interpreting the owner's
-requirement, recorded as an interpretation rather than as the owner's own
-words.)*
+**A previous revision derived "it binds the consumer, not the build" from
+`spec.md`'s line placing *running SFT* out of scope. That does not follow, and
+the correction matters.** The same spec defines this component's output *as* the
+training trace — §6: *"The training trace is the phase-C conversation itself,
+with nothing removed and nothing added"* — and names this exact artifact as
+disqualifying: *"it is the single artifact that disqualifies the
+stop-and-resume path"* (`spec.md` §7). Training being somebody else's pipeline
+does not transfer responsibility for producing an **eligible** trace to them.
+
+> **Escalation, not a decision this report may make.** The owner's relaxation of
+> criterion (b) and the adoption of a segmented loop are in tension with
+> `spec.md` §6 (*nothing removed and nothing added* — post-processing the seam
+> away is itself an edit) and with §7's disqualification of the stop-and-resume
+> path. **That has to go through the spec's own decision path — an ADR — not a
+> sentence in an experiment report.** This report records the tension and stops
+> there.
 
 **Conditions that survive the relaxation** — setting (b) aside does not touch
 these:
@@ -838,88 +850,6 @@ launch rather than by anyone remembering it. Per-run figures are in
 
 ---
 
-# 13. `Q8` — is `[tool_result, text]` forced, or is it how we chose to deliver? ★
-
-**Not run. Registered here so the question is not lost, and so that running it
-later cannot be mistaken for having run it now.**
-
-### The question
-
-§9.3 observed `[tool_result, text]` **0 times** on the inference path (0/31 in
-the fullest conversation, 0/496 cumulative wire instances, one rollout) — which
-narrows, and does not establish, that it is supervision-only. Separately, it
-does **not** speak at all to whether a segmented loop can **only** produce that
-shape — and those differ by exactly one thing: whether the
-layout is a property of *the resume mechanism* or of *the delivery channel we
-happened to use*.
-
-There is a counter-example in hand. **A′'s correction lands as a separate
-trailing `system` message** — so making a correction arrive that way is
-demonstrably possible in this harness; A′ does it on every intervention,
-including in the real rollout read in §9.3. A′ delivers on the stdin of
-`--input-format stream-json`.
-
-> **Can `--resume-session-at` be combined with `--input-format stream-json`, so
-> that a segmented loop's correction is delivered on that channel and lands as a
-> separate `system` message rather than appended to the `tool_result` user
-> message?**
-
-### Why there is no evidence either way, right now
-
-Every anchored arm in §9 delivered its correction as an **ordinary positional
-prompt** (`claude -p "Continue."`). Every stream-json arm in `streamjson_input`
-ran **without** `--resume-session-at`. **The combination has never been run**, so
-neither answer has support — including the answer that would rescue the design.
-The two flags are not exotic together in principle: `harness.py` already adds
-`--input-format stream-json` conditionally on its own stdin mode.
-
-### The arms
-
-Two arms, differing **only** in the delivery channel, both captured on the wire:
-
-- **Arm S** — anchored resume (`--resume-session-at <last message id>`) **plus**
-  `--input-format stream-json`, correction written on stdin.
-- **Arm P** — anchored resume, correction as a positional prompt. This is what
-  §9.1 already ran, re-run alongside so the comparison is within one session of
-  the machine rather than against an older capture.
-
-**The criterion is a contrast, not a single reading.** Arm S must show the
-correction as a separate trailing `system` message **and** arm P must show
-`[tool_result, text]` in the same batch. If both come out the same, the delivery
-channel is not the lever and the question is answered *no* — which is equally a
-result. Recorded per arm: which message the correction lands in, its role, its
-block list, and whether `correction_text_blocks` still accumulates 0/1/2/3.
-
-**Three things must be re-checked in arm S rather than assumed to carry over:**
-
-1. **The two default-resume artifacts.** Changing the delivery channel may
-   reintroduce `Continue from where you left off.` and the synthetic assistant
-   turn. §9.1's zeros were measured on the positional-prompt path and do not
-   transfer.
-2. **Whether the flags even compose.** `--resume-session-at` requires
-   `--resume`; whether it is accepted alongside `--input-format stream-json` is
-   unknown, and a rejection is a fast, cheap *no*.
-3. **Structural position, not digest.** A′'s block is `len 440` for its own
-   correction text; matching means *a separate trailing `system` message*, never
-   a byte equality — the distinction §9.3 already had to make once.
-
-### What each answer does to this report
-
-- **Yes** — criterion **(b)** is cleared, the `[tool_result, text]`
-  disadvantage disappears, and the per-seam accumulation goes with it (the
-  correction would no longer pile into the tool-result message). The
-  recommendation returns to roughly where §9.1 stood before the P0.
-- **No** — the shape is a property of the mechanism, statement ③ is the final
-  characterisation, and the current recommendation stands unchanged.
-
-**Neither answer is preferred here.** The pull in both directions is worth
-naming, because both are real: this question could rescue a design the report
-has just marked down, and it arrives immediately after a result that went
-against it. Neither is a reason to run it, or not to.
-
-
----
-
 # 12. The provenance gate — **unresolved**; it gates training use, not bring-up ★
 
 Criterion (b) was relaxed (see the Verdict). **This was not:** the model must not
@@ -977,26 +907,36 @@ a useful starting point and it is **not** the invariant.
    produces the final canonical conversation, and proves **both** that the
    synthetic assistant is absent **and** that real assistant responses remain.
 
-**Until that exists, the owner's one hard requirement has no enforcement point.
-What that blocks is delivering these traces as training corpus — not building
-or running the loop**; producing a trace is not training on it, and `spec.md`
-places training outside this component ("This component produces traces;
-running SFT on them is somebody else's pipeline").
+**Until that exists, the owner's one hard requirement has no enforcement
+point.** What that blocks is **producer-side Phase-1 acceptance and any
+delivery or publication of these traces**; quarantined implementation and
+diagnostic runs may proceed under the orchestra ruling. See the Verdict for why
+the broader reading — that responsibility passes to the consumer — does not
+follow from the spec, and for the ADR-shaped tension this report does not
+resolve.
 
-### One measured fact that makes condition 3 implementable
+### An observed candidate join key — **not** an established provenance handle
 
-The persisted transcript's `requestId` is **not** what conversion reads — and an
-independent check by another agent found **0 of 59** assistant events carrying
-that field. But the `stream-json` event stream carries **`request_id`**
-(snake_case, at the *event* top level) and it **is populated**: measured across
-three of this experiment's runs, 19/19, 1/1 and 2/2 assistant events carried a
-non-empty `req_011C…` value, with distinct values tracking model round-trips.
+The persisted transcript's `requestId` is not what conversion reads. The
+`stream-json` event stream does carry **`request_id`** (snake_case, event top
+level), and in three of this experiment's runs it was populated on every
+assistant event.
 
-So the conversion boundary does have a provenance handle to work with, and —
-the part that matters for condition 3 — those ids can be **reconciled against
-the proxy capture's actual API responses**, which is an *independent* source
-rather than the candidate record's own say-so. (Measured on the host, toy task,
-this harness build; whether it holds in-sandbox is untested.) The two-armed discipline still applies to whatever replaces
+**That is field presence, and this report claims nothing beyond it.** A previous
+revision wrote that those ids "can be reconciled against the API responses" and
+that this "makes condition 3 implementable" — **no reconciliation was
+implemented, no analyzer is committed, and no witness regenerates those
+counts**, so both sentences are withdrawn. A reviewer's scratch cross-check
+found event-id sets were **subsets, not equal** to response-id sets (3/4, 1/1,
+4/5 distinct), which is a further reason not to promote a coordinate into a
+proof.
+
+**And id equality would not be sufficient even if it held**: matching a
+`request_id` locates a record, while the gate has to establish that *this
+message's content* is what the model produced. Those are different claims.
+
+`request_id` is therefore recorded as **an observed candidate join key worth
+trying first in Phase 1**, and condition 3 stays unimplemented. The two-armed discipline still applies to whatever replaces
 this: the control arm of the current tests was verified by mutation (`return []`
 fails the keep-arms while the drop-arm stays green), and that property must
 survive the move.
@@ -1082,48 +1022,3 @@ against it. Neither is a reason to run it, or not to.
 
 
 ---
-
-# 12. The one hard constraint, as a filter with a test
-
-Criterion (b) was relaxed (see the Verdict). **This was not:** the model must not
-take loss on tokens it never generated, and the resume seam inserts exactly such
-a record — an `assistant` message reading `No response requested.` that no model
-wrote (§6.1). Under the relaxation it is the **only** blocking requirement left,
-which is precisely why it may not live as a sentence in a document.
-
-`synthetic_filter.py` implements it as a **positive chain** — a record is kept
-only if it can be *shown* to be model-authored:
-
-1. it is an `assistant` record;
-2. `message.model` is present, a non-empty string, and not `<synthetic>`;
-3. it carries `requestId`, which a record built from a real API response has.
-
-It never asks *"does this look synthetic?"*. An exclusion list keyed on the
-literal `<synthetic>` marker would cover only the cases its author thought of,
-and that marker is promised by no interface — a build that renamed it would
-silently start training on the fabricated turn with every existing check green.
-
-**Both arms are tested**, because a filter that drops everything passes the
-positive arm exactly as well as a correct one:
-
-| test | arm | what it catches |
-| --- | --- | --- |
-| `test_the_synthetic_assistant_turn_is_removed` | positive | the record surviving |
-| `test_a_real_assistant_turn_is_kept` | **control** | a filter that drops everything |
-| `test_the_filter_keeps_order_and_passes_other_records_through` | control | collateral damage to the rest of the transcript |
-| `test_the_chain_is_positive_not_an_exclusion_list` | positive | a marker-only check |
-| `test_the_committed_shape_fixture_matches_what_the_filter_reads` | — | the filter drifting from the records it was written for |
-
-**The control arm was verified to discriminate, not assumed to.** Replacing the
-filter body with `return []` fails `test_a_real_assistant_turn_is_kept` and
-`test_the_filter_keeps_order_and_passes_other_records_through` while the
-positive arm stays green (2 failed, 13 passed). **A two-armed check whose
-control has never been observed to fail is one arm.**
-
-`runs/assistant-record-shapes.json` is the committed fixture — key names, the
-`model` field and block types reduced from a real resumed session, with no
-content, ids or paths.
-
-**This lives in the experiment directory, not the product path.** Phase 1 must
-move it into the trace-synthesis code **with its tests**; a filter whose test
-stayed behind is a filter nobody will notice breaking.
