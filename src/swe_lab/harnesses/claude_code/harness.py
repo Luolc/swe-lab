@@ -512,9 +512,10 @@ class ClaudeCodeHarness(Harness):
       **Under** :attr:`segmented` **this field is not used, and the flag means
       something else.** ``--max-turns`` then carries one *segment's* length
       rather than the whole run's ceiling, so the runaway guard moves to
-      ``max_segments * turns_per_segment`` — which is why
+      ``max_segments * turns_per_segment``. The large, finite default on
       :class:`~swe_lab.trace_synthesis.segmented_loop.SegmentedSupervision`
-      gives ``max_segments`` no default. A parameter that silently changes
+      keeps that guard out of normal long runs without allowing a misread
+      segment ending to resume forever. A parameter that silently changes
       meaning is the same failure as a comment that has gone stale, so it is
       said here rather than only in the plan.
     max_budget_usd: Optional spend ceiling (``--max-budget-usd``, print mode
