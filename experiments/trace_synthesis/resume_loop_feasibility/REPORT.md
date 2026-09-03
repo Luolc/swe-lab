@@ -60,11 +60,31 @@ reversal is the finding.
    | **A′ mid-turn — `-p` stdin *and* the real TUI** | a separate trailing **`system`** message, `[text]`, `len 440`, `sha256 3ba88726…` | `streamjson_input/runs/{proxy,tui}-midturn` |
    | **anchored resume seam** | `user [tool_result, text]` | `q7loop-evidence.json` |
 
-   So `Q3a` is **not** established: the two default artifacts are gone, and the
-   correction's **inference-time equivalence is unestablished**. A′'s fold is a
-   trailing `system` message; ours is a text block inside the tool-result
-   message. **They are not the same shape, and this report previously said they
-   were.**
+   The correction blocks **accumulate one per seam** — `correction_text_blocks`
+   reads 0, 1, 2, 3 across the four main-loop requests — so a 30-turn rollout
+   ends with 30 of them, not one.
+
+   Three separate statements, and none of them substitutes for another:
+
+   1. **Established.** The two default-`--resume` artifacts — the synthetic
+      assistant turn and `Continue from where you left off.` — **do not appear**
+      on the anchored path.
+   2. **Not established.** That the correction reaches the model in a shape
+      inference produces.
+   3. **Observed — and this is a result, not a gap.** The supervised shape
+      (`user [tool_result, text]`) and the measured inference-time shape (a
+      separate trailing `system` message, pinned at `len 440`,
+      `sha256 3ba88726…` by `tests/test_streamjson_input_evidence.py`) **are
+      different**. A trace produced by this loop therefore contains a layout
+      that **occurs under supervision and did not occur in either control** —
+      which is exactly what owner criterion **(b)** forbids: *a context shape
+      that does not occur at inference time.*
+
+   So the segmented loop trades one criterion violation for a different one. It
+   fixes **(a)** — no assistant tokens the model never wrote — and on this
+   evidence it **does not clear (b)**. It was not previously reported this way:
+   this report called the anchored seam "the harness's own mid-turn fold", and
+   the repository's own pinned control says it is not.
 
 **Recommendation — weaker than the previous revision of this file claimed.**
 The segmented loop is mechanically sound and markedly simpler than A′ (no
@@ -565,11 +585,26 @@ there are no seam records to cache:
   pattern text and tripped the scan. The raw captures contain 0. A checker that
   fires on every input is worth exactly as much as one that never fires, and
   both look like diligence.
-- **An instrument can be sound and still be aimed at the wrong proposition.**
-  `wire_shapes()` was independently confirmed to have discriminating power on
-  the literals it counts — and the P0 above is that its output was used to
-  support a *block-shape* claim it cannot observe. Fixing a detector's
-  sensitivity does not widen what it can speak to.
+- **A sound instrument aimed at a proposition it cannot observe.** This is a
+  *different* failure from the repo's usual one, and the difference is the
+  point. The usual entry is an observation that gives the **same output in both
+  worlds** — a broken instrument. Here the instrument is **good**:
+  `wire_shapes()` was independently confirmed to return 1/1 on the plain-resume
+  request, 0/0 on every anchored one, and to flip 0/0 → 1/1 on a constructed
+  seam mutant. It counts two fixed literals and compares role sequences, and it
+  does that correctly.
+
+  **The defect is that its output was used to support a block-shape claim it
+  cannot observe at all.** `[tool_result]` and `[tool_result, text]` have
+  identical role sequences and contain neither literal, so every number the
+  instrument produced was true and none of them bore on the question.
+
+  **This is the more dangerous of the two**, because the proof of discriminating
+  power is *real*, and it lends the over-reaching inference a backing that looks
+  earned. The `040670c` repair — running the same function over the dirty
+  capture — was correct and necessary, and it established *"this function
+  fires"*, never *"equal role sequences imply equal shape"*. **Widening a
+  detector's sensitivity never widens the set of propositions it can speak to.**
 - **Counting events is not counting messages** (§2).
 - **The reversal is the shape to expect.** §6.2 was a correct measurement whose
   scope was one flag wider than the sentence it was about to be written into.

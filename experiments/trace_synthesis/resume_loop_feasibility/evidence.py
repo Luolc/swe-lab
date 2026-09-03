@@ -137,6 +137,15 @@ def reduce_capture(log: pathlib.Path) -> dict[str, object]:
             for i, s in enumerate(shapes)
             if "tool_result" in s["blocks"] and "text" in s["blocks"]
         ],
+        # The correction text accumulates one block per seam; counting it is
+        # how the report's 1/2/3 progression stays checkable offline.
+        "correction_text_blocks": sum(
+            1
+            for shape in shapes
+            for i, kind in enumerate(shape["blocks"])
+            if kind == "text"
+            and "tool_result" in shape["blocks"]
+        ),
         "seam_user_text_blocks": blob.count(SEAM_USER_TEXT),
         "seam_synthetic_assistant": blob.count(SEAM_SYNTHETIC_ASSISTANT),
         "system_reminder_blocks": blob.count("<system-reminder>"),

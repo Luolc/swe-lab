@@ -98,6 +98,7 @@
       "mixed_tool_result_and_text_indices": [
         5
       ],
+      "correction_text_blocks": 1,
       "seam_user_text_blocks": 0,
       "seam_synthetic_assistant": 0,
       "system_reminder_blocks": 3

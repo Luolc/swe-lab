@@ -37,6 +37,7 @@
         "text"
       ],
       "mixed_tool_result_and_text_indices": [],
+      "correction_text_blocks": 0,
       "seam_user_text_blocks": 0,
       "seam_synthetic_assistant": 0,
       "system_reminder_blocks": 0
@@ -86,6 +87,7 @@
         "text"
       ],
       "mixed_tool_result_and_text_indices": [],
+      "correction_text_blocks": 0,
       "seam_user_text_blocks": 0,
       "seam_synthetic_assistant": 0,
       "system_reminder_blocks": 3
@@ -152,6 +154,7 @@
         "tool_result"
       ],
       "mixed_tool_result_and_text_indices": [],
+      "correction_text_blocks": 0,
       "seam_user_text_blocks": 0,
       "seam_synthetic_assistant": 0,
       "system_reminder_blocks": 3
@@ -269,6 +272,7 @@
       "mixed_tool_result_and_text_indices": [
         5
       ],
+      "correction_text_blocks": 1,
       "seam_user_text_blocks": 1,
       "seam_synthetic_assistant": 1,
       "system_reminder_blocks": 3

@@ -177,6 +177,9 @@ def test_the_three_correction_shapes_are_distinct() -> None:
   assert seams, "expected at least one anchored seam"
   for request in seams:
     assert request["last_message_blocks"] == ["tool_result", "text"]
+  # One correction block per seam, so the layout accumulates rather than
+  # appearing once: 30 turns would end with 30 of them.
+  assert [r["correction_text_blocks"] for r in anchored] == [0, 1, 2, 3]
 
   unsegmented = [
       r
