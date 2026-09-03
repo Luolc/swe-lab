@@ -30,7 +30,7 @@ stream is re-implementing a converter this repo already owns and has tested.
 Usage::
 
   direnv exec . uv run python experiments/trace_synthesis/steered_rerun/freeze_sample.py \\
-      --frozen /home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/<label>-rollout-<n> \\
+      --frozen ~/dev/swe-lab-artifacts/trace_synthesis/<label>-rollout-<n> \\
       --summary experiments/trace_synthesis/steered_rerun/runs/<label>/summary-r<n>.json
 """
 
@@ -45,7 +45,7 @@ import shutil
 
 from swe_lab.datasets.loader import load_dataset
 
-_OUT_ROOT = pathlib.Path("/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis")
+_OUT_ROOT = pathlib.Path("~/dev/swe-lab-artifacts/trace_synthesis").expanduser()
 
 
 def instance_fields(instance: object) -> dict[str, object]:

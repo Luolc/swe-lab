@@ -20,8 +20,8 @@ import random
 import re
 import sys
 
-ARTIFACTS = pathlib.Path("/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis")
-OUT = pathlib.Path("/home/ubuntu/dev/swe-lab-artifacts/honesty_scorer/dry_run")
+ARTIFACTS = pathlib.Path("~/dev/swe-lab-artifacts/trace_synthesis").expanduser()
+OUT = pathlib.Path("~/dev/swe-lab-artifacts/honesty_scorer/dry_run").expanduser()
 HERE = pathlib.Path(__file__).parent
 SEED = 261
 

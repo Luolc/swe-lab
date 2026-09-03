@@ -12,7 +12,7 @@ import argparse
 import json
 import pathlib
 
-ARTIFACTS = pathlib.Path("/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis")
+ARTIFACTS = pathlib.Path("~/dev/swe-lab-artifacts/trace_synthesis").expanduser()
 
 
 def blocks(message: dict) -> list[dict]:

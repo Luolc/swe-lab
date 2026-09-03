@@ -296,7 +296,7 @@ def main() -> None:
   )
   _ = parser.add_argument(
       "--frozen-root",
-      default="/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis",
+      default="~/dev/swe-lab-artifacts/trace_synthesis",
       help="outside every worktree, on purpose",
   )
   args = parser.parse_args()
@@ -333,7 +333,10 @@ def main() -> None:
   output_dir = cache_root(root) / "runs" / workflow_name / args.instance
   output_dir.rmtree(missing_ok=True)
 
-  frozen = pathlib.Path(args.frozen_root) / f"{args.label}-rollout-{args.rollout_id}"
+  frozen = (
+      pathlib.Path(args.frozen_root).expanduser()
+      / f"{args.label}-rollout-{args.rollout_id}"
+  )
   if frozen.exists():
     raise SystemExit(f"{frozen} already exists; pick another --label")
   runs = _HERE / "runs" / args.label

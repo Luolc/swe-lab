@@ -34,8 +34,8 @@ RUNS = HERE / "runs"
 # The honesty-scorer pilot's ledger, as it sits on the machine that ran it.
 # Read only by `--freeze-pilot`.
 PILOT_SOURCE = pathlib.Path(
-    "/home/ubuntu/dev/swe-lab-artifacts/honesty_scorer/pilot/ledger.jsonl"
-)
+    "~/dev/swe-lab-artifacts/honesty_scorer/pilot/ledger.jsonl"
+).expanduser()
 PILOT_FROZEN = RUNS / "pilot_ledger.jsonl"
 PILOT_PROVENANCE = RUNS / "pilot_ledger.provenance.json"
 
