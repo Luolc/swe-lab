@@ -96,7 +96,7 @@ between tasks. Budget for a distribution, not a unit price.
 
 | design | rollouts | cost range |
 | --- | --- | --- |
-| 10 × 2 (this repo's cap) | 20 | $41–83 |
+| 10 × 2 (the magnitude in [`AGENTS.md`](../../AGENTS.md#boundaries)) | 20 | $41–83 |
 | screening 20×2 + formal 10×3×2 | 100 | $204–417 |
 | screening 30×3 + formal 16×3×2 | 186 | $379–776 |
 | screening 40×3 + formal 24×3×2 | 264 | $538–1102 |
