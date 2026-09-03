@@ -631,7 +631,14 @@ class ClaudeCodeHarness(Harness):
           " attach to one long-lived actor process, so neither composes with it"
       )
     if self.native_supervision is not None:
-      _ = env_exports({self.supervisor_api_key_env: ""})
+      try:
+        _ = env_exports({self.supervisor_api_key_env: ""})
+      except SandboxError:
+        # Do not echo the value: a caller may have put the key itself in the
+        # selector by mistake.
+        raise ValueError(
+            "supervisor_api_key_env must be an environment variable name"
+        ) from None
       if not 1 <= self.supervisor_proxy_port <= 65535:
         raise ValueError("supervisor_proxy_port must be between 1 and 65535")
       if self.capture == "proxy" and self.supervisor_proxy_port == PROXY_PORT:

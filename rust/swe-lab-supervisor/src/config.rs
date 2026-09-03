@@ -117,25 +117,44 @@ pub const API_KEY_ENV: &str = "ANTHROPIC_API_KEY";
 pub const API_KEY_NAME_ENV: &str = "SWE_LAB_SUPERVISOR_API_KEY_ENV";
 
 /// The configured API-key variable name, defaulting to [`API_KEY_ENV`].
-#[must_use]
-pub fn api_key_env_name() -> String {
-    std::env::var(API_KEY_NAME_ENV)
-        .ok()
-        .filter(|name| !name.is_empty())
-        .unwrap_or_else(|| API_KEY_ENV.to_string())
+///
+/// # Errors
+///
+/// The selector is present but is not a portable environment-variable name.
+/// The error never includes its value because a caller may have put the API
+/// key itself there by mistake.
+pub fn api_key_env_name() -> Result<String, String> {
+    let Some(value) = std::env::var_os(API_KEY_NAME_ENV) else {
+        return Ok(API_KEY_ENV.to_string());
+    };
+    let name = value
+        .into_string()
+        .map_err(|_| "the supervisor API-key selector is not a variable name".to_string())?;
+    if !is_environment_name(&name) {
+        return Err("the supervisor API-key selector is not a variable name".to_string());
+    }
+    Ok(name)
+}
+
+fn is_environment_name(name: &str) -> bool {
+    let mut bytes = name.bytes();
+    bytes
+        .next()
+        .is_some_and(|first| first.is_ascii_alphabetic() || first == b'_')
+        && bytes.all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
 }
 
 /// Read the configured API key.
 ///
 /// # Errors
 ///
-/// The named variable is unset or empty. The error names the variable but
-/// never includes its value.
+/// The named variable is unset or empty. The error does not repeat the name:
+/// a caller may have put the API key itself in the selector by mistake.
 pub fn api_key_from_env(name: &str) -> Result<String, String> {
     std::env::var(name)
         .ok()
         .filter(|key| !key.is_empty())
-        .ok_or_else(|| format!("{name} is unset or empty"))
+        .ok_or_else(|| "the configured supervisor API key is unset or empty".to_string())
 }
 
 /// How long the wrapper waits, in milliseconds.
@@ -316,6 +335,16 @@ impl Endpoint {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+
+    #[test]
+    fn an_api_key_selector_has_the_portable_environment_name_shape() {
+        for accepted in ["A", "_", "ANTHROPIC_API_KEY", "key2"] {
+            assert!(is_environment_name(accepted), "{accepted}");
+        }
+        for refused in ["", "2KEY", "API-KEY", "API KEY", "clé"] {
+            assert!(!is_environment_name(refused), "{refused}");
+        }
+    }
 
     /// A config every field of which is usable; tests perturb one field.
     pub(crate) const VALID: &str = r#"{

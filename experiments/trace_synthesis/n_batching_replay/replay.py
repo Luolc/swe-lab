@@ -210,11 +210,15 @@ class RecordingTransport:
     prompts: The user half of every request, in order. What the self-check
       compares, because two runs that built the same prompts accumulated the
       same evidence in the same windows.
+    calls: Number of transport calls attempted. Counted before the payload is
+      inspected so a stale recorder cannot turn every call into an unobserved
+      exception and still make the self-check look healthy.
     seen: One entry per call made since the last `drain`.
   """
 
   send: Transport = SUPERVISOR_TRANSPORT
   prompts: list[str] = dataclasses.field(default_factory=list)
+  calls: int = 0
   seen: list[dict[str, Any]] = dataclasses.field(default_factory=list)
 
   def __call__(self, payload: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -230,7 +234,11 @@ class RecordingTransport:
       Exception: Whatever the real transport raises, unchanged — the policy
         turns it into a lapse exactly as it does in a live run.
     """
-    self.prompts.append(payload["messages"][1]["content"])
+    self.calls += 1
+    self.prompts.append(payload["messages"][0]["content"])
+    prompt_chars = len(payload["system"]) + sum(
+        len(message["content"]) for message in payload["messages"]
+    )
     started = time.monotonic()
     try:
       response = self.send(payload)
@@ -239,25 +247,21 @@ class RecordingTransport:
           {
               "seconds": round(time.monotonic() - started, 3),
               "transport_error": repr(error),
-              "prompt_chars": sum(
-                  len(m["content"]) for m in payload["messages"]
-              ),
+              "prompt_chars": prompt_chars,
           }
       )
       raise
-    choice = response.get("choices", [{}])[0]
-    content = choice.get("message", {}).get("content")
+    content = response.get("content", [{}])[0].get("text")
     self.seen.append(
         {
             "seconds": round(time.monotonic() - started, 3),
             "response_model": response.get("model"),
             "provider": response.get("provider"),
-            "finish_reason": choice.get("finish_reason"),
-            "native_finish_reason": choice.get("native_finish_reason"),
+            "finish_reason": response.get("stop_reason"),
             "content_is_null": content is None,
             "content_chars": len(content) if isinstance(content, str) else 0,
             "usage": response.get("usage"),
-            "prompt_chars": sum(len(m["content"]) for m in payload["messages"]),
+            "prompt_chars": prompt_chars,
         }
     )
     return response
@@ -488,7 +492,7 @@ def _canned(payload: Mapping[str, Any]) -> Mapping[str, Any]:
     always told the actor is off track and not recovering, so the policy's
     speaking path — writer call, budget, cooldown — is exercised too.
   """
-  judging = payload["messages"][0]["content"] == JUDGE_INSTRUCTIONS
+  judging = payload["system"] == JUDGE_INSTRUCTIONS
   content = (
       '{"off_track": true, "self_correcting": false, "reason": "stub"}'
       if judging
@@ -496,7 +500,8 @@ def _canned(payload: Mapping[str, Any]) -> Mapping[str, Any]:
   )
   return {
       "model": "stub-model",
-      "choices": [{"message": {"content": content}, "finish_reason": "stop"}],
+      "content": [{"type": "text", "text": content}],
+      "stop_reason": "end_turn",
       "usage": {"prompt_tokens": 0, "completion_tokens": 0, "cost": 0.0},
   }
 
@@ -581,6 +586,8 @@ def driver_matches_supervisor() -> dict[str, Any]:
       ],
       "shipped_prompts": list(shipped_policy.judge.transport.prompts),
       "driver_prompts": list(driver_policy.judge.transport.prompts),
+      "shipped_calls": shipped_policy.judge.transport.calls,
+      "driver_calls": driver_policy.judge.transport.calls,
   }
 
 
@@ -611,6 +618,12 @@ def cmd_self_check(_: argparse.Namespace) -> None:
   )
   assert found["shipped_prompts"] == found["driver_prompts"], (
       "driver builds different prompts from Supervisor"
+  )
+  assert found["shipped_calls"] > 0 and found["driver_calls"] > 0, (
+      "self-check exercised no model calls"
+  )
+  assert found["shipped_prompts"] and found["driver_prompts"], (
+      "self-check recorded no model prompts"
   )
   leaks = committed_home_paths()
   assert not leaks, f"committed artifacts carry a home path: {leaks}"

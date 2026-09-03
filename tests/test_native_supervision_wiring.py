@@ -156,6 +156,19 @@ def test_native_supervision_proxy_settings_are_constructor_inputs():
   )
 
 
+def test_a_misplaced_api_key_is_not_repeated_by_harness_validation():
+  """The selector's diagnostic cannot turn a mistaken key into output."""
+  misplaced = "MISPLACED-CREDENTIAL-SENTINEL-MUST-NOT-LEAK"
+
+  with pytest.raises(ValueError, match="environment variable name") as caught:
+    _ = ClaudeCodeHarness(
+        native_supervision=_SUPERVISION,
+        supervisor_api_key_env=misplaced,
+    )
+
+  assert misplaced not in str(caught.value)
+
+
 def test_the_actor_argv_reaches_the_wrapper_after_a_double_dash_unchanged():
   """The wrapper is handed tokens, not a command it has to re-parse.
 

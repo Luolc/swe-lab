@@ -10,6 +10,12 @@ It produces **no recommended `N`** — see
 [`PREREGISTRATION.md`](PREREGISTRATION.md) for why, and for the frozen list of
 readings. Findings: [`REPORT.md`](REPORT.md).
 
+The committed `runs/` artifacts and `REPORT.md` are **historical observations**
+from the original OpenRouter/OpenAI-shaped transport. They are not results from
+the current Anthropic Messages wire. The rerunnable driver below follows the
+current shipped supervisor; changing it does not reinterpret or rewrite those
+frozen observations.
+
 ## Method
 
 The corpus is `~/corpora/swe-lab/first-e2e-2026-09-02/r0/rollout/a0` (one
@@ -21,10 +27,11 @@ repo's scale gate (>10 instances or >2 rollouts/instance) is not touched.
 `ModelJudge` and `ModelWriter` — no policy logic is reimplemented. What it
 changes is only **when** the policy is consulted.
 
-`replay.py self-check` pins that, with no model call: it runs the **real**
-driver (`replay()`) and the shipped `Supervisor` over the same 170 events with
-the network replaced by a canned answer, and asserts both the row sequence
-*and* the byte-identical text of all 173 model prompts — the prompts being the
+`replay.py self-check` pins that, with no network model call: it runs the
+**real** driver (`replay()`) and the shipped `Supervisor` over the same 170
+events with the network replaced by a canned answer, requires both sides to
+have made model calls and recorded prompts, and asserts both the row sequence
+*and* the byte-identical text of every model prompt — the prompts being the
 observable that carries the accumulation and the window. It also asserts no
 committed artifact names a home directory. The same two assertions run in
 `tests/test_n_batching_replay_witness.py`, so CI enforces them; the driver
@@ -46,10 +53,10 @@ uv run python replay.py self-check   # real driver == the shipped Supervisor
 # Needs the gitignored SWE-bench Pro parquet (datasets/swebench_pro/README.md):
 uv run python replay.py verify-task  # recovered task == instance.prompt()
 
-# The run itself. The key is read into the environment and split inside the
-# program; it never reaches a command line.
-export OPENROUTER_API_KEYS=$(op read --no-newline --force \
-  "op://dev-shared/openrouter-api-keys/credential")
+# The run itself. Arrange for the secret manager to provide the supervisor's
+# Messages API key as ANTHROPIC_API_KEY in this shell. Verify only its presence;
+# never print its value or put it on a command line.
+[ -n "${ANTHROPIC_API_KEY:-}" ] && echo "ANTHROPIC_API_KEY is set"
 uv run python replay.py run --pass a
 uv run python replay.py run --pass b
 

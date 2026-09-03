@@ -455,12 +455,13 @@ def lapse_causes(rows: Iterable[Mapping[str, Any]]) -> dict[str, int]:
     call = (row.get("calls") or [{}])[0]
     if call.get("transport_error"):
       cause = "transport error"
-    elif call.get("finish_reason") == "length":
+    elif call.get("finish_reason") in {"length", "max_tokens"}:
       # One cause, two surfaces: the answer is cut at `max_tokens` either way,
       # and whether any content bytes escaped depends only on how much of the
       # budget the model's reasoning had already taken. Reporting these as two
       # causes is what an earlier version of this function did, and it invented
-      # a distinction the data does not carry.
+      # a distinction the data does not carry. Historical OpenAI-shaped rows
+      # call the reason `length`; Anthropic Messages calls it `max_tokens`.
       cause = (
           "max_tokens exhausted, no content at all"
           if call.get("content_is_null")
