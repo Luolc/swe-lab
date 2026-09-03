@@ -264,11 +264,7 @@ fn a_prompt_the_actor_never_reads_does_not_hold_the_wrapper_against_cancellation
     let prompt = dir.join("prompt.stream.json");
     fs::write(&prompt, "x".repeat(1 << 20)).unwrap();
     command.arg("--actor-prompt").arg(&prompt);
-    let (output, took) = cancel(
-        command,
-        &probe,
-        Signal::SIGTERM,
-    );
+    let (output, took) = cancel(command, &probe, Signal::SIGTERM);
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert_eq!(output.status.code(), Some(143), "{stderr}");
     assert!(

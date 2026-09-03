@@ -1472,4 +1472,45 @@ mod tests {
             "a descendant outside the group survived the end"
         );
     }
+
+    /// `/proc/uptime`, in ticks: the unit `starttime` is in, from another
+    /// file.
+    fn uptime_ticks() -> u64 {
+        let uptime = fs::read_to_string("/proc/uptime").unwrap();
+        let (seconds, rest) = uptime.split_once('.').unwrap();
+        seconds.parse::<u64>().unwrap() * 100 + rest[..2].parse::<u64>().unwrap()
+    }
+
+    /// The field read as a start time is the one that counts ticks since
+    /// boot. Two premises, each failed by a neighbouring field: a process
+    /// spawned now reads within two seconds of the uptime read around its
+    /// spawn (the field before is an obsolete zero, the field after the
+    /// address space in bytes); and two spawns of one binary half a second
+    /// apart read at least forty ticks apart (every field the two share — a
+    /// zero, a size, a count — reads zero apart).
+    #[test]
+    fn the_start_time_is_the_field_that_counts_ticks_since_boot() {
+        let spawn = || {
+            let before = uptime_ticks();
+            let child = Command::new("sleep").arg("30").spawn().unwrap();
+            let after = uptime_ticks();
+            let pid = Pid::from_raw(i32::try_from(child.id()).unwrap());
+            (child, before, start_time(pid).unwrap(), after)
+        };
+        let (mut first, before, first_started, after) = spawn();
+        assert!(
+            before.saturating_sub(200) <= first_started && first_started <= after + 200,
+            "the start time {first_started} is not within two seconds of the uptime {before}..{after}"
+        );
+        thread::sleep(Duration::from_millis(500));
+        let (mut second, _, second_started, _) = spawn();
+        assert!(
+            second_started >= first_started + 40,
+            "two spawns half a second apart read {first_started} and {second_started}"
+        );
+        for child in [&mut first, &mut second] {
+            child.kill().unwrap();
+            child.wait().unwrap();
+        }
+    }
 }
