@@ -42,6 +42,8 @@ the run's own timestamp says whether that was before.
 ## How to run
 
 ```sh
+cd ~/dev/swe-lab                  # the main checkout — see below, not optional
+
 # The wrapper is not released yet, so this names a local musl build. Read by
 # code (`trace_synthesis.supervisor_binary`), transitional, and the only way
 # in until a release exists.
@@ -49,19 +51,38 @@ export SWE_LAB_SUPERVISOR_BINARY=<path to swe-lab-supervisor>
 
 uv run swe-lab run native_supervised_rollout_and_unit_test <instance_id> \
     --sweep first-native-e2e \
-    --output-root <a path outside this checkout>
+    --output-root ~/dev/swe-lab-artifacts
 ```
 
 `swe-lab run` takes **one instance per invocation**, so one instance and one
 rollout is the shape of a single command rather than something to remember not
 to exceed.
 
+**Run it from the main checkout, not a feature worktree**, and treat that line
+as a step rather than a preamble. Two reasons, and the first is the one that
+decides:
+
+- **A feature worktree runs unmerged code, and the question this run asks is
+  whether what is on `main` works.** No criterion below can tell "`main` is
+  green" from "my branch is green", so a success obtained on a branch
+  establishes nothing about `main` — and it is the kind of success that gets
+  kept as data.
+- `.envrc.local` exists only in the main checkout, and the fix is **not** to
+  copy it into a worktree. That would put a second copy of a credential file on
+  disk, and one fewer copy is always better than one more.
+
 `--output-root` is not optional here even though the flag is: it defaults to
-`.cache/runs` *inside this checkout*, and this is a worktree that will be
-removed. The evidence has to outlive it.
+`.cache/runs` *inside the checkout*, which for a worktree is a directory that
+will be removed. `~/dev/swe-lab-artifacts` is outside every checkout, so the
+evidence outlives all of them.
 
 Credentials reach the sandbox by name (`pass_env`) and appear in no command
-line: `SWE_LAB_SUPERVISOR_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN`. The
+line: `SWE_LAB_SUPERVISOR_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN`. **Neither is
+the name your shell exports**, and `swe_lab.host_env` closes both gaps in-process
+at the CLI entry point — the OAuth token narrows from the repo-scoped name, the
+supervisor key is adopted from the machine-wide `OPENROUTER_API_KEYS`. Which
+name each was taken from lands in the run record as
+`extra["credential_env_adopted_from"]`; the values never do. The
 supervisor's endpoint is **not** passed in — the harness exports it, because it
 addresses a forwarder the harness starts inside that sandbox.
 

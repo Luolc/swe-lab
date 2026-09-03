@@ -17,6 +17,7 @@ import pytest
 
 from swe_lab.conversation import Conversation
 from swe_lab.conversation.observer import CONVERSATION_NAME
+from swe_lab.credential_sources import forget_adoptions, record_adoption
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
 from swe_lab.harnesses import AgentOutcome, HarnessOutcomeObserver
@@ -270,6 +271,29 @@ def test_the_agent_outcome_lands_on_the_record():
       "agent_outcome": "max_turns",
       "rollout_outcome": "no_patch",
   }
+
+
+def test_the_adopted_credential_source_lands_on_the_record():
+  """Adoption is invisible in the environment a run reads, so it is recorded.
+
+  A run reads one canonical variable and cannot say where the value came from.
+  Without this a reader of a finished run cannot tell a supervisor key taken
+  from the machine-wide pool from one exported deliberately for that run.
+  """
+  task = CodingAgentTask(harness=ClaudeCodeHarness())
+  record_adoption("SWE_LAB_SUPERVISOR_API_KEY", "OPENROUTER_API_KEYS")
+  try:
+    extra = task.record_extra(_attempt(AgentOutcome.FINISHED))
+  finally:
+    forget_adoptions()
+  assert extra["credential_env_adopted_from"] == {
+      "SWE_LAB_SUPERVISOR_API_KEY": "OPENROUTER_API_KEYS"
+  }
+  # The control arm: with nothing adopted the key is absent rather than empty,
+  # so a reader never has to tell "adopted nothing" from "recorded nothing".
+  assert "credential_env_adopted_from" not in task.record_extra(
+      _attempt(AgentOutcome.FINISHED)
+  )
 
 
 def test_the_record_pins_which_actor_produced_it():
