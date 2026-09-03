@@ -40,7 +40,6 @@ use std::collections::VecDeque;
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::PathBuf;
 use std::process::ExitStatus;
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender};
@@ -78,12 +77,6 @@ pub struct Artifacts {
     pub supervisor_log: Output,
     /// The actor's stderr.
     pub actor_stderr: Output,
-}
-
-/// Where the two digested artifacts are, for the summary.
-struct Paths {
-    actor_event_log: PathBuf,
-    supervisor_log: PathBuf,
 }
 
 /// What the actor is launched with.
@@ -195,6 +188,8 @@ struct Loop {
     outbox: SyncSender<Msg>,
     inbox: Receiver<Msg>,
     log: BufWriter<File>,
+    /// The event log, for its digest once the reader is done with it.
+    event_log: File,
     /// Bytes written to the supervisor log so far, against its cap.
     log_written: u64,
     cursor: u64,
@@ -248,10 +243,13 @@ pub fn run(
         supervisor_log,
         actor_stderr,
     } = artifacts;
-    let paths = Paths {
-        actor_event_log: actor_event_log.path,
-        supervisor_log: supervisor_log.path,
-    };
+    // A second handle on the event log, for the digest at the end: the
+    // reader thread takes the first, and this one reads back the same open
+    // file, whatever is at its name by then.
+    let event_log = actor_event_log
+        .file
+        .try_clone()
+        .map_err(|e| format!("keeping a handle on the event log: {e}"))?;
     let log = supervisor_log.file;
     let (outbox, inbox) = actor::event_queue();
     let command = actor::command(launch.argv, &[config::BASE_URL_ENV, config::API_KEY_ENV])
@@ -284,6 +282,7 @@ pub fn run(
         outbox,
         inbox,
         log: BufWriter::new(log),
+        event_log,
         log_written: 0,
         cursor: 0,
         evidence: VecDeque::new(),
@@ -315,7 +314,7 @@ pub fn run(
             signals::requested(stop).is_some()
         }
     };
-    Ok(run.finish(terminated, criterion_sha256, &paths))
+    Ok(run.finish(terminated, criterion_sha256))
 }
 
 impl Loop {
@@ -808,11 +807,11 @@ impl Loop {
         }
     }
 
-    fn finish(mut self, terminated: bool, criterion_sha256: &str, paths: &Paths) -> Ended {
-        // A boundary still underway is on record as such. A judge still
-        // running is not waited for: only a cancellation gets here with
-        // one, its call has a deadline of its own, and the process ends
-        // and takes the thread with it.
+    /// Put a boundary still underway on record as such. A judge still
+    /// running is not waited for: only a cancellation gets here with one,
+    /// its call has a deadline of its own, and the process ends and takes
+    /// the thread with it.
+    fn close_boundaries(&mut self) {
         if let Some(boundary) = self.in_flight.take() {
             let reason = if boundary.judge.is_some() {
                 "the run ended while the judgment was in flight"
@@ -828,11 +827,16 @@ impl Loop {
                 "the run ended before its judgment could start",
             );
         }
+    }
+
+    fn finish(mut self, terminated: bool, criterion_sha256: &str) -> Ended {
+        self.close_boundaries();
         let Loop {
             config,
             actor,
             inbox,
             mut log,
+            mut event_log,
             counts,
             mut unclean,
             ..
@@ -867,6 +871,17 @@ impl Loop {
         if let Err(error) = log.flush() {
             unclean.get_or_insert_with(|| format!("flushing the supervisor log: {error}"));
         }
+        // Both logs are complete: the reader is joined and the account is
+        // flushed. Digested through the descriptors they were written by.
+        let mut digest = |name: &str, file: &mut File| match summary::digest(file) {
+            Ok(digest) => Some(digest),
+            Err(error) => {
+                unclean.get_or_insert_with(|| format!("digesting the {name}: {error}"));
+                None
+            }
+        };
+        let actor_event_log_sha256 = digest("event log", &mut event_log);
+        let supervisor_log_sha256 = digest("supervisor log", log.get_mut());
         let supervisor_exit = if terminated {
             SupervisorExit::Terminated
         } else if unclean.is_some() {
@@ -876,9 +891,13 @@ impl Loop {
         };
         let summary = Summary {
             schema_version: summary::SCHEMA_VERSION,
+            // An identifiable record is part of being accounted for: a
+            // run whose logs have no digest is not one.
             accounted_for: counts.gaps == 0
                 && supervisor_exit == SupervisorExit::Clean
-                && counts.events > 0,
+                && counts.events > 0
+                && actor_event_log_sha256.is_some()
+                && supervisor_log_sha256.is_some(),
             supervisor_exit,
             unclean_reason: unclean,
             actor_exit_code: status.and_then(|s| {
@@ -903,8 +922,8 @@ impl Loop {
             stragglers_killed: u64::try_from(stragglers).unwrap_or(u64::MAX),
             model: config.model.name,
             criterion_sha256: criterion_sha256.to_string(),
-            actor_event_log_sha256: summary::file_sha256(&paths.actor_event_log),
-            supervisor_log_sha256: summary::file_sha256(&paths.supervisor_log),
+            actor_event_log_sha256,
+            supervisor_log_sha256,
         };
         Ended { status, summary }
     }

@@ -3,7 +3,7 @@
 //! temporary name, then renamed — so a reader finds it whole or not at all.
 
 use std::fs::File;
-use std::io::{self, Read, Write};
+use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
 use crate::outputs::Outputs;
@@ -79,9 +79,11 @@ pub struct Summary {
     pub model: String,
     /// The pinned criterion's digest.
     pub criterion_sha256: String,
-    /// The event log's digest, as written.
+    /// The digest of the event log the wrapper wrote, read back through
+    /// its own descriptor. Absent when it could not be read, which makes
+    /// the run not accounted for.
     pub actor_event_log_sha256: Option<String>,
-    /// The supervisor log's digest, as written.
+    /// The same for the supervisor log.
     pub supervisor_log_sha256: Option<String>,
 }
 
@@ -143,26 +145,32 @@ pub fn staging_path(path: &Path) -> PathBuf {
     path.with_extension("json.partial")
 }
 
-/// The sha256 of a file's contents, or `None` when it cannot be read.
-#[must_use]
-pub fn file_sha256(path: &Path) -> Option<String> {
-    // Only a regular file is an artifact with a digest: a device or a pipe
-    // is neither finite nor the run's record. Streamed, because the event
-    // log may be as large as its cap.
-    if !std::fs::metadata(path).ok()?.is_file() {
-        return None;
+/// The sha256 of what is in `file`, read back from its start through the
+/// descriptor: the file the wrapper wrote, whatever is at its name by now.
+/// Streamed, because the event log may be as large as its cap.
+///
+/// # Errors
+///
+/// The descriptor is not a regular file — a device or a pipe is neither
+/// finite nor the run's record — or cannot be read.
+pub fn digest(file: &mut File) -> io::Result<String> {
+    if !file.metadata()?.is_file() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "not a regular file",
+        ));
     }
-    let mut file = File::open(path).ok()?;
+    file.seek(SeekFrom::Start(0))?;
     let mut hasher = Sha256::new();
     let mut chunk = vec![0u8; 64 * 1024];
     loop {
-        let read = file.read(&mut chunk).ok()?;
+        let read = file.read(&mut chunk)?;
         if read == 0 {
             break;
         }
         hasher.update(&chunk[..read]);
     }
-    Some(format!("{:x}", hasher.finalize()))
+    Ok(format!("{:x}", hasher.finalize()))
 }
 
 #[cfg(test)]
@@ -200,7 +208,13 @@ mod tests {
         assert_eq!(parsed["supervisor_exit"], "refused");
         assert_eq!(parsed["unclean_reason"], "bad config");
         assert!(!dir.join("summary.json.partial").exists());
-        assert_eq!(file_sha256(&path).unwrap().len(), 64);
-        assert_eq!(file_sha256(&dir.join("missing")), None);
+        let mut written = File::open(&path).unwrap();
+        // Read back once already: the digest starts over from the top.
+        written.read_to_end(&mut Vec::new()).unwrap();
+        assert_eq!(
+            digest(&mut written).unwrap(),
+            format!("{:x}", Sha256::digest(text.as_bytes()))
+        );
+        assert!(digest(&mut File::open("/dev/null").unwrap()).is_err());
     }
 }

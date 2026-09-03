@@ -102,7 +102,11 @@ impl Outputs {
         reason = "this is the door the lint points everything else to"
     )]
     pub fn open(&mut self, path: &Path) -> io::Result<Output> {
+        // Readable too: the digest at the end is read back through this
+        // descriptor, of the file the wrapper wrote — not of whatever is
+        // at the name by then.
         let file = OpenOptions::new()
+            .read(true)
             .write(true)
             .create(true)
             .truncate(false)

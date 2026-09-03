@@ -18,6 +18,7 @@ use std::time::{Duration, Instant};
 
 use nix::sys::signal::{Signal, kill};
 use nix::unistd::Pid;
+use sha2::{Digest, Sha256};
 
 const CRITERION_SHA256: &str = "ffb2dadfe2b36eb3f44f28c4282a8d51e84e1c943558500787cbb0518e2900a1";
 
@@ -437,4 +438,32 @@ fn a_supervisor_log_that_reaches_its_cap_ends_the_run_as_a_fault() {
     .output()
     .unwrap();
     assert_eq!(usual.status.code(), Some(0), "{usual:?}");
+}
+
+/// The event log's digest is of the bytes the wrapper wrote through the
+/// descriptor it opened, not of whatever is at the name when the run ends:
+/// an actor that unlinks the log and puts another file at its name changes
+/// the name's content, and the digest stays that of the written bytes. The
+/// control is the name's own digest, which differs.
+#[test]
+fn the_event_log_digest_is_of_the_file_the_wrapper_wrote_not_of_its_name() {
+    let dir = scratch("digest");
+    let event_log = dir.join("actor.events.jsonl");
+    let written = "{\"type\":\"system\"}\n";
+    let script = "printf '%s\\n' '{\"type\":\"system\"}'; rm -f \"$EVENT_LOG\"; printf 'not the log\\n' > \"$EVENT_LOG\"";
+    let output = wrapper(&dir, config(&dir, 500), script, &event_log, "digest-probe")
+        .env("EVENT_LOG", &event_log)
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    let summary: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(dir.join("summary.json")).unwrap()).unwrap();
+    let of_written_bytes = format!("{:x}", Sha256::digest(written.as_bytes()));
+    assert_eq!(
+        summary["actor_event_log_sha256"], of_written_bytes,
+        "{summary}"
+    );
+    assert_eq!(summary["accounted_for"], true, "{summary}");
+    let at_the_name = format!("{:x}", Sha256::digest(fs::read(&event_log).unwrap()));
+    assert_ne!(at_the_name, of_written_bytes);
 }
