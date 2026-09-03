@@ -17,6 +17,13 @@
 //! and the staging name are *reserved* at the start, checked against the
 //! logs the same way, but nothing is created at them until then: an absent
 //! summary is the artifact's own word that the run is unfinished.
+//!
+//! Every name is reserved first, before anything can be written at any of
+//! them — a refusal's summary included — and the staging file is created
+//! exclusively, following no link: a name the actor has meanwhile put
+//! something at is not written through, whatever it now points to, and
+//! the rename onto the final name is checked to have taken the file that
+//! was written.
 
 use std::fs::{File, OpenOptions};
 use std::io;
@@ -51,14 +58,7 @@ impl Identity {
         let resolved = if metadata.is_some() {
             path.canonicalize()?
         } else {
-            let name = path
-                .file_name()
-                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "no file name"))?;
-            path.parent()
-                .filter(|parent| !parent.as_os_str().is_empty())
-                .unwrap_or_else(|| Path::new("."))
-                .canonicalize()?
-                .join(name)
+            name_in_its_directory(path)?
         };
         Ok(Self {
             resolved,
@@ -70,6 +70,21 @@ impl Identity {
         self.resolved == other.resolved
             || matches!((self.inode, other.inode), (Some(a), Some(b)) if a == b)
     }
+}
+
+/// The name as given, in its directory resolved: what a reservation of a
+/// name with nothing at it is stored as, whatever appears at the name
+/// afterwards.
+fn name_in_its_directory(path: &Path) -> io::Result<PathBuf> {
+    let name = path
+        .file_name()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "no file name"))?;
+    Ok(path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."))
+        .canonicalize()?
+        .join(name))
 }
 
 fn one_file() -> io::Error {
@@ -91,12 +106,15 @@ impl Outputs {
     /// truncating it: what is there stays until [`Outputs::truncate`], so a
     /// refusal that comes later changes nothing.
     ///
+    /// A path reserved here earlier is opened as that reservation: the
+    /// name was checked against every other when it was reserved.
+    ///
     /// # Errors
     ///
     /// The file cannot be opened; it is not a regular file (a device or a
     /// pipe is not a record with a digest); or it is one already opened or
-    /// reserved here — by identity, not by name — refused as `InvalidInput`.
-    /// No error repeats the path.
+    /// reserved here under another name — by identity, not by name —
+    /// refused as `InvalidInput`. No error repeats the path.
     #[expect(
         clippy::disallowed_methods,
         reason = "this is the door the lint points everything else to"
@@ -119,13 +137,24 @@ impl Outputs {
             ));
         }
         let identity = Identity::of(path)?;
-        if self
-            .opened
+        match self
+            .reserved
             .iter()
-            .chain(&self.reserved)
-            .any(|known| known.collides_with(&identity))
+            .position(|reserved| reserved.resolved == identity.resolved)
         {
-            return Err(one_file());
+            Some(index) => {
+                self.reserved.remove(index);
+            }
+            None => {
+                if self
+                    .opened
+                    .iter()
+                    .chain(&self.reserved)
+                    .any(|known| known.collides_with(&identity))
+                {
+                    return Err(one_file());
+                }
+            }
         }
         self.opened.push(identity);
         Ok(Output {
@@ -134,19 +163,18 @@ impl Outputs {
         })
     }
 
-    /// Reserve `path` for a file written at the end: nothing is created at
-    /// it now, but the name is held against every log and reservation, so
-    /// that writing it later replaces nothing the wrapper is writing.
-    /// Reserving the same path twice is one reservation.
+    /// Reserve `path` for one output: nothing is created at it now, but
+    /// the name is held against every log and reservation, so that what
+    /// is written at it later replaces nothing the wrapper is writing.
+    /// Every reservation is one output, so the same name twice is two
+    /// outputs on one file.
     ///
     /// # Errors
     ///
-    /// The path cannot be resolved, or it is one already opened here.
+    /// The path cannot be resolved, or it is one already opened or
+    /// reserved here.
     pub fn reserve(&mut self, path: &Path) -> io::Result<()> {
         let identity = Identity::of(path)?;
-        if self.reserved.contains(&identity) {
-            return Ok(());
-        }
         if self
             .opened
             .iter()
@@ -173,50 +201,84 @@ impl Outputs {
     }
 
     /// Create the file at a reserved path — the one place a reserved name
-    /// becomes a file — truncating whatever a previous run left there.
+    /// becomes a file — exclusively: nothing may exist at the name, a link
+    /// least of all. What is at a reserved name by the end is not the
+    /// wrapper's doing, and is not written through: an actor that linked
+    /// an open log to the staging name would otherwise have the summary
+    /// truncate that log and become it.
     ///
     /// # Errors
     ///
-    /// The path was not reserved, or the file cannot be created.
+    /// The path was not reserved; something exists at it
+    /// (`AlreadyExists`); or the file cannot be created.
     #[expect(
         clippy::disallowed_methods,
         reason = "the door's own create, for a name it reserved"
     )]
     pub fn create_reserved(&self, path: &Path) -> io::Result<Output> {
-        let identity = Identity::of(path)?;
-        if !self
-            .reserved
-            .iter()
-            .any(|r| r.resolved == identity.resolved)
-        {
+        // The reservation was of the name with nothing at it; what is at
+        // the name now (a link, say) does not change which name this is.
+        let name = name_in_its_directory(path)?;
+        if !self.reserved.iter().any(|r| r.resolved == name) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "a file written at the end must have been reserved at the start",
             ));
         }
+        // `O_CREAT | O_EXCL`: fails if anything is at the name, a symlink
+        // wherever it points included — the kernel's guarantee, not a
+        // check-then-create with a gap.
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(path)
+            .map_err(|error| {
+                if error.kind() == io::ErrorKind::AlreadyExists {
+                    io::Error::new(
+                        io::ErrorKind::AlreadyExists,
+                        "something was put at a name reserved for the wrapper's own file",
+                    )
+                } else {
+                    error
+                }
+            })?;
         Ok(Output {
             path: path.to_path_buf(),
-            file: File::create(path)?,
+            file,
         })
     }
 
     /// Move `staging` — created here, written and synced — onto `path`,
     /// atomically: the one way a file of the wrapper's is replaced. Both
-    /// names were reserved, so nothing the wrapper writes is under either.
+    /// names were reserved, so nothing the wrapper writes is under either;
+    /// and the name is read back afterwards to be the file that was
+    /// written, so a name something else took in the meantime is an error
+    /// and not a summary.
     ///
     /// # Errors
     ///
-    /// The rename failed; the staging file is left where it was.
+    /// The rename failed (the staging file is left where it was), or the
+    /// final name does not hold the file that was written.
     #[expect(clippy::disallowed_methods, reason = "the door's own rename")]
     pub fn replace(staging: Output, path: &Path) -> io::Result<()> {
+        let written = staging.file.metadata()?;
         drop(staging.file);
-        std::fs::rename(&staging.path, path)
+        std::fs::rename(&staging.path, path)?;
+        let now = std::fs::metadata(path)?;
+        if (now.dev(), now.ino()) != (written.dev(), written.ino()) {
+            return Err(io::Error::other(
+                "the file written for the wrapper's output is not what its name holds",
+            ));
+        }
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use std::fs;
+    use std::io::Write;
 
     use super::*;
 
@@ -279,21 +341,21 @@ mod tests {
         assert!(error.to_string().contains("regular file"), "{error}");
     }
 
-    /// A reservation creates nothing, holds the name against the logs in
+    /// A reservation creates nothing, is one output — the same name twice
+    /// is two outputs on one file — holds the name against the logs in
     /// both directions, and is the one way the name becomes a file later.
     #[test]
     fn a_reserved_name_exists_only_when_it_is_written_and_collides_with_no_log() {
         let dir = scratch("reserve");
         let mut outputs = Outputs::default();
         outputs.reserve(&dir.join("summary.json")).unwrap();
-        outputs.reserve(&dir.join("summary.json")).unwrap();
         assert!(
             !dir.join("summary.json").exists(),
             "reserving created a file"
         );
         let error = outputs
-            .open(&dir.join("summary.json"))
-            .expect_err("a log at a reserved name");
+            .reserve(&dir.join("summary.json"))
+            .expect_err("one name for two outputs");
         assert_eq!(error.kind(), io::ErrorKind::InvalidInput, "{error}");
         outputs.open(&dir.join("events.jsonl")).unwrap();
         let error = outputs
@@ -307,5 +369,65 @@ mod tests {
         let written = outputs.create_reserved(&dir.join("summary.json")).unwrap();
         assert!(dir.join("summary.json").exists());
         drop(written);
+    }
+
+    /// A reserved name is created exclusively: what something else put at
+    /// it — a file, a hard link to an open log, a symlink to one — is not
+    /// written through, and the log keeps its bytes. The control is the
+    /// name with nothing at it, which is created and replaced whole.
+    #[test]
+    fn a_reserved_name_with_something_at_it_is_not_written_through() {
+        let dir = scratch("exclusive");
+        let mut outputs = Outputs::default();
+        let log = outputs.open(&dir.join("events.jsonl")).unwrap();
+        (&log.file).write_all(b"the log's bytes\n").unwrap();
+        for name in ["summary.json.partial", "other.partial", "link.partial"] {
+            outputs.reserve(&dir.join(name)).unwrap();
+        }
+        fs::write(dir.join("other.partial"), "a plain file").unwrap();
+        fs::hard_link(dir.join("events.jsonl"), dir.join("summary.json.partial")).unwrap();
+        std::os::unix::fs::symlink(dir.join("events.jsonl"), dir.join("link.partial")).unwrap();
+        for name in ["summary.json.partial", "other.partial", "link.partial"] {
+            let error = outputs.create_reserved(&dir.join(name)).expect_err(name);
+            assert_eq!(
+                error.kind(),
+                io::ErrorKind::AlreadyExists,
+                "{name}: {error}"
+            );
+            assert!(!error.to_string().contains(name), "{error}");
+        }
+        assert_eq!(
+            fs::read_to_string(dir.join("events.jsonl")).unwrap(),
+            "the log's bytes\n"
+        );
+        assert_eq!(
+            fs::read_to_string(dir.join("other.partial")).unwrap(),
+            "a plain file"
+        );
+
+        outputs.reserve(&dir.join("fresh.partial")).unwrap();
+        outputs.reserve(&dir.join("final.json")).unwrap();
+        let fresh = outputs.create_reserved(&dir.join("fresh.partial")).unwrap();
+        (&fresh.file).write_all(b"{}").unwrap();
+        let written = fresh.file.metadata().unwrap().ino();
+        Outputs::replace(fresh, &dir.join("final.json")).unwrap();
+        assert_eq!(fs::metadata(dir.join("final.json")).unwrap().ino(), written);
+        assert!(!dir.join("fresh.partial").exists());
+    }
+
+    /// A name reserved first is opened as that reservation, and not
+    /// refused as a collision with itself.
+    #[test]
+    fn a_reserved_name_can_be_opened_as_the_log_it_was_reserved_for() {
+        let dir = scratch("reserved-then-opened");
+        let mut outputs = Outputs::default();
+        outputs.reserve(&dir.join("events.jsonl")).unwrap();
+        outputs.reserve(&dir.join("summary.json")).unwrap();
+        outputs.open(&dir.join("events.jsonl")).unwrap();
+        outputs.open(&dir.join("summary.json")).unwrap();
+        // Still one file each: a second name for an opened one is refused.
+        fs::hard_link(dir.join("events.jsonl"), dir.join("again")).unwrap();
+        let error = outputs.reserve(&dir.join("again")).expect_err("a link");
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput, "{error}");
     }
 }

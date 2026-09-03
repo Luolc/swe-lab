@@ -221,3 +221,43 @@ fn two_outputs_on_one_file_are_refused_before_any_actor_exists() {
     assert!(!stderr.contains("summary.json"), "{stderr}");
     std::fs::remove_file(&config).unwrap();
 }
+
+/// Every output's name is held before any refusal can write a summary: a
+/// run refused on its inputs whose `--summary` names the event log is a
+/// refusal that writes nothing, and the log keeps its bytes. The control
+/// is the same refusal with distinct names, which writes its summary.
+#[test]
+fn an_early_refusal_writes_nothing_over_an_output_it_would_alias() {
+    let mut paths = output_paths();
+    std::fs::write(&paths[0], "a previous run's events\n").unwrap();
+    paths[2] = paths[0].clone();
+    let missing = format!("/nonexistent/{PATH_SENTINEL}.json");
+    let mut command = wrapper();
+    command
+        .args(["run", "--config", &missing])
+        .args(["--actor-prompt", "/dev/null"])
+        .args(output_args(&paths))
+        .args(["--", "actor"])
+        .env("SWE_LAB_SUPERVISOR_BASE_URL", "http://127.0.0.1:9/v1");
+    let (code, stderr) = stderr_of(command);
+    assert_eq!(code, 3, "{stderr}");
+    assert!(stderr.contains("one file"), "{stderr}");
+    assert_eq!(
+        std::fs::read_to_string(&paths[0]).unwrap(),
+        "a previous run's events\n"
+    );
+
+    let paths = output_paths();
+    let mut command = wrapper();
+    command
+        .args(["run", "--config", &missing])
+        .args(["--actor-prompt", "/dev/null"])
+        .args(output_args(&paths))
+        .args(["--", "actor"])
+        .env("SWE_LAB_SUPERVISOR_BASE_URL", "http://127.0.0.1:9/v1");
+    let (code, _) = stderr_of(command);
+    assert_eq!(code, 3);
+    let summary: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&paths[2]).unwrap()).unwrap();
+    assert_eq!(summary["supervisor_exit"], "refused");
+}

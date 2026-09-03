@@ -36,7 +36,6 @@ mod supervisor;
 
 use std::io;
 use std::os::unix::process::ExitStatusExt;
-use std::path::Path;
 use std::process::{ExitCode, ExitStatus};
 use std::time::Duration;
 
@@ -123,6 +122,10 @@ enum Failed {
 /// path or the environment would otherwise land in a log.
 fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
     let mut outputs = Outputs::default();
+    // Every output's name is held before anything can be written at any
+    // of them — a refusal's summary included: two names on one file are a
+    // refusal that writes nothing, not a summary written over a log.
+    preflight(&mut outputs, args).map_err(|e| Failed::Refused(format!("outputs: {e}")))?;
     let config = config::load(&args.config).map_err(|e| refused(&mut outputs, args, e, "", ""))?;
     let selected =
         criterion::select(&config.criterion.name, &config.criterion.sha256).map_err(|e| {
@@ -222,18 +225,33 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
     Ok(ended.status.map_or(ExitCode::FAILURE, exit_code_of))
 }
 
-/// Every output through the one door, so that no two of them are one file:
-/// the three logs opened, the summary and its staging name reserved, and
-/// only then — every name having passed — the logs truncated. Nothing on
-/// disk changes before that point, so a refusal here leaves every file as
-/// it was; and nothing is created at the summary's name until the end.
+/// Every output's name held through the one door, read-only, before
+/// anything is written anywhere: the three logs, the summary and its
+/// staging name, each checked against the others by identity — the same
+/// path twice, a hard link, a symlink to another. Nothing on disk changes.
+fn preflight(outputs: &mut Outputs, args: &cli::RunArgs) -> io::Result<()> {
+    for path in [
+        &args.actor_event_log,
+        &args.actor_stderr,
+        &args.supervisor_log,
+        &args.summary,
+        &summary::staging_path(&args.summary),
+    ] {
+        outputs.reserve(path)?;
+    }
+    Ok(())
+}
+
+/// The three logs opened at their reserved names, and only then — every
+/// name having passed — truncated. A refusal before this point leaves
+/// every file as it was; nothing is created at the summary's name until
+/// the end.
 fn open_outputs(outputs: &mut Outputs, args: &cli::RunArgs) -> io::Result<supervisor::Artifacts> {
     let artifacts = supervisor::Artifacts {
         actor_event_log: outputs.open(&args.actor_event_log)?,
         actor_stderr: outputs.open(&args.actor_stderr)?,
         supervisor_log: outputs.open(&args.supervisor_log)?,
     };
-    reserve_summary(outputs, &args.summary)?;
     Outputs::truncate(&[
         &artifacts.actor_event_log,
         &artifacts.actor_stderr,
@@ -242,15 +260,10 @@ fn open_outputs(outputs: &mut Outputs, args: &cli::RunArgs) -> io::Result<superv
     Ok(artifacts)
 }
 
-/// The summary's name and its staging name, held against the logs.
-fn reserve_summary(outputs: &mut Outputs, summary: &Path) -> io::Result<()> {
-    outputs.reserve(summary)?;
-    outputs.reserve(&summary::staging_path(summary))
-}
-
 /// A refusal, with its summary written first — best effort: the refusal is
 /// already the answer, and a summary that cannot be written leaves the
-/// reader with a missing file, which the consumer treats the same way.
+/// reader with a missing file, which the consumer treats the same way. The
+/// summary's names were reserved by the preflight, against every log.
 fn refused(
     outputs: &mut Outputs,
     args: &cli::RunArgs,
@@ -258,8 +271,7 @@ fn refused(
     model: &str,
     digest: &str,
 ) -> Failed {
-    let _ = reserve_summary(outputs, &args.summary)
-        .and_then(|()| Summary::refused(&reason, model, digest).write(outputs, &args.summary));
+    let _ = Summary::refused(&reason, model, digest).write(outputs, &args.summary);
     Failed::Refused(reason)
 }
 

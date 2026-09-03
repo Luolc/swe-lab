@@ -139,10 +139,14 @@ impl Summary {
     }
 }
 
-/// Where the summary is staged before its atomic rename onto `path`.
+/// Where the summary is staged before its atomic rename onto `path`:
+/// `.partial` appended to the name as given, so that no final name — one
+/// already ending in `.partial` included — is its own staging name.
 #[must_use]
 pub fn staging_path(path: &Path) -> PathBuf {
-    path.with_extension("json.partial")
+    let mut staged = path.as_os_str().to_os_string();
+    staged.push(".partial");
+    PathBuf::from(staged)
 }
 
 /// The sha256 of what is in `file`, read back from its start through the

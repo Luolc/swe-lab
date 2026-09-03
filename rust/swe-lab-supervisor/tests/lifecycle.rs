@@ -467,3 +467,85 @@ fn the_event_log_digest_is_of_the_file_the_wrapper_wrote_not_of_its_name() {
     let at_the_name = format!("{:x}", Sha256::digest(fs::read(&event_log).unwrap()));
     assert_ne!(at_the_name, of_written_bytes);
 }
+
+/// The summary is staged at a name created exclusively: an actor that
+/// hard-links the open event log to that name, so that writing the summary
+/// would truncate the log and rename the link onto the summary, gets a run
+/// that ends loud — no summary, exit 1, the reason on stderr — with the
+/// log's bytes as it wrote them. The control is the name with nothing at
+/// it: the same run writes its summary whole.
+#[test]
+fn a_staging_name_the_actor_took_is_not_written_through() {
+    let dir = scratch("staging-taken");
+    let event_log = dir.join("actor.events.jsonl");
+    let staging = dir.join("summary.json.partial");
+    let line = "{\"type\":\"system\"}\n";
+    let script = "printf '%s\\n' '{\"type\":\"system\"}'; ln \"$EVENT_LOG\" \"$STAGING\"";
+    let output = wrapper(&dir, config(&dir, 500), script, &event_log, "staging-probe")
+        .env("EVENT_LOG", &event_log)
+        .env("STAGING", &staging)
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("summary"), "{stderr}");
+    assert!(!dir.join("summary.json").exists(), "a summary was written");
+    // The log — under both of its names — holds what the actor wrote.
+    assert_eq!(fs::read_to_string(&event_log).unwrap(), line);
+    assert_eq!(fs::read_to_string(&staging).unwrap(), line);
+
+    fs::remove_file(&staging).unwrap();
+    let output = wrapper(
+        &dir,
+        config(&dir, 500),
+        "printf '%s\\n' '{\"type\":\"system\"}'",
+        &event_log,
+        "staging-probe",
+    )
+    .output()
+    .unwrap();
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    let summary: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(dir.join("summary.json")).unwrap()).unwrap();
+    assert_eq!(summary["accounted_for"], true, "{summary}");
+    assert!(!staging.exists());
+}
+
+/// A summary path that already ends in `.partial` is staged under a name of
+/// its own, not under itself.
+#[test]
+fn a_summary_path_ending_in_partial_is_staged_under_a_distinct_name() {
+    let dir = scratch("partial-final");
+    let summary = dir.join("summary.json.partial");
+    let command = wrapper(
+        &dir,
+        config(&dir, 500),
+        "printf '%s\\n' '{\"type\":\"system\"}'",
+        &dir.join("actor.events.jsonl"),
+        "partial-probe",
+    );
+    // The helper names the summary; this run names it differently.
+    let args: Vec<std::ffi::OsString> = command
+        .get_args()
+        .map(|arg| {
+            if arg == dir.join("summary.json").as_os_str() {
+                summary.clone().into_os_string()
+            } else {
+                arg.to_os_string()
+            }
+        })
+        .collect();
+    let mut renamed = Command::new(command.get_program());
+    renamed.args(args);
+    for (key, value) in command.get_envs() {
+        if let Some(value) = value {
+            renamed.env(key, value);
+        }
+    }
+    let output = renamed.output().unwrap();
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    let parsed: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&summary).unwrap()).unwrap();
+    assert_eq!(parsed["supervisor_exit"], "clean", "{parsed}");
+    assert!(!dir.join("summary.json.partial.partial").exists());
+}
