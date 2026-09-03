@@ -6,7 +6,13 @@ follow from it. The invariant itself is cross-repo and lives in
 `~/.agents/AGENTS.md` → 质量门 → **「无分辨力的观察不算检查」**; it is not
 restated here.
 
-That file also already owns three of its consequences — a check must not run
+**Every rule below carries a dated instance, and that is not decoration.** A rule
+separated from the case that produced it becomes an aphorism, and an aphorism
+changes nobody's action — which is the failure this whole file is about. So the
+instances are load-bearing: **do not shorten this file by deleting them.** If it
+must shrink, drop a whole rule, evidence and all, and say why.
+
+`~/.agents/AGENTS.md` also already owns three of its consequences — a check must not run
 through a pipe (the pipe reports the last stage's status), a criterion asserts a
 **positive premise** rather than excluding the bad cases you thought of, and the
 second kind, where a correct check is blind because it runs in the wrong
