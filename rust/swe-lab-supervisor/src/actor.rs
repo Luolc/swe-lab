@@ -249,8 +249,9 @@ pub struct Actor {
     barrier: Arc<AtomicU64>,
     frozen: bool,
     /// Marked descendants outside the group that [`Actor::freeze`]
-    /// stopped one by one, to be resumed one by one.
-    held: Vec<Pid>,
+    /// stopped one by one, to be resumed one by one — each with the
+    /// identity it was held under.
+    held: Vec<Held>,
     reaped: bool,
     stdout_drain: Option<JoinHandle<Result<(), String>>>,
     stderr_drain: Option<JoinHandle<Result<(), String>>>,
@@ -513,25 +514,27 @@ impl Actor {
         }
     }
 
-    /// `SIGCONT` the group if it was frozen. Idempotent, and tolerant of a
-    /// group that has since disappeared.
+    /// `SIGCONT` everything [`Actor::freeze`] stopped, if it did: each
+    /// held escaped descendant by pid, once its identity is checked again
+    /// — a pid reused since names another process, which is left alone —
+    /// and then the group. Every continuation is attempted whatever the
+    /// others did, and the group is not frozen after, whatever they did:
+    /// the attempts were made, and a retry would make the same ones.
+    /// Idempotent, and tolerant of processes that have since disappeared.
     ///
     /// # Errors
     ///
-    /// The group exists and could not be signalled.
+    /// A held descendant's identity could not be proved, or a process that
+    /// exists could not be signalled; the error says how many, and the
+    /// first reason.
     pub fn thaw(&mut self) -> io::Result<()> {
         if !self.frozen {
             return Ok(());
         }
+        let held = std::mem::take(&mut self.held);
+        let result = resume(&held, self.group);
         self.frozen = false;
-        // The escaped ones first: one that is gone is nothing to resume.
-        for pid in self.held.drain(..) {
-            match kill(pid, Signal::SIGCONT) {
-                Ok(()) | Err(Errno::ESRCH) => {}
-                Err(errno) => return Err(io::Error::from(errno)),
-            }
-        }
-        signal_group(self.group, Signal::SIGCONT)
+        result
     }
 
     #[cfg_attr(not(test), expect(dead_code, reason = "exercised by the tests"))]
@@ -621,6 +624,70 @@ impl Drop for Actor {
         let _ = self.child.wait();
         self.reaped = true;
         let _ = sweep(&self.mark, self.group, self.started);
+    }
+}
+
+/// An escaped descendant [`Actor::freeze`] stopped by pid: the pid, and the
+/// start time it had then — with the pid, the nearest thing to an identity
+/// `/proc` offers — checked again before the pid is signalled.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Held {
+    pid: Pid,
+    started: u64,
+}
+
+#[cfg(test)]
+thread_local! {
+    /// Makes the next held continuation fail, for the test that the rest
+    /// are still attempted.
+    static FAIL_NEXT_CONTINUE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Continue every held descendant whose identity still holds, then the
+/// group — every one attempted; the error, if any, counts the failures and
+/// carries the first reason.
+fn resume(held: &[Held], group: Pid) -> io::Result<()> {
+    let mut failed = 0usize;
+    let mut first: Option<String> = None;
+    for descendant in held {
+        if let Err(reason) = continue_held(*descendant) {
+            failed += 1;
+            first.get_or_insert(reason);
+        }
+    }
+    let group_result = signal_group(group, Signal::SIGCONT);
+    if failed == 0 {
+        return group_result;
+    }
+    let reason = format!(
+        "{failed} of {} held descendants could not be continued: {}",
+        held.len(),
+        first.unwrap_or_default()
+    );
+    match group_result {
+        Ok(()) => Err(io::Error::other(reason)),
+        Err(error) => Err(io::Error::other(format!("{reason}; the group: {error}"))),
+    }
+}
+
+/// `SIGCONT` to one held descendant, if it is still the process that was
+/// held: one that is gone, or whose pid another process has since, is
+/// nothing to resume; an identity that cannot be proved is an error, not a
+/// signal sent on a guess. The window between the check and the signal is
+/// the residue the sweep accepts too (see [`sweep`]).
+fn continue_held(descendant: Held) -> Result<(), String> {
+    #[cfg(test)]
+    if FAIL_NEXT_CONTINUE.with(std::cell::Cell::take) {
+        return Err("injected".to_string());
+    }
+    match start_time(descendant.pid) {
+        Probe::Present(started) if started == descendant.started => {}
+        Probe::Present(_) | Probe::Gone => return Ok(()),
+        Probe::Unprovable(reason) => return Err(reason),
+    }
+    match kill(descendant.pid, Signal::SIGCONT) {
+        Ok(()) | Err(Errno::ESRCH) => Ok(()),
+        Err(errno) => Err(format!("SIGCONT: {errno}")),
     }
 }
 
@@ -954,6 +1021,9 @@ enum Halt {
 struct Member {
     pid: u32,
     ppid: u32,
+    /// The start time, in clock ticks since boot: the identity a held pid
+    /// is checked against before it is continued.
+    started: u64,
     halt: Halt,
     in_group: bool,
 }
@@ -1018,6 +1088,7 @@ fn members(group: Pid, needle: &str, floor: u64) -> Result<Vec<Member>, String> 
         members.push(Member {
             pid,
             ppid: stat.ppid,
+            started: stat.started,
             halt,
             in_group,
         });
@@ -1076,7 +1147,7 @@ fn confirm_stopped(
     group: Pid,
     needle: &str,
     floor: u64,
-    held: &mut Vec<Pid>,
+    held: &mut Vec<Held>,
 ) -> Result<(), String> {
     let deadline = Instant::now() + STOP_CONFIRMATION_BOUND;
     let mut previous: Option<Vec<u32>> = None;
@@ -1109,8 +1180,11 @@ fn confirm_stopped(
                 );
                 match kill(pid, Signal::SIGSTOP) {
                     Ok(()) => {
-                        if !held.contains(&pid) {
-                            held.push(pid);
+                        if !held.iter().any(|h| h.pid == pid) {
+                            held.push(Held {
+                                pid,
+                                started: member.started,
+                            });
                         }
                     }
                     Err(Errno::ESRCH) => {}
@@ -1392,6 +1466,102 @@ mod tests {
     use nix::unistd::mkfifo;
 
     use super::*;
+
+    /// A `sleep` in a process group of its own, stopped, with the identity
+    /// it would be held under.
+    fn stopped_alone() -> (Child, Held) {
+        let child = Command::new("sleep")
+            .arg("30")
+            .process_group(0)
+            .spawn()
+            .unwrap();
+        let pid = Pid::from_raw(i32::try_from(child.id()).unwrap());
+        kill(pid, Signal::SIGSTOP).unwrap();
+        assert!(wait_until(Duration::from_secs(5), || state_of(pid) == b'T'));
+        let started = match start_time(pid) {
+            Probe::Present(started) => started,
+            other => panic!("the start time of a live child: {other:?}"),
+        };
+        (child, Held { pid, started })
+    }
+
+    fn state_of(pid: Pid) -> u8 {
+        parse_stat(&fs::read(format!("/proc/{}/stat", pid.as_raw())).unwrap())
+            .unwrap()
+            .state
+    }
+
+    fn end(mut child: Child) {
+        let _ = kill(
+            Pid::from_raw(i32::try_from(child.id()).unwrap()),
+            Signal::SIGKILL,
+        );
+        let _ = child.wait();
+    }
+
+    /// A held descendant whose pid now names another process — the start
+    /// time is not the one it was held with — is not signalled: the process
+    /// at that pid stays stopped, and the group is continued all the same.
+    /// The control is the descendant held with its own start time, which
+    /// is continued.
+    #[test]
+    fn a_held_pid_that_was_reused_is_not_continued() {
+        for reused in [true, false] {
+            let (descendant, held) = stopped_alone();
+            let (leader, member) = stopped_alone();
+            let held = if reused {
+                Held {
+                    started: held.started + 1,
+                    ..held
+                }
+            } else {
+                held
+            };
+            resume(&[held], member.pid).unwrap();
+            assert!(
+                wait_until(Duration::from_secs(2), || state_of(member.pid) == b'S'),
+                "the group was not continued (reused: {reused})"
+            );
+            if reused {
+                thread::sleep(Duration::from_millis(100));
+                assert_eq!(state_of(held.pid), b'T', "a reused pid was signalled");
+            } else {
+                assert!(
+                    wait_until(Duration::from_secs(2), || state_of(held.pid) == b'S'),
+                    "the held descendant was not continued"
+                );
+            }
+            end(descendant);
+            end(leader);
+        }
+    }
+
+    /// One continuation failing stops none of the others: the second held
+    /// descendant and the group are continued, and the error counts the
+    /// failure.
+    #[test]
+    fn every_continuation_is_attempted_when_one_fails() {
+        let (first, held_first) = stopped_alone();
+        let (second, held_second) = stopped_alone();
+        let (leader, member) = stopped_alone();
+        FAIL_NEXT_CONTINUE.with(|fail| fail.set(true));
+        let error = resume(&[held_first, held_second], member.pid).unwrap_err();
+        assert!(error.to_string().contains("1 of 2"), "{error}");
+        assert!(error.to_string().contains("injected"), "{error}");
+        assert!(wait_until(Duration::from_secs(2), || state_of(
+            held_second.pid
+        ) == b'S'));
+        assert!(wait_until(Duration::from_secs(2), || state_of(member.pid) == b'S'));
+        thread::sleep(Duration::from_millis(100));
+        assert_eq!(
+            state_of(held_first.pid),
+            b'T',
+            "the failed continuation sent a signal"
+        );
+        end(first);
+        end(second);
+        end(leader);
+    }
 
     const LIMITS: Limits = Limits {
         line: 1024,
