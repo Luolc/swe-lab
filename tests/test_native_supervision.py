@@ -37,6 +37,8 @@ from swe_lab.trace_synthesis.criterion import (
 from swe_lab.trace_synthesis.native_supervision import (
     CONFIG_SCHEMA_VERSION,
     NativeSupervision,
+    NON_NUMERIC_FIELDS,
+    NUMERIC_FIELDS,
     POLICY_KIND,
     read_terminal_summary,
     SUMMARY_FIELDS,
@@ -136,14 +138,25 @@ def test_a_forged_criterion_is_refused_before_a_config_exists(
 @pytest.mark.parametrize(
     "field,value",
     [
+        # Out of the range the Rust type admits.
         ("model", ""),
         ("budget", -1),
         ("cooldown", -1),
         ("window", 0),
         ("judge_every_n_assistant_messages", 0),
         ("model_call_ms", 0),
-        ("term_grace_ms", 0),
         ("max_event_line_bytes", 0),
+        ("budget", 2**32),
+        ("window", 2**32),
+        ("model_call_ms", 2**64),
+        # The right range, the wrong JSON type. `True` is an `int` in Python
+        # and would render as `true` into a slot that deserializes a number.
+        ("budget", True),
+        ("window", True),
+        ("max_event_line_bytes", True),
+        ("model", 7),
+        ("block_actor_while_judging", "true"),
+        ("window", 8.0),
     ],
 )
 def test_a_value_the_runtime_cannot_honour_is_refused_here(
@@ -152,7 +165,9 @@ def test_a_value_the_runtime_cannot_honour_is_refused_here(
   """Each of the binary's own rules is applied where the value is chosen.
 
   The binary exits `3` on a bad config — after the sandbox is up and before the
-  actor starts, which costs a container to learn.
+  actor starts, which costs a container to learn. Type and range both, because
+  `serde` refuses the wrong JSON type as firmly as an out-of-range number and
+  Python stops neither.
 
   Args:
     field: The field to perturb.
@@ -160,6 +175,35 @@ def test_a_value_the_runtime_cannot_honour_is_refused_here(
   """
   with pytest.raises(ValueError, match=field):
     _ = dataclasses.replace(_SUPERVISION, **{field: value})
+
+
+def test_a_zero_shutdown_grace_is_accepted_because_the_binary_accepts_it() -> (
+    None
+):
+  """`term_grace_ms` is a plain `u64` in `config.rs`, with no non-zero rule.
+
+  Refusing it here would make this side stricter than the runtime it
+  configures — a value a reader could set in the binary's own schema and not
+  through the only thing that writes that schema.
+  """
+  rendered = dataclasses.replace(_SUPERVISION, term_grace_ms=0).config_document(
+      task="t"
+  )
+
+  assert rendered["timeouts"]["term_grace_ms"] == 0
+
+
+def test_every_configurable_field_is_checked_against_a_rust_type() -> None:
+  """No field reaches the document without a rule that mirrors the schema.
+
+  A field added to `NativeSupervision` and to no rule renders whatever Python
+  accepted for it, and the refusal then happens in the sandbox.
+  """
+  checked = set(NUMERIC_FIELDS) | set(NON_NUMERIC_FIELDS)
+
+  assert checked == {
+      field.name for field in dataclasses.fields(NativeSupervision)
+  }
 
 
 def test_the_summary_reader_covers_every_field_of_the_summary() -> None:

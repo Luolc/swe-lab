@@ -3,8 +3,8 @@
 The supervisor of record is moving into the sandbox as a static binary that
 wraps the actor as its child ([#375]; the crate is ``rust/swe-lab-supervisor``
 and its design record is task 20 in `docs/trace-synthesis/plans/`). The binary
-is one half of a two-language contract, and this module is the other. Exactly
-three things cross the boundary, and each is here:
+is one half of a two-language contract, and this module is the other. Three of
+the run's **values** cross the boundary, and each is here:
 
 - **the config document** — one schema-versioned JSON file of *non-secret* run
   settings, written into the workspace and named on the wrapper's ``--config``
@@ -20,6 +20,13 @@ three things cross the boundary, and each is here:
   thing a run may be classified from. Not the exit status: a wrapper that ran
   cleanly exits with the *actor's* status, so exit 0 says the actor was happy
   and says nothing about whether supervision happened.
+
+The boundary carries one thing that is not a value and is not here: the
+**actor's argv**, handed to the wrapper after ``--`` as opaque tokens. That one
+belongs to the harness that knows how to invoke the actor
+(``ClaudeCodeHarness.actor_argv``), and building it here would be exactly the
+second construction of the actor's flags that #375 says the wrapper must not
+have.
 
 **Nothing here is wired.** This module renders a document, names two
 variables, and reads a summary; declaring the binary as an asset, starting the
@@ -112,6 +119,39 @@ SUPERVISION_STALE_METRIC = "supervision.stale_verdicts_discarded"
 #: rather than staying silent about it.
 SUPERVISION_MAX_DECISION_LAG_METRIC = "supervision.max_decision_lag_ms"
 
+#: The largest value Rust's ``u32`` and ``u64`` hold. A field whose value does
+#: not fit is not a large setting, it is a document ``serde`` refuses.
+U32_MAX = 2**32 - 1
+U64_MAX = 2**64 - 1
+
+#: Every numeric field, with the range the Rust type it deserializes into
+#: admits. ``budget`` and ``cooldown`` are ``u32``; ``window``,
+#: ``judge_every_n_assistant_messages`` and ``max_event_line_bytes`` are
+#: ``NonZeroU32``, which is where their lower bound of 1 comes from;
+#: ``model_call_ms`` is a ``u64`` the binary additionally validates as
+#: non-zero. **``term_grace_ms`` is a plain ``u64`` and zero is a value the
+#: binary accepts**, so this does not refuse it: the two sides agreeing on what
+#: is configurable matters more than this side being defensible alone.
+#: The fields whose Rust type is not a number, and the JSON type each must
+#: have. Checked through :func:`getattr` like the numeric ones rather than off
+#: the attributes directly: the annotations already say ``str`` and ``bool``,
+#: and the point of the check is the caller who is not type-checked — a
+#: downstream consumer, or ``dataclasses.replace``, which takes ``Any``.
+NON_NUMERIC_FIELDS: Mapping[str, type] = {
+    "model": str,
+    "block_actor_while_judging": bool,
+}
+
+NUMERIC_FIELDS: Mapping[str, tuple[int, int]] = {
+    "budget": (0, U32_MAX),
+    "cooldown": (0, U32_MAX),
+    "window": (1, U32_MAX),
+    "judge_every_n_assistant_messages": (1, U32_MAX),
+    "model_call_ms": (1, U64_MAX),
+    "term_grace_ms": (0, U64_MAX),
+    "max_event_line_bytes": (1, U32_MAX),
+}
+
 #: The default ceiling on one judge or writer call, in milliseconds. A
 #: mechanism bound rather than a run's choice, which is why it is defaulted
 #: here while every policy number below is not.
@@ -184,24 +224,34 @@ class NativeSupervision:
     is one of its rules, applied where the value is chosen, so a mistake costs
     a construction rather than a container.
 
+    **Types as well as ranges.** ``serde`` refuses a value of the wrong JSON
+    type just as firmly as one out of range, and Python will not stop either:
+    ``True`` is an ``int`` here and would render as ``true`` into a slot that
+    deserializes a number. So each field is checked against the Rust type it
+    deserializes into (:data:`NUMERIC_FIELDS`), not merely against zero.
+
     Raises:
       ValueError: A value is one the runtime cannot honour; the message names
         the field.
     """
+    for name, kind in NON_NUMERIC_FIELDS.items():
+      value = getattr(self, name)
+      if not isinstance(value, kind):
+        raise ValueError(
+            f"{name} must be a {kind.__name__}, not a {type(value).__name__}"
+        )
     if not self.model:
       raise ValueError("model must name a model")
-    for name in ("budget", "cooldown"):
-      if getattr(self, name) < 0:
-        raise ValueError(f"{name} must not be negative")
-    for name in (
-        "window",
-        "judge_every_n_assistant_messages",
-        "model_call_ms",
-        "term_grace_ms",
-        "max_event_line_bytes",
-    ):
-      if getattr(self, name) < 1:
-        raise ValueError(f"{name} must be positive")
+    for name, (low, high) in NUMERIC_FIELDS.items():
+      value = getattr(self, name)
+      # `bool` is a subclass of `int`, so `budget=True` would otherwise render
+      # as JSON `true` into a slot that deserializes an integer.
+      if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(
+            f"{name} must be an integer, not a {type(value).__name__}"
+        )
+      if not low <= value <= high:
+        raise ValueError(f"{name} must be between {low} and {high}")
 
   def config_document(
       self, *, task: str, criterion_path: pathlib.Path = CRITERION_PATH

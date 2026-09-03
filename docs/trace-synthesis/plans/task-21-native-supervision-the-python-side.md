@@ -10,17 +10,20 @@ Status lives in [`README.md`](README.md), not here.
 
 ## 1. What the boundary is
 
-The binary and this repository's Python are two programs. Exactly three things
-cross between them, and each is a place the two can drift silently:
+The binary and this repository's Python are two programs. These cross between
+them, and each is a place the two can drift silently:
 
 | What | Direction | Where it lives |
 | --- | --- | --- |
 | the config document | Python writes, the binary reads | `native_supervision.py` |
 | `SWE_LAB_SUPERVISOR_BASE_URL`, `SWE_LAB_SUPERVISOR_API_KEY` | Python passes by reference, the binary reads in-process | the sandbox's `pass_env` |
 | the terminal summary | the binary writes, Python classifies from | `native_supervision.py` |
+| the actor's argv | Python hands over, the binary execs | the harness's `actor_argv` (§4) |
 
-Nothing else. The actor's argv is handed over as opaque tokens (§4), and the
-supervisor's own log is an artifact the run persists rather than a channel.
+The first three are the run's values and live in one module; the fourth is the
+harness's, because it is the harness that knows how to invoke the actor. The
+supervisor's own log is an artifact the run persists, not a channel between the
+two programs.
 
 **The config is not a superset of the schema.** The binary deserializes with
 `deny_unknown_fields` and gives no field a default, so a document carrying one
