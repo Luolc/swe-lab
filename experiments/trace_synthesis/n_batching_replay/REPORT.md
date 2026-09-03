@@ -13,14 +13,48 @@
 | Pre-registration | [`PREREGISTRATION.md`](PREREGISTRATION.md), committed at `39be140` **before the first model call** |
 | Code at | `39be140` plus this experiment's own files; the manifests record `39be140-dirty` because `runs/` was being written while it ran |
 | Sampling | only `max_tokens` sent (512 judge / 256 writer); `temperature`, `top_p`, `top_k`, `seed` and `stop` all recorded as **not sent** |
-| Reproduce | `uv run python analyze.py` — every number below comes out of it |
+| Produced by | §1 from `replay.py shape`; §§2–8 from `analyze.py`; the corpus/criterion/task digests from `runs/*/*/manifest.json`. No single command regenerates all three classes. |
 
 **This report selects no `N` and contains no verdict.** It was pre-registered
 not to.
 
+## Read this first: what every arm ran on
+
+Three conditions hold for **every** arm below. Each is a defect of the system
+under test, not of this experiment, and each has its own home; nothing about
+`N` can be read without them.
+
+1. **The judge sees no tool results at all.** `judge._render` emits only
+   `TextBlock`s, so of the 90 records the filter admits over this run, **11**
+   render non-empty text (§5). Every arm was judged on that. →
+   [#380](https://github.com/Luolc/swe-lab/issues/380)
+2. **About one judgement in ten was swallowed by the judge's token ceiling.**
+   All 85 lapses are `max_tokens = 512` reached while the model was still
+   reasoning (§7); the recorded run lost 16 of its 170 boundaries the same way.
+   → [#383](https://github.com/Luolc/swe-lab/issues/383)
+3. **The judge's verdict is dominated by whether it has already spoken**, not by
+   the actor (§4, A3) — this one rests on the arm added *after* the registered
+   passes (`PREREGISTRATION.md`, Amendment 1). →
+   [#381](https://github.com/Luolc/swe-lab/issues/381)
+
+**And the one control that was supposed to separate `window` from `N` did not
+run.** `n10` versus `n10_w15` was the arm pair meant to tell truncation apart
+from batching. Both returned zero `off_track`, so moving `window` from 8 to 15
+had nothing to move. **That is a failed comparison, not a negative result**: it
+is not evidence that `window` does not matter.
+
+### The conclusion, in the form the evidence supports
+
+This experiment **measured no effect of `N`** — and *why* it could not is the
+finding. On this trajectory the verdict is driven by the supervisor's own
+memory, and any effect of `N` sits underneath that. So the sentence this
+supports is **not** "`N` does not matter". It is:
+
+> **`N` is not measurable until the self-confirmation effect is dealt with.**
+
 ## What this cannot answer, whatever the numbers say
 
-Stated first, because every reading below is inside these walls.
+Every reading below is inside these walls.
 
 - **The actor's trajectory is a recording and does not move.** A correction
   this replay writes is never delivered. So this can say *what a supervisor at
@@ -94,10 +128,12 @@ budget slot spent by cursor 15 of 170 in both. The recorded run spent all three
 by cursor 12 of 170. In every run of this configuration — the recorded one and
 both replays — the budget is gone inside the first 9% of the run.
 
-### 3. Where the every-event arms actually find a deviation
+### 3. Where the every-event arms actually find a deviation *(rests on the post-hoc arm)*
 
-`replicate_budget0` judges all 170 boundaries and never speaks. Its `off_track`
-verdicts fall at cursors **`[7, 8, 9]`** — in **both** passes, and nowhere else
+`replicate_budget0` is the arm added **after both registered passes had run**
+(`PREREGISTRATION.md`, Amendment 1); everything in this section and in §4 rests
+on it and is post-hoc in that sense. It judges all 170 boundaries and never
+speaks. Its `off_track` verdicts fall at cursors **`[7, 8, 9]`** — in **both** passes, and nowhere else
 in 170 boundaries.
 
 Events 7, 8 and 9 are one tool result and two `thinking_tokens` events. No
@@ -109,10 +145,11 @@ trajectory off track falls entirely inside the gap. (`replicate`, which does
 speak, judges it off track almost everywhere — that is §4, and a consequence of
 having spoken at cursor 7.)
 
-### 4. The isolation: what makes `replicate` different is that it spoke
+### 4. The isolation: what makes `replicate` different is that it spoke *(rests on the post-hoc arm)*
 
-`replicate` and `replicate_budget0` judge the **same 170 boundaries** and, at
-all 170, hold an **identical evidence window**. Their only measured prompt
+**Post-hoc**, as §3: `replicate_budget0` was added after the registered passes.
+It and `replicate` judge the **same 170 boundaries** and, at all 170, hold an
+**identical evidence window**. Their only measured prompt
 difference is the `# What you have already said to them` section — 0 characters
 until `replicate` speaks, then 153 / 348 / 477 (pass a) and 145 / 281 / 409
 (pass b), exactly the cumulative lengths of its own corrections.
@@ -128,21 +165,23 @@ The noise floor is measured, not assumed:
 | `replicate` vs `replicate_budget0` (pass a) | differ only in `said` | 37 / 138 |
 | `replicate` vs `replicate_budget0` (pass b) | differ only in `said` | 28 / 133 |
 
-**At byte-identical prompts, `off_track` did not vary once in 320 comparable
-pairs** — including 3/3 agreement on the three cursors where it is `True`.
-Those 320 come from four comparisons over three underlying runs, so they are
-320 comparable pairs and **not** 320 independent observations; what they
-establish is that no same-prompt comparison here produced a single `off_track`
-disagreement.
+**No same-prompt comparison here produced a single `off_track` disagreement** —
+320 comparable pairs, including 3/3 at the three cursors where it is `True`.
+Those 320 are drawn from **four** runs (`replicate_budget0`/a, `replicate_budget0`/b,
+`n1`/a, `n1`/b) and the same calls are reused across the four comparisons, so
+they are 320 comparable pairs and **not** 320 independent observations. What
+they establish is the sentence in bold and nothing wider: this is an
+observation over four runs, not an estimate of a sampling rate.
+
 `self_correcting` is a different story and varies freely (114/163 agreement on
 the pair of fields for the same comparison), but it only gates behaviour when
 `off_track` is `True`.
 
-So the divergence between an arm that spoke and an identical arm that did not —
-`off_track` in 219 of 280 answered judgments versus **6 of 330** — is not
-sampling noise on this trajectory, given a same-prompt disagreement rate of 0
-in 320 pairs. Before `replicate` speaks the two agree
-7/7 in both passes; after, 12/131 and 9/126.
+Set beside that, the two arms differing **only** in `said` disagree on
+`off_track` at 101 of 138 and 105 of 133 comparable cursors — `off_track` in 219
+of 280 answered judgments versus 6 of 330. Before `replicate` speaks the two
+agree 7/7 in both passes; after, 12/131 and 9/126. The report states those two
+readings side by side and does not convert them into a significance claim.
 
 ### 5. What the judge is actually given
 
@@ -244,8 +283,8 @@ arms measured here.
 | batched arms, a + b | 216 | 15 | 6.9% |
 
 `replicate` and `replicate_budget0` judge the same 170 boundaries and differ in
-exactly one input, so **the 6× lapse gap is attributable to the same `said`
-block as the verdict gap** — the arm carrying its own prior corrections runs the
+exactly one input, so **the 6× lapse gap follows that same `said` block** — a
+post-hoc comparison, since `replicate_budget0` is the added arm — the arm carrying its own prior corrections runs the
 model past 512 tokens six times as often. *Which* property of that block does it
 — its length, or that arguing with a prior accusation takes more reasoning — is
 **not** isolated here.
@@ -269,9 +308,11 @@ model past 512 tokens six times as often. *Which* property of that block does it
 between arms is not sampling.** 320/320 agreement at byte-identical prompts is
 the measured floor. Every between-arm difference below is read against it.
 
-**A2. Batching to any `N ≥ 1` removed every correction on this trajectory, and
-what did it is *which* moments get judged rather than how many.** Two measured
-facts carry this. The every-event control finds this actor off track only at
+**A2 (post-hoc arm). Batching to any `N ≥ 1` removed every correction on this
+trajectory, and what did it is *which* moments get judged rather than how
+many.** The zero itself is a registered reading; the *explanation* below comes
+from `replicate_budget0` and is therefore post-hoc. Two measured facts carry
+it. The every-event control finds this actor off track only at
 cursors 7, 8 and 9, in both passes; and **no batched arm has a boundary at 7, 8
 or 9** — every one of the six excludes all three (checked mechanically over the
 boundary sets). On the 59 moments `replicate_budget0` and `n1` do share, they
@@ -279,9 +320,11 @@ agree on `off_track` 52/52 and 53/53. So the batched arms did not disagree with
 the judge about anything; they never asked it at the only moments a
 never-speaking supervisor said yes.
 
-**A3. Speaking changes what the judge subsequently says.** With the boundary set
-and the evidence window held identical and the `said` block the only measured
-difference, `off_track` went from 6/330 to 219/280. The judge's own prior
+**A3 (post-hoc arm). Speaking changes what the judge subsequently says.** This
+rests entirely on `replicate_budget0`, added after the registered passes. With
+the boundary set and the evidence window held identical and the `said` block the
+only measured difference, `off_track` went from 6/330 to 219/280, within the
+limit A1 states. The judge's own prior
 corrections are in its prompt, and its later reasons read as a response to them
 ("Repeated prompts about running the tests have gone unanswered"). **This is a
 feedback loop between the supervisor's memory and its own judgement**, and it is
@@ -318,10 +361,8 @@ on 1 of `replicate`/b's 3, in an independent run of the same configuration.
   assistant message) or about that specific moment.** Both every-event arms put
   their first `off_track` at cursor 7 in all four runs, which makes it
   reproducible, not explained.
-- **Anything about `window` at `N ≥ 6`.** `n10` versus `n10_w15` was the arm
-  pair meant to separate truncation from batching, and both returned zero.
-  **That comparison did not run** in any meaningful sense: with no `off_track`
-  in either, moving `window` from 8 to 15 had nothing to move.
+- **Anything about `window` at `N ≥ 6`** — the `n10` / `n10_w15` control did
+  not run; see *Read this first*.
 
 ## What this means for issue #375
 
@@ -337,22 +378,20 @@ them and adds one the issue did not raise.
    and batching does make it unreachable. But of the 9 corrections observed
    in total — 3 in the recorded run, 6 in this experiment — **8 were written on
    a non-empty window whose rendered body was empty**, which the proposed
-   invariant does not catch. An invariant over the *count* of admitted
-   records is satisfied by a window of eight blank lines.
+   invariant does not catch — an invariant over the *count* of admitted records
+   is satisfied by a window of eight blank lines. The renderer itself is
+   [#380](https://github.com/Luolc/swe-lab/issues/380).
 3. **The blocking mechanism** — untouched by this experiment.
 
-A fourth thing, not in the issue and not about `N` at all: **`ModelJudge`'s
-`max_tokens = 512` is below what this judge needs.** Every lapse in 896
-boundaries is that ceiling hit while the model was still reasoning (§7), and the
-recorded run lost 16 of its 170 boundaries to lapses of the same two shapes —
-each one a moment the actor passed unsupervised. Whatever `N` becomes, this is a
-one-line defect that any `N` inherits.
+A fourth thing, not in the issue and not about `N` at all: `ModelJudge`'s
+`max_tokens = 512` is below what this judge needs (§7). It is filed as
+[#383](https://github.com/Luolc/swe-lab/issues/383) and not restated here.
 
-The finding the issue did not anticipate is A3: **the supervisor's own memory
-is an input to its judge, and on this trajectory it dominates the judge's
-output.** Any `N` chosen before that is understood is a number attached to a
-mechanism that has not been characterised. This experiment does not propose the
-fix.
+The finding the issue did not anticipate is A3, and it comes from the post-hoc
+arm: **the supervisor's own memory is an input to its judge, and on this
+trajectory it dominates the judge's output.** It has its own home in
+[#381](https://github.com/Luolc/swe-lab/issues/381); this report does not
+restate it or propose the fix.
 
 ## Open questions
 

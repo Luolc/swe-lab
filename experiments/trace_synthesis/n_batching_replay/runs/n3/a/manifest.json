@@ -10,7 +10,7 @@
   "criterion_overlap_checked": false,
   "task_sha256": "3f42ec7175e3e9bde43eb2fee6e5a740df46703e34c967690f3315f84e8af83a",
   "task_chars": 3339,
-  "corpus": "/home/ubuntu/corpora/swe-lab/first-e2e-2026-09-02/r0/rollout/a0",
+  "corpus": "~/corpora/swe-lab/first-e2e-2026-09-02/r0/rollout/a0",
   "event_stream_sha256": "28abd03ea8d67aa6b313396db9da71f5cb6010ebb9a45a558267cd40d1f55403",
   "events": 170,
   "boundaries": 19,

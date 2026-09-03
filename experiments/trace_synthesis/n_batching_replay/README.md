@@ -19,10 +19,16 @@ repo's scale gate (>10 instances or >2 rollouts/instance) is not touched.
 
 `replay.py` drives the shipped `EvidenceFilter`, `SpeakWhenOffTrack`,
 `ModelJudge` and `ModelWriter` — no policy logic is reimplemented. What it
-changes is only **when** the policy is consulted. `replay.py self-check` proves
-that: with a boundary at every event it produces the same row sequence and the
-same evidence as the shipped `Supervisor`, over all 170 events, with no model
-call.
+changes is only **when** the policy is consulted.
+
+`replay.py self-check` pins that, with no model call: it runs the **real**
+driver (`replay()`) and the shipped `Supervisor` over the same 170 events with
+the network replaced by a canned answer, and asserts both the row sequence
+*and* the byte-identical text of all 173 model prompts — the prompts being the
+observable that carries the accumulation and the window. It also asserts no
+committed artifact names a home directory. The same two assertions run in
+`tests/test_n_batching_replay_witness.py`, so CI enforces them; the driver
+check skips there when the off-repo corpus is absent.
 
 Because the stream is a recording, a correction this replay writes is never
 delivered and never changes what the actor does next. That is the boundary of
@@ -35,7 +41,7 @@ cd "$(git rev-parse --show-toplevel)/experiments/trace_synthesis/n_batching_repl
 
 # Deterministic, no model calls, no credentials:
 uv run python replay.py shape        # batch shape of every N
-uv run python replay.py self-check   # driver == the shipped Supervisor
+uv run python replay.py self-check   # real driver == the shipped Supervisor
 
 # Needs the gitignored SWE-bench Pro parquet (datasets/swebench_pro/README.md):
 uv run python replay.py verify-task  # recovered task == instance.prompt()

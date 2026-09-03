@@ -32,24 +32,31 @@ from swe_lab.harnesses.claude_code.convert import event_to_message
 from swe_lab.trace_synthesis.judge import (
     _prompt,
     _render,
+    JUDGE_INSTRUCTIONS,
     openrouter_transport,
     supervising_policy,
+    Transport,
 )
 from swe_lab.trace_synthesis.supervisor import (
     EvidenceFilter,
     Intervention,
     Observation,
     PolicyLapseError,
+    SpeakWhenOffTrack,
 )
 
 HERE = pathlib.Path(__file__).parent
 RUNS = HERE / "runs"
 
-# The recorded rollout. Read-only: nothing in this file writes under it.
-CORPUS = (
-    pathlib.Path.home()
-    / "corpora/swe-lab/first-e2e-2026-09-02/r0/rollout/a0"
-)
+#: How the corpus is named in committed artifacts. A runtime path carries the
+#: operator's home directory, which `docs/conventions.md` forbids in committed
+#: evidence, and it identifies nothing a reader needs: what pins the corpus is
+#: the digest and the event count recorded beside this.
+CORPUS_ID = "~/corpora/swe-lab/first-e2e-2026-09-02/r0/rollout/a0"
+
+# The recorded rollout, resolved at run time. Read-only: nothing here writes
+# under it.
+CORPUS = pathlib.Path(CORPUS_ID).expanduser()
 EVENT_STREAM = CORPUS / "claude_code.event_stream.jsonl"
 
 #: The instance the recorded rollout was drawn from (`run.json` in the
@@ -184,7 +191,7 @@ def _text_of(record: Message) -> str:
 
 @dataclasses.dataclass
 class RecordingTransport:
-  """The real transport, with what answered each call kept beside it.
+  """A transport, with what answered each call kept beside it.
 
   `ModelJudge` records the response model and the sampling sent; latency,
   finish reason and usage are not on that path and are unrecoverable
@@ -192,9 +199,16 @@ class RecordingTransport:
   unchanged — this adds no request field.
 
   Attributes:
+    send: What actually sends the request. Injectable so `self-check` drives
+      the real driver with no network; a run leaves it at the default.
+    prompts: The user half of every request, in order. What the self-check
+      compares, because two runs that built the same prompts accumulated the
+      same evidence in the same windows.
     seen: One entry per call made since the last `drain`.
   """
 
+  send: Transport = openrouter_transport
+  prompts: list[str] = dataclasses.field(default_factory=list)
   seen: list[dict[str, Any]] = dataclasses.field(default_factory=list)
 
   def __call__(self, payload: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -210,9 +224,10 @@ class RecordingTransport:
       Exception: Whatever the real transport raises, unchanged — the policy
         turns it into a lapse exactly as it does in a live run.
     """
+    self.prompts.append(payload["messages"][1]["content"])
     started = time.monotonic()
     try:
-      response = openrouter_transport(payload)
+      response = self.send(payload)
     except Exception as error:  # noqa: BLE001 - recorded, then re-raised
       self.seen.append(
           {
@@ -268,7 +283,10 @@ def replay(
   is *when* the policy is consulted — `Supervisor` consults it on every event.
 
   Args:
-    arm: The configuration, for the window size recorded on each row.
+    arm: The configuration, for the arm name recorded on each row. The window
+      is **not** taken from here: it is read off the policy, which is what
+      actually slices the evidence, so the recorded `evidence_in_window` cannot
+      drift from what the judge saw.
     events: The recorded stream, in order.
     task: What the actor was asked to do.
     policy: The `SpeakWhenOffTrack` under test.
@@ -279,6 +297,7 @@ def replay(
     One row per boundary.
   """
   transport: RecordingTransport = policy.judge.transport
+  window: int = policy.window
   evidence_filter = EvidenceFilter()
   evidence: list[Message] = []
   said: list[Intervention] = []
@@ -293,7 +312,7 @@ def replay(
     if cursor not in due:
       continue
 
-    windowed = evidence[-arm.window :]
+    windowed = evidence[-window :]
     observation = Observation(
         task=task,
         evidence=tuple(evidence),
@@ -309,13 +328,13 @@ def replay(
             1 for e in events[:cursor] if e.get("type") == "assistant"
         ),
         "cursor_gap": cursor - previous_boundary,
-        "window": arm.window,
+        "window": window,
         "admitted_total": len(evidence),
         "admitted_new_since_last_boundary": len(evidence) - admitted_at_previous,
         "evidence_in_window": len(windowed),
         "evidence_dropped_by_window": len(evidence) - len(windowed),
         "new_evidence_dropped_by_window": max(
-            0, (len(evidence) - admitted_at_previous) - arm.window
+            0, (len(evidence) - admitted_at_previous) - window
         ),
         "rendered_nonempty_in_window": sum(
             1 for r in windowed if _text_of(r).strip()
@@ -445,39 +464,72 @@ def cmd_shape(_: argparse.Namespace) -> None:
     )
 
 
-def cmd_self_check(_: argparse.Namespace) -> None:
-  """Assert this driver reproduces `Supervisor` when consulted at every event.
+def _canned(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+  """Answer a judge or writer request without a network call.
 
-  The driver is the newer half of the comparison, so it is cleared against the
-  shipped consumer before any of its numbers are read. A stub policy makes the
-  check deterministic and free: what is under test is the accumulation and the
-  row sequence, not the model.
+  Args:
+    payload: The request body the real call would have sent.
+
+  Returns:
+    A response of the shape `ModelJudge` and `ModelWriter` read. The judge is
+    always told the actor is off track and not recovering, so the policy's
+    speaking path — writer call, budget, cooldown — is exercised too.
+  """
+  judging = payload["messages"][0]["content"] == JUDGE_INSTRUCTIONS
+  content = (
+      '{"off_track": true, "self_correcting": false, "reason": "stub"}'
+      if judging
+      else "a stub line"
+  )
+  return {
+      "model": "stub-model",
+      "choices": [{"message": {"content": content}, "finish_reason": "stop"}],
+      "usage": {"prompt_tokens": 0, "completion_tokens": 0, "cost": 0.0},
+  }
+
+
+def _stub_policy() -> SpeakWhenOffTrack:
+  """Build the real policy with a transport that makes no network call.
+
+  Returns:
+    A `SpeakWhenOffTrack` holding the pinned criterion, the real `ModelJudge`
+    and `ModelWriter`, and a `RecordingTransport` over :func:`_canned`.
+  """
+  return supervising_policy(
+      model="stub-model",
+      transport=RecordingTransport(send=_canned),
+      budget=BUDGET,
+      cooldown=COOLDOWN,
+      window=WINDOW,
+  )
+
+
+def driver_matches_supervisor() -> dict[str, Any]:
+  """Run this file's driver and the shipped `Supervisor` over the same stream.
+
+  The driver is the newer half of every comparison in `REPORT.md`, so it is
+  cleared against the shipped consumer before any of its numbers are read.
+  Both sides run the **real** `SpeakWhenOffTrack`, `ModelJudge` and
+  `ModelWriter` over the real 170 events; only the network is replaced.
+
+  What is compared is deliberately two things, because either alone is weak:
+  the row sequence — cursor, kind, evidence disposition — and **the exact
+  prompt text of every model call**, which is the observable carrying the
+  accumulation and the window. A driver that admitted the wrong record, sliced
+  the window differently or judged at the wrong moment changes the prompts even
+  where it leaves the row kinds intact.
+
+  Returns:
+    The two row sequences and the two prompt sequences, for a caller to assert
+    on.
   """
   from swe_lab.trace_synthesis.supervisor import Supervisor
 
   events = load_events()
   task = load_task()
 
-  @dataclasses.dataclass
-  class Stub:
-    """A policy that speaks at fixed cursors and lapses at one."""
-
-    seen: list[int] = dataclasses.field(default_factory=list)
-
-    @property
-    def name(self) -> str:
-      return "stub"
-
-    def consider(self, observation: Observation) -> Intervention | None:
-      self.seen.append(len(observation.evidence))
-      if observation.cursor == 40:
-        raise PolicyLapseError("stub lapse")
-      if observation.cursor in (4, 8, 12):
-        return Intervention(text=f"line at {observation.cursor}")
-      return None
-
-  shipped_rows: list[dict[str, Any]] = []
-  shipped_policy = Stub()
+  shipped_policy = _stub_policy()
+  shipped_rows: list[Mapping[str, Any]] = []
   supervisor = Supervisor(
       policy=shipped_policy,
       task=task,
@@ -488,42 +540,72 @@ def cmd_self_check(_: argparse.Namespace) -> None:
   for event in events:
     _ = supervisor.observe(event)
 
-  driver_policy = Stub()
-  evidence_filter = EvidenceFilter()
-  evidence: list[Message] = []
-  said: list[Intervention] = []
-  driver_rows: list[dict[str, Any]] = []
-  for cursor, event in enumerate(events, 1):
-    record, disposition = evidence_filter.admit(event_to_message(event))
-    if record is not None:
-      evidence.append(record)
-    observation = Observation(
-        task=task, evidence=tuple(evidence), cursor=cursor, said=tuple(said)
-    )
-    try:
-      intervention = driver_policy.consider(observation)
-    except PolicyLapseError:
-      driver_rows.append(
-          {"cursor": cursor, "kind": "lapse", "evidence": disposition}
+  every_event = Arm("self-check", None)
+  driver_policy = _stub_policy()
+  driver_rows = list(
+      replay(
+          arm=every_event,
+          events=events,
+          task=task,
+          policy=driver_policy,
+          boundaries=boundaries_for(every_event, events),
+          criterion=driver_policy.criterion,
       )
-      continue
-    if intervention is None:
-      driver_rows.append(
-          {"cursor": cursor, "kind": "silent", "evidence": disposition}
-      )
-    else:
-      said.append(intervention)
-      driver_rows.append(
-          {"cursor": cursor, "kind": "spoke", "evidence": disposition}
-      )
+  )
 
-  shipped = [
-      {"cursor": r["cursor"], "kind": r["kind"], "evidence": r["evidence"]}
-      for r in shipped_rows
-  ]
-  assert shipped == driver_rows, "driver diverges from Supervisor"
-  assert shipped_policy.seen == driver_policy.seen, "evidence differs"
-  print(f"self-check OK: {len(shipped)} rows identical, evidence identical")
+  return {
+      "shipped_rows": [
+          {"cursor": r["cursor"], "kind": r["kind"], "evidence": r["evidence"]}
+          for r in shipped_rows
+      ],
+      "driver_rows": [
+          {
+              "cursor": r["cursor"],
+              "kind": r["kind"],
+              "evidence": r["evidence_disposition"],
+          }
+          for r in driver_rows
+      ],
+      "shipped_prompts": list(shipped_policy.judge.transport.prompts),
+      "driver_prompts": list(driver_policy.judge.transport.prompts),
+  }
+
+
+def committed_home_paths() -> list[str]:
+  """Return every committed artifact of this experiment carrying a home path.
+
+  `docs/conventions.md` forbids operator PII — a home path included — in any
+  committed record, and the manifests are the file that most wants to write
+  one, since the corpus is read from under `$HOME`.
+
+  Returns:
+    The offending paths, relative to this directory; empty when clean.
+  """
+  offenders: list[str] = []
+  for path in sorted(RUNS.rglob("*")):
+    if not path.is_file():
+      continue
+    if "/home/" in path.read_text(encoding="utf-8", errors="replace"):
+      offenders.append(str(path.relative_to(HERE)))
+  return offenders
+
+
+def cmd_self_check(_: argparse.Namespace) -> None:
+  """Assert the driver reproduces `Supervisor`, and that no artifact leaks."""
+  found = driver_matches_supervisor()
+  assert found["shipped_rows"] == found["driver_rows"], (
+      "driver diverges from Supervisor"
+  )
+  assert found["shipped_prompts"] == found["driver_prompts"], (
+      "driver builds different prompts from Supervisor"
+  )
+  leaks = committed_home_paths()
+  assert not leaks, f"committed artifacts carry a home path: {leaks}"
+  print(
+      f"self-check OK: {len(found['driver_rows'])} rows identical,"
+      f" {len(found['driver_prompts'])} prompts byte-identical,"
+      f" no home path in committed artifacts"
+  )
 
 
 def cmd_verify_task(_: argparse.Namespace) -> None:
@@ -587,7 +669,7 @@ def cmd_run(args: argparse.Namespace) -> None:
                 "arm": arm.name,
                 "pass": args.pass_id,
                 "n": arm.n,
-                "window": arm.window,
+                "window": window,
                 "budget": arm.budget,
                 "cooldown": COOLDOWN,
                 "model_requested": MODEL,
@@ -595,7 +677,7 @@ def cmd_run(args: argparse.Namespace) -> None:
                 "criterion_overlap_checked": policy.criterion.overlap_checked,
                 "task_sha256": hashlib.sha256(task.encode()).hexdigest(),
                 "task_chars": len(task),
-                "corpus": str(CORPUS),
+                "corpus": CORPUS_ID,
                 "event_stream_sha256": hashlib.sha256(
                     EVENT_STREAM.read_bytes()
                 ).hexdigest(),
