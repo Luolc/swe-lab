@@ -37,6 +37,7 @@ from swe_lab.trace_synthesis.criterion import (
     CriterionRejectedError,
 )
 from swe_lab.trace_synthesis.native_supervision import (
+    Blocking,
     CONFIG_SCHEMA_VERSION,
     CRITERION_NAME,
     NativeSupervision,
@@ -59,7 +60,7 @@ _SUPERVISION = NativeSupervision(
     cooldown=4,
     window=8,
     judge_every_n_assistant_messages=3,
-    block_actor_while_judging=True,
+    block_actor_while_judging=Blocking.STDOUT,
 )
 
 _SUMMARY = {
@@ -98,7 +99,7 @@ def test_the_config_document_is_exactly_the_schema_the_binary_reads() -> None:
           "cooldown": 4,
           "window": 8,
           "judge_every_n_assistant_messages": 3,
-          "block_actor_while_judging": True,
+          "block_actor_while_judging": "stdout",
       },
       "model": {"name": "anthropic/claude-sonnet-5"},
       "timeouts": {"model_call_ms": 180000, "term_grace_ms": 10000},
@@ -108,6 +109,27 @@ def test_the_config_document_is_exactly_the_schema_the_binary_reads() -> None:
           "max_actor_stderr_bytes": 268435456,
       },
   }
+
+
+@pytest.mark.parametrize("mode", list(Blocking))
+def test_every_blocking_mode_renders_the_token_the_binary_reads(
+    mode: Blocking,
+) -> None:
+  """Each member renders as its kebab-case token, and all three are accepted.
+
+  The refusal cases below only mean something if the accepted ones are
+  genuinely accepted: a validator that rejected everything would pass every
+  one of them and fail nothing.
+
+  Args:
+    mode: The blocking mode to render.
+  """
+  document = dataclasses.replace(
+      _SUPERVISION, block_actor_while_judging=mode
+  ).config_document(task="t")
+
+  assert document["policy"]["block_actor_while_judging"] == mode.value
+  assert mode.value in ("off", "stdout", "sigstop")
 
 
 def test_the_config_carries_no_endpoint_and_no_credential() -> None:
@@ -192,7 +214,12 @@ def test_a_forged_criterion_is_refused_before_a_config_exists(
         ("max_actor_stdout_bytes", True),
         ("max_actor_stderr_bytes", True),
         ("model", 7),
-        ("block_actor_while_judging", "true"),
+        # A `Blocking` member, never the bare token: a string that happens to
+        # be right today is a string that can be wrong tomorrow, and a token
+        # the binary does not know is a run refused at startup.
+        ("block_actor_while_judging", "stdout"),
+        ("block_actor_while_judging", "off-ish"),
+        ("block_actor_while_judging", True),
         ("window", 8.0),
     ],
 )

@@ -142,13 +142,19 @@ that the deliberately broken ones are refused, so the check can tell the two
 apart. That is a follow-up task, not a claim about today: **as of this writing
 the two sides agree only because they were read against each other.**
 
-The first live instance arrived within the hour. Fixing the wrapper's lifecycle
-defects added two required `limits` fields (`max_actor_stdout_bytes`,
-`max_actor_stderr_bytes`), and whether Python learned about them depended on
-three people: one to write the change down, one to read it, and a reviewer who
-might happen to look at that paragraph. The schema-pinning tests here caught
-the *shape* once the fields were added by hand — they cannot catch a field
-nobody added.
+Two live instances arrived within the hour, from the same batch of wrapper
+fixes. The first added two required `limits` fields (`max_actor_stdout_bytes`,
+`max_actor_stderr_bytes`) and reached Python because it was written down and
+read. The second — `block_actor_while_judging` changing from a JSON `bool` to
+a kebab-case enum (`off` / `stdout` / `sigstop`) — was **not** in that message,
+and reached Python only because the reviewer read the Rust head himself and
+raised it. Had he not, the two halves would have merged into a config the
+binary refuses before the actor starts.
+
+That is the whole argument in one example. The schema-pinning tests here catch
+the *shape* once a field is changed by hand; they cannot catch a change nobody
+made, and no amount of care in writing the change down removes the step where
+a person has to carry it.
 
 ## 8. Out of scope here
 

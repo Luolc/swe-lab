@@ -62,6 +62,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import dataclasses
+import enum
 import json
 import pathlib
 from typing import Any
@@ -144,6 +145,7 @@ SUPERVISION_MAX_DECISION_LAG_METRIC = "supervision.max_decision_lag_ms"
 U32_MAX = 2**32 - 1
 U64_MAX = 2**64 - 1
 
+
 #: Every numeric field, with the range the Rust type it deserializes into
 #: admits. ``budget`` and ``cooldown`` are ``u32``; ``window``,
 #: ``judge_every_n_assistant_messages`` and ``max_event_line_bytes`` are
@@ -152,6 +154,29 @@ U64_MAX = 2**64 - 1
 #: non-zero. **``term_grace_ms`` is a plain ``u64`` and zero is a value the
 #: binary accepts**, so this does not refuse it: the two sides agreeing on what
 #: is configurable matters more than this side being defensible alone.
+class Blocking(enum.StrEnum):
+  """How the actor is held while a judgment is in flight.
+
+  A three-valued setting rather than the boolean it started as: blocking and
+  the stale gate are two answers to the same lag, and there turned out to be
+  two ways of blocking with different costs. Mirrors `config.rs`'s ``Blocking``,
+  which deserializes these kebab-case tokens and refuses anything else.
+
+  Attributes:
+    OFF: Not held. The actor runs ahead, and a verdict that newer admitted
+      evidence overtook is discarded as stale.
+    STDOUT: The wrapper stops reading the actor's stdout; the pipe fills and
+      the actor's next write waits for the verdict. The absence of a read,
+      which self-releases if the wrapper dies.
+    SIGSTOP: ``SIGSTOP`` to the actor's process group, ``SIGCONT`` after the
+      verdict. Exact, and a real state the wrapper must leave before it exits.
+  """
+
+  OFF = "off"
+  STDOUT = "stdout"
+  SIGSTOP = "sigstop"
+
+
 #: The fields whose Rust type is not a number, and the JSON type each must
 #: have. Checked through :func:`getattr` like the numeric ones rather than off
 #: the attributes directly: the annotations already say ``str`` and ``bool``,
@@ -159,7 +184,7 @@ U64_MAX = 2**64 - 1
 #: downstream consumer, or ``dataclasses.replace``, which takes ``Any``.
 NON_NUMERIC_FIELDS: Mapping[str, type] = {
     "model": str,
-    "block_actor_while_judging": bool,
+    "block_actor_while_judging": Blocking,
 }
 
 NUMERIC_FIELDS: Mapping[str, tuple[int, int]] = {
@@ -252,10 +277,12 @@ class NativeSupervision:
       between two judgment boundaries. A boundary also falls at every actor
       ``result`` carrying new evidence, so a partial batch at the end of a turn
       is judged rather than dropped.
-    block_actor_while_judging: Whether the wrapper stops reading the actor's
-      stdout while a judgment is in flight, so the actor blocks on its next
-      write. Off, the actor runs ahead and an overtaken verdict is discarded as
-      stale. Not a default either: the two are answers to the same lag.
+    block_actor_while_judging: How the actor is held while a judgment is in
+      flight — see :class:`Blocking`. Not defaulted either: holding it and the
+      stale gate are two answers to the same lag, and a run says which it
+      uses. A :class:`Blocking` member, never the bare string: a token the
+      binary does not know is a run refused at startup, and requiring the
+      member is what makes a typo impossible to write.
     model_call_ms: The bound on one judge or writer call, connection included.
     term_grace_ms: The shutdown grace described at
       :data:`DEFAULT_TERM_GRACE_MS`.
@@ -271,7 +298,7 @@ class NativeSupervision:
   cooldown: int
   window: int
   judge_every_n_assistant_messages: int
-  block_actor_while_judging: bool
+  block_actor_while_judging: Blocking
   model_call_ms: int = DEFAULT_MODEL_CALL_MS
   term_grace_ms: int = DEFAULT_TERM_GRACE_MS
   max_event_line_bytes: int = DEFAULT_MAX_EVENT_LINE_BYTES
@@ -371,7 +398,7 @@ class NativeSupervision:
             "judge_every_n_assistant_messages": (
                 self.judge_every_n_assistant_messages
             ),
-            "block_actor_while_judging": self.block_actor_while_judging,
+            "block_actor_while_judging": (self.block_actor_while_judging.value),
         },
         "model": {"name": self.model},
         "timeouts": {
