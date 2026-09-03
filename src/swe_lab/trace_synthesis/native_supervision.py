@@ -28,6 +28,14 @@ belongs to the harness that knows how to invoke the actor
 second construction of the actor's flags that #375 says the wrapper must not
 have.
 
+**The document is a hand-written mirror of ``config.rs``, and nothing checks
+that mechanically.** The two agree today because they were read against each
+other field by field; the check that would make that a property rather than a
+claim — render here, parse with the binary's own parser, assert accepted, and
+assert the deliberately broken ones refused — needs the binary as a runnable
+artifact and is a follow-up (task 21 §7a). Until it exists, adding a field here
+means reading ``config.rs`` again.
+
 **Nothing here is wired.** This module renders a document, names two
 variables, and reads a summary; declaring the binary as an asset, starting the
 second capture-proxy instance that terminates TLS for it, handing over the

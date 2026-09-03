@@ -120,6 +120,27 @@ The binary is being written in parallel, and most of this does not wait on it:
 3. **The wiring** — the `AgentAsset` for the binary, the second proxy
    instance, the `pass_env` pair, the wrapper launch, and the summary consumed
    onto the run's record. Needs the binary to exist as an artifact.
+4. **The round-trip schema check** (§7a). Needs the binary to be runnable, and
+   should follow the wiring closely: every slice after it adds config fields.
+
+## 7a. The schema is aligned by hand today, and that is the defect generator
+
+The config document is a hand-written mirror of `config.rs`. Review of the
+first slice found **four independent defects, all of the same class**: types
+not checked where only ranges were, a quantifier claiming more than the module
+owned, `task` reaching the document without passing the validation the fields
+pass, and `criterion.name` taken from a caller-supplied path instead of the
+pin. None was carelessness in a way the next one would avoid — one schema
+maintained by hand in two languages produces a fresh opportunity to disagree on
+every field added, and the only thing that finds it is a person reading both
+sides field by field.
+
+**The fix is to stop asking a person to do the comparing.** Once the binary is
+on `main` as a runnable artifact, a round-trip check: render the document from
+Python, hand it to the binary's own parser, assert it is accepted — and assert
+that the deliberately broken ones are refused, so the check can tell the two
+apart. That is a follow-up task, not a claim about today: **as of this writing
+the two sides agree only because they were read against each other.**
 
 ## 8. Out of scope here
 
