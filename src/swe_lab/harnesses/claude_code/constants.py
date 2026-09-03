@@ -157,5 +157,5 @@ CORRECTION_RELAY_LOG_NAME = "claude.correction_channel.log"
 # Under `--input-format stream-json` the prompt cannot be a plain file: every
 # message on that channel is a JSON line, and the task prompt is simply the
 # first of them. Written beside `PROMPT_FILENAME` rather than replacing it, so
-# the human-readable prompt stays exactly where it is on both paths.
-CORRECTION_PROMPT_NAME = "prompt.stream.json"
+# the human-readable prompt stays exactly where it is on every path.
+STREAM_JSON_PROMPT_NAME = "prompt.stream.json"

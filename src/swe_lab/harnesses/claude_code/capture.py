@@ -21,7 +21,9 @@ type Capture = Literal["stream", "proxy"]
 """How a run captures its agent trace.
 
 - ``"stream"`` — the agent's stdout becomes ``claude.event_stream.jsonl``
-  (the default).
+  (the default). The run passes ``--replay-user-messages``, so the stream
+  carries every user message the agent received — the run's own opening prompt
+  and anything injected mid-run — rather than only what the agent said back.
 - ``"proxy"`` — a host-side ``cc-reverse-proxy`` records request/response
   instead, and the agent's own stdout is discarded.
 """

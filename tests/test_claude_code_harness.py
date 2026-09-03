@@ -40,7 +40,6 @@ from swe_lab.harnesses.claude_code.constants import (
     CORRECTION_DONE_NAME,
     CORRECTION_DROP_NAME,
     CORRECTION_FIFO_NAME,
-    CORRECTION_PROMPT_NAME,
     CORRECTION_UNCLEAN_NAME,
     EVENT_STREAM_NAME,
     INFO_ARTIFACT,
@@ -50,6 +49,7 @@ from swe_lab.harnesses.claude_code.constants import (
     PROXY_LOG_NAME,
     PROXY_PORT,
     PROXY_STDERR_NAME,
+    STREAM_JSON_PROMPT_NAME,
 )
 from swe_lab.harnesses.claude_code.proxy import PROXY_SOURCE_ENV
 from swe_lab.harnesses.common import AgentInfoObserver, home_fallback_lines
@@ -158,8 +158,9 @@ def test_invocation_script_shape_and_quoting():
   # it), so this costs no behaviour change and makes the recorded metric real.
   assert script.rstrip().endswith('exit "$status"')
   assert "|| true" not in script
-  # the prompt is piped in on stdin (no shell-quoting hazard)
-  assert '< "$SANDBOX_WORKSPACE"/prompt.txt' in script
+  # the prompt is piped in on stdin (no shell-quoting hazard), as the one
+  # stream-json message the run opens with
+  assert '< "$SANDBOX_WORKSPACE"/prompt.stream.json' in script
   assert '> "$SANDBOX_WORKSPACE"/claude.event_stream.jsonl' in script
 
 
@@ -676,9 +677,10 @@ def test_the_correction_channel_is_off_unless_it_is_asked_for():
   be something a caller gets without choosing it.
   """
   script = ClaudeCodeHarness()._invocation_script("/app")
-  assert "--input-format stream-json" not in script
   assert CORRECTION_FIFO_NAME not in script
-  assert f'< "$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}' in script
+  # Stream-json stdin, but a file rather than a FIFO: the run still ends on
+  # EOF, which is the mechanism the channel would remove.
+  assert f'< "$SANDBOX_WORKSPACE"/{STREAM_JSON_PROMPT_NAME}' in script
 
 
 def test_the_relay_opens_the_channel_before_the_agent_reads_it():
@@ -700,18 +702,30 @@ def test_the_relay_opens_the_channel_before_the_agent_reads_it():
   assert "--input-format stream-json" in lines[agent]
 
 
-def test_the_prompt_becomes_the_first_message_on_the_channel(tmp_path: Path):
+@pytest.mark.parametrize(
+    "harness",
+    [
+        ClaudeCodeHarness(capture="proxy", correction_channel=True),
+        ClaudeCodeHarness(),  # a plain stream run reads stream-json too
+    ],
+    ids=["supervised-proxy", "plain-stream"],
+)
+def test_the_prompt_becomes_the_first_stream_json_message(
+    harness: ClaudeCodeHarness, tmp_path: Path
+):
   """Under `--input-format stream-json` a plain prompt file is not readable.
 
-  Every message on this channel is a JSON line, so the task prompt is simply
-  the first of them; the human-readable prompt file is still written, on both
-  paths, as the record of what was asked.
+  Every message on that stdin is a JSON line, so the task prompt is simply the
+  first of them. The human-readable file is still written beside it on every
+  path: the JSON encoding is what the CLI needs, not what a later reader wants.
+
+  Both configurations are asserted because ``run`` and the invocation script
+  decide this separately — the script names the stdin, ``run`` writes it — and
+  a disagreement is an agent reading a file nobody produced.
   """
   sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
-  _ = ClaudeCodeHarness(capture="proxy", correction_channel=True).run(
-      sb, prompt="solve it", timeout=1.0
-  )
-  assert json.loads(sb.read(CORRECTION_PROMPT_NAME).decode()) == {
+  _ = harness.run(sb, prompt="solve it", timeout=1.0)
+  assert json.loads(sb.read(STREAM_JSON_PROMPT_NAME).decode()) == {
       "type": "user",
       "message": {
           "role": "user",
@@ -851,22 +865,76 @@ def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
   assert not survivors, f"outlived the script: {', '.join(survivors)}"
 
 
-def test_the_channel_is_refused_without_the_capture_it_requires():
-  """A supervised run on stream capture would produce a false trace.
+def test_a_stream_run_replays_the_messages_the_agent_was_given():
+  """The trace should say what the agent was asked, not only what it answered.
 
-  Stream capture drops the injected message unless replay is asked for, and
-  with replay it renders as a ``user`` message what the wire carries as
-  ``system`` — so a stream-derived trace of a supervised run asserts a turn the
-  model never saw. Refused at construction rather than documented, because
-  otherwise the *simplest* caller reaches it through the public field and gets
-  something that looks like an ordinary result.
+  The CLI echoes no stdin, so a stream trace carries only the agent's own
+  output: the run's opening prompt is absent, and so is anything injected
+  mid-run. The flag is unconditional on this path rather than an option,
+  because a run that omits it produces a trace missing its own question
+  (ADR-0017).
+
+  Asserted over all four (capture, channel) combinations rather than the two
+  that motivated it: the flag's condition and the channel's are different
+  conditions that happen to overlap, and a matrix is what fails when one is
+  widened into the other.
   """
-  with pytest.raises(ValueError, match="requires capture='proxy'"):
-    _ = ClaudeCodeHarness(correction_channel=True)
-  # …and the combination the channel is designed for is accepted.
-  assert ClaudeCodeHarness(
-      capture="proxy", correction_channel=True
-  ).correction_channel
+  matrix: dict[tuple[Capture, bool], bool] = {
+      ("stream", False): True,
+      ("stream", True): True,
+      # The proxy path needs nothing: its trace is the wire, which carries
+      # both — including on a supervised run, which writes an event stream too.
+      ("proxy", False): False,
+      ("proxy", True): False,
+  }
+  for (capture, channel), replayed in matrix.items():
+    script = _script(
+        "/app",
+        ClaudeCodeHarness(capture=capture, correction_channel=channel),
+    )
+    assert ("--replay-user-messages" in script) is replayed, (capture, channel)
+
+
+def test_replay_is_never_asked_for_without_the_input_format_it_requires():
+  """The pinned CLI refuses the flag alone, so the two travel together.
+
+  2.1.212 exits 1 with *"--replay-user-messages requires both
+  --input-format=stream-json and --output-format=stream-json"*, and a run that
+  cannot start produces no trace at all — the failure this asserts against is
+  total, not a degraded capture.
+  """
+  captures: tuple[Capture, ...] = ("stream", "proxy")
+  for capture in captures:
+    for channel in (False, True):
+      script = _script(
+          "/app",
+          ClaudeCodeHarness(capture=capture, correction_channel=channel),
+      )
+      if "--replay-user-messages" not in script:
+        continue
+      assert "--input-format stream-json" in script, (capture, channel)
+      assert "--output-format stream-json --verbose" in script, (
+          capture,
+          channel,
+      )
+
+
+def test_the_channel_rides_stream_capture_without_a_proxy():
+  """A supervised stream run is a whole configuration, not a degraded one.
+
+  Its single event stream is both the trace and the supervisor's live view, so
+  it needs no recorder: no proxy asset to transfer, no proxy to start, and no
+  ``ANTHROPIC_BASE_URL`` pointing the agent at one.
+  """
+  supervised = ClaudeCodeHarness(correction_channel=True)
+  assert supervised.correction_channel
+
+  script = _script("/app", supervised)
+  assert "--replay-user-messages" in script
+  assert "ANTHROPIC_BASE_URL" not in script
+  assert PROXY_BINARY_AT not in script
+
+  assert [asset.path for asset in supervised.assets()] == [BINARY_AT]
 
 
 def test_a_supervised_run_streams_its_events_to_the_file_the_supervisor_reads():
@@ -1050,7 +1118,7 @@ def test_the_supervised_script_carries_a_correction_to_a_stub_agent(
     """Write the run's files. After ``up``: it refuses a non-empty workspace."""
     _ = (workspace / AGENT_SCRIPT_NAME).write_text(_script("/", harness))
     _ = (workspace / AGENT_ENV_NAME).write_text("")
-    _ = (workspace / CORRECTION_PROMPT_NAME).write_text(
+    _ = (workspace / STREAM_JSON_PROMPT_NAME).write_text(
         user_event_line("solve it")
     )
     _ = (workspace / "stub_agent.py").write_text(_STUB_AGENT)

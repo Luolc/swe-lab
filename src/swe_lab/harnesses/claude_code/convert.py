@@ -12,8 +12,13 @@ intermediate dict parser). Both capture strategies land here:
   final assistant turn — reading that one record reconstructs the whole trace.
 
 Both map their Anthropic content blocks through the **same** ``_content_blocks``
-/ ``_one_block`` helpers, so a stream and a proxy capture of one session convert
-to the same :class:`~swe_lab.conversation.Conversation` by construction.
+/ ``_one_block`` helpers, so a block means the same thing whichever capture it
+arrived in. **That is a claim about blocks and not about conversations**: the
+message sequence and the roles can differ by capture, because the two record
+different things. One mid-turn correction is a ``user`` message in a stream
+capture and a ``system`` message wrapping ``<system-reminder>`` in a proxy one —
+each faithful to its own source, neither a defect (ADR-0017). A consumer pooling
+traces from both must key on which capture produced each.
 
 **Which capture this is about matters, and an earlier version of this note did
 not say.** Nothing is redacted *here*, and for stream capture nothing needs to

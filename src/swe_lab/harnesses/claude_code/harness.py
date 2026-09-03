@@ -62,7 +62,6 @@ from .constants import (
     CORRECTION_DONE_NAME,
     CORRECTION_DROP_NAME,
     CORRECTION_FIFO_NAME,
-    CORRECTION_PROMPT_NAME,
     CORRECTION_RELAY_LOG_NAME,
     CORRECTION_UNCLEAN_NAME,
     DEFAULT_MODEL,
@@ -75,6 +74,7 @@ from .constants import (
     PROXY_LOG_NAME,
     PROXY_PORT,
     PROXY_STDERR_NAME,
+    STREAM_JSON_PROMPT_NAME,
     UNATTENDED_DENIED_TOOLS,
 )
 from .convert import (
@@ -288,7 +288,7 @@ def _relay_start_lines() -> list[str]:
       # subshell is backgrounded and the agent is started after it.
       f"  exec 3> {fifo}",
       # The prompt is just the first message on this channel.
-      f'  cat "$SANDBOX_WORKSPACE"/{CORRECTION_PROMPT_NAME} >&3',
+      f'  cat "$SANDBOX_WORKSPACE"/{STREAM_JSON_PROMPT_NAME} >&3',
       f"  while [ ! -e {drop}/{CORRECTION_DONE_NAME} ]; do",
       f"    for message in {drop}/*.json; do",
       '      [ -e "$message" ] || continue',
@@ -337,6 +337,10 @@ class ClaudeCodeHarness(Harness):
     capture: The output-capture strategy — ``STREAM`` (default) or ``PROXY``.
       ``PROXY`` needs no port and no URL: the proxy runs in the sandbox, on
       the fixed loopback port every run uses (see ``constants.PROXY_PORT``).
+      ``STREAM`` runs with ``--replay-user-messages``, so its trace carries the
+      user messages the agent received as well as what it produced; without it
+      the CLI echoes no stdin, and the run's own opening prompt is absent from
+      the trace it writes (ADR-0017).
     proxy_target: The upstream ``PROXY`` capture forwards to. The default is
       the Anthropic API; an OpenRouter run points it at
       ``https://openrouter.ai/api``, which is not cosmetic — the proxy mirrors
@@ -400,28 +404,25 @@ class ClaudeCodeHarness(Harness):
   subagent_wait_ceiling_ms: int | None = None
   correction_channel: bool = False
 
-  def __post_init__(self) -> None:
-    """Refuse a channel whose trace could not be trusted.
+  @property
+  def _stdin_is_stream_json(self) -> bool:
+    """Whether this run feeds the agent JSON lines rather than a plain file.
 
-    The live channel **requires proxy capture** (task 16 §5): stream capture
-    drops the injected message unless `--replay-user-messages` is passed, and
-    with it renders as a ``user`` message what the wire carries as ``system``.
-    A stream-derived trace of a supervised run would therefore assert a turn
-    the model never saw — a false trace, produced by the *simplest* caller.
+    Two independent reasons land on the same wire format. The channel needs it
+    because a correction is a message and messages on that stdin are JSON
+    lines. ``STREAM`` capture needs it because ``--replay-user-messages`` is
+    only accepted alongside stream-json on **both** sides — the pinned 2.1.212
+    binary exits 1 with *"--replay-user-messages requires both
+    --input-format=stream-json and --output-format=stream-json"*.
 
-    Refused at construction rather than documented, because the invalid
-    combination is otherwise reachable through the public field and produces
-    something that looks like a normal result.
+    Read by the invocation script and by :meth:`run`, which must agree: the
+    script names the stdin and ``run`` is what writes it, so a disagreement is
+    an agent reading a file nobody produced.
 
-    Raises:
-      ValueError: If the correction channel is on without proxy capture.
+    Returns:
+      Whether the run's stdin carries stream-json.
     """
-    if self.correction_channel and self.capture != "proxy":
-      raise ValueError(
-          "correction_channel=True requires capture='proxy': stream capture"
-          f" cannot represent an injected message truthfully (got"
-          f" capture={self.capture!r})"
-      )
+    return self.correction_channel or self.capture != "proxy"
 
   @property
   @override
@@ -571,11 +572,11 @@ class ClaudeCodeHarness(Harness):
           f" {MAX_PROMPT_BYTES}"
       )
     sb.write(PROMPT_FILENAME, encoded)
-    if self.correction_channel:
-      # The same prompt, as the first message of the live channel. Written in
+    if self._stdin_is_stream_json:
+      # The same prompt, as the run's first stream-json message. Written in
       # addition to the plain file, which stays the human-readable record of
-      # what was asked on both paths.
-      sb.write(CORRECTION_PROMPT_NAME, user_event_line(prompt).encode())
+      # what was asked on every path.
+      sb.write(STREAM_JSON_PROMPT_NAME, user_event_line(prompt).encode())
     if env:
       sb.write(AGENT_ENV_NAME, env_exports(env).encode())
     return sb.run_script(AGENT_SCRIPT_NAME, timeout=timeout)
@@ -590,9 +591,10 @@ class ClaudeCodeHarness(Harness):
     newline-delimited, one record per line — and ``.log``), so a consumer reads
     the artifact name and knows how to parse it.
 
-    A supervised run writes **both**: the proxy log is its trace, and the event
-    stream is what the supervisor read while it ran, which is the only record
-    of what the supervisor could see at each moment it decided.
+    A supervised **proxy** run writes both: the proxy log is its trace, and the
+    event stream is what the supervisor read while it ran, which is the only
+    record of what the supervisor could see at each moment it decided. On
+    ``STREAM`` the one file is both.
     """
     trace = (
         {
@@ -647,6 +649,22 @@ class ClaudeCodeHarness(Harness):
       return {}
     return event_stream_usage(read_text(sb, EVENT_STREAM_NAME))
 
+  def _stdin_path(self) -> str:
+    """Return the workspace file the agent reads its input from.
+
+    Three sources, one reason each: the FIFO when a supervisor may write to it
+    mid-run, the stream-json prompt when the run's stdin is that format but
+    nothing will write to it again, and the plain prompt otherwise.
+
+    Returns:
+      The shell-quoted path, relative to ``$SANDBOX_WORKSPACE``.
+    """
+    if self.correction_channel:
+      return f'"$SANDBOX_WORKSPACE"/{CORRECTION_FIFO_NAME}'
+    if self._stdin_is_stream_json:
+      return f'"$SANDBOX_WORKSPACE"/{STREAM_JSON_PROMPT_NAME}'
+    return f'"$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}'
+
   def _invocation_script(self, workdir: str) -> str:
     """Build the run script for an *unattended* run.
 
@@ -667,7 +685,9 @@ class ClaudeCodeHarness(Harness):
     - **Wall-clock is the caller's**, deliberately not here.
 
     In ``STREAM`` capture the agent's ``stream-json`` stdout *is* the trace
-    (redirected to the event-stream file). In ``PROXY`` capture the script also
+    (redirected to the event-stream file), and ``--replay-user-messages`` is
+    what makes it a whole one — the messages the agent received are echoed into
+    it alongside the ones it produced. In ``PROXY`` capture the script also
     owns the recorder: it starts the proxy on the sandbox's own loopback, waits
     for it, points the agent at it via ``ANTHROPIC_BASE_URL``, discards the
     agent's stdout, and reaps the proxy on exit.
@@ -681,7 +701,6 @@ class ClaudeCodeHarness(Harness):
     """
     config_dir = shlex.quote(f"{AGENT_HOME}/.claude")
     binary = shlex.quote(BINARY_AT)
-    prompt = f'"$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}'
     stderr = f'"$SANDBOX_WORKSPACE"/{AGENT_STDERR_NAME}'
     lines = [
         "set -u",
@@ -739,6 +758,12 @@ class ClaudeCodeHarness(Harness):
         # bogus flag in the same position, which is rejected outright.
         f"--max-turns {int(self.max_turns)}",
     ]
+    if self.capture != "proxy":
+      # Without this the CLI echoes no stdin, so the trace it writes contains
+      # what the agent said and not what it was asked — the opening prompt and
+      # any mid-run injection are simply absent (ADR-0017). The proxy path
+      # needs nothing here: its trace is the wire, which carries both already.
+      flags.append("--replay-user-messages")
     if self.bare:
       flags.insert(1, "--bare")
     if self.max_budget_usd is not None:
@@ -764,14 +789,13 @@ class ClaudeCodeHarness(Harness):
           "fi",
       ]
 
+    if self._stdin_is_stream_json:
+      flags.append("--input-format stream-json")
     if self.correction_channel:
       # Before the agent: a redirect from a FIFO blocks until a writer opens
       # the other end, so an agent started first would wait forever.
       lines += _relay_start_lines()
-      flags.append("--input-format stream-json")
-      stdin_source = f'"$SANDBOX_WORKSPACE"/{CORRECTION_FIFO_NAME}'
-    else:
-      stdin_source = prompt
+    stdin_source = self._stdin_path()
 
     exit_file = f'"$SANDBOX_WORKSPACE"/{AGENT_EXIT_CODE_NAME}'
     lines += [
