@@ -35,13 +35,14 @@ making that mistake. This is **not** covered by point 1 — those are tokens the
 model really did write, in a state we chose not to interrupt — and it is a
 separate post-processing action somebody has to take deliberately.
 
-**3. ``cooldown`` does not bind here, and that is stated rather than hidden.**
+**3. ``cooldown`` rarely binds here, and that is stated rather than hidden.**
 :class:`~swe_lab.trace_synthesis.supervisor.SpeakWhenOffTrack` measures it in
 ``Observation.cursor`` units, which are consumed stream events; consecutive
 seams are many events apart, so the gate never closes. The spacing knob on this
 path is :attr:`SegmentedSupervision.turns_per_segment`, and the shipped
-definition sets ``cooldown=0`` so the inertness is deliberate rather than an
-accident a reader has to rediscover.
+definition defaults ``cooldown`` to zero so the inertness is deliberate rather
+than an accident a reader has to rediscover. It remains configurable for
+experiments that need to test that assumption.
 """
 
 from __future__ import annotations
@@ -124,6 +125,9 @@ class SegmentedSupervision:
       ``--max-turns``. The owner's number is 5; it is a parameter because the
       only evidence for any value is the detection-latency distribution this
       loop records, which does not exist yet.
+    cooldown: Minimum policy cursor distance between corrections. It defaults
+      to zero because seams are ordinarily many stream events apart, but is a
+      parameter so that assumption can be tested rather than baked in.
     anchor_resume: Resume with ``--resume-session-at <message id>`` rather than
       plain ``--resume``. On by default because it is free and produces a
       cleaner seam (feasibility report §9.1), and **nothing depends on it**:
@@ -142,11 +146,12 @@ class SegmentedSupervision:
       ``None`` when this run uses only the general-practice criterion.
   """
 
-  policy_factory: Callable[[], SpeakPolicy]
+  policy_factory: Callable[[int], SpeakPolicy]
   max_segments: int = 1_000
   wall_clock_seconds: float = 86_400.0
   max_cost_usd: float = 1_000.0
   turns_per_segment: int = 5
+  cooldown: int = 0
   anchor_resume: bool = True
   guard_seam: bool = False
   neutral_continue: str = "Continue."
@@ -453,7 +458,7 @@ class SegmentedRun:
     """
     # One policy per run, built here rather than shared by the definition —
     # see `SegmentedSupervision.policy_factory`.
-    self._policy = self.supervision.policy_factory()
+    self._policy = self.supervision.policy_factory(self.supervision.cooldown)
     started = self.now()
     prompt = self.task
     session_id: str | None = None
@@ -488,7 +493,7 @@ class SegmentedRun:
       ending = last_ending(events, since=consumed)
       turns = turns_taken(events)
       if ending.cost_usd is not None:
-        cost = ending.cost_usd
+        cost += ending.cost_usd
       session_id = ending.session_id or session_id
       anchor = last_message_uuid(events) or anchor
 

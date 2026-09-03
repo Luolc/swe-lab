@@ -23,7 +23,7 @@ from swe_lab.datasets.swebench_pro.unit_test import (
 )
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import Inline, Mount, Mounts, SandboxSpec
-from swe_lab.sandbox.observers import PATCH_NAME
+from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
 from swe_lab.trace_synthesis.sample import (
     FAILED_CONVERSATION_NAME,
     FAILED_PATCH_NAME,
@@ -82,7 +82,11 @@ class _Underlying(TaskInstance[SweBenchProVerdict]):
       patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     return UnitTestSpec(
-        eval_script=f"git apply {patch_name}\nrun-tests\n",
+        eval_script=(
+            f"git apply {patch_name}\n"
+            f"patch-baseline={patch_baseline}\n"
+            "run-tests\n"
+        ),
         mounts={
             "run_script.sh": Mount(Inline(b"echo run")),
             REQUIRED_TESTS_NAME: Mount(
@@ -204,6 +208,43 @@ def test_mounts_add_the_failure_beside_the_underlying_material(
   assert Conversation.model_validate_json(staged.content) == CONVERSATION
   patch = mounts[FAILED_PATCH_NAME].resource
   assert isinstance(patch, Inline) and patch.content == b"diff --git a/x b/x\n"
+
+
+def test_a_baseline_failure_stages_its_ref_and_rebuilds_its_grading_contract(
+    underlying: _Underlying,
+):
+  del underlying
+  row = _row(
+      provenance=json.dumps(
+          {
+              "source": {"patch_base_ref": "b" * 40},
+              "sweep_id": "adhoc",
+          }
+      )
+  )
+
+  record = OracleFailureInstance.from_raw(row)
+  mounts = record.mounts()
+  spec = record.unit_test_spec(apply_patch=True, patch_name=FAILED_PATCH_NAME)
+
+  assert record.patch_base_ref == "b" * 40
+  base_ref = mounts[BASE_REF_NAME].resource
+  assert isinstance(base_ref, Inline)
+  assert base_ref.content == ("b" * 40).encode()
+  assert "patch-baseline=True" in spec.eval_script
+
+
+def test_an_older_failure_row_keeps_the_base_commit_grading_contract(
+    underlying: _Underlying,
+):
+  del underlying
+  record = OracleFailureInstance.from_raw(_row())
+
+  spec = record.unit_test_spec(apply_patch=True, patch_name=FAILED_PATCH_NAME)
+
+  assert record.patch_base_ref is None
+  assert BASE_REF_NAME not in record.mounts()
+  assert "patch-baseline=False" in spec.eval_script
 
 
 @pytest.mark.usefixtures("underlying")

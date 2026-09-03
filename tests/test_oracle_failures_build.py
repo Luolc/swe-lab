@@ -195,14 +195,13 @@ def test_the_gates_refuse_a_run_that_is_not_a_reasoning_failure(
     _ = build_row(_run_dir(tmp_path, metrics=metrics), dataset="fake")
 
 
-def test_a_baseline_patched_rollout_is_refused(tmp_path: Path):
-  # `patch_baseline=True` diffs against a pre-agent baseline and is graded by
-  # a procedure that does not reset to base_commit. The row carries neither,
-  # and the Oracle re-runs the default procedure — so the patch it would be
-  # handed is not the patch that was graded. Refuse rather than mis-stage.
-  run = _run_dir(tmp_path, baseline_patched=True)
-  with pytest.raises(UnusableRunError, match="patched against a baseline"):
-    _ = build_row(run, dataset="fake")
+def test_a_baseline_patched_rollout_carries_its_base_into_the_row(
+    tmp_path: Path,
+):
+  row = build_row(_run_dir(tmp_path, baseline_patched=True), dataset="fake")
+
+  provenance = json.loads(row["provenance"])
+  assert provenance["source"]["patch_base_ref"] == "b" * 40
 
 
 def test_a_workflow_that_did_not_succeed_is_refused(tmp_path: Path):

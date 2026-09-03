@@ -51,7 +51,10 @@ uv run python -m swe_lab run oracle_analysis <instance_id> --dataset oracle_fail
   a file across sources — the builder refuses a same-id row from a different
   source dataset rather than overwrite it
 - Provenance names the source run by its workflow-record key, sweep and
-  timestamp, never by a host path
+  timestamp, never by a host path; when the source used patch-baseline
+  extraction, it also carries the pre-agent base ref
 - Every task run against a row stages the three failure files
   (`failed_conversation.json`, `failed_verdict.json`, `failed_patch.diff`);
-  a run that must not see them runs the underlying instance instead
+  a baseline-patched failure additionally stages `patch.base_ref.txt` and
+  rebuilds its matching grading procedure; a run that must not see the failure
+  runs the underlying instance instead
