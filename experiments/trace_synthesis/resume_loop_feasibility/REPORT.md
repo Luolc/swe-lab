@@ -18,8 +18,9 @@ seeing a number. One amendment was made mid-run and is labelled as such
 
 ## Verdict
 
-**Adopt-worthy as a parallel implementation. The seam can be made clean — but
-only with `--resume-session-at`, and the plain `--resume` seam is not.**
+**The mechanism works and the seam can be made artifact-free with
+`--resume-session-at` — but the owner's one hard requirement is NOT yet
+enforced, so Phase 1 remains gated on building a real gate (§12).**
 
 The result that decides this arrived last and reversed the reading the earlier
 arms supported. Both are reported, in the order they happened, because the
@@ -88,9 +89,10 @@ reversal is the finding.
       across **496 cumulative wire instances** of them. One rollout, one
       instance.
 
-   So the segmented loop trades one criterion violation for a different one. It
-   fixes **(a)** — no assistant tokens the model never wrote — and on this
-   evidence it **does not clear (b)**. It was not previously reported this way:
+   So the segmented loop leaves **(b) uncleared** — the anchored shape differs
+   from every inference control measured, which is not the same as showing the
+   shape cannot occur at inference. **(a)** is a separate matter and is **not
+   fixed by anything in this report**: see §12. It was not previously reported this way:
    this report called the anchored seam "the harness's own mid-turn fold", and
    the repository's own pinned control says it is not.
 
@@ -128,15 +130,20 @@ Under the ruling, these are **costs to record, not blockers**:
 - `Q8` (§13), which drops from *possibly decisive* to *nice-to-have* and should
   not hold up bring-up.
 
-**The one thing that does gate it** is §12's filter — a filter with a test,
-rather than a sentence in a document.
+**The one thing that does gate it is unmet.** §12's requirement — the synthetic
+assistant never reaching training — is **not** enforced by anything in this
+report; the filter here is a prototype on the native transcript, and the
+training artifact is `conversation.json`. **Phase 1 is gated on building that
+gate**, and the acceptance condition is written out in §12.
 
 **Conditions that survive the relaxation** — setting (b) aside does not touch
 these:
 
-- **The synthetic assistant record must not reach training.** The owner's one
-  remaining hard requirement, now carrying a named filter and a two-armed test
-  (§12). This is not a caveat; it is the gate.
+- **The synthetic assistant record must not reach training — UNRESOLVED.** The
+  owner's one remaining hard requirement. The filter in this experiment is a
+  **prototype on the wrong artifact**: measured, it is a no-op on
+  `conversation.json`, where the record survives at index 7. §12 states the
+  acceptance condition. **This is the gate, and it is not met.**
 
 - **`--resume-session-at` is an undocumented flag** (`hideHelp()`), so the
   artifact-free seam rests on behaviour that carries no compatibility promise.
@@ -264,7 +271,8 @@ together is not seven samples.
 Arm 6 is what makes arm 4 informative; arm 5 is what makes it *context* rather
 than a tool finding the value again.
 
-**The session grows; it does not fork.** After resume the original session file
+**Resume reuses the session file; it does not fork.** After resume the original
+session file
 was the **same file**, and the only other id on disk belongs to the control's
 own fresh session — two session files for three invocations. **No before/after
 snapshot was captured**, so *"grew"* rests on the resumed session having one
@@ -482,9 +490,10 @@ is not isolated from any of that. So:
 experiment is reported under `ephemeral_1h_input_tokens`, with
 `ephemeral_5m_input_tokens` at 0 throughout, and I read that mid-run as "the
 TTL is an hour, so the supervisor's latency budget is generous". **The measured
-behaviour does not support that**: the conversation prefix was gone at 380 s.
-The field name and the observed retention disagree, and this report goes with
-the observation. What the field means is **not** established here.
+behaviour does not support that**: in the delayed arm the conversation prefix
+had to be re-created. **That is one confounded pair, not a retention
+measurement** — no TTL interpretation is supported in either direction, and the
+field's meaning is not established here. What the field means is **not** established here.
 
 **A registered control arm was not run, and that is a protocol deviation.**
 README.md's Q5a registered a perturbation arm — deliberately changing the
@@ -801,11 +810,12 @@ launch rather than by anyone remembering it. Per-run figures are in
   is untested, and those are exactly where a turn's boundary is least like the
   simple case measured here.
 - **Whether `[tool_result, text]` ever occurs at inference time.** Narrowed by
-  §9.3 and not closed: 0 in 496 on one real rollout, and the mechanism that
-  would have produced it — a reminder appended to a tool result — is not how
-  this harness delivers reminders. What remains open is other instances, other
-  harness versions, and paths this capture does not exercise (compaction,
-  parallel tool calls, sub-agents).
+  §9.3 and not closed: 0/31 in the fullest conversation and 0/496 cumulative
+  wire instances, **one rollout on one instance**. In *that capture* no
+  reminder-bearing message carried a `tool_result` — stated of the capture, not
+  as a property of how the harness delivers reminders. Open: other instances,
+  other harness versions, and the paths this capture does not exercise
+  (compaction, parallel tool calls, sub-agents).
 - **What `--resume-drops-turn` does**, which is the one flag that might make the
   seam A′-shaped rather than merely artifact-free.
 - **`Q8`, below — whether the seam's shape is a property of the mechanism or of
@@ -825,9 +835,156 @@ later cannot be mistaken for having run it now.**
 
 ### The question
 
-§9.3 establishes that `[tool_result, text]` is a **supervision-only** shape (0 in
-496 on the inference path). It does **not** establish that a segmented loop can
-**only** produce that shape — and those differ by exactly one thing: whether the
+§9.3 observed `[tool_result, text]` **0 times** on the inference path (0/31 in
+the fullest conversation, 0/496 cumulative wire instances, one rollout) — which
+narrows, and does not establish, that it is supervision-only. Separately, it
+does **not** speak at all to whether a segmented loop can **only** produce that
+shape — and those differ by exactly one thing: whether the
+layout is a property of *the resume mechanism* or of *the delivery channel we
+happened to use*.
+
+There is a counter-example in hand. **A′'s correction lands as a separate
+trailing `system` message** — so making a correction arrive that way is
+demonstrably possible in this harness; A′ does it on every intervention,
+including in the real rollout read in §9.3. A′ delivers on the stdin of
+`--input-format stream-json`.
+
+> **Can `--resume-session-at` be combined with `--input-format stream-json`, so
+> that a segmented loop's correction is delivered on that channel and lands as a
+> separate `system` message rather than appended to the `tool_result` user
+> message?**
+
+### Why there is no evidence either way, right now
+
+Every anchored arm in §9 delivered its correction as an **ordinary positional
+prompt** (`claude -p "Continue."`). Every stream-json arm in `streamjson_input`
+ran **without** `--resume-session-at`. **The combination has never been run**, so
+neither answer has support — including the answer that would rescue the design.
+The two flags are not exotic together in principle: `harness.py` already adds
+`--input-format stream-json` conditionally on its own stdin mode.
+
+### The arms
+
+Two arms, differing **only** in the delivery channel, both captured on the wire:
+
+- **Arm S** — anchored resume (`--resume-session-at <last message id>`) **plus**
+  `--input-format stream-json`, correction written on stdin.
+- **Arm P** — anchored resume, correction as a positional prompt. This is what
+  §9.1 already ran, re-run alongside so the comparison is within one session of
+  the machine rather than against an older capture.
+
+**The criterion is a contrast, not a single reading.** Arm S must show the
+correction as a separate trailing `system` message **and** arm P must show
+`[tool_result, text]` in the same batch. If both come out the same, the delivery
+channel is not the lever and the question is answered *no* — which is equally a
+result. Recorded per arm: which message the correction lands in, its role, its
+block list, and whether `correction_text_blocks` still accumulates 0/1/2/3.
+
+**Three things must be re-checked in arm S rather than assumed to carry over:**
+
+1. **The two default-resume artifacts.** Changing the delivery channel may
+   reintroduce `Continue from where you left off.` and the synthetic assistant
+   turn. §9.1's zeros were measured on the positional-prompt path and do not
+   transfer.
+2. **Whether the flags even compose.** `--resume-session-at` requires
+   `--resume`; whether it is accepted alongside `--input-format stream-json` is
+   unknown, and a rejection is a fast, cheap *no*.
+3. **Structural position, not digest.** A′'s block is `len 440` for its own
+   correction text; matching means *a separate trailing `system` message*, never
+   a byte equality — the distinction §9.3 already had to make once.
+
+### What each answer does to this report
+
+- **Yes** — criterion **(b)** is cleared, the `[tool_result, text]`
+  disadvantage disappears, and the per-seam accumulation goes with it (the
+  correction would no longer pile into the tool-result message). The
+  recommendation returns to roughly where §9.1 stood before the P0.
+- **No** — the shape is a property of the mechanism, statement ③ is the final
+  characterisation, and the current recommendation stands unchanged.
+
+**Neither answer is preferred here.** The pull in both directions is worth
+naming, because both are real: this question could rescue a design the report
+has just marked down, and it arrives immediately after a result that went
+against it. Neither is a reason to run it, or not to.
+
+
+---
+
+# 12. The one hard constraint — **unresolved**, and Phase 1 is gated on it ★
+
+Criterion (b) was relaxed (see the Verdict). **This was not:** the model must not
+take loss on tokens it never generated, and the resume seam inserts exactly such
+a record — an `assistant` message reading `No response requested.` that no model
+wrote (§6.1). Under the relaxation it is the **only** blocking requirement left.
+
+> **A previous revision of this section claimed this requirement was now
+> mechanical, enforced by `synthetic_filter.py` plus a two-armed test. That was
+> wrong.** The filter reads a **native transcript** record; the product trains
+> on **`conversation.json`**. Both facts below are measured, not argued.
+
+### Why the prototype is not a gate
+
+**1. It runs on the wrong artifact.** `ClaudeCodeHarness.to_conversation()` /
+`proxy_log_to_conversation()` produce canonical `Message` objects carrying
+**only** `role` and `content`; `ConversationObserver` persists those as
+`conversation.json`. The native transcript the filter can read is collected
+afterwards by an advisory observer declared `required=False`, which never fails
+a run.
+
+Measured on the real dirty-seam capture: conversion yields **10 canonical
+messages with the synthetic assistant at index 7**, and passing those canonical
+records through `strip_synthetic_assistants()` returns them **unchanged** — the
+fields it reads (`type`, `message.model`, `requestId`) do not exist after
+conversion. So every unit test here can stay green while
+`No response requested.` sits in the training artifact.
+
+**2. Its fields are self-asserted.** All three live in the same harness-written
+record, so a fabricated assistant carrying `model: "claude-sonnet-5"` and any
+non-empty `requestId` passes. Asking a record about its own authorship is not
+establishing authorship. (An empty or whitespace `requestId` is now rejected —
+it was accepted in the previous revision — but that closes a hole, not the gap.)
+
+Both limits are pinned as executable facts, not prose:
+`test_the_prototype_does_not_protect_the_canonical_conversation` and
+`test_a_fabricated_provenance_record_still_passes_the_prototype`.
+
+### What the prototype *is* good for
+
+Dropping the record from a **native transcript**, on the samples measured here —
+46 records / 9 assistant records become 45 / 8 on the pinned q1 transcript. It is
+a useful starting point and it is **not** the invariant.
+
+### The Phase-1 acceptance condition, since "move this file" is not sufficient
+
+1. **Filter at the trace → `conversation.json` boundary**, before provenance is
+   discarded — not on an artifact produced after it.
+2. **Fail the run** when provenance cannot be established, rather than letting
+   the record through.
+3. **Establish authorship against an independent source** — reconcile kept
+   assistant turns against the captured API responses, rather than trusting
+   fields on the candidate record.
+4. **A named end-to-end test** that starts from the real dirty-seam fixture,
+   produces the final canonical conversation, and proves **both** that the
+   synthetic assistant is absent **and** that real assistant responses remain.
+
+**Until that exists, the owner's one hard requirement is unresolved and Phase 1
+is gated on it.** The two-armed discipline still applies to whatever replaces
+this: the control arm of the current tests was verified by mutation (`return []`
+fails the keep-arms while the drop-arm stays green), and that property must
+survive the move.
+
+# 13. `Q8` — is `[tool_result, text]` forced, or is it how we chose to deliver? ★
+
+**Not run. Registered here so the question is not lost, and so that running it
+later cannot be mistaken for having run it now.**
+
+### The question
+
+§9.3 observed `[tool_result, text]` **0 times** on the inference path (0/31 in
+the fullest conversation, 0/496 cumulative wire instances, one rollout) — which
+narrows, and does not establish, that it is supervision-only. Separately, it
+does **not** speak at all to whether a segmented loop can **only** produce that
+shape — and those differ by exactly one thing: whether the
 layout is a property of *the resume mechanism* or of *the delivery channel we
 happened to use*.
 

@@ -1,31 +1,39 @@
-"""The one hard constraint: a synthetic assistant record must never be trained on.
+"""A **prototype** for dropping the synthetic assistant record — not a gate.
 
-The owner relaxed criterion (b) on 2026-09-03 — a segmented trace need not match
-the shape an interactive user produces, because this is SFT data generation and
-post-processing is available. **What was not relaxed** is that the model must
-not take loss on tokens it never generated, and the resume seam inserts exactly
-such a record: an `assistant` message reading "No response requested." that no
-model wrote (REPORT.md §6.1).
+The owner's one unrelaxed requirement is that the model must not take loss on
+tokens it never generated, and the resume seam inserts exactly such a record: an
+`assistant` message reading "No response requested." that no model wrote
+(REPORT.md §6.1).
 
-So this filter is now load-bearing rather than a convenience, and it is written
-as a **positive chain** rather than as a list of things to exclude. Exclusion
-lists only ever cover the cases their author thought of, and the case they miss
-looks exactly as green as the ones they catch.
+**This module does not enforce that requirement, and an earlier revision of the
+report wrongly said it did.** Two limits, both measured:
 
-A record is kept only if **all** of these hold:
+1. **It operates on the wrong artifact.** Training uses `conversation.json`,
+   produced by `ClaudeCodeHarness.to_conversation()` /
+   `proxy_log_to_conversation()`, whose canonical `Message` carries **only**
+   `role` and `content`. The provenance fields this module reads — `type`,
+   `message.model`, `requestId` — **do not exist there**, so applying it to the
+   canonical conversation returns the input unchanged. Measured on the real
+   dirty-seam capture: 10 canonical messages, the synthetic assistant at index
+   7, still present afterwards. The native transcript this module *can* read is
+   collected by an advisory `required=False` observer that never fails a run.
+2. **Its fields are self-asserted.** All three live in the same harness-written
+   record, so a fabricated record carrying a plausible `model` and any non-empty
+   `requestId` passes. Authorship is not established by asking the candidate
+   record about itself.
 
-1. it is an `assistant` record at all;
-2. its `message.model` is present, a string, and **not** the synthetic marker;
-3. it carries `requestId` — the field a record produced by a real API response
-   has and a fabricated one does not.
+What it is good for: dropping the record from a **native transcript**, on the
+samples measured here. That is a useful prototype and it is not the invariant.
 
-Anything failing the chain is dropped. That ordering matters: the filter never
-asks "does this look synthetic?", it asks "can I show this came from a model?"
-
-**This lives in the experiment, not in the product path.** Phase 1 must move it
-into the trace-synthesis code, and the two-armed test in
-`tests/test_resume_loop_evidence.py` must move with it — a filter whose test
-stayed behind is a filter nobody will notice breaking.
+**What a real gate requires** (Phase 1 acceptance condition, not satisfied
+here): filter at the trace → `conversation.json` boundary **before provenance is
+discarded**; **fail the run** when provenance cannot be established rather than
+passing the record through; and establish authorship against an **independent**
+source — reconcile kept assistant turns against the captured API responses
+instead of trusting fields on the candidate record. Its test must start from the
+real dirty-seam fixture, produce the final canonical conversation, and prove
+both that the synthetic assistant is absent and that real assistant responses
+remain.
 """
 
 from __future__ import annotations
@@ -34,7 +42,11 @@ SYNTHETIC_MODEL_MARKER = "<synthetic>"
 
 
 def is_model_authored(record: dict[str, object]) -> bool:
-  """Reports whether an assistant record can be shown to come from a model.
+  """Reports whether a *transcript* record carries model-authorship fields.
+
+  The name is deliberately narrow: this checks that a record's own fields say it
+  came from a model, which is weaker than establishing that it did. See the
+  module docstring for what it does not do.
 
   Args:
     record: one session-transcript record.
@@ -53,7 +65,8 @@ def is_model_authored(record: dict[str, object]) -> bool:
     return False
   if model == SYNTHETIC_MODEL_MARKER:
     return False
-  return isinstance(record.get("requestId"), str)
+  request_id = record.get("requestId")
+  return isinstance(request_id, str) and bool(request_id.strip())
 
 
 def strip_synthetic_assistants(

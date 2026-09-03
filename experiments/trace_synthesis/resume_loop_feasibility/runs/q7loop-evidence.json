@@ -3,6 +3,9 @@
   "source_bytes": 132820,
   "credential_gate": {
     "redaction_marker_occurrences": 25,
+    "sensitive_headers_seen": 20,
+    "sensitive_headers_redacted": 20,
+    "unredacted_field_findings": 0,
     "credential_shapes": {
       "anthropic_key_prefix": 0,
       "bearer_jwt": 0,
@@ -30,7 +33,8 @@
               "len": 535,
               "sha256": "41fb20b0c2793db9c3e1ea5db046e8fab45371cc72dc3dae25cecc9ce6e69777"
             }
-          ]
+          ],
+          "has_system_reminder": false
         }
       ],
       "last_message_blocks": [
@@ -68,7 +72,8 @@
               "len": 334,
               "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
             }
-          ]
+          ],
+          "has_system_reminder": true
         },
         {
           "role": "system",
@@ -80,7 +85,8 @@
               "len": 7957,
               "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
             }
-          ]
+          ],
+          "has_system_reminder": true
         }
       ],
       "last_message_blocks": [
@@ -120,7 +126,8 @@
               "len": 334,
               "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
             }
-          ]
+          ],
+          "has_system_reminder": true
         },
         {
           "role": "system",
@@ -132,7 +139,8 @@
               "len": 7957,
               "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
             }
-          ]
+          ],
+          "has_system_reminder": true
         },
         {
           "role": "assistant",
@@ -140,7 +148,8 @@
             "thinking",
             "tool_use:Read"
           ],
-          "text_digests": []
+          "text_digests": [],
+          "has_system_reminder": false
         },
         {
           "role": "user",
@@ -153,7 +162,8 @@
               "len": 9,
               "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
             }
-          ]
+          ],
+          "has_system_reminder": false
         }
       ],
       "last_message_blocks": [
@@ -198,7 +208,8 @@
               "len": 334,
               "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
             }
-          ]
+          ],
+          "has_system_reminder": true
         },
         {
           "role": "system",
@@ -210,7 +221,8 @@
               "len": 7957,
               "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
             }
-          ]
+          ],
+          "has_system_reminder": true
         },
         {
           "role": "assistant",
@@ -218,7 +230,8 @@
             "thinking",
             "tool_use:Read"
           ],
-          "text_digests": []
+          "text_digests": [],
+          "has_system_reminder": false
         },
         {
           "role": "user",
@@ -231,7 +244,8 @@
               "len": 9,
               "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
             }
-          ]
+          ],
+          "has_system_reminder": false
         },
         {
           "role": "assistant",
@@ -239,7 +253,8 @@
             "thinking",
             "tool_use:Bash"
           ],
-          "text_digests": []
+          "text_digests": [],
+          "has_system_reminder": false
         },
         {
           "role": "user",
@@ -252,7 +267,8 @@
               "len": 9,
               "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
             }
-          ]
+          ],
+          "has_system_reminder": false
         }
       ],
       "last_message_blocks": [
@@ -300,7 +316,8 @@
               "len": 334,
               "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
             }
-          ]
+          ],
+          "has_system_reminder": true
         },
         {
           "role": "system",
@@ -312,7 +329,8 @@
               "len": 7957,
               "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
             }
-          ]
+          ],
+          "has_system_reminder": true
         },
         {
           "role": "assistant",
@@ -320,7 +338,8 @@
             "thinking",
             "tool_use:Read"
           ],
-          "text_digests": []
+          "text_digests": [],
+          "has_system_reminder": false
         },
         {
           "role": "user",
@@ -333,7 +352,8 @@
               "len": 9,
               "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
             }
-          ]
+          ],
+          "has_system_reminder": false
         },
         {
           "role": "assistant",
@@ -341,7 +361,8 @@
             "thinking",
             "tool_use:Bash"
           ],
-          "text_digests": []
+          "text_digests": [],
+          "has_system_reminder": false
         },
         {
           "role": "user",
@@ -354,14 +375,16 @@
               "len": 9,
               "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
             }
-          ]
+          ],
+          "has_system_reminder": false
         },
         {
           "role": "assistant",
           "blocks": [
             "tool_use:Read"
           ],
-          "text_digests": []
+          "text_digests": [],
+          "has_system_reminder": false
         },
         {
           "role": "user",
@@ -374,7 +397,8 @@
               "len": 9,
               "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
             }
-          ]
+          ],
+          "has_system_reminder": false
         }
       ],
       "last_message_blocks": [

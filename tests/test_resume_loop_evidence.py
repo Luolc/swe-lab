@@ -490,3 +490,50 @@ def test_the_committed_shape_fixture_matches_what_the_filter_reads() -> None:
   real = fixture["real_assistant_examples"][0]
   assert real["model"] != "<synthetic>"
   assert real["has_requestId"] is True
+
+
+def test_a_fabricated_provenance_record_still_passes_the_prototype() -> None:
+  """The prototype's fields are self-asserted, so it cannot prove authorship.
+
+  Pinned as a known limitation rather than described in prose: a real gate has
+  to reconcile against an independent source, and this asserts why.
+  """
+  module = _filter_module()
+  fabricated = _record("claude-sonnet-5", request_id="fabricated-request-id")
+  assert module.strip_synthetic_assistants([fabricated]) == [fabricated]
+  # An empty or whitespace id is at least rejected.
+  assert (
+      module.strip_synthetic_assistants(
+          [_record("claude-sonnet-5", request_id="")]
+      )
+      == []
+  )
+
+
+def test_the_prototype_does_not_protect_the_canonical_conversation() -> None:
+  """The training artifact has no provenance fields, so the filter is a no-op.
+
+  This is the round-3 P0, pinned as an executable fact. `conversation.json`
+  holds canonical `Message`s carrying only `role` and `content`; the fields the
+  prototype reads do not survive conversion, so it cannot remove anything
+  there. When Phase 1 builds the real gate at the conversion boundary, this
+  test is what tells whoever does it that the old one never covered this path.
+  """
+  from swe_lab.conversation.model import Message
+
+  assert sorted(Message.model_fields) == ["content", "role"]
+
+  canonical = [
+      {"role": "assistant", "content": [{"type": "text", "text": "real work"}]},
+      {
+          "role": "assistant",
+          "content": [{"type": "text", "text": "No response requested."}],
+      },
+  ]
+  kept = _filter_module().strip_synthetic_assistants(canonical)
+  assert kept == canonical, "prototype is a no-op on canonical messages"
+  assert any(
+      block["text"] == "No response requested."
+      for message in kept
+      for block in message["content"]
+  ), "the synthetic assistant survives into the training artifact"

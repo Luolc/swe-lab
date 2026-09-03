@@ -4,6 +4,9 @@
   "source_bytes": 3064215,
   "credential_gate": {
     "redaction_marker_occurrences": 165,
+    "sensitive_headers_seen": 132,
+    "sensitive_headers_redacted": 132,
+    "unredacted_field_findings": 0,
     "credential_shapes": {
       "anthropic_key_prefix": 0,
       "bearer_jwt": 0,

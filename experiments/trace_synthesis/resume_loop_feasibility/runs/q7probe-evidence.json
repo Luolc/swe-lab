@@ -3,6 +3,9 @@
   "source_bytes": 32031,
   "credential_gate": {
     "redaction_marker_occurrences": 5,
+    "sensitive_headers_seen": 4,
+    "sensitive_headers_redacted": 4,
+    "unredacted_field_findings": 0,
     "credential_shapes": {
       "anthropic_key_prefix": 0,
       "bearer_jwt": 0,
@@ -40,7 +43,8 @@
               "len": 334,
               "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
             }
-          ]
+          ],
+          "has_system_reminder": true
         },
         {
           "role": "system",
@@ -52,7 +56,8 @@
               "len": 7957,
               "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
             }
-          ]
+          ],
+          "has_system_reminder": true
         },
         {
           "role": "assistant",
@@ -60,14 +65,16 @@
             "thinking",
             "tool_use:Bash"
           ],
-          "text_digests": []
+          "text_digests": [],
+          "has_system_reminder": false
         },
         {
           "role": "user",
           "blocks": [
             "tool_result"
           ],
-          "text_digests": []
+          "text_digests": [],
+          "has_system_reminder": false
         },
         {
           "role": "assistant",
@@ -75,7 +82,8 @@
             "thinking",
             "tool_use:Read"
           ],
-          "text_digests": []
+          "text_digests": [],
+          "has_system_reminder": false
         },
         {
           "role": "user",
@@ -88,7 +96,8 @@
               "len": 9,
               "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
             }
-          ]
+          ],
+          "has_system_reminder": false
         }
       ],
       "last_message_blocks": [

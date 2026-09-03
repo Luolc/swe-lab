@@ -32,6 +32,8 @@ import json
 import pathlib
 import re
 
+from swe_lab.harnesses.claude_code import redaction
+
 SEAM_USER_TEXT = "Continue from where you left off."
 SEAM_SYNTHETIC_ASSISTANT = "No response requested."
 
@@ -60,6 +62,37 @@ class CredentialGateFailure(RuntimeError):
   check stayed green. The gate therefore fires here, on the raw bytes, before
   anything is derived from them.
   """
+
+
+def _header_census(proxy_log: str) -> tuple[int, int]:
+  """Counts sensitive headers and how many carry a redaction marker.
+
+  Args:
+    proxy_log: the raw capture text.
+
+  Returns:
+    ``(redacted, sensitive_total)`` over both request and response sides.
+  """
+  redacted = 0
+  total = 0
+  for line in proxy_log.splitlines():
+    if not line.strip():
+      continue
+    try:
+      record = json.loads(line)
+    except ValueError:
+      continue
+    for side in ("request", "response"):
+      side_value = record.get(side)
+      headers = side_value.get("headers") if isinstance(side_value, dict) else None
+      if not isinstance(headers, dict):
+        continue
+      for name, value in headers.items():
+        if name.lower() in redaction.SENSITIVE_HEADERS:
+          total += 1
+          if value in redaction.REDACTED_MARKERS:
+            redacted += 1
+  return redacted, total
 
 
 def digest(text: str) -> dict[str, object]:
@@ -149,6 +182,34 @@ def reduce_capture(
   """
   raw = log.read_bytes()
   text = raw.decode("utf-8", errors="replace")
+
+  # The repository already owns a field-aware checker; a second, partial
+  # credential vocabulary here would answer a narrower question while looking
+  # like the same one. `unredacted_fields()` knows the sensitive header set and
+  # the body identity path, so "Authorization: Bearer opaque-value" is a
+  # finding even though it matches none of the shape regexes below.
+  findings = redaction.unredacted_fields(text)
+  if findings:
+    raise CredentialGateFailure(
+        f"refusing to reduce {log.name}: {len(findings)} unredacted sensitive"
+        f" field(s), first = {findings[0]}"
+    )
+
+  # The positive premise, asserted at the field rather than anywhere in the
+  # bytes: a marker counted in a message body says nothing about whether the
+  # Authorization header was redacted, and those two produce the same green.
+  redacted_headers, sensitive_headers = _header_census(text)
+  if require_redaction_marker and sensitive_headers == 0:
+    raise CredentialGateFailure(
+        f"refusing to reduce {log.name}: no sensitive header present at all,"
+        " so 'redaction worked' has nothing to be true of"
+    )
+  if require_redaction_marker and redacted_headers == 0:
+    raise CredentialGateFailure(
+        f"refusing to reduce {log.name}: no sensitive header carries a"
+        " recognized redaction marker"
+    )
+
   markers = text.lower().count("[redacted]")
   hits = {
       name: len(pattern.findall(text))
@@ -159,12 +220,7 @@ def reduce_capture(
         f"refusing to reduce {log.name}: credential shapes present "
         f"({sorted(n for n, c in hits.items() if c)})"
     )
-  if require_redaction_marker and markers == 0:
-    raise CredentialGateFailure(
-        f"refusing to reduce {log.name}: no redaction marker found, so a zero"
-        " on the credential arm cannot be told from a scan that looked in the"
-        " wrong place"
-    )
+
   requests: list[dict[str, object]] = []
   for index, line in enumerate(text.splitlines()):
     if not line.strip():
@@ -207,6 +263,9 @@ def reduce_capture(
       "source_bytes": len(raw),
       "credential_gate": {
           "redaction_marker_occurrences": markers,
+          "sensitive_headers_seen": sensitive_headers,
+          "sensitive_headers_redacted": redacted_headers,
+          "unredacted_field_findings": 0,
           "credential_shapes": hits,
       },
       "requests": requests,
