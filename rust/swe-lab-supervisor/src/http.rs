@@ -8,7 +8,7 @@
 //! rather than a per-read timeout a slow drip could outlast.
 
 use std::io::{self, Read, Write};
-use std::net::{TcpStream, ToSocketAddrs};
+use std::net::TcpStream;
 use std::time::{Duration, Instant};
 
 use crate::config::Endpoint;
@@ -31,28 +31,25 @@ pub struct Response {
 ///
 /// # Errors
 ///
-/// The host does not resolve, the connection or the exchange does not
-/// complete before the deadline, the response is not HTTP/1.x, or the body
-/// exceeds [`MAX_RESPONSE_BYTES`]. The message never contains the request
-/// body or the token.
+/// The connection or the exchange does not complete before the deadline,
+/// the response is not HTTP/1.x, or the body exceeds
+/// [`MAX_RESPONSE_BYTES`]. The message never contains the request body or
+/// the token.
 pub fn post_json(
     endpoint: &Endpoint,
     bearer: Option<&str>,
     body: &[u8],
     deadline: Instant,
 ) -> Result<Response, String> {
-    let address = (endpoint.host.as_str(), endpoint.port)
-        .to_socket_addrs()
-        .map_err(|e| format!("resolving {}: {e}", endpoint.host))?
-        .next()
-        .ok_or_else(|| format!("{} resolves to no address", endpoint.host))?;
-    let mut stream = TcpStream::connect_timeout(&address, remaining(deadline)?)
-        .map_err(|e| format!("connecting to {address}: {e}"))?;
+    // Nothing to resolve: the endpoint is a numeric loopback address by
+    // construction (`Endpoint::parse`), so the connection is the first and
+    // only thing that can wait, and it waits under the deadline.
+    let mut stream = TcpStream::connect_timeout(&endpoint.address, remaining(deadline)?)
+        .map_err(|e| format!("connecting to the endpoint: {e}"))?;
     let mut head = format!(
-        "POST {} HTTP/1.1\r\nHost: {}:{}\r\nContent-Type: application/json\r\nAccept: application/json\r\nContent-Length: {}\r\nConnection: close\r\n",
+        "POST {} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nAccept: application/json\r\nContent-Length: {}\r\nConnection: close\r\n",
         endpoint.path,
-        endpoint.host,
-        endpoint.port,
+        endpoint.address,
         body.len()
     );
     if let Some(token) = bearer {
@@ -61,13 +58,16 @@ pub fn post_json(
         head.push_str("\r\n");
     }
     head.push_str("\r\n");
-    stream
-        .set_write_timeout(Some(remaining(deadline)?))
-        .map_err(|e| e.to_string())?;
-    stream
-        .write_all(head.as_bytes())
-        .and_then(|()| stream.write_all(body))
-        .map_err(|e| format!("sending the request: {e}"))?;
+    // One absolute deadline for the whole call: each write's timeout is
+    // what is left of it at that moment, not a fresh allowance.
+    for part in [head.as_bytes(), body] {
+        stream
+            .set_write_timeout(Some(remaining(deadline)?))
+            .map_err(|e| e.to_string())?;
+        stream
+            .write_all(part)
+            .map_err(|e| format!("sending the request: {e}"))?;
+    }
     let raw = read_until_close(&mut stream, deadline)?;
     parse(&raw)
 }
@@ -213,8 +213,7 @@ pub(crate) mod tests {
         });
         (
             Endpoint {
-                host: "127.0.0.1".to_string(),
-                port,
+                address: std::net::SocketAddr::from(([127, 0, 0, 1], port)),
                 path: "/v1/chat/completions".to_string(),
             },
             rx,
@@ -263,8 +262,10 @@ pub(crate) mod tests {
     fn a_server_that_never_answers_fails_at_the_deadline_not_later() {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let endpoint = Endpoint {
-            host: "127.0.0.1".to_string(),
-            port: listener.local_addr().unwrap().port(),
+            address: std::net::SocketAddr::from((
+                [127, 0, 0, 1],
+                listener.local_addr().unwrap().port(),
+            )),
             path: "/".to_string(),
         };
         let started = Instant::now();

@@ -176,8 +176,7 @@ mod tests {
             Model {
                 name: "m".to_string(),
                 endpoint: Endpoint {
-                    host: "127.0.0.1".to_string(),
-                    port,
+                    address: std::net::SocketAddr::from(([127, 0, 0, 1], port)),
                     path: "/v1/chat/completions".to_string(),
                 },
                 bearer: None,

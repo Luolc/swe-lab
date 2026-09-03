@@ -201,7 +201,7 @@ command line.
 
 | Variable | Meaning |
 | --- | --- |
-| `SWE_LAB_SUPERVISOR_BASE_URL` | **Required.** The base URL of an OpenAI-shaped chat-completions API, `http://host[:port]/v1`; the binary appends `/chat/completions`. **Plain HTTP only** — `https://` is refused with the reason: the binary carries no TLS, so it speaks to a loopback forwarder in the sandbox (the `cc-reverse-proxy` instance the Python side starts with `--target https://openrouter.ai/api`), which terminates TLS and forwards the bytes unchanged. |
+| `SWE_LAB_SUPERVISOR_BASE_URL` | **Required.** The base URL of an OpenAI-shaped chat-completions API, `http://<loopback ip>:<port>/v1`; the binary appends `/chat/completions`. **Plain HTTP, to loopback, by number** — `https://` is refused with the reason (the binary carries no TLS), and so is any hostname, `localhost` included, or any address that is not loopback: the binary sends a bearer token in clear, and it speaks to a loopback forwarder in the sandbox (the `cc-reverse-proxy` instance the Python side starts with `--target https://openrouter.ai/api`), which terminates TLS and forwards the bytes unchanged. A hostname would be resolved, and what it resolves to is the box's business; a numeric loopback address is checked on the spot, so no stray environment variable can point a request carrying `Authorization` off the box. |
 | `SWE_LAB_SUPERVISOR_API_KEY` | Optional. The bearer credential the endpoint needs, put in the `Authorization` header by the binary and forwarded by the proxy. Several keys may be comma-separated; the first is used, split in-process. Unset or empty, no header is sent. It appears in no config, argv, log or summary. |
 
 ## Building
