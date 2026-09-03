@@ -80,8 +80,9 @@ use crate::summary::{self, Summary, SupervisorExit};
 /// record is what the account exists to rule out. It is enough for the row
 /// with every string that came from outside at its ceiling
 /// ([`MAX_ROW_STRING_CHARS`]) and the raw answers gone ([`reduce`]), which
-/// is what the row is cut to when the whole would not fit; the named test
-/// is `a_boundary_row_at_every_ceiling_fits_the_room_held_for_it`.
+/// is what the row is cut to when the whole would not fit — with the
+/// delivery's outcome row behind it; the named test is
+/// `a_boundary_row_at_every_ceiling_fits_the_room_held_for_it`.
 const JUDGMENT_ROW_RESERVE: u64 = 16 * 1024;
 
 /// The ceiling on a string of a boundary's row that came from outside — the
@@ -799,13 +800,19 @@ impl Loop {
                 }
             }
         };
+        // Fitted as it will be written, its kind on it — a correction's
+        // is `correction` — so that what is measured is what the log takes.
+        let kind = match &decided {
+            Ok(kind) => *kind,
+            Err(_) => "correction",
+        };
+        row.insert("kind".into(), json!(kind));
         bound_row(&mut row);
         if !self.fits(&row, DELIVERY_MARGIN) {
             reduce(&mut row);
         }
         let delivered = match decided {
-            Ok(kind) => {
-                row.insert("kind".into(), json!(kind));
+            Ok(_) => {
                 self.write_row(row);
                 false
             }
@@ -907,9 +914,9 @@ impl Loop {
     /// The policy wrote a correction. Stale, or the channel gone, is one row
     /// saying which, and nothing is sent. Otherwise nothing reaches the
     /// actor's stdin before its record is on disk: `row` — the decision,
-    /// its calls, the text — is written first as a `correction` row and
-    /// flushed; a log that cannot take it keeps the correction from being
-    /// sent (the fault is set). Then the correction is written to the
+    /// its calls, the text, a `correction` row already — is written first
+    /// and flushed; a log that cannot take it keeps the correction from
+    /// being sent (the fault is set). Then the correction is written to the
     /// actor, and the delivery's outcome follows as a row of its own —
     /// `spoke`, or `gap` — for the same boundary. A `correction` row with
     /// no outcome row behind it is a delivery the record does not vouch
@@ -922,19 +929,32 @@ impl Loop {
             self.write_row(row);
             return false;
         }
-        row.insert("kind".into(), json!("correction"));
         if !self.write_row(row) {
             return false;
         }
         let (kind, reason) = self.write_correction(boundary, text);
-        let mut outcome = self.row(kind, boundary.disposition);
-        outcome.insert("cursor".into(), json!(boundary.trigger_cursor));
-        outcome.insert("boundary".into(), json!(boundary.ordinal));
-        if let Some(reason) = reason {
-            outcome.insert("reason".into(), json!(bounded(&reason)));
-        }
+        let outcome = self.outcome_row(boundary, kind, reason.as_deref());
         self.write_row(outcome);
         kind == "spoke"
+    }
+
+    /// The row a delivery's outcome is written as, behind the `correction`
+    /// row of the same boundary: `spoke`, or `gap` with the reason. The
+    /// largest one is under [`DELIVERY_MARGIN`]; the reserve's named test
+    /// builds it through here.
+    fn outcome_row(
+        &self,
+        boundary: &InFlight,
+        kind: &str,
+        reason: Option<&str>,
+    ) -> Map<String, Value> {
+        let mut row = self.row(kind, boundary.disposition);
+        row.insert("cursor".into(), json!(boundary.trigger_cursor));
+        row.insert("boundary".into(), json!(boundary.ordinal));
+        if let Some(reason) = reason {
+            row.insert("reason".into(), json!(bounded(reason)));
+        }
+        row
     }
 
     /// Whether a correction for `boundary` may be written to the actor now:
@@ -1126,8 +1146,10 @@ impl Loop {
         if let Err(error) = log.flush() {
             unclean.get_or_insert_with(|| format!("flushing the supervisor log: {error}"));
         }
-        // Both logs are complete: the reader is joined and the account is
-        // flushed. Digested through the descriptors they were written by.
+        // The account is flushed. The event log is at rest when its reader
+        // settled — joined, at end of file or stopped short; one left
+        // behind may still add to it, which the guard below is for. Each
+        // digest is taken through the descriptor the log was written by.
         let mut digest = |name: &str, file: &mut File| match summary::digest(file) {
             Ok(digest) => Some(digest),
             Err(error) => {
@@ -1378,18 +1400,31 @@ pub fn utc_now_iso8601() -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     use super::*;
     use crate::outputs::Outputs;
 
-    /// A loop around `sh -c cat`, its logs in a directory of its own, with
-    /// a model at a loopback port nothing listens on.
-    fn quiet_loop(name: &str) -> (Loop, PathBuf) {
+    /// A fresh directory under the system temp dir, unique to this test.
+    fn scratch(name: &str) -> PathBuf {
         let dir =
             std::env::temp_dir().join(format!("swe-lab-supervisor-{name}-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    /// A loop around `sh -c cat`, its logs in a directory of its own.
+    fn quiet_loop(name: &str) -> (Loop, PathBuf) {
+        let dir = scratch(name);
+        let event_log = Outputs::default().open(&dir.join("events.jsonl")).unwrap();
+        (loop_over(&dir, "cat", event_log), dir)
+    }
+
+    /// A loop around `sh -c <script>`, its event log `event_log` and its
+    /// other logs in `dir`, with a model at a loopback port nothing
+    /// listens on.
+    fn loop_over(dir: &Path, script: &str, event_log: Output) -> Loop {
         let config: Config = serde_json::from_str(&format!(
             r#"{{"schema_version": 1, "task": "t",
             "criterion": {{"name": "general-practice", "sha256": "{}"}},
@@ -1404,7 +1439,7 @@ mod tests {
         .unwrap();
         let mut outputs = Outputs::default();
         let artifacts = Artifacts {
-            actor_event_log: outputs.open(&dir.join("events.jsonl")).unwrap(),
+            actor_event_log: event_log,
             supervisor_log: outputs.open(&dir.join("supervisor.jsonl")).unwrap(),
             actor_stderr: outputs.open(&dir.join("stderr.log")).unwrap(),
         };
@@ -1415,9 +1450,8 @@ mod tests {
             call_timeout: Duration::from_secs(1),
             stop: Arc::new(AtomicUsize::new(0)),
         };
-        let argv: Vec<OsString> = ["sh", "-c", "cat"].iter().map(OsString::from).collect();
-        let run = Loop::new(config, "criterion", model, &argv, artifacts).unwrap();
-        (run, dir)
+        let argv: Vec<OsString> = ["sh", "-c", script].iter().map(OsString::from).collect();
+        Loop::new(config, "criterion", model, &argv, artifacts).unwrap()
     }
 
     fn in_flight(ordinal: u64, judge: JoinHandle<()>) -> InFlight {
@@ -1432,9 +1466,21 @@ mod tests {
         }
     }
 
-    fn last_row(dir: &std::path::Path) -> Map<String, Value> {
+    fn last_row(dir: &Path) -> Map<String, Value> {
+        rows(dir).pop().unwrap().0
+    }
+
+    /// The supervisor log's rows, each with the bytes it takes on disk.
+    fn rows(dir: &Path) -> Vec<(Map<String, Value>, u64)> {
         let log = std::fs::read_to_string(dir.join("supervisor.jsonl")).unwrap();
-        serde_json::from_str(log.lines().last().unwrap()).unwrap()
+        log.lines()
+            .map(|line| {
+                (
+                    serde_json::from_str(line).unwrap(),
+                    u64::try_from(line.len() + 1).unwrap(),
+                )
+            })
+            .collect()
     }
 
     /// A pending boundary whose judge cannot be started is on record as
@@ -1617,143 +1663,209 @@ mod tests {
         }
     }
 
-    /// A stdout reader left behind — stuck in a write to an event log that
-    /// is a pipe nobody reads — leaves the event log unsettled: the account
-    /// is unclean and says so, and `finish` takes no digest of that log.
-    /// The control is a reader that reaches end of file.
+    /// No digest of an event log whose reader was left behind. The actor
+    /// floods a log that is a pipe nobody reads, so its reader is stuck in
+    /// a write past the grace and the stop bound; `finish` then publishes
+    /// `actor_event_log_sha256` as null — the run unclean, not accounted
+    /// for — though the handle it would digest through is a readable
+    /// regular file with a digest to give: null is the decision, not a
+    /// failure to read. The control is an actor whose reader reached end
+    /// of file: the digest is the file's, and the run is clean.
     #[test]
-    fn an_actor_whose_reader_was_left_behind_leaves_the_event_log_unsettled() {
+    fn no_digest_is_taken_of_an_event_log_whose_reader_was_left_behind() {
         use std::os::unix::fs::OpenOptionsExt;
         for stuck in [true, false] {
-            let dir = std::env::temp_dir().join(format!(
-                "swe-lab-supervisor-unsettled-{stuck}-{}",
-                std::process::id()
-            ));
-            std::fs::create_dir_all(&dir).unwrap();
-            let (log, reader, script) = if stuck {
+            let dir = scratch(&format!("unsettled-{stuck}"));
+            let regular = dir.join("events.jsonl");
+            let (event_log, holder, script) = if stuck {
                 let fifo = dir.join("events.fifo");
                 nix::unistd::mkfifo(&fifo, nix::sys::stat::Mode::S_IRWXU).unwrap();
-                let reader = File::options()
+                // The read end is held open and never read: the writer
+                // fills the pipe and then blocks in its write.
+                let holder = File::options()
                     .read(true)
                     .custom_flags(nix::fcntl::OFlag::O_NONBLOCK.bits())
                     .open(&fifo)
                     .unwrap();
-                let log = File::options().write(true).open(&fifo).unwrap();
-                (log, Some(reader), "while :; do echo flood; done")
+                let file = File::options().write(true).open(&fifo).unwrap();
+                let log = Output { path: fifo, file };
+                (log, Some(holder), "while :; do echo flood; done")
             } else {
-                (
-                    File::create(dir.join("events.jsonl")).unwrap(),
-                    None,
-                    "echo one",
-                )
+                let log = Outputs::default().open(&regular).unwrap();
+                (log, None, "echo one")
             };
-            let argv: Vec<OsString> = ["sh", "-c", script].iter().map(OsString::from).collect();
-            let actor = Actor::spawn(
-                actor::command(&argv, &[]).unwrap(),
-                log,
-                File::create(dir.join("stderr.log")).unwrap(),
-                actor::Limits {
-                    line: 1024,
-                    stdout: u64::MAX,
-                    stderr: u64::MAX,
-                },
-                |_| {},
-            )
-            .unwrap();
-            thread::sleep(Duration::from_millis(300));
-            let mut unclean = None;
-            let teardown = end_actor(actor, Duration::from_millis(500), &mut unclean);
-            assert_eq!(teardown.stdout_settled, !stuck, "stuck: {stuck}");
+            let mut run = loop_over(&dir, script, event_log);
+            // Every event relayed is taken, so that a full queue is not
+            // what holds the reader; they stop coming once it is stuck.
+            while run.inbox.recv_timeout(Duration::from_millis(500)).is_ok() {}
             if stuck {
-                assert!(
-                    unclean
-                        .as_deref()
-                        .is_some_and(|u| u.contains("left behind")),
-                    "{unclean:?}"
-                );
-            } else {
-                assert_eq!(unclean, None);
+                std::fs::write(&regular, "{\"type\":\"at rest\"}\n").unwrap();
+                run.event_log = File::open(&regular).unwrap();
             }
-            drop(reader);
+            let summary = run.finish(None, &"0".repeat(64)).summary;
+            if stuck {
+                assert_eq!(summary.actor_event_log_sha256, None);
+                assert!(summary.supervisor_log_sha256.is_some());
+                assert!(
+                    summary
+                        .unclean_reason
+                        .as_deref()
+                        .is_some_and(|reason| reason.contains("left behind")),
+                    "{:?}",
+                    summary.unclean_reason
+                );
+                assert_eq!(summary.supervisor_exit, SupervisorExit::Unclean);
+                assert!(!summary.accounted_for);
+            } else {
+                let expected = summary::digest(&mut File::open(&regular).unwrap()).unwrap();
+                assert_eq!(summary.actor_event_log_sha256, Some(expected));
+                assert_eq!(summary.unclean_reason, None);
+                assert_eq!(summary.supervisor_exit, SupervisorExit::Clean);
+            }
+            drop(holder);
             std::fs::remove_dir_all(dir).unwrap();
         }
     }
 
-    /// The room held for a judgment's row is enough for the row with every
-    /// string that came from outside at its ceiling and the raw answers
-    /// gone — before the delivery's word, with the margin the delivery
-    /// gets, and after it.
+    /// The room held for a judgment's record is enough for the largest
+    /// one. A log at the cap less the reserve takes, with no fault, the
+    /// record of a judgment with every string that came from outside at
+    /// its ceiling and a correction at its ceiling — the `correction` row,
+    /// its raw answers gone, and the `spoke` row behind it — and the
+    /// record of one gone unjudged with a reason at its ceiling. And the
+    /// arithmetic behind that, on the rows as written: the fitted row with
+    /// the margin the delivery gets is under the reserve; the largest
+    /// outcome row `speak` can write, `gap` with a reason at its ceiling,
+    /// is under the margin; and the two together are under the reserve.
     #[test]
     fn a_boundary_row_at_every_ceiling_fits_the_room_held_for_it() {
         // Four bytes a character: the widest a bounded string encodes to.
         let widest = "𝕏".repeat(MAX_ROW_STRING_CHARS + 1);
         let bounded_widest = bounded(&widest);
         assert_eq!(bounded_widest.chars().count(), MAX_ROW_STRING_CHARS + 1);
-        let call = |purpose: &str| {
-            json!({
-                "purpose": purpose,
-                "requested_model": widest,
-                "response_model": widest,
-                "max_tokens_sent": u32::MAX,
-                "finish_reason": widest,
-                "raw": widest.repeat(64),
-                "took_ms": u64::MAX,
-                "error": widest,
-            })
+        let call = |purpose| Call {
+            purpose,
+            requested_model: widest.clone(),
+            response_model: Some(widest.clone()),
+            max_tokens_sent: u32::MAX,
+            finish_reason: Some(widest.clone()),
+            raw: Some(widest.repeat(64)),
+            took: Duration::MAX,
+            error: Some(widest.clone()),
         };
-        let mut row = Map::new();
-        row.insert("cursor".into(), json!(u64::MAX));
-        row.insert("at".into(), json!(utc_now_iso8601()));
-        row.insert("policy".into(), json!(POLICY_NAME));
-        row.insert("kind".into(), json!(""));
-        row.insert(
-            "evidence".into(),
-            json!(Disposition::ExcludedOwnIntervention.as_str()),
-        );
-        row.insert("snapshot_cursor".into(), json!(u64::MAX));
-        row.insert("boundary".into(), json!(u64::MAX));
-        row.insert("decision_lag_ms".into(), json!(u64::MAX));
-        row.insert("marker".into(), json!(widest));
-        row.insert(
-            "text".into(),
-            json!("𝕏".repeat(crate::prompt::MAX_INTERVENTION_CHARS)),
-        );
-        row.insert("calls".into(), json!([call("judge"), call("writer")]));
-        bound_row(&mut row);
-        reduce(&mut row);
-        assert_eq!(row["marker"], json!(bounded_widest));
-        assert_eq!(row["calls"][1]["error"], json!(bounded_widest));
-        let bytes = |row: &Map<String, Value>| {
-            u64::try_from(
-                serde_json::to_vec(&Value::Object(row.clone()))
-                    .unwrap()
-                    .len()
-                    + 1,
-            )
-            .unwrap()
+        let judged = |decision| Judged {
+            decision,
+            marker: Some(widest.clone()),
+            calls: vec![call("judge"), call("writer")],
         };
+        let (mut run, dir) = quiet_loop("reserve");
+        let cap = run.config.limits.max_actor_stdout_bytes.get();
+        run.cursor = u64::MAX;
+        let text = "𝕏".repeat(crate::prompt::MAX_INTERVENTION_CHARS);
+        for (ordinal, decision) in [
+            (u64::MAX, Decision::Speak(text)),
+            (u64::MAX - 1, Decision::Unjudged(widest.clone())),
+        ] {
+            run.log_written = cap - JUDGMENT_ROW_RESERVE;
+            run.settle(&widest_boundary(ordinal), Ok(judged(decision)));
+            assert!(!run.faulted, "{:?}", run.unclean);
+        }
+        let rows = rows(&dir);
+        let kinds: Vec<&str> = rows
+            .iter()
+            .map(|(row, _)| row["kind"].as_str().unwrap())
+            .collect();
+        assert_eq!(kinds, ["correction", "spoke", "unjudged"]);
+        let (correction, correction_bytes) = &rows[0];
+        assert_eq!(correction["decision_lag_ms"], json!(u64::MAX));
+        assert_eq!(correction["marker"], json!(bounded_widest));
+        assert_eq!(correction["calls"][1]["error"], json!(bounded_widest));
+        assert_eq!(correction["calls"][0]["raw"], Value::Null);
+        assert!(correction["calls"][0]["raw_omitted"].is_string());
         assert!(
-            bytes(&row) + DELIVERY_MARGIN <= JUDGMENT_ROW_RESERVE,
-            "{} + {DELIVERY_MARGIN} > {JUDGMENT_ROW_RESERVE}",
-            bytes(&row)
+            correction_bytes + DELIVERY_MARGIN <= JUDGMENT_ROW_RESERVE,
+            "{correction_bytes} + {DELIVERY_MARGIN} > {JUDGMENT_ROW_RESERVE}"
         );
-        row.insert("kind".into(), json!("unjudged"));
-        row.insert("reason".into(), json!(bounded_widest));
-        assert!(bytes(&row) <= JUDGMENT_ROW_RESERVE, "{}", bytes(&row));
-        // The largest outcome row a delivery adds behind the `correction`
-        // row: every field `speak` gives it, at its ceiling.
-        let mut outcome = Map::new();
-        outcome.insert("cursor".into(), json!(u64::MAX));
-        outcome.insert("at".into(), json!(utc_now_iso8601()));
-        outcome.insert("policy".into(), json!(POLICY_NAME));
-        outcome.insert("kind".into(), json!("spoke"));
-        outcome.insert(
-            "evidence".into(),
-            json!(Disposition::ExcludedOwnIntervention.as_str()),
+        let outcome = run.outcome_row(&widest_boundary(u64::MAX), "gap", Some(&widest));
+        assert_eq!(outcome["reason"], json!(bounded_widest));
+        let outcome_bytes =
+            u64::try_from(serde_json::to_vec(&Value::Object(outcome)).unwrap().len() + 1).unwrap();
+        assert!(
+            outcome_bytes <= DELIVERY_MARGIN,
+            "{outcome_bytes} > {DELIVERY_MARGIN}"
         );
-        outcome.insert("boundary".into(), json!(u64::MAX));
-        outcome.insert("reason".into(), json!(bounded_widest));
-        assert!(bytes(&outcome) <= DELIVERY_MARGIN, "{}", bytes(&outcome));
+        assert!(
+            correction_bytes + outcome_bytes <= JUDGMENT_ROW_RESERVE,
+            "{correction_bytes} + {outcome_bytes} > {JUDGMENT_ROW_RESERVE}"
+        );
+        let (unjudged, unjudged_bytes) = &rows[2];
+        assert_eq!(unjudged["reason"], json!(bounded_widest));
+        assert!(
+            *unjudged_bytes <= JUDGMENT_ROW_RESERVE,
+            "{unjudged_bytes} > {JUDGMENT_ROW_RESERVE}"
+        );
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// A boundary with every number of its row at its widest: the cursors
+    /// and the ordinal, and a lag as long as an instant goes back.
+    fn widest_boundary(ordinal: u64) -> InFlight {
+        InFlight {
+            ordinal,
+            trigger_cursor: u64::MAX,
+            cursor: u64::MAX,
+            revision: 0,
+            disposition: Disposition::ExcludedOwnIntervention,
+            started: Instant::now()
+                .checked_sub(Duration::from_millis(u64::MAX))
+                .expect("an instant that far back"),
+            judge: None,
+        }
+    }
+
+    /// The fit measures the row as it is written, its kind on it. A
+    /// judgment's row a log takes whole, with the delivery's margin to
+    /// spare; then the same row at a log one byte short of that: the
+    /// second has its raw answers go. Before, the row was measured before
+    /// its kind was put on it, so a row up to ten bytes over what the log
+    /// would take was found to fit and written whole.
+    #[test]
+    fn the_fit_measures_the_row_as_it_is_written() {
+        let (mut run, dir) = quiet_loop("fit");
+        let cap = run.config.limits.max_actor_stdout_bytes.get();
+        let judged = || Judged {
+            decision: Decision::Speak("say".to_string()),
+            marker: Some("marker".to_string()),
+            calls: vec![Call {
+                purpose: "judge",
+                requested_model: "m".to_string(),
+                response_model: None,
+                max_tokens_sent: 1,
+                finish_reason: None,
+                raw: Some("the raw answer".to_string()),
+                took: Duration::ZERO,
+                error: None,
+            }],
+        };
+        run.settle(&widest_boundary(1), Ok(judged()));
+        let whole = rows(&dir)[0].1;
+        run.log_written = cap - whole - DELIVERY_MARGIN + 1;
+        run.settle(&widest_boundary(2), Ok(judged()));
+        assert!(!run.faulted, "{:?}", run.unclean);
+        let rows = rows(&dir);
+        let kinds: Vec<&str> = rows
+            .iter()
+            .map(|(row, _)| row["kind"].as_str().unwrap())
+            .collect();
+        assert_eq!(kinds, ["correction", "spoke", "correction", "spoke"]);
+        assert_eq!(rows[0].0["calls"][0]["raw"], json!("the raw answer"));
+        assert_eq!(
+            rows[2].0["calls"][0]["raw"],
+            Value::Null,
+            "a row one byte over was found to fit"
+        );
+        assert!(rows[2].0["calls"][0]["raw_omitted"].is_string());
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     /// Control characters do not survive bounding, and a cut is marked.

@@ -156,8 +156,9 @@ drain on record as stopped short. The one reader no wake-up reaches is one
 stuck in a write to its log; it is left behind after a further bound (one
 second), the drain on record as unfinished, and **the event log gets no
 digest** — a digest of a file a reader may still write looks exactly like a
-correct one, so none is published: null rather than false. Never an
-unbounded wait: a held pipe must not become a hung wrapper. What went
+correct one, so none is published: null rather than false (the crate's
+`no_digest_is_taken_of_an_event_log_whose_reader_was_left_behind` is the
+named test). Never an unbounded wait: a held pipe must not become a hung wrapper. What went
 wrong on the way is carried out and makes the run unclean. Both
 mechanisms sit behind the reader's gate and the `Actor` handle; a config
 picks one (§2).
@@ -321,9 +322,10 @@ reserve. When the row is written, every string of it that came from outside
 to 256 characters, control characters replaced, an ellipsis marking a cut;
 and if the row still would not fit, the raw answers go: `calls[].raw` is
 null and `calls[].raw_omitted` says why. The call, its error and the marker
-are never dropped, and the row is fitted *before* any correction is written,
-so an intervention is never without its record. A row so cut is under the
-reserve by construction (the crate's
+are never dropped, and the row is fitted *before* any correction is written
+— as it will be written, its kind on it — so an intervention is never
+without its record. A row so cut is under the reserve with the delivery's
+outcome row behind it, by construction (the crate's
 `a_boundary_row_at_every_ceiling_fits_the_room_held_for_it` is the named
 test).
 

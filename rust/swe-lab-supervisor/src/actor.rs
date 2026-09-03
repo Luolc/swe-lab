@@ -1707,39 +1707,60 @@ mod tests {
     }
 
     /// A pipe something the sweep cannot find still holds: an unmarked
-    /// `setsid` holder keeps the actor's stdout open past the group's death,
-    /// so the drain cannot reach end of file. Told to stop once the grace is
-    /// spent, it comes back and is joined — `end` returns with the drain
-    /// stopped short, and the event log does not change after that. Before,
-    /// the drain was left running, the handle dropped.
+    /// `setsid` holder keeps one of the actor's pipes — stdout in one arm,
+    /// stderr in the other, each drain with a wake-up of its own — open
+    /// past the group's death, so that drain cannot reach end of file.
+    /// Told to stop once the grace is spent, it comes back and is joined:
+    /// `end` returns within the stop bound with that drain stopped short,
+    /// the other at end of file, and the held log does not change after
+    /// that. Before, the drain was left running, the handle dropped.
     #[test]
     fn a_reader_whose_pipe_is_still_held_is_stopped_and_joined_when_the_grace_is_spent() {
-        let dir = scratch("end-held-pipe");
-        let (actor, _rx) = launch(&dir, "setsid env -i sleep 5 & echo held; exit 0", 1024);
-        thread::sleep(Duration::from_millis(300));
-        let grace = Duration::from_millis(500);
-        let started = Instant::now();
-        let ended = actor.end(grace).unwrap();
-        let took = started.elapsed();
-        assert!(
-            took >= grace && took < grace + READER_STOP_BOUND,
-            "{took:?}"
-        );
-        assert!(ended.teardown.is_empty(), "{:?}", ended.teardown);
-        match &ended.stdout {
-            Some(Err(reason)) => assert!(reason.contains("stopped before end of file"), "{reason}"),
-            other => panic!("the held drain: {other:?}"),
+        for (held, script, log) in [
+            (
+                "stdout",
+                "setsid env -i sleep 5 2>/dev/null & echo held; exit 0",
+                "events.jsonl",
+            ),
+            (
+                "stderr",
+                "setsid env -i sleep 5 >/dev/null & echo held; exit 0",
+                "stderr.log",
+            ),
+        ] {
+            let dir = scratch(&format!("end-held-{held}"));
+            let (actor, _rx) = launch(&dir, script, 1024);
+            thread::sleep(Duration::from_millis(300));
+            let grace = Duration::from_millis(500);
+            let started = Instant::now();
+            let ended = actor.end(grace).unwrap();
+            let took = started.elapsed();
+            assert!(
+                took >= grace && took < grace + READER_STOP_BOUND,
+                "{held}: {took:?}"
+            );
+            assert!(ended.teardown.is_empty(), "{held}: {:?}", ended.teardown);
+            let (stopped, other) = if held == "stdout" {
+                (&ended.stdout, &ended.stderr)
+            } else {
+                (&ended.stderr, &ended.stdout)
+            };
+            assert_eq!(
+                stopped,
+                &Some(Err(STOPPED_BEFORE_EOF.to_string())),
+                "{held}: the held drain"
+            );
+            assert_eq!(other, &Some(Ok(())), "{held}: the other drain");
+            let log = dir.join(log);
+            let size = fs::metadata(&log).unwrap().len();
+            thread::sleep(Duration::from_millis(200));
+            assert_eq!(
+                fs::metadata(&log).unwrap().len(),
+                size,
+                "{held}: the log changed after `end`"
+            );
+            std::fs::remove_dir_all(dir).unwrap();
         }
-        assert!(ended.stderr.is_some());
-        let log = dir.join("events.jsonl");
-        let size = fs::metadata(&log).unwrap().len();
-        thread::sleep(Duration::from_millis(200));
-        assert_eq!(
-            fs::metadata(&log).unwrap().len(),
-            size,
-            "the log changed after `end`"
-        );
-        std::fs::remove_dir_all(dir).unwrap();
     }
 
     /// The residue: a reader stuck in a write to its log — the event log is
