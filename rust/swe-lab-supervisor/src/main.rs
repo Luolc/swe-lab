@@ -6,20 +6,42 @@
 //! boundaries, and write short corrections on the actor's stdin.
 //!
 //! **What this slice does.** `criteria`, `--version` and `--help` are
-//! complete. `run` loads and validates the config, verifies the criterion
-//! digest and reads the endpoint from the environment, then **refuses with
-//! exit 3**: no actor is launched and no artifact is written. The process
-//! wrapper and the judgment loop are the following slices; each moves this
-//! paragraph.
+//! complete, and so is the process wrapper: `run` validates the config,
+//! the criterion digest and the endpoint, launches the actor in its own
+//! process group with the two endpoint variables scrubbed from its
+//! environment and a mark added to it, writes the task on its stdin as one
+//! `stream-json` user event, drains its stdout to the event log and its
+//! stderr to the stderr log — each capped, each drain's fate reported — and
+//! ends it deliberately (`SIGTERM`, the configured grace, `SIGKILL` to the
+//! group, then every marked descendant that left the group) — on its own
+//! exit, on `SIGTERM` / `SIGINT` to the wrapper, when a log stops taking
+//! output, or when the leader has exited and a descendant still holds its
+//! stdout — exiting as the actor did when every drain ended cleanly, and
+//! with `1` when one did not. **No judgment is made and no correction is
+//! written**, and there is no supervisor log or summary yet: the judgment
+//! loop is the next slice, which rewrites this paragraph.
 
+mod actor;
 mod cli;
 mod config;
 mod criterion;
+mod framing;
+mod signals;
+mod stream;
 
-use std::process::ExitCode;
+use std::os::unix::process::ExitStatusExt;
+use std::process::{ExitCode, ExitStatus};
+use std::sync::mpsc;
+use std::time::{Duration, Instant};
+
+use actor::{Actor, Event};
 
 /// The command line could not be used as given.
 const EXIT_USAGE: u8 = 2;
+/// The actor ran, and the run is not accounted for: a drain stopped with an
+/// error, or did not finish. The exit status is the wrapper's, not the
+/// actor's, because the actor's success cannot be told from its record.
+const EXIT_UNHEALTHY: u8 = 1;
 /// The run was refused before the actor was launched: an unusable config, or a
 /// criterion that is not the one the config pins.
 const EXIT_REFUSED: u8 = 3;
@@ -50,27 +72,203 @@ fn main() -> ExitCode {
         }
         cli::Command::Run(args) => match run(&args) {
             Ok(code) => code,
-            Err(refusal) => {
-                eprintln!("swe-lab-supervisor: refusing to start: {refusal}");
+            Err(Failed::Refused(reason)) => {
+                eprintln!("swe-lab-supervisor: refusing to start: {reason}");
                 ExitCode::from(EXIT_REFUSED)
+            }
+            Err(Failed::Unhealthy(reason)) => {
+                eprintln!("swe-lab-supervisor: the run is not accounted for: {reason}");
+                ExitCode::from(EXIT_UNHEALTHY)
+            }
+            Err(Failed::Cancelled { signal, actor }) => {
+                eprintln!(
+                    "swe-lab-supervisor: cancelled by signal {signal}; the actor ended with {actor}"
+                );
+                ExitCode::from(exit_code_for_signal(signal))
             }
         },
     }
 }
 
-/// Validate the run's inputs, then hand over to the runtime.
+/// How a `run` did not end with the actor's exit status.
+enum Failed {
+    /// Refused before any actor process existed.
+    Refused(String),
+    /// The actor ran, and its record is not whole.
+    Unhealthy(String),
+    /// The wrapper was asked to stop by a signal, and did, whatever the actor
+    /// then made of its own ending: a cancelled run is not a result. `actor`
+    /// is how the actor ended, for the diagnostic.
+    Cancelled { signal: i32, actor: String },
+}
+
+impl From<String> for Failed {
+    fn from(reason: String) -> Self {
+        Self::Refused(reason)
+    }
+}
+
+/// Validate the run's inputs, then run the actor under the wrapper.
 ///
-/// Everything that can refuse the run happens here, before any actor process
+/// Everything that can refuse the run happens before any actor process
 /// exists: a run that cannot be supervised as configured is not started.
-fn run(args: &cli::RunArgs) -> Result<ExitCode, String> {
+///
+/// Until the policy lands, the wrapper is transparent: the task prompt is
+/// the first message on the actor's stdin, stdin is then closed so the actor
+/// runs one turn, and every line of its output is drained to the event log.
+/// The run is over when the actor's stdout has closed **and** its leader has
+/// exited — either alone starts the grace, after which the other is not
+/// waited for: an actor that closes stdout and then exits in its own time
+/// gets that time, and a leader gone while a descendant holds its stdout
+/// does not hold the wrapper. A drain stopping with an error ends the run
+/// at once; so does a stop signal, which is then the run's outcome.
+fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
     let config = config::load(&args.config)?;
-    let selected = criterion::select(&config.criterion.name, &config.criterion.sha256)?;
+    let _criterion = criterion::select(&config.criterion.name, &config.criterion.sha256)?;
     let _endpoint = config::Endpoint::from_env()?;
     let _credential = config::api_key_from_env();
-    // Nothing the caller passed is repeated: a misplaced token in the actor
-    // argv, the config path or the environment would otherwise land in a log.
-    Err(format!(
-        "the runtime is not built yet; the config, the criterion {} ({}) and the endpoint are valid",
-        selected.name, selected.digest
-    ))
+    let stop = signals::termination_requested().map_err(|e| format!("signal handler: {e}"))?;
+    let (events, inbox) = actor::event_queue();
+    let command = actor::command(
+        &args.actor_argv,
+        &[config::BASE_URL_ENV, config::API_KEY_ENV],
+    )
+    .map_err(|e| format!("actor command: {e}"))?;
+    let limits = actor::Limits {
+        line: usize::try_from(config.limits.max_event_line_bytes.get())
+            .map_err(|_| "limits.max_event_line_bytes does not fit".to_string())?,
+        stdout: config.limits.max_actor_stdout_bytes.get(),
+        stderr: config.limits.max_actor_stderr_bytes.get(),
+    };
+    let mut actor = Actor::spawn(
+        command,
+        &args.actor_event_log,
+        &args.actor_stderr,
+        limits,
+        move |event| {
+            // The consumer being gone means the wrapper is on its way out.
+            let _ = events.send(event);
+        },
+    )
+    .map_err(|e| format!("launching the actor: {e}"))?;
+    let grace = Duration::from_millis(config.timeouts.term_grace_ms);
+
+    let prompt = stream::user_event_line(&config.task);
+    if let Err(error) = actor.write_stdin(prompt.as_bytes(), &stop, grace) {
+        drop(inbox);
+        let ended = actor
+            .end(grace)
+            .map_err(|e| format!("ending the actor: {e}"))?;
+        if let Some(signal) = signals::requested(&stop) {
+            return Err(Failed::Cancelled {
+                signal,
+                actor: ended.status.to_string(),
+            });
+        }
+        return Err(Failed::Refused(format!(
+            "the actor did not take its prompt ({error}); it ended with {}",
+            ended.status
+        )));
+    }
+    actor.close_stdin();
+
+    let mut fault = serve(&mut actor, &inbox, &stop, grace)?;
+    // A reader blocked on the full queue can only finish once nobody holds
+    // the receiver.
+    drop(inbox);
+    let ended = actor
+        .end(grace)
+        .map_err(|e| Failed::Unhealthy(format!("ending the actor: {e}")))?;
+    if let Some(signal) = signals::requested(&stop) {
+        return Err(Failed::Cancelled {
+            signal,
+            actor: ended.status.to_string(),
+        });
+    }
+    if fault.is_none() {
+        fault = drain_fault("stdout", ended.stdout)
+            .or(drain_fault("stderr", ended.stderr))
+            .or(ended
+                .stragglers
+                .err()
+                .map(|e| format!("no proof that no descendant survived: {e}")));
+    }
+    match fault {
+        Some(reason) => Err(Failed::Unhealthy(reason)),
+        None => Ok(exit_code_of(ended.status)),
+    }
+}
+
+/// Consume the actor's events until the run is over: stdout closed and the
+/// leader exited, or one of them and the grace passed, or a drain faulted,
+/// or a stop was asked. Returns the fault, if a drain reported one.
+fn serve(
+    actor: &mut Actor,
+    inbox: &mpsc::Receiver<Event>,
+    stop: &signals::Stop,
+    grace: Duration,
+) -> Result<Option<String>, Failed> {
+    let mut stdout_closed = false;
+    let mut leader_exited = false;
+    let mut over_since: Option<Instant> = None;
+    while signals::requested(stop).is_none() {
+        match inbox.recv_timeout(Duration::from_millis(100)) {
+            Ok(Event::StdoutClosed(Ok(()))) | Err(mpsc::RecvTimeoutError::Disconnected) => {
+                stdout_closed = true;
+            }
+            Ok(Event::StdoutClosed(Err(error))) => {
+                return Ok(Some(format!("actor stdout: {error}")));
+            }
+            Ok(Event::StderrClosed(Err(error))) => {
+                return Ok(Some(format!("actor stderr: {error}")));
+            }
+            Ok(Event::Line(_) | Event::Oversized | Event::StderrClosed(Ok(())))
+            | Err(mpsc::RecvTimeoutError::Timeout) => {}
+        }
+        if !leader_exited
+            && actor
+                .exited()
+                .map_err(|e| Failed::Unhealthy(format!("observing the actor: {e}")))?
+        {
+            leader_exited = true;
+        }
+        if stdout_closed && leader_exited {
+            break;
+        }
+        if stdout_closed || leader_exited {
+            over_since.get_or_insert_with(Instant::now);
+        }
+        if over_since.is_some_and(|since| since.elapsed() >= grace) {
+            break;
+        }
+    }
+    Ok(None)
+}
+
+/// A cancelled wrapper exits as a process killed by that signal would, so
+/// a harness reads the cancellation and not the actor's own status.
+fn exit_code_for_signal(signal: i32) -> u8 {
+    u8::try_from(128 + signal).unwrap_or(1)
+}
+
+/// What a drain's ending says against the run, if anything.
+fn drain_fault(stream: &str, drain: Option<Result<(), String>>) -> Option<String> {
+    match drain {
+        Some(Ok(())) => None,
+        Some(Err(error)) => Some(format!("actor {stream}: {error}")),
+        None => Some(format!(
+            "actor {stream}: the drain did not finish within the grace; a process the wrapper could not find still holds the pipe"
+        )),
+    }
+}
+
+/// The wrapper exits as the actor did, so a script recording `$?` sees what
+/// it would have seen without the wrapper: the code, or `128 + signal`.
+fn exit_code_of(status: ExitStatus) -> ExitCode {
+    let code = match (status.code(), status.signal()) {
+        (Some(code), _) => code,
+        (None, Some(signal)) => 128 + signal,
+        (None, None) => 1,
+    };
+    ExitCode::from(u8::try_from(code & 0xff).unwrap_or(1))
 }

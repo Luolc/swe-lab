@@ -17,12 +17,23 @@ build towards.
 
 - **Complete:** `criteria`, `--version`, `--help`; the config file and its
   validation ([Config](#config)); the criterion digest check; the endpoint
-  and credential variables ([Environment](#environment)).
-- **Not yet:** `run` never launches an actor. After validating everything
-  above it **refuses with exit 3**, and writes no artifact. The process
-  wrapper (launch, draining, blocking, shutdown) and the judgment loop
-  (boundaries, judge, corrections, the log and the summary) are the next two
-  slices, each of which rewrites this section.
+  and credential variables ([Environment](#environment)); and the process
+  wrapper — `run` launches the actor in its own process group with the two
+  environment variables scrubbed and a mark added, writes the task on its
+  stdin as one `stream-json` user event, drains its stdout to
+  `--actor-event-log` and its stderr to `--actor-stderr` — each capped, the
+  reader never more than a bounded queue ahead of the loop — ends it
+  deliberately (`SIGTERM`, `term_grace_ms`, `SIGKILL` to the group, then
+  every marked descendant that left the group; also on `SIGTERM` / `SIGINT`
+  to the wrapper, when a log stops taking output, or when the leader exited
+  and a descendant still holds its stdout), and exits as the actor did — or
+  with `1` when a drain stopped with an error or did not finish, because
+  then the record is not whole and the actor's success cannot be read off it.
+- **Not yet:** no judgment is made and no correction is written, so every
+  run is the actor alone, with its stdin closed right after the prompt.
+  `--supervisor-log` and `--summary` are accepted and **not written**. The
+  judgment loop (boundaries, judge, corrections, the log and the summary) is
+  the next slice, which rewrites this section.
 
 The policy it runs descends from the one `src/swe_lab/trace_synthesis/` runs
 on the host — the same evidence filter, the same criterion artifact (compiled
@@ -55,9 +66,23 @@ the Python side.
 (`128 + signal` when the actor died of a signal), so a script that records
 `$?` sees what it would have seen without the wrapper. `2` is a usage error and
 `3` a refused run (unusable config, a criterion whose digest is not the pinned
-one, or — at this revision — every run, see [Status](#status)) — both before
-any actor process exists. Never classify a run from the exit status alone:
-the terminal summary is written for that.
+one) — both before any actor process exists. `1` is a run that is **not
+accounted for**: a drain stopped with an error or did not finish, or the
+sweep for the actor's descendants could not prove none survived. And a
+wrapper told to stop by `SIGTERM` / `SIGINT` exits `128 + that signal`
+whatever the actor made of its own ending — a cancelled run is reported as
+cancelled, never as the actor's success. Never classify a run from the exit
+status alone: the terminal summary is written for that.
+
+**What the wrapper accepts rather than guarantees.** Its containment of the
+actor's descendants is a mark in their environment, inherited from launch and
+swept for at the end: a descendant that clears its own environment before
+`setsid` is invisible to that sweep, and between the sweep's identity check
+(pid plus start time) and its `kill` a pid could in principle be reused. Both
+are accepted, on the record here: the actor is Claude Code, not an adversary,
+and the wrapper runs inside a container that is discarded after the run —
+the container is the boundary, the sweep is diligence within it. What the
+sweep cannot prove, it reports, and the run is not accounted for.
 
 ## Config
 
@@ -77,11 +102,15 @@ to authenticate to it are not in the file at all — see
     "cooldown": 4,
     "window": 8,
     "judge_every_n_assistant_messages": 3,
-    "block_actor_while_judging": true
+    "block_actor_while_judging": "stdout"
   },
   "model": { "name": "anthropic/claude-sonnet-5" },
   "timeouts": { "model_call_ms": 180000, "term_grace_ms": 10000 },
-  "limits": { "max_event_line_bytes": 16777216 }
+  "limits": {
+    "max_event_line_bytes": 16777216,
+    "max_actor_stdout_bytes": 1073741824,
+    "max_actor_stderr_bytes": 268435456
+  }
 }
 ```
 
@@ -95,19 +124,31 @@ to authenticate to it are not in the file at all — see
   many of the actor's most recent admitted records the judge sees.
   `judge_every_n_assistant_messages` is the batch size `N` of #375 — a
   boundary falls every `N` admitted assistant messages and at every actor
-  `result` with new evidence behind it. `block_actor_while_judging` selects
-  whether the wrapper stops reading the actor's stdout while a judgment is in
-  flight (the actor blocks on its next write) or lets it run ahead and
-  discards overtaken verdicts as stale.
+  `result` with new evidence behind it. `block_actor_while_judging` is what
+  the wrapper does to the actor while a judgment is in flight: `"off"` lets
+  it run ahead (overtaken verdicts are discarded as stale), `"stdout"` stops
+  reading its stdout (the actor blocks on its next write once the pipe is
+  full), `"sigstop"` stops its process group with `SIGSTOP` and resumes it
+  with `SIGCONT` — always, on every path out, before the wrapper exits.
 - `model` — the model name sent on every request, recorded in the summary.
 - `timeouts` — `model_call_ms` bounds one judge or writer call; a call past it
-  is one recorded lapse. `term_grace_ms` bounds shutdown: how long the actor's
-  process group gets to honour `SIGTERM` before `SIGKILL`, and how long the
-  actor gets to exit on its own after its stdin is closed deliberately.
+  is one recorded lapse. `term_grace_ms` bounds every wait on the actor: how
+  long it gets to exit on its own once its stdout has closed (or to close
+  its stdout once its leader has exited), how long its process group gets to
+  honour `SIGTERM` before `SIGKILL`, and how long a write on its stdin may
+  make no progress before the wrapper gives up on it.
 - `limits` — `max_event_line_bytes` is the ceiling on one line of actor
   stdout. Framing uses a growable buffer up to it; a longer line is still
   written to the event log verbatim but reaches no judgment, and the summary
-  counts it.
+  counts it. `max_actor_stdout_bytes` and `max_actor_stderr_bytes` cap the
+  two logs, exact to the byte: a record that would cross the cap is not
+  written (an oversized one already begun is rolled back whole), the stream
+  is not read further, and the run is ended and reported as not accounted
+  for. The event log is the actor's stdout byte for byte, a last line left
+  unterminated included. Without them an actor that never stops writing fills
+  the sandbox before the summary can be written. The wrapper's own memory is
+  bounded independently: one line up to the ceiling, plus at most 16 lines
+  queued ahead of the loop.
 
 ## Environment
 

@@ -109,10 +109,11 @@ fn a_bad_base_url_is_refused_without_the_url() {
             "criterion": {"name": "general-practice",
               "sha256": "ffb2dadfe2b36eb3f44f28c4282a8d51e84e1c943558500787cbb0518e2900a1"},
             "policy": {"kind": "speak-when-off-track", "budget": 1, "cooldown": 1, "window": 1,
-              "judge_every_n_assistant_messages": 1, "block_actor_while_judging": true},
+              "judge_every_n_assistant_messages": 1, "block_actor_while_judging": "off"},
             "model": {"name": "m"},
             "timeouts": {"model_call_ms": 1000, "term_grace_ms": 1000},
-            "limits": {"max_event_line_bytes": 1024}}"#,
+            "limits": {"max_event_line_bytes": 1024, "max_actor_stdout_bytes": 1048576,
+              "max_actor_stderr_bytes": 1048576}}"#,
     )
     .unwrap();
     let mut command = wrapper();
