@@ -111,6 +111,18 @@ def test_the_config_document_is_exactly_the_schema_the_binary_reads() -> None:
   }
 
 
+def test_the_blocking_modes_are_exactly_the_three_the_binary_reads() -> None:
+  """The token set equals `config.rs`'s, rather than whatever this enum holds.
+
+  The render test below is parametrized over `list(Blocking)`, which is an
+  enumeration of what exists and not a claim about what should: deleting a
+  member leaves it collecting fewer cases and passing every one of them. The
+  set equality is the positive premise — a member added, removed or retyped
+  here without the binary agreeing fails this and nothing else has to notice.
+  """
+  assert {mode.value for mode in Blocking} == {"off", "stdout", "sigstop"}
+
+
 @pytest.mark.parametrize("mode", list(Blocking))
 def test_every_blocking_mode_renders_the_token_the_binary_reads(
     mode: Blocking,
@@ -129,7 +141,6 @@ def test_every_blocking_mode_renders_the_token_the_binary_reads(
   ).config_document(task="t")
 
   assert document["policy"]["block_actor_while_judging"] == mode.value
-  assert mode.value in ("off", "stdout", "sigstop")
 
 
 def test_the_config_carries_no_endpoint_and_no_credential() -> None:
