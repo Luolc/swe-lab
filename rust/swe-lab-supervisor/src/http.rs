@@ -33,8 +33,10 @@ pub struct Response {
 ///
 /// The connection or the exchange does not complete before the deadline,
 /// the response is not HTTP/1.x, or the body exceeds
-/// [`MAX_RESPONSE_BYTES`]. The message never contains the request body or
-/// the token.
+/// [`MAX_RESPONSE_BYTES`]. The message never contains the request body,
+/// the token, or any byte of the response: what a peer sent is not
+/// quoted back, a malformed status line or chunk size included — the
+/// response is where a reflected credential would be.
 pub fn post_json(
     endpoint: &Endpoint,
     bearer: Option<&str>,
@@ -59,14 +61,29 @@ pub fn post_json(
     }
     head.push_str("\r\n");
     // One absolute deadline for the whole call: each write's timeout is
-    // what is left of it at that moment, not a fresh allowance.
+    // what is left of it at that moment, not a fresh allowance — per
+    // write, not per `write_all`, since a peer that takes a little before
+    // each timeout would otherwise stretch a large body past the deadline
+    // one partial write at a time.
     for part in [head.as_bytes(), body] {
-        stream
-            .set_write_timeout(Some(remaining(deadline)?))
-            .map_err(|e| e.to_string())?;
-        stream
-            .write_all(part)
-            .map_err(|e| format!("sending the request: {e}"))?;
+        let mut sent = 0;
+        while sent < part.len() {
+            stream
+                .set_write_timeout(Some(remaining(deadline)?))
+                .map_err(|e| e.to_string())?;
+            match stream.write(&part[sent..]) {
+                Ok(0) => return Err("sending the request: the connection took nothing".to_string()),
+                Ok(n) => sent += n,
+                Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
+                Err(e)
+                    if e.kind() == io::ErrorKind::WouldBlock
+                        || e.kind() == io::ErrorKind::TimedOut =>
+                {
+                    return Err("the call's deadline passed while sending the request".to_string());
+                }
+                Err(e) => return Err(format!("sending the request: {e}")),
+            }
+        }
     }
     let raw = read_until_close(&mut stream, deadline)?;
     parse(&raw)
@@ -115,7 +132,7 @@ fn parse(raw: &[u8]) -> Result<Response, String> {
         .strip_prefix("HTTP/1.")
         .and_then(|rest| rest.split_whitespace().nth(1))
         .and_then(|code| code.parse::<u16>().ok())
-        .ok_or_else(|| format!("not an HTTP/1.x status line: {status_line:?}"))?;
+        .ok_or("the response does not start with an HTTP/1.x status line")?;
     let mut chunked = false;
     let mut content_length = None;
     for line in lines {
@@ -148,8 +165,7 @@ fn dechunk(mut body: &[u8]) -> Result<Vec<u8>, String> {
         let size_text =
             std::str::from_utf8(&body[..line_end]).map_err(|_| "a chunk size is not text")?;
         let size_text = size_text.split(';').next().unwrap_or_default().trim();
-        let size = usize::from_str_radix(size_text, 16)
-            .map_err(|_| format!("a chunk size is not hex: {size_text:?}"))?;
+        let size = usize::from_str_radix(size_text, 16).map_err(|_| "a chunk size is not hex")?;
         body = &body[line_end + 2..];
         if size == 0 {
             return Ok(out);
@@ -282,5 +298,56 @@ pub(crate) mod tests {
         let error = post_json(&endpoint, None, b"{\"secret\":1}", soon()).unwrap_err();
         assert!(error.contains("status line"), "{error}");
         assert!(!error.contains("secret"));
+    }
+
+    /// A peer that puts the bearer where the parser fails — the status
+    /// line, a chunk's size line — gets an error that quotes none of it:
+    /// not the token, not a fragment of it.
+    #[test]
+    fn a_malformed_response_is_an_error_that_quotes_no_byte_of_it() {
+        for reply in [
+            "HTTP/1.1 tok-123-reflected OK\r\n\r\n",
+            "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\ntok-123-reflected\r\nbody\r\n0\r\n\r\n",
+        ] {
+            let (endpoint, _requests) = serve_once(reply);
+            let error = post_json(&endpoint, Some("tok-123-reflected"), b"{}", soon()).unwrap_err();
+            assert!(!error.contains("tok"), "{error}");
+            assert!(!error.contains("reflected"), "{error}");
+        }
+    }
+
+    /// A peer that takes the request a few bytes at a time cannot stretch
+    /// a large upload past the deadline: the timeout is recomputed before
+    /// every write, so the call fails at the deadline and not after the
+    /// body has trickled through.
+    #[test]
+    fn a_slow_reader_cannot_stretch_an_upload_past_the_deadline() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let endpoint = Endpoint {
+            address: std::net::SocketAddr::from((
+                [127, 0, 0, 1],
+                listener.local_addr().unwrap().port(),
+            )),
+            path: "/".to_string(),
+        };
+        thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            let mut byte = [0u8; 1];
+            while socket.read(&mut byte).is_ok_and(|n| n > 0) {
+                thread::sleep(Duration::from_millis(20));
+            }
+        });
+        // Larger than any loopback send buffer: the writes have to wait
+        // on the peer.
+        let body = vec![b'x'; 16 * 1024 * 1024];
+        let started = Instant::now();
+        let error =
+            post_json(&endpoint, None, &body, started + Duration::from_millis(300)).unwrap_err();
+        assert!(error.contains("deadline"), "{error}");
+        assert!(
+            started.elapsed() < Duration::from_secs(3),
+            "{:?}",
+            started.elapsed()
+        );
     }
 }

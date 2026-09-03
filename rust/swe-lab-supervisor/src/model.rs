@@ -198,6 +198,10 @@ impl Model {
                 call: Box::new(call),
             }
         };
+        // Every string that comes back from the exchange — an error, a
+        // body — is redacted whole before anything is cut from it: a
+        // credential straddling a cut would leave a fragment that the
+        // exact-match redaction of the excerpt could not see.
         let response = match http::post_json(
             &self.endpoint,
             self.bearer.as_deref(),
@@ -205,16 +209,17 @@ impl Model {
             started + self.call_timeout,
         ) {
             Ok(response) => response,
-            Err(reason) => return Err(failed(call, format!("call failed: {reason}"))),
+            Err(reason) => {
+                return Err(failed(call, self.redact(&format!("call failed: {reason}"))));
+            }
         };
         call.took = started.elapsed();
         if response.status / 100 != 2 {
-            let excerpt = self.redact(
-                &String::from_utf8_lossy(&response.body)
-                    .chars()
-                    .take(300)
-                    .collect::<String>(),
-            );
+            let excerpt: String = self
+                .redact(&String::from_utf8_lossy(&response.body))
+                .chars()
+                .take(300)
+                .collect();
             return Err(failed(
                 call,
                 format!("answered HTTP {}: {excerpt}", response.status),
@@ -222,7 +227,12 @@ impl Model {
         }
         let body: Value = match serde_json::from_slice(&response.body) {
             Ok(body) => body,
-            Err(e) => return Err(failed(call, format!("answered non-JSON: {e}"))),
+            Err(e) => {
+                return Err(failed(
+                    call,
+                    self.redact(&format!("answered non-JSON: {e}")),
+                ));
+            }
         };
         let choice = body.get("choices").and_then(|c| c.get(0));
         let text = |value: Option<&Value>| value.and_then(Value::as_str).map(|t| self.redact(t));
@@ -405,6 +415,51 @@ mod tests {
             "{error}"
         );
         assert!(!call.to_json().to_string().contains(BEARER));
+    }
+
+    /// A fragment of the credential is as much a leak as the whole of it,
+    /// and an exact-match redaction applied after a cut cannot see one. So
+    /// the redaction comes before any cut: a bearer straddling the
+    /// excerpt's 300-character boundary, or placed where the response
+    /// parser fails, leaves neither the token nor a fragment of it in the
+    /// reason, the call's record, or its serialized row.
+    #[test]
+    fn no_fragment_of_the_bearer_survives_a_cut_or_a_malformed_response() {
+        let fragment = &BEARER[..10];
+        let straddling = format!("{}{BEARER} more", "x".repeat(295));
+        let replies = [
+            format!(
+                "HTTP/1.1 401 Unauthorized\r\nContent-Length: {}\r\n\r\n{straddling}",
+                straddling.len()
+            ),
+            format!("HTTP/1.1 {BEARER} Unauthorized\r\n\r\n"),
+            format!(
+                "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n{BEARER}\r\nbody\r\n0\r\n\r\n"
+            ),
+        ];
+        for reply in replies {
+            let (endpoint, _requests) = serve_once(Box::leak(reply.into_boxed_str()));
+            let failed = with_bearer(endpoint).write("PROMPT").unwrap_err();
+            let call = *failed.call;
+            for text in [
+                failed.reason.clone(),
+                call.error.clone().unwrap_or_default(),
+                call.to_json().to_string(),
+            ] {
+                assert!(!text.contains(fragment), "{text}");
+            }
+        }
+        // The body is redacted whole, then cut: a bearer inside the excerpt
+        // shows as the marker (one straddling the cut shows as what is left
+        // of the marker, which is no fragment of the token either).
+        let inside = format!("{}{BEARER} more", "x".repeat(250));
+        let reply = format!(
+            "HTTP/1.1 401 Unauthorized\r\nContent-Length: {}\r\n\r\n{inside}",
+            inside.len()
+        );
+        let (endpoint, _requests) = serve_once(Box::leak(reply.into_boxed_str()));
+        let failed = with_bearer(endpoint).write("PROMPT").unwrap_err();
+        assert!(failed.reason.contains("[REDACTED]"), "{}", failed.reason);
     }
 
     /// A successful answer that reflects the credential is redacted before
