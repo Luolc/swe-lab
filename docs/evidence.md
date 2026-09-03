@@ -6,8 +6,11 @@ follow from it. The invariant itself is cross-repo and lives in
 `~/.agents/AGENTS.md` → 质量门 → **「无分辨力的观察不算检查」**; it is not
 restated here.
 
-Each rule below carries a dated instance; **rule 12** says why that is not
-decoration.
+Each **numbered** rule below carries the dated case that produced it. That is
+not decoration: a rule cut from its case is an aphorism, and an aphorism changes
+nobody's action — the failure this whole file is about. One statement has no such
+case and is therefore kept out of the numbered list, under *Intended, and not
+enforced*.
 
 `~/.agents/AGENTS.md` also owns the consequences that follow from the invariant
 — the pipe rule, the positive-premise rule, and the wrong-environment case.
@@ -125,9 +128,30 @@ invariant is an example above, not a rule here.
     #406: a hash comparison got one positive premise — `grep -c` for the
     sentence, non-zero on each side — and stopped there, because an empty slice
     would make that count `0` on the spot.)
-12. **Do not shorten this file by deleting the instances.** A rule cut from the
-    case that produced it is an aphorism, and an aphorism changes nobody's
-    action — the failure this whole file is about. If it must shrink, drop a
-    whole rule *with* its evidence and say why. (2026-09-03, #410: written when
-    this file was assembled, because tidying-by-deleting-cases is its predictable
-    decay and the file would otherwise contradict itself.)
+12. **Disclose what you expect to count against you, not only what you already
+    know is harmless.** The two are indistinguishable in the text — a reader
+    sees only that you reported something — so nothing but your own practice
+    separates them, and **a disclosure policy conditional on the answer being
+    safe is not one**. (2026-09-03, #410: three feature-branch force-pushes were
+    disclosed expecting a ruling that they were out of bounds; the ruling instead
+    used them as the evidence for narrowing the cross-repo rule, which would
+    otherwise still have two readings — #411.)
+
+## Intended, and not enforced
+
+**No case has occurred for this one, so it is not a rule.** The intent is that a
+rule here keeps the case that produced it, and that shortening this file happens
+by dropping a whole rule *with* its evidence rather than by thinning every rule
+into a maxim.
+
+That is a prediction about how this file would decay, not something observed:
+nobody has yet deleted a case here and watched the rule become an aphorism. Per
+`AGENTS.md`, an invariant with no test is reworded rather than asserted — so it
+is stated as intent, and if it ever happens it becomes a numbered rule carrying
+that date.
+
+**What *was* observed is a different failure and is already handled by review**:
+this file's first version shipped rule 10 with no case and rules 2–8 with a bare
+issue number, caught one round later (2026-09-03, #410) — decay starting at the
+keyboard rather than at a later editor's hand. The rules that read most like
+maxims were exactly the ones with nothing underneath.
