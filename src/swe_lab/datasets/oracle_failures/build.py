@@ -244,17 +244,6 @@ def _check_gates(
         "the workflow did not succeed; a failed or blocked entry is an"
         " infrastructure outcome, not a reasoning failure"
     )
-  if BASE_REF_NAME in rollout.get("artifact_keys", {}):
-    # A baseline-patched rollout (`patch_baseline=True`) diffs against a
-    # pre-agent baseline commit and is graded by a procedure that does not
-    # reset to `base_commit`. The row carries neither the base ref nor that
-    # procedure, and the Oracle re-runs the default one — so the patch it
-    # is handed would not be the patch that was graded.
-    raise UnusableRunError(
-        f"the rollout recorded {BASE_REF_NAME}: it was patched against a"
-        " baseline, and the oracle_failures row carries only the default"
-        " (reset to base_commit) grading procedure"
-    )
   metrics: Mapping[str, float] = rollout.get("metrics", {})
   if metrics.get(_COMPLETE_METRIC) != 1.0:
     raise UnusableRunError(
@@ -457,6 +446,11 @@ def build_row(run_dir: epath.PathLike, *, dataset: str) -> dict[str, Any]:
   # bearing artifact first would print the credential on the way out.
   conversation = _artifact(run_dir, rollout, _CONVERSATION_ARTIFACT)
   patch = _artifact(run_dir, rollout, _PATCH_ARTIFACT)
+  patch_base_ref = (
+      _artifact(run_dir, rollout, BASE_REF_NAME)
+      if BASE_REF_NAME in rollout.get("artifact_keys", {})
+      else None
+  )
   for label, text in (("conversation", conversation), ("patch", patch)):
     hits = scan_for_credentials(text)
     if hits:
@@ -482,15 +476,18 @@ def build_row(run_dir: epath.PathLike, *, dataset: str) -> dict[str, Any]:
   # No host path: a run directory carries the operator's username on an
   # ordinary workstation, and a trace record redacts operator PII at write
   # time. The run is identified by its own store key and timestamp instead.
+  source: dict[str, object] = {
+      "workflow_record": str(record_path.relative_to(run_dir)),
+      "sweep_id": record.get("sweep_id"),
+      "run_ts": record.get("run_ts"),
+      "rollout_entry": rollout["key"],
+      "grading_entry": grading["key"],
+      "grading_attempts": grading["attempts"],
+  }
+  if patch_base_ref is not None:
+    source["patch_base_ref"] = patch_base_ref
   provenance = {
-      "source": {
-          "workflow_record": str(record_path.relative_to(run_dir)),
-          "sweep_id": record.get("sweep_id"),
-          "run_ts": record.get("run_ts"),
-          "rollout_entry": rollout["key"],
-          "grading_entry": grading["key"],
-          "grading_attempts": grading["attempts"],
-      },
+      "source": source,
       "rollout_metrics": dict(rollout.get("metrics", {})),
       "grading_metrics": dict(grading.get("metrics", {})),
       "built_at": datetime.datetime.now(datetime.UTC).isoformat(

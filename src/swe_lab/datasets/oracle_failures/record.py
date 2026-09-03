@@ -15,6 +15,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 import functools
+import json
 from typing import Any, ClassVar, override
 
 from pydantic import ValidationError
@@ -23,7 +24,7 @@ from swe_lab.conversation import Conversation
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
 from swe_lab.sandbox import Inline, merge_mounts, Mount, Mounts, SandboxSpec
-from swe_lab.sandbox.observers import PATCH_NAME
+from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
 from swe_lab.trace_synthesis.sample import (
     FAILED_CONVERSATION_NAME,
     FAILED_PATCH_NAME,
@@ -100,6 +101,23 @@ def underlying_instance(dataset: str, instance_id: str) -> TaskInstance[Any]:
   return instance
 
 
+def _patch_base_ref(provenance: str) -> str | None:
+  """Read the optional patch baseline without exposing provenance on error."""
+  try:
+    parsed = json.loads(provenance)
+  except (json.JSONDecodeError, TypeError) as error:
+    raise ValueError("oracle failure provenance is not valid JSON") from error
+  if not isinstance(parsed, Mapping):
+    raise ValueError("oracle failure provenance is not a JSON object")
+  source = parsed.get("source")
+  if not isinstance(source, Mapping):
+    return None
+  value = source.get("patch_base_ref")
+  if value is not None and not isinstance(value, str):
+    raise ValueError("oracle failure patch_base_ref is not text")
+  return value
+
+
 @dataclass(frozen=True)
 class OracleFailureInstance(TaskInstance[Verdict]):
   """One cached failure of an instance from another dataset.
@@ -126,6 +144,9 @@ class OracleFailureInstance(TaskInstance[Verdict]):
       JSON text.
     instance: The underlying record, resolved on load; every part of the
       runnable surface except :meth:`mounts` forwards to it.
+    patch_base_ref: The source rollout's pre-agent baseline ref, when it used
+      patch-baseline extraction. Derived from provenance to keep the parquet
+      schema compatible with existing rows.
   """
 
   COLUMNS: ClassVar[tuple[str, ...]] = COLUMNS
@@ -138,6 +159,7 @@ class OracleFailureInstance(TaskInstance[Verdict]):
   patch: str
   provenance: str
   instance: TaskInstance[Any]
+  patch_base_ref: str | None = None
 
   @classmethod
   def from_raw(cls, raw: Mapping[str, Any]) -> OracleFailureInstance:
@@ -165,6 +187,7 @@ class OracleFailureInstance(TaskInstance[Verdict]):
     fields["rollout_id"] = int(fields["rollout_id"])
     return cls(
         **fields,
+        patch_base_ref=_patch_base_ref(fields["provenance"]),
         instance=underlying_instance(fields["dataset"], fields["instance_id"]),
     )
 
@@ -188,16 +211,20 @@ class OracleFailureInstance(TaskInstance[Verdict]):
     """Stage the failure beside whatever the underlying instance stages.
 
     Returns:
-      The underlying instance's mounts plus the three failure files, all
-      read-only — a run reads a failure, it never amends one.
+      The underlying instance's mounts plus the three failure files and, when
+      present, the patch baseline ref. All are read-only — a run reads a
+      failure, it never amends one.
     """
+    failure_mounts = {
+        FAILED_CONVERSATION_NAME: _read_only(self.conversation),
+        FAILED_VERDICT_NAME: _read_only(self.verdict),
+        FAILED_PATCH_NAME: _read_only(self.patch),
+    }
+    if self.patch_base_ref is not None:
+      failure_mounts[BASE_REF_NAME] = _read_only(self.patch_base_ref)
     return merge_mounts(
         self.instance.mounts(),
-        {
-            FAILED_CONVERSATION_NAME: _read_only(self.conversation),
-            FAILED_VERDICT_NAME: _read_only(self.verdict),
-            FAILED_PATCH_NAME: _read_only(self.patch),
-        },
+        failure_mounts,
     )
 
   @override
@@ -219,17 +246,20 @@ class OracleFailureInstance(TaskInstance[Verdict]):
       checkout_golden_tests: bool = True,
       patch_baseline: bool = False,
   ) -> UnitTestSpec[Verdict]:
-    """Compile the underlying instance's unit-test spec, unchanged.
+    """Compile the underlying instance's unit-test spec for this failure.
 
     Args:
       apply_patch: Forwarded.
       patch_name: Forwarded.
       checkout_golden_tests: Forwarded.
-      patch_baseline: Forwarded.
+      patch_baseline: Forwarded, except that grading a captured failed patch
+        with a recorded baseline always restores that baseline first.
 
     Returns:
-      Whatever the underlying dataset compiles.
+      The underlying dataset's spec with the source patch contract restored.
     """
+    if patch_name == FAILED_PATCH_NAME and self.patch_base_ref is not None:
+      patch_baseline = True
     spec: UnitTestSpec[Verdict] = self.instance.unit_test_spec(
         apply_patch=apply_patch,
         patch_name=patch_name,

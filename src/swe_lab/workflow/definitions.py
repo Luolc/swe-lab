@@ -240,12 +240,6 @@ CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
     )
 )
 
-# Zero rather than `SUPERVISOR_COOLDOWN`, and stated so the inertness is
-# deliberate: cooldown is measured in consumed stream events, and consecutive
-# seams are many events apart, so the gate never closes on this path. Spacing
-# here is `SegmentedSupervision.turns_per_segment`.
-SEGMENT_COOLDOWN = 0
-
 
 # The second supervision carrier: the actor is stopped every configured number
 # of turns, judged, and resumed, instead of being spoken to on a live stdin. Its
@@ -276,11 +270,11 @@ def _segmented_rollout(*, guidebook_name: str | None = None) -> WorkflowDef:
                   bare=False,
                   capture="stream",
                   segmented=SegmentedSupervision(
-                      policy_factory=lambda: supervising_policy(
+                      policy_factory=lambda cooldown: supervising_policy(
                           model=SUPERVISOR_MODEL,
                           transport=SUPERVISOR_TRANSPORT,
                           budget=SUPERVISOR_BUDGET,
-                          cooldown=SEGMENT_COOLDOWN,
+                          cooldown=cooldown,
                           window=SUPERVISOR_WINDOW,
                           # The one thing only a live run can record: how many
                           # turns late each correction was.
