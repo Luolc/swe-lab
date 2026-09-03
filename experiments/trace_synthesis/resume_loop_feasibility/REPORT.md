@@ -19,8 +19,9 @@ seeing a number. One amendment was made mid-run and is labelled as such
 ## Verdict
 
 **The mechanism works and the seam can be made artifact-free with
-`--resume-session-at` — but the owner's one hard requirement is NOT yet
-enforced, so Phase 1 remains gated on building a real gate (§12).**
+`--resume-session-at`. Bring-up is not blocked. What is blocked is *using the
+traces as training data*: the owner's one hard requirement has no enforcement
+point yet (§12).**
 
 The result that decides this arrived last and reversed the reading the earlier
 arms supported. Both are reported, in the order they happened, because the
@@ -130,20 +131,29 @@ Under the ruling, these are **costs to record, not blockers**:
 - `Q8` (§13), which drops from *possibly decisive* to *nice-to-have* and should
   not hold up bring-up.
 
-**The one thing that does gate it is unmet.** §12's requirement — the synthetic
-assistant never reaching training — is **not** enforced by anything in this
-report; the filter here is a prototype on the native transcript, and the
-training artifact is `conversation.json`. **Phase 1 is gated on building that
-gate**, and the acceptance condition is written out in §12.
+**One requirement has no enforcement point yet, and it binds the consumer, not
+the build.** §12's requirement — the synthetic assistant never reaching training
+— is **not** enforced by anything in this report. Producing a trace is not
+training on it, and this component's spec puts training out of scope
+(`spec.md`: *"This component produces traces; running SFT on them is somebody
+else's pipeline"*). So the scoping is:
+
+- **Phase 1 bring-up: not blocked.** Build it, run it end to end.
+- **The traces it produces: not deliverable as training corpus** until the
+  provenance gate in §12 exists.
+
+*(That split is an orchestra ruling of 2026-09-03 interpreting the owner's
+requirement, recorded as an interpretation rather than as the owner's own
+words.)*
 
 **Conditions that survive the relaxation** — setting (b) aside does not touch
 these:
 
-- **The synthetic assistant record must not reach training — UNRESOLVED.** The
-  owner's one remaining hard requirement. The filter in this experiment is a
-  **prototype on the wrong artifact**: measured, it is a no-op on
-  `conversation.json`, where the record survives at index 7. §12 states the
-  acceptance condition. **This is the gate, and it is not met.**
+- **The synthetic assistant record must not reach training — the provenance
+  gate is UNRESOLVED.** The filter here is a **prototype on the wrong
+  artifact**: measured, a no-op on `conversation.json`, where the record
+  survives at index 7. §12 states the acceptance condition. **What this gates
+  is the traces' use as training data — not Phase 1's execution.**
 
 - **`--resume-session-at` is an undocumented flag** (`hideHelp()`), so the
   artifact-free seam rests on behaviour that carries no compatibility promise.
@@ -910,7 +920,7 @@ against it. Neither is a reason to run it, or not to.
 
 ---
 
-# 12. The one hard constraint — **unresolved**, and Phase 1 is gated on it ★
+# 12. The provenance gate — **unresolved**; it gates training use, not bring-up ★
 
 Criterion (b) was relaxed (see the Verdict). **This was not:** the model must not
 take loss on tokens it never generated, and the resume seam inserts exactly such
@@ -967,8 +977,26 @@ a useful starting point and it is **not** the invariant.
    produces the final canonical conversation, and proves **both** that the
    synthetic assistant is absent **and** that real assistant responses remain.
 
-**Until that exists, the owner's one hard requirement is unresolved and Phase 1
-is gated on it.** The two-armed discipline still applies to whatever replaces
+**Until that exists, the owner's one hard requirement has no enforcement point.
+What that blocks is delivering these traces as training corpus — not building
+or running the loop**; producing a trace is not training on it, and `spec.md`
+places training outside this component ("This component produces traces;
+running SFT on them is somebody else's pipeline").
+
+### One measured fact that makes condition 3 implementable
+
+The persisted transcript's `requestId` is **not** what conversion reads — and an
+independent check by another agent found **0 of 59** assistant events carrying
+that field. But the `stream-json` event stream carries **`request_id`**
+(snake_case, at the *event* top level) and it **is populated**: measured across
+three of this experiment's runs, 19/19, 1/1 and 2/2 assistant events carried a
+non-empty `req_011C…` value, with distinct values tracking model round-trips.
+
+So the conversion boundary does have a provenance handle to work with, and —
+the part that matters for condition 3 — those ids can be **reconciled against
+the proxy capture's actual API responses**, which is an *independent* source
+rather than the candidate record's own say-so. (Measured on the host, toy task,
+this harness build; whether it holds in-sandbox is untested.) The two-armed discipline still applies to whatever replaces
 this: the control arm of the current tests was verified by mutation (`return []`
 fails the keep-arms while the drop-arm stays green), and that property must
 survive the move.
