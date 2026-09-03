@@ -36,9 +36,10 @@
 //! supervision. So is an unclean ending — a drain that stopped with an error
 //! or did not finish, a log that could not be written, a signal that failed.
 
+use std::collections::VecDeque;
 use std::ffi::OsString;
 use std::fs::File;
-use std::io::{self, BufWriter, Write};
+use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::process::ExitStatus;
 use std::sync::Arc;
@@ -154,8 +155,13 @@ struct Loop {
     outbox: SyncSender<Msg>,
     inbox: Receiver<Msg>,
     log: BufWriter<File>,
+    /// Bytes written to the supervisor log so far, against its cap.
+    log_written: u64,
     cursor: u64,
-    evidence: Vec<Message>,
+    /// The admitted records, the policy's window of them and no more: a
+    /// chatty actor's run is as long as its stdout cap allows, and only
+    /// the tail is ever rendered.
+    evidence: VecDeque<Message>,
     revision: u64,
     said: Vec<String>,
     assistant_since_boundary: u32,
@@ -238,8 +244,9 @@ pub fn run(
         outbox,
         inbox,
         log: BufWriter::new(log),
+        log_written: 0,
         cursor: 0,
-        evidence: Vec::new(),
+        evidence: VecDeque::new(),
         revision: 0,
         said: Vec::new(),
         assistant_since_boundary: 0,
@@ -341,7 +348,11 @@ impl Loop {
             if record.role == Role::Assistant {
                 self.assistant_since_boundary += 1;
             }
-            self.evidence.push(record);
+            self.evidence.push_back(record);
+            let window = usize::try_from(self.config.policy.window.get()).unwrap_or(usize::MAX);
+            while self.evidence.len() > window {
+                self.evidence.pop_front();
+            }
             self.revision += 1;
         }
         let is_result = event.get("type").and_then(Value::as_str) == Some("result");
@@ -383,9 +394,7 @@ impl Loop {
         self.boundary_ordinal += 1;
         self.counts.boundaries += 1;
         self.last_judged_revision = self.revision;
-        let window = usize::try_from(self.config.policy.window.get()).unwrap_or(usize::MAX);
-        let start = self.evidence.len().saturating_sub(window);
-        let evidence = self.evidence[start..].to_vec();
+        let evidence: Vec<Message> = self.evidence.iter().cloned().collect();
         let said = self.said.clone();
         let task = self.config.task.clone();
         let ordinal = self.boundary_ordinal;
@@ -448,7 +457,9 @@ impl Loop {
             Blocking::Stdout => self.gate.open(),
             Blocking::Sigstop => {
                 if let Err(error) = self.actor.thaw() {
-                    self.unclean = Some(format!("SIGCONT failed: {error}"));
+                    // An actor that cannot be resumed cannot be supervised
+                    // further: the run ends now, and is not accounted for.
+                    self.fault(format!("SIGCONT failed: {error}"));
                 }
             }
         }
@@ -574,15 +585,40 @@ impl Loop {
         row
     }
 
+    /// Append one row to the supervisor log, whole, and flush it. A row that
+    /// would cross the log's cap is not written, and a write that fails is
+    /// a fault: a supervisor that has lost its own account is producing
+    /// supervision without evidence, and the run ends rather than go on.
+    ///
+    /// The cap is `limits.max_actor_stdout_bytes`, on purpose and not by
+    /// accident: a row per event and per boundary, with the model's raw
+    /// answers, is in the same order as the stdout it accounts for, and the
+    /// cap's job is to bound pathological growth, not to be tuned — so it
+    /// borrows the stdout cap rather than add a config key that the Python
+    /// side would have to mirror by hand. If a use for tuning it apart ever
+    /// appears, it gets a key of its own then.
     fn write_row(&mut self, row: Map<String, Value>) {
-        let written = serde_json::to_writer(&mut self.log, &Value::Object(row))
-            .map_err(io::Error::other)
-            .and_then(|()| self.log.write_all(b"\n"))
-            .and_then(|()| self.log.flush());
-        if let Err(error) = written {
-            // Without the account there is no evidence about supervision.
-            self.unclean
-                .get_or_insert_with(|| format!("writing the supervisor log: {error}"));
+        let mut line = match serde_json::to_vec(&Value::Object(row)) {
+            Ok(line) => line,
+            Err(error) => {
+                self.fault(format!("rendering a supervisor log row: {error}"));
+                return;
+            }
+        };
+        line.push(b'\n');
+        let cap = self.config.limits.max_actor_stdout_bytes.get();
+        let Some(after) = u64::try_from(line.len())
+            .ok()
+            .and_then(|bytes| self.log_written.checked_add(bytes))
+            .filter(|&after| after <= cap)
+        else {
+            self.fault(format!("the supervisor log reached its cap of {cap} bytes"));
+            return;
+        };
+        let written = self.log.write_all(&line).and_then(|()| self.log.flush());
+        match written {
+            Ok(()) => self.log_written = after,
+            Err(error) => self.fault(format!("writing the supervisor log: {error}")),
         }
     }
 

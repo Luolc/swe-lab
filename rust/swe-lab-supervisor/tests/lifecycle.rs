@@ -35,6 +35,10 @@ fn config(dir: &Path, grace_ms: u64) -> PathBuf {
 }
 
 fn config_with_task(dir: &Path, grace_ms: u64, task: &str) -> PathBuf {
+    config_json(dir, grace_ms, task, 1_048_576)
+}
+
+fn config_json(dir: &Path, grace_ms: u64, task: &str, stdout_cap: u64) -> PathBuf {
     let path = dir.join("config.json");
     fs::write(
         &path,
@@ -45,7 +49,7 @@ fn config_with_task(dir: &Path, grace_ms: u64, task: &str) -> PathBuf {
               "judge_every_n_assistant_messages": 1, "block_actor_while_judging": "off"}},
             "model": {{"name": "m"}},
             "timeouts": {{"model_call_ms": 1000, "term_grace_ms": {grace_ms}}},
-            "limits": {{"max_event_line_bytes": 65536, "max_actor_stdout_bytes": 1048576,
+            "limits": {{"max_event_line_bytes": 65536, "max_actor_stdout_bytes": {stdout_cap},
               "max_actor_stderr_bytes": 1048576}}}}"#
         ),
     )
@@ -387,4 +391,50 @@ fn two_links_to_one_file_for_the_logs_are_refused_before_any_actor_exists() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("one file"), "{stderr}");
     assert_eq!(probes_alive(&probe), 0, "an actor was started");
+}
+
+/// The supervisor log shares the actor's stdout cap. An actor line small
+/// enough to pass that cap whose account is not: the run ends as a fault
+/// that names the supervisor log, and the same run under the usual cap is
+/// clean — the cap on the log is what ended it, not the line.
+#[test]
+fn a_supervisor_log_that_reaches_its_cap_ends_the_run_as_a_fault() {
+    let dir = scratch("log-cap");
+    let probe = "log-cap-probe";
+    // Eighteen bytes of stdout, well under a 64-byte cap; the row that
+    // accounts for it — cursor, time, policy, kind, evidence — is not.
+    let script = "printf '{\"type\":\"system\"}\n'; sleep 1";
+    let capped = wrapper(
+        &dir,
+        config_json(&dir, 500, "t", 64),
+        script,
+        &dir.join("actor.events.jsonl"),
+        probe,
+    )
+    .output()
+    .unwrap();
+    assert_eq!(capped.status.code(), Some(1), "{capped:?}");
+    let summary: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(dir.join("summary.json")).unwrap()).unwrap();
+    assert_eq!(summary["supervisor_exit"], "unclean");
+    assert_eq!(summary["accounted_for"], false);
+    let reason = summary["unclean_reason"].as_str().unwrap();
+    assert!(
+        reason.contains("supervisor log") && reason.contains("64"),
+        "{reason}"
+    );
+    // The log holds no partial row: the row that would cross the cap was
+    // not written at all.
+    assert_eq!(fs::read(dir.join("supervisor.jsonl")).unwrap(), b"");
+
+    let usual = wrapper(
+        &dir,
+        config_json(&dir, 500, "t", 1_048_576),
+        script,
+        &dir.join("actor.events.jsonl"),
+        probe,
+    )
+    .output()
+    .unwrap();
+    assert_eq!(usual.status.code(), Some(0), "{usual:?}");
 }

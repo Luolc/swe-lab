@@ -50,7 +50,8 @@ pub const RECORD_RENDER_BUDGET_CHARS: usize = 4_000;
 /// per-record cap would be 32 000 characters; this keeps the evidence section
 /// near 6 000 tokens so the prompt stays well inside any model's context with
 /// the criterion and the task beside it. The budget is spent newest-first, so
-/// when it runs out it is the oldest records that are shortened.
+/// when it runs out it is the oldest records that are shortened, and once it
+/// is gone the older rest is omitted under one line that says how many.
 pub const WINDOW_RENDER_BUDGET_CHARS: usize = 24_000;
 
 /// What is left of a record once the window budget has run out: enough to
@@ -95,7 +96,11 @@ pub fn writer_prompt(observation: &Observation<'_>, criterion: &str) -> String {
     )
 }
 
-/// Render the window, oldest first, under the two budgets.
+/// Render the window, oldest first, under the two budgets. Records the
+/// window budget cannot reach are omitted as one line saying how many, not
+/// rendered as a prefix each: the rendered size is bounded by the budget
+/// plus the per-record framing of the records that did get a share of it,
+/// however many records the window holds.
 #[must_use]
 pub fn render_window(records: &[Message]) -> String {
     let bodies: Vec<String> = records.iter().map(body).collect();
@@ -104,17 +109,30 @@ pub fn render_window(records: &[Message]) -> String {
     let mut remaining = WINDOW_RENDER_BUDGET_CHARS;
     let mut allowance: Vec<usize> = vec![0; bodies.len()];
     for (index, text) in bodies.iter().enumerate().rev() {
+        if remaining == 0 {
+            break;
+        }
         let wanted = text.chars().count().min(RECORD_RENDER_BUDGET_CHARS);
         let granted = if remaining >= wanted {
             wanted
         } else {
             remaining.min(STARVED_RECORD_CHARS)
         };
-        allowance[index] = granted;
-        remaining -= granted;
+        // A record with nothing to show still gets one character, so that
+        // it is rendered as clipped rather than omitted: it is inside the
+        // budget's reach.
+        allowance[index] = granted.max(1).min(remaining);
+        remaining -= allowance[index];
     }
-    let mut lines = Vec::with_capacity(records.len());
-    for ((record, text), granted) in records.iter().zip(&bodies).zip(allowance) {
+    let omitted = allowance
+        .iter()
+        .take_while(|&&granted| granted == 0)
+        .count();
+    let mut lines = Vec::with_capacity(records.len() - omitted + 1);
+    if omitted > 0 {
+        lines.push(format!("[{omitted} older records not shown]"));
+    }
+    for ((record, text), granted) in records.iter().zip(&bodies).zip(allowance).skip(omitted) {
         lines.push(format!(
             "[{}] {}",
             record.role.as_str(),
@@ -160,6 +178,40 @@ mod tests {
     use crate::evidence::Role;
 
     use super::*;
+
+    /// A window of many small records renders within the budget plus the
+    /// framing of the records that got a share of it: the older rest is one
+    /// line, not a prefix each.
+    #[test]
+    fn a_window_of_many_small_records_renders_bounded() {
+        let records: Vec<Message> = (0..100_000)
+            .map(|i| Message {
+                role: Role::Assistant,
+                blocks: vec![crate::evidence::Block::Text(format!(
+                    "record {i} says a thing"
+                ))],
+            })
+            .collect();
+        let rendered = render_window(&records);
+        let chars = rendered.chars().count();
+        // Every rendered record costs its allowance plus a framing of a few
+        // dozen characters; the omission line is one more.
+        assert!(
+            chars < WINDOW_RENDER_BUDGET_CHARS * 3,
+            "{chars} chars for 100 000 records"
+        );
+        assert!(rendered.starts_with('['), "{}", &rendered[..80]);
+        assert!(
+            rendered.contains("older records not shown"),
+            "{}",
+            &rendered[..80]
+        );
+        assert!(
+            rendered.ends_with("record 99999 says a thing"),
+            "{}",
+            &rendered[rendered.len() - 80..]
+        );
+    }
 
     fn assistant(text: &str) -> Message {
         Message {
@@ -214,17 +266,30 @@ mod tests {
     #[test]
     fn the_window_budget_is_spent_newest_first() {
         // Nine records at the per-record cap want 36 000; the window holds
-        // 24 000. The newest six get their cap, and the oldest three are
-        // starved down to a glimpse.
+        // 24 000. The newest six get their cap and use it up; the oldest
+        // three are omitted, under one line, not rendered as a prefix each.
         let window: Vec<Message> = (0..9)
             .map(|i| tool_result(&format!("{i}").repeat(RECORD_RENDER_BUDGET_CHARS)))
             .collect();
         let rendered = render_window(&window);
         let lines: Vec<&str> = rendered.lines().collect();
-        assert_eq!(lines.len(), 9);
-        assert!(lines[8].chars().count() >= RECORD_RENDER_BUDGET_CHARS);
+        assert_eq!(lines.len(), 7);
+        assert_eq!(lines[0], "[3 older records not shown]");
+        assert!(lines[1].starts_with("[user] <tool_result>333"));
+        assert!(lines[6].chars().count() >= RECORD_RENDER_BUDGET_CHARS);
+        assert!(rendered.chars().count() < WINDOW_RENDER_BUDGET_CHARS + 7 * 80);
+
+        // Seven records that leave the budget short of one: the oldest is
+        // starved down to a glimpse, and nothing is omitted.
+        let window: Vec<Message> = (0..7)
+            .map(|i| tool_result(&format!("{i}").repeat(RECORD_RENDER_BUDGET_CHARS - 500)))
+            .collect();
+        let rendered = render_window(&window);
+        let lines: Vec<&str> = rendered.lines().collect();
+        assert_eq!(lines.len(), 7);
+        assert!(lines[0].starts_with("[user] <tool_result>000"));
         assert!(lines[0].chars().count() < STARVED_RECORD_CHARS + 80);
-        assert!(rendered.chars().count() < WINDOW_RENDER_BUDGET_CHARS + 9 * 80);
+        assert!(lines[1].chars().count() >= RECORD_RENDER_BUDGET_CHARS - 500);
     }
 
     #[test]
