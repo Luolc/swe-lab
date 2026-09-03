@@ -2,8 +2,8 @@
 
 The policy in :mod:`swe_lab.trace_synthesis.supervisor` decides *whether* the
 moment has come; these decide *what is true* and *what to say*. Both take the
-observation and the criterion they are handed and nothing else, and both record
-what answered them.
+observation — including the phase-B guidebook when the workflow supplies one —
+and the general-practice criterion, and both record what answered them.
 
 Every guarantee stated here has an attack test that must fail — a claim without
 one is downgraded rather than written, because a guarantee that has not been
@@ -137,8 +137,8 @@ def openrouter_transport(payload: Mapping[str, Any]) -> Mapping[str, Any]:
 JUDGE_INSTRUCTIONS = """\
 You are watching an engineer work. Decide two things about the moment shown.
 
-Judge only against the criterion given below. Do not use any other standard,
-and do not reason about what the correct fix would be.
+Judge against the general-practice criterion and, when present, the guidebook
+given below. The guidebook says which instance-specific route is on track.
 
 Answer with one JSON object and nothing else:
 {"off_track": bool, "self_correcting": bool, "reason": "<one short sentence>"}
@@ -162,6 +162,7 @@ Write one short line to the engineer, as someone watching over their shoulder.
 
 Hedged and offhand, pointing at what to look at — never what to do. Do not
 name a fix, a function, a file to edit, or a solution. No code, no diff.
+Use the guidebook's justification to give a reason the engineer can follow.
 At most {MAX_INTERVENTION_CHARS} characters. Answer with the line and nothing
 else.
 """
@@ -264,8 +265,14 @@ def _prompt(observation: Observation, criterion: Criterion) -> str:
   """
   said = "\n".join(one.text for one in observation.said) or "(nothing yet)"
   done = _render(observation.evidence)
+  guidebook = (
+      f"# Guidebook\n\n{observation.guidebook}\n\n"
+      if observation.guidebook is not None
+      else ""
+  )
   return (
       f"# Criterion\n\n{criterion.text}\n\n"
+      f"{guidebook}"
       f"# The task the engineer was given\n\n{observation.task}\n\n"
       f"# What they have done, most recent last\n\n{done}\n\n"
       f"# What you have already said to them\n\n{said}\n"

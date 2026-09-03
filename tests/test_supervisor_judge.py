@@ -53,13 +53,17 @@ ON_TRACK_JSON = (
 
 
 def observation(
-    cursor: int = 1, *, task: str = "make the test pass"
+    cursor: int = 1,
+    *,
+    task: str = "make the test pass",
+    guidebook: str | None = None,
 ) -> Observation:
   """Build an observation.
 
   Args:
     cursor: How many events have been consumed.
     task: The brief handed to the supervisor.
+    guidebook: The phase-B artifact, when this is a guided run.
 
   Returns:
     An observation a judge can be handed.
@@ -73,6 +77,7 @@ def observation(
       ),
       cursor=cursor,
       said=(),
+      guidebook=guidebook,
   )
 
 
@@ -359,6 +364,25 @@ def test_the_built_policy_hands_its_criterion_to_both_model_calls() -> None:
   assert len(transport.payloads) == 2
   for payload in transport.payloads:
     assert criterion_text in payload["messages"][1]["content"]
+
+
+def test_the_guidebook_reaches_both_model_calls() -> None:
+  """The judge and writer steer from the same complete phase-B artifact."""
+  guidebook = "GUIDEBOOK-SENTINEL-4d68\n\n## Stage 1\n\nComplete text."
+  transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])
+  built = supervising_policy(
+      model="anthropic/claude-sonnet-5",
+      transport=transport,
+      budget=1,
+      cooldown=0,
+  )
+  built.consider(observation(guidebook=guidebook))
+
+  assert len(transport.payloads) == 2
+  for payload in transport.payloads:
+    assert (
+        f"# Guidebook\n\n{guidebook}\n\n" in payload["messages"][1]["content"]
+    )
 
 
 def test_the_provider_key_travels_only_in_the_header_it_belongs_in():

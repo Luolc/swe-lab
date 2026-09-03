@@ -7,18 +7,11 @@ decided by ADR-0013 (``docs/decisions/``).
 
 Three properties are structural rather than advisory, and each has a test:
 
-- **The information barrier is this module's constructor.** :class:`Observation`
-  has no field that can carry the gold patch, the reference or test patch, or
-  the hidden tests, and its evidence is built only from records the actor
-  produced. There is no field for a phase-B guidebook either, and that absence
-  is deliberate: the Oracle writes a guidebook with the reference patch, the
-  grading procedure and the unpurged history in hand, so a supervisor reading
-  one would be steering by the answer without ever quoting it. The judge
-  measures against one pinned criterion instead, so every load yields the same
-  text and a per-instance criterion cannot be swapped in without the loader
-  rejecting it — and whether that shared text is free of solution knowledge is
-  left to review of the artifact itself
-  (:mod:`swe_lab.trace_synthesis.criterion`).
+- **The policy sees the actor and its guidebook.** :class:`Observation` carries
+  the actor's own records, the task, and the complete phase-B guidebook when a
+  guided workflow supplies one. The shared criterion remains beside it as the
+  standard for general engineering practice; the guidebook supplies the
+  instance-specific route.
 - **When to speak is a seam.** It is the open variable of the design, so a
     :class:`SpeakPolicy` is replaceable without touching the consumer, the
     intervention, or the log.
@@ -192,15 +185,10 @@ class Unjudged:
 class Observation:
   """Everything a policy is allowed to see.
 
-  The field list *is* the information barrier: there is no field for the gold
-  patch, the reference or test patch, the hidden tests, or a **phase-B
-  guidebook** — the Oracle writes that one with the reference patch, the exact
-  grading procedure and the repository's unpurged history in hand
-  (:mod:`swe_lab.trace_synthesis.oracle`), so handing it to a judge would walk
-  the answer through a second door. What the judge measures against is the
-  pinned criterion it is built with, not anything travelling this channel. And
-  ``test_supervisor_input_carries_no_privileged_field`` asserts the list against
-  an exact allowlist so that adding one fails.
+  A guidebook-guided workflow supplies the complete phase-B artifact here so
+  the judge and writer can steer toward its instance-specific route. Workflows
+  without one leave :attr:`guidebook` unset and retain the general-practice
+  criterion alone.
 
   Attributes:
     task: What the actor was asked to do, handed over at construction by
@@ -215,12 +203,15 @@ class Observation:
       a separate channel from its evidence. Its own words never come back as
       observations, so without this a policy has nothing to check against and
       can repeat itself indefinitely.
+    guidebook: The complete phase-B guidebook for this instance, or ``None``
+      for a workflow that uses only the shared criterion.
   """
 
   task: str
   evidence: tuple[Message, ...]
   cursor: int
   said: tuple[Intervention, ...]
+  guidebook: str | None = None
 
 
 class SpeakPolicy(Protocol):
@@ -665,6 +656,7 @@ class Supervisor:
     task: What the actor was asked to do; see :class:`Observation`.
     sink: Where a correction is written. Borrowed: never closed here.
     log: Where the account of the run is written, one row per event consumed.
+    guidebook: The phase-B artifact, when this is a guidebook-guided run.
     now: Clock, injected so the log is testable.
   """
 
@@ -672,6 +664,7 @@ class Supervisor:
   task: str
   sink: Sink
   log: LogWriter
+  guidebook: str | None = None
   now: Callable[[], datetime.datetime] = lambda: datetime.datetime.now(
       datetime.UTC
   )
@@ -714,6 +707,7 @@ class Supervisor:
         evidence=tuple(self._evidence),
         cursor=self._cursor,
         said=tuple(self._said),
+        guidebook=self.guidebook,
     )
     try:
       decision = self.policy.consider(observation)
