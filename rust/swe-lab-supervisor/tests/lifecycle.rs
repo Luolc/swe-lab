@@ -517,10 +517,12 @@ fn a_staging_name_the_actor_took_is_not_written_through() {
 fn a_summary_path_ending_in_partial_is_staged_under_a_distinct_name() {
     let dir = scratch("partial-final");
     let summary = dir.join("summary.json.partial");
+    // The prompt is read before the line is written: an actor gone before
+    // its prompt is written is a fault, and not the point here.
     let command = wrapper(
         &dir,
         config(&dir, 500),
-        "printf '%s\\n' '{\"type\":\"system\"}'",
+        "read -r _; printf '%s\\n' '{\"type\":\"system\"}'",
         &dir.join("actor.events.jsonl"),
         "partial-probe",
     );

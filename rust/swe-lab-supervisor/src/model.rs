@@ -8,6 +8,7 @@
 //! account — and neither is ever retried: a second ask would make the verdict
 //! a function of how many times we asked.
 
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use serde_json::{Value, json};
@@ -15,6 +16,7 @@ use serde_json::{Value, json};
 use crate::config::Endpoint;
 use crate::http;
 use crate::prompt::{JUDGE_INSTRUCTIONS, WRITER_INSTRUCTIONS};
+use crate::signals::Stop;
 
 /// The judge's completion ceiling. The judge answers with two booleans and a
 /// sentence, but a reasoning model spends tokens before it answers: on the
@@ -105,6 +107,9 @@ pub struct Model {
     pub bearer: Option<String>,
     /// The bound on one call, connection included.
     pub call_timeout: Duration,
+    /// The wrapper's stop flag: a call in progress returns as cancelled
+    /// once it is raised, and nothing is asked after that.
+    pub stop: Arc<Stop>,
 }
 
 impl Model {
@@ -207,6 +212,7 @@ impl Model {
             self.bearer.as_deref(),
             payload.to_string().as_bytes(),
             started + self.call_timeout,
+            &self.stop,
         ) {
             Ok(response) => response,
             Err(reason) => {
@@ -297,6 +303,7 @@ mod tests {
             endpoint,
             bearer: None,
             call_timeout: Duration::from_secs(5),
+            stop: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
         }
     }
 

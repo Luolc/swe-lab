@@ -149,12 +149,6 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
             &selected.digest,
         )
     })?;
-    let model = model::Model {
-        name: config.model.name.clone(),
-        endpoint,
-        bearer: config::api_key_from_env(),
-        call_timeout: Duration::from_millis(config.timeouts.model_call_ms),
-    };
     let stop = signals::termination_requested().map_err(|e| {
         refused(
             &mut outputs,
@@ -164,6 +158,13 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
             &selected.digest,
         )
     })?;
+    let model = model::Model {
+        name: config.model.name.clone(),
+        endpoint,
+        bearer: config::api_key_from_env(),
+        call_timeout: Duration::from_millis(config.timeouts.model_call_ms),
+        stop: std::sync::Arc::clone(&stop),
+    };
     let digest = selected.digest.clone();
     let model_name = config.model.name.clone();
     let artifacts = open_outputs(&mut outputs, args).map_err(|e| {
@@ -179,15 +180,7 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
         argv: &args.actor_argv,
         prompt: &actor_prompt,
     };
-    let ended = match supervisor::run(
-        config,
-        selected.text,
-        &digest,
-        model,
-        launch,
-        artifacts,
-        &stop,
-    ) {
+    let ended = match supervisor::run(config, selected.text, &digest, model, launch, artifacts) {
         Ok(ended) => ended,
         Err(reason) => {
             // A stop that arrived while the prompt was still being written

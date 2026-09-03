@@ -12,6 +12,12 @@ use std::net::TcpStream;
 use std::time::{Duration, Instant};
 
 use crate::config::Endpoint;
+use crate::signals::{self, Stop};
+
+/// How long one wait on the socket lasts before the stop flag is looked
+/// at again: a call in progress returns as cancelled within this of the
+/// wrapper being told to stop, however far its deadline is.
+const CANCEL_POLL: Duration = Duration::from_millis(100);
 
 /// The most a response may be; a chat completion is kilobytes, and a
 /// forwarder gone wrong should not fill memory.
@@ -27,12 +33,14 @@ pub struct Response {
 }
 
 /// `POST` `body` as JSON to the endpoint, optionally with a bearer token, and
-/// return the response before `deadline`.
+/// return the response before `deadline` — or as cancelled, once `stop` is
+/// raised.
 ///
 /// # Errors
 ///
-/// The connection or the exchange does not complete before the deadline,
-/// the response is not HTTP/1.x, or the body exceeds
+/// The wrapper was told to stop; the connection or the exchange does not
+/// complete before the deadline; the response is not HTTP/1.x; or the body
+/// exceeds
 /// [`MAX_RESPONSE_BYTES`]. The message never contains the request body,
 /// the token, or any byte of the response: what a peer sent is not
 /// quoted back, a malformed status line or chunk size included — the
@@ -42,6 +50,7 @@ pub fn post_json(
     bearer: Option<&str>,
     body: &[u8],
     deadline: Instant,
+    stop: &Stop,
 ) -> Result<Response, String> {
     // Nothing to resolve: the endpoint is a numeric loopback address by
     // construction (`Endpoint::parse`), so the connection is the first and
@@ -60,32 +69,29 @@ pub fn post_json(
         head.push_str("\r\n");
     }
     head.push_str("\r\n");
-    // One absolute deadline for the whole call: each write's timeout is
-    // what is left of it at that moment, not a fresh allowance — per
-    // write, not per `write_all`, since a peer that takes a little before
-    // each timeout would otherwise stretch a large body past the deadline
-    // one partial write at a time.
+    // One absolute deadline for the whole call: each wait on the socket is
+    // a slice of what is left of it, looked at again between slices along
+    // with the stop flag — per write, not per `write_all`, since a peer
+    // that takes a little before each timeout would otherwise stretch a
+    // large body past the deadline one partial write at a time.
     for part in [head.as_bytes(), body] {
         let mut sent = 0;
         while sent < part.len() {
             stream
-                .set_write_timeout(Some(remaining(deadline)?))
+                .set_write_timeout(Some(slice(deadline, stop)?))
                 .map_err(|e| e.to_string())?;
             match stream.write(&part[sent..]) {
                 Ok(0) => return Err("sending the request: the connection took nothing".to_string()),
                 Ok(n) => sent += n,
-                Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
                 Err(e)
-                    if e.kind() == io::ErrorKind::WouldBlock
-                        || e.kind() == io::ErrorKind::TimedOut =>
-                {
-                    return Err("the call's deadline passed while sending the request".to_string());
-                }
+                    if e.kind() == io::ErrorKind::Interrupted
+                        || e.kind() == io::ErrorKind::WouldBlock
+                        || e.kind() == io::ErrorKind::TimedOut => {}
                 Err(e) => return Err(format!("sending the request: {e}")),
             }
         }
     }
-    let raw = read_until_close(&mut stream, deadline)?;
+    let raw = read_until_close(&mut stream, deadline, stop)?;
     parse(&raw)
 }
 
@@ -97,12 +103,25 @@ fn remaining(deadline: Instant) -> Result<Duration, String> {
     Ok(left)
 }
 
-fn read_until_close(stream: &mut TcpStream, deadline: Instant) -> Result<Vec<u8>, String> {
+/// The next wait on the socket: none once the wrapper was told to stop or
+/// the deadline has passed, and at most [`CANCEL_POLL`] otherwise.
+fn slice(deadline: Instant, stop: &Stop) -> Result<Duration, String> {
+    if signals::requested(stop).is_some() {
+        return Err("the run was cancelled".to_string());
+    }
+    Ok(remaining(deadline)?.min(CANCEL_POLL))
+}
+
+fn read_until_close(
+    stream: &mut TcpStream,
+    deadline: Instant,
+    stop: &Stop,
+) -> Result<Vec<u8>, String> {
     let mut raw = Vec::new();
     let mut chunk = [0u8; 16 * 1024];
     loop {
         stream
-            .set_read_timeout(Some(remaining(deadline)?))
+            .set_read_timeout(Some(slice(deadline, stop)?))
             .map_err(|e| e.to_string())?;
         match stream.read(&mut chunk) {
             Ok(0) => return Ok(raw),
@@ -113,10 +132,9 @@ fn read_until_close(stream: &mut TcpStream, deadline: Instant) -> Result<Vec<u8>
                 }
             }
             Err(e)
-                if e.kind() == io::ErrorKind::WouldBlock || e.kind() == io::ErrorKind::TimedOut =>
-            {
-                return Err("the call's deadline passed while reading the response".to_string());
-            }
+                if e.kind() == io::ErrorKind::Interrupted
+                    || e.kind() == io::ErrorKind::WouldBlock
+                    || e.kind() == io::ErrorKind::TimedOut => {}
             Err(e) => return Err(format!("reading the response: {e}")),
         }
     }
@@ -185,10 +203,67 @@ fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
 #[cfg(test)]
 pub(crate) mod tests {
     use std::net::TcpListener;
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::mpsc;
     use std::thread;
 
     use super::*;
+
+    /// A stop never raised.
+    static NEVER: Stop = AtomicUsize::new(0);
+
+    /// The call under test, with a stop that is never raised.
+    fn post_json(
+        endpoint: &Endpoint,
+        bearer: Option<&str>,
+        body: &[u8],
+        deadline: Instant,
+    ) -> Result<Response, String> {
+        super::post_json(endpoint, bearer, body, deadline, &NEVER)
+    }
+
+    /// A call in progress returns as cancelled within a poll interval of
+    /// the stop being raised, however far its deadline is; the control is
+    /// the same call with the stop never raised, which waits for the
+    /// deadline.
+    #[test]
+    fn a_call_in_progress_returns_as_cancelled_when_the_stop_is_raised() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let endpoint = Endpoint {
+            address: std::net::SocketAddr::from((
+                [127, 0, 0, 1],
+                listener.local_addr().unwrap().port(),
+            )),
+            path: "/".to_string(),
+        };
+        let stop = std::sync::Arc::new(AtomicUsize::new(0));
+        let raised = std::sync::Arc::clone(&stop);
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(150));
+            raised.store(15, Ordering::Relaxed);
+        });
+        let started = Instant::now();
+        let error = super::post_json(
+            &endpoint,
+            None,
+            b"{}",
+            started + Duration::from_secs(10),
+            &stop,
+        )
+        .unwrap_err();
+        assert!(error.contains("cancelled"), "{error}");
+        assert!(
+            started.elapsed() < Duration::from_secs(2),
+            "{:?}",
+            started.elapsed()
+        );
+
+        let started = Instant::now();
+        let error =
+            post_json(&endpoint, None, b"{}", started + Duration::from_millis(300)).unwrap_err();
+        assert!(error.contains("deadline"), "{error}");
+        drop(listener);
+    }
 
     /// Read one whole request — head and `Content-Length` body — off a
     /// socket. A stub that answers before it has read everything makes the

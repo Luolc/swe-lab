@@ -195,6 +195,9 @@ struct Counts {
 struct Loop {
     config: Config,
     criterion_text: &'static str,
+    /// The wrapper's stop flag — the model's, so that a call in progress
+    /// returns as cancelled when it is raised.
+    stop: Arc<Stop>,
     model: Arc<Model>,
     actor: Actor,
     gate: Arc<Gate>,
@@ -249,18 +252,18 @@ pub fn run(
     model: Model,
     launch: Launch<'_>,
     artifacts: Artifacts,
-    stop: &Stop,
 ) -> Result<Ended, String> {
     let mut run = Loop::new(config, criterion_text, model, launch.argv, artifacts)?;
     // From here the actor exists, and the run ends in a summary whatever
     // happens: a prompt the actor did not take is a fault of the run —
     // or, when a stop arrived meanwhile, its cancellation — not a refusal.
     let grace = Duration::from_millis(run.config.timeouts.term_grace_ms);
-    let terminated = match run.actor.write_stdin(launch.prompt, stop, grace) {
-        Ok(()) => run.serve(stop),
+    let stop = Arc::clone(&run.stop);
+    let terminated = match run.actor.write_stdin(launch.prompt, &stop, grace) {
+        Ok(()) => run.serve(),
         Err(error) => {
             run.fault(format!("the actor did not take its prompt: {error}"));
-            signals::requested(stop).is_some()
+            signals::requested(&stop).is_some()
         }
     };
     Ok(run.finish(terminated, criterion_sha256))
@@ -315,6 +318,7 @@ impl Loop {
         Ok(Self {
             config,
             criterion_text,
+            stop: Arc::clone(&model.stop),
             model: Arc::new(model),
             actor,
             gate,
@@ -346,10 +350,10 @@ impl Loop {
 
     /// Consume until the run is over and no judgment is in flight, or until
     /// the wrapper is told to stop. Returns whether it was stopped.
-    fn serve(&mut self, stop: &Stop) -> bool {
+    fn serve(&mut self) -> bool {
         let grace = Duration::from_millis(self.config.timeouts.term_grace_ms);
         loop {
-            if signals::requested(stop).is_some() {
+            if signals::requested(&self.stop).is_some() {
                 return true;
             }
             match self.inbox.recv_timeout(TICK) {
@@ -378,7 +382,7 @@ impl Loop {
                         self.fault(format!("the actor's stderr: {error}"));
                     }
                 }
-                Ok(Msg::Judged(ordinal, outcome)) => self.complete(ordinal, outcome, stop),
+                Ok(Msg::Judged(ordinal, outcome)) => self.complete(ordinal, outcome),
                 Err(RecvTimeoutError::Timeout) => {}
                 Err(RecvTimeoutError::Disconnected) => {
                     self.fault("the event queue closed".to_string());
@@ -674,7 +678,7 @@ impl Loop {
         );
     }
 
-    fn complete(&mut self, ordinal: u64, outcome: Result<Judged, String>, stop: &Stop) {
+    fn complete(&mut self, ordinal: u64, outcome: Result<Judged, String>) {
         let Some(mut boundary) = self
             .in_flight
             .take_if(|b| b.ordinal == ordinal && b.judge.is_some())
@@ -689,6 +693,13 @@ impl Loop {
         if let Some(handle) = boundary.judge.take() {
             let _ = handle.join();
         }
+        self.settle(&boundary, outcome);
+    }
+
+    /// Put a judgment's outcome on record, deliver what it says to deliver,
+    /// let the actor go, and start what waited behind it.
+    fn settle(&mut self, boundary: &InFlight, outcome: Result<Judged, String>) {
+        let ordinal = boundary.ordinal;
         let lag = boundary.started.elapsed();
         self.counts.max_lag = self.counts.max_lag.max(lag);
         let mut row = self.row("", boundary.disposition);
@@ -730,7 +741,7 @@ impl Loop {
                     }
                     Decision::Speak(text) => {
                         row.insert("text".into(), json!(text));
-                        let (kind, reason) = self.deliver(&boundary, text, stop);
+                        let (kind, reason) = self.deliver(boundary, text);
                         delivered = kind == "spoke";
                         if let Some(reason) = reason {
                             row.insert("reason".into(), json!(reason));
@@ -817,19 +828,25 @@ impl Loop {
         })
     }
 
-    /// Whether there is a run left to supervise.
+    /// Whether there is a run left to supervise: none once the wrapper was
+    /// told to stop — nothing new starts while what was in flight settles.
     fn continuing(&self) -> bool {
-        !self.stdout_closed && !self.faulted && self.leader_exited_at.is_none()
+        !self.stdout_closed
+            && !self.faulted
+            && self.leader_exited_at.is_none()
+            && signals::requested(&self.stop).is_none()
     }
 
     /// Deliver a line the policy wrote, unless it is stale or the channel is
     /// gone. Returns the row kind and, when not delivered, the reason.
-    fn deliver(
-        &mut self,
-        boundary: &InFlight,
-        text: String,
-        stop: &Stop,
-    ) -> (&'static str, Option<String>) {
+    fn deliver(&mut self, boundary: &InFlight, text: String) -> (&'static str, Option<String>) {
+        if signals::requested(&self.stop).is_some() {
+            self.counts.stale += 1;
+            return (
+                "stale",
+                Some("the run was cancelled before delivery".to_string()),
+            );
+        }
         if boundary.revision != self.revision {
             self.counts.stale += 1;
             return (
@@ -856,9 +873,10 @@ impl Loop {
         }
         let rendered = format!("<{INTERVENTION_TAG}>\n{text}\n</{INTERVENTION_TAG}>");
         let grace = Duration::from_millis(self.config.timeouts.term_grace_ms);
+        let stop = Arc::clone(&self.stop);
         match self
             .actor
-            .write_stdin(user_event_line(&rendered).as_bytes(), stop, grace)
+            .write_stdin(user_event_line(&rendered).as_bytes(), &stop, grace)
         {
             Ok(()) => {
                 self.counts.corrections += 1;
@@ -921,23 +939,42 @@ impl Loop {
         }
     }
 
-    /// Put a boundary still underway on record as such. A judge still
-    /// running is not waited for: only a cancellation gets here with one,
-    /// its call has a deadline of its own, and the process ends and takes
-    /// the thread with it.
+    /// Put a boundary still underway on record. Only a cancellation gets
+    /// here with a judge running: its calls return as cancelled within a
+    /// poll interval of the stop, so the thread is joined and its word,
+    /// taken off the inbox, settled like any other — every call it made on
+    /// record, nothing delivered, nothing started — before the actor is
+    /// ended and the summary written.
     fn close_boundaries(&mut self) {
-        if let Some(boundary) = self.in_flight.take() {
-            let reason = if boundary.judge.is_some() {
-                "the run ended while the judgment was in flight"
+        if let Some(mut boundary) = self.in_flight.take() {
+            if let Some(handle) = boundary.judge.take() {
+                let _ = handle.join();
+                let word = loop {
+                    match self.inbox.try_recv() {
+                        Ok(Msg::Judged(ordinal, outcome)) if ordinal == boundary.ordinal => {
+                            break Some(outcome);
+                        }
+                        Ok(_) => {}
+                        Err(_) => break None,
+                    }
+                };
+                match word {
+                    Some(outcome) => self.settle(&boundary, outcome),
+                    None => self.unjudged(
+                        boundary.ordinal,
+                        boundary.trigger_cursor,
+                        boundary.disposition,
+                        "the run was cancelled while the judgment was in flight, and the judge gave no word",
+                    ),
+                }
             } else {
-                "the run ended before the judgment could start"
-            };
-            self.unjudged(
-                boundary.ordinal,
-                boundary.trigger_cursor,
-                boundary.disposition,
-                reason,
-            );
+                self.unjudged(
+                    boundary.ordinal,
+                    boundary.trigger_cursor,
+                    boundary.disposition,
+                    "the run ended before the judgment could start",
+                );
+            }
         }
         if let Some(pending) = self.pending.boundary.take() {
             self.unjudged(
@@ -1118,7 +1155,168 @@ pub fn utc_now_iso8601() -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
     use super::*;
+    use crate::outputs::Outputs;
+
+    /// A loop around `sh -c cat`, its logs in a directory of its own, with
+    /// a model at a loopback port nothing listens on.
+    fn quiet_loop(name: &str) -> (Loop, PathBuf) {
+        let dir =
+            std::env::temp_dir().join(format!("swe-lab-supervisor-{name}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let config: Config = serde_json::from_str(&format!(
+            r#"{{"schema_version": 1, "task": "t",
+            "criterion": {{"name": "general-practice", "sha256": "{}"}},
+            "policy": {{"kind": "speak-when-off-track", "budget": 1, "cooldown": 1, "window": 1,
+              "judge_every_n_assistant_messages": 1, "block_actor_while_judging": "off"}},
+            "model": {{"name": "m"}},
+            "timeouts": {{"model_call_ms": 1000, "term_grace_ms": 500}},
+            "limits": {{"max_event_line_bytes": 65536, "max_actor_stdout_bytes": 1048576,
+              "max_actor_stderr_bytes": 1048576}}}}"#,
+            "0".repeat(64)
+        ))
+        .unwrap();
+        let mut outputs = Outputs::default();
+        let artifacts = Artifacts {
+            actor_event_log: outputs.open(&dir.join("events.jsonl")).unwrap(),
+            supervisor_log: outputs.open(&dir.join("supervisor.jsonl")).unwrap(),
+            actor_stderr: outputs.open(&dir.join("stderr.log")).unwrap(),
+        };
+        let model = Model {
+            name: "m".to_string(),
+            endpoint: config::Endpoint::parse("http://127.0.0.1:9/v1").unwrap(),
+            bearer: None,
+            call_timeout: Duration::from_secs(1),
+            stop: Arc::new(AtomicUsize::new(0)),
+        };
+        let argv: Vec<OsString> = ["sh", "-c", "cat"].iter().map(OsString::from).collect();
+        let run = Loop::new(config, "criterion", model, &argv, artifacts).unwrap();
+        (run, dir)
+    }
+
+    fn in_flight(ordinal: u64, judge: JoinHandle<()>) -> InFlight {
+        InFlight {
+            ordinal,
+            trigger_cursor: ordinal,
+            cursor: ordinal,
+            revision: 0,
+            disposition: Disposition::AdmittedAssistant,
+            started: Instant::now(),
+            judge: Some(judge),
+        }
+    }
+
+    fn last_row(dir: &std::path::Path) -> Map<String, Value> {
+        let log = std::fs::read_to_string(dir.join("supervisor.jsonl")).unwrap();
+        serde_json::from_str(log.lines().last().unwrap()).unwrap()
+    }
+
+    /// A pending boundary whose judge cannot be started is on record as
+    /// unjudged, and the result that waited behind it is settled — the
+    /// actor's stdin closes and `cat` ends — rather than held for a
+    /// judgment that never comes.
+    #[test]
+    fn a_pending_boundary_whose_judge_cannot_start_does_not_hold_the_result() {
+        let (mut run, dir) = quiet_loop("pending-spawn");
+        run.boundary_ordinal = 2;
+        run.in_flight = Some(in_flight(1, thread::spawn(|| {})));
+        run.pending = Pending {
+            boundary: Some(PendingBoundary {
+                ordinal: 2,
+                cursor: 2,
+                disposition: Disposition::AdmittedAssistant,
+            }),
+            result: true,
+        };
+        FAIL_JUDGE_SPAWN.with(|fail| fail.set(true));
+        run.complete(
+            1,
+            Ok(Judged {
+                decision: Decision::Silent,
+                marker: None,
+                calls: Vec::new(),
+            }),
+        );
+        FAIL_JUDGE_SPAWN.with(|fail| fail.set(false));
+        assert!(run.in_flight.is_none());
+        assert!(!run.pending.result, "the result was held");
+        assert_eq!((run.counts.silent, run.counts.unjudged), (1, 1));
+        let row = last_row(&dir);
+        assert_eq!(
+            (&row["kind"], &row["boundary"]),
+            (&json!("unjudged"), &json!(2))
+        );
+        assert!(
+            row["reason"]
+                .as_str()
+                .unwrap()
+                .contains("could not be started"),
+            "{row:?}"
+        );
+        let started = Instant::now();
+        while !run.actor.exited().unwrap() {
+            assert!(
+                started.elapsed() < Duration::from_secs(5),
+                "the actor is still waiting on stdin"
+            );
+            thread::sleep(Duration::from_millis(20));
+        }
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// A cancellation with a judge in flight: its word is settled — the
+    /// row carries what the judge said — and what it said to deliver is
+    /// not delivered. The control is the same word arriving without the
+    /// stop, which is delivered.
+    #[test]
+    fn a_cancellation_settles_the_judgment_in_flight_and_delivers_nothing() {
+        for cancelled in [true, false] {
+            let (mut run, dir) = quiet_loop(if cancelled {
+                "cancel"
+            } else {
+                "cancel-control"
+            });
+            let outbox = run.outbox.clone();
+            let judge = thread::spawn(move || {
+                thread::sleep(Duration::from_millis(100));
+                let _ = outbox.send(Msg::Judged(
+                    1,
+                    Ok(Judged {
+                        decision: Decision::Speak("stop".to_string()),
+                        marker: Some("marker".to_string()),
+                        calls: Vec::new(),
+                    }),
+                ));
+            });
+            run.in_flight = Some(in_flight(1, judge));
+            if cancelled {
+                run.stop.store(15, Ordering::SeqCst);
+                run.close_boundaries();
+            } else {
+                let Msg::Judged(ordinal, outcome) = run.inbox.recv().unwrap() else {
+                    panic!("not the judge's word");
+                };
+                run.complete(ordinal, outcome);
+            }
+            let row = last_row(&dir);
+            assert_eq!(row["marker"], json!("marker"), "{row:?}");
+            if cancelled {
+                assert_eq!(row["kind"], json!("stale"), "{row:?}");
+                assert!(
+                    row["reason"].as_str().unwrap().contains("cancelled"),
+                    "{row:?}"
+                );
+                assert_eq!((run.counts.stale, run.counts.corrections), (1, 0));
+            } else {
+                assert_eq!(row["kind"], json!("spoke"), "{row:?}");
+                assert_eq!((run.counts.stale, run.counts.corrections), (0, 1));
+            }
+            std::fs::remove_dir_all(dir).unwrap();
+        }
+    }
 
     #[test]
     fn the_clock_renders_a_known_instant() {

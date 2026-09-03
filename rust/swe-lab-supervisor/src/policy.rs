@@ -20,6 +20,7 @@
 use crate::evidence::INTERVENTION_TAG;
 use crate::model::{Call, Model};
 use crate::prompt::{self, MAX_INTERVENTION_CHARS, Observation};
+use crate::signals;
 
 /// What the loop tells the boundary about its own state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,8 +82,15 @@ pub fn judge_boundary(
         }
         Err(failed) => {
             calls.push(*failed.call);
+            // A call that returned because the wrapper was told to stop is
+            // no lapse of the model's; the attempt is on record either way.
+            let decision = if signals::requested(&model.stop).is_some() {
+                Decision::Unjudged("the run was cancelled during the judge call".to_string())
+            } else {
+                Decision::Lapse(format!("judge call failed: {}", failed.reason))
+            };
             return Judged {
-                decision: Decision::Lapse(format!("judge call failed: {}", failed.reason)),
+                decision,
                 marker: None,
                 calls,
             };
@@ -99,6 +107,18 @@ pub fn judge_boundary(
     if !gates.budget_left || !gates.cooldown_satisfied {
         return Judged {
             decision: Decision::Silent,
+            marker,
+            calls,
+        };
+    }
+    // Nothing is asked once the wrapper was told to stop: a correction
+    // would not be delivered, and a call nobody waits for is a call with
+    // no one to account for it.
+    if signals::requested(&model.stop).is_some() {
+        return Judged {
+            decision: Decision::Unjudged(
+                "the run was cancelled before the writer was asked".to_string(),
+            ),
             marker,
             calls,
         };
@@ -195,6 +215,7 @@ mod tests {
                 },
                 bearer: None,
                 call_timeout: Duration::from_secs(5),
+                stop: std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             },
             seen,
         )
