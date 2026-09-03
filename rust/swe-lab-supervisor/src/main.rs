@@ -1,11 +1,16 @@
 //! `swe-lab-supervisor`: the in-sandbox supervision runtime.
 //!
-//! Wraps a coding agent (the *actor*) as a child process, owns its stdin,
-//! stdout, stderr and process group, drains its `stream-json` output while a
-//! judge model is consulted at configured boundaries, and writes short
-//! corrections on the actor's stdin. The design is swe-lab issue #375; the
-//! policy semantics are those of `swe_lab.trace_synthesis` on the Python side,
-//! which this binary replaces inside a sandbox.
+//! The design (swe-lab issue #375): wrap a coding agent (the *actor*) as a
+//! child process, own its stdin, stdout, stderr and process group, drain its
+//! `stream-json` output while a judge model is consulted at configured
+//! boundaries, and write short corrections on the actor's stdin.
+//!
+//! **What this slice does.** `criteria`, `--version` and `--help` are
+//! complete. `run` loads and validates the config, verifies the criterion
+//! digest and reads the endpoint from the environment, then **refuses with
+//! exit 3**: no actor is launched and no artifact is written. The process
+//! wrapper and the judgment loop are the following slices; each moves this
+//! paragraph.
 
 mod actor;
 mod cli;
@@ -41,6 +46,10 @@ fn main() -> ExitCode {
     match command {
         cli::Command::Version => {
             println!("swe-lab-supervisor {}", env!("CARGO_PKG_VERSION"));
+            ExitCode::SUCCESS
+        }
+        cli::Command::Help => {
+            println!("{}", cli::USAGE);
             ExitCode::SUCCESS
         }
         cli::Command::Criteria => {

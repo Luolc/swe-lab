@@ -18,6 +18,7 @@ usage:
       -- <actor executable> [<actor argument>...]
   swe-lab-supervisor criteria     # the embedded criteria and their sha256
   swe-lab-supervisor --version
+  swe-lab-supervisor --help
 
 The actor argv after `--` is executed as given: it is never joined into a
 shell command, and the wrapper adds no flags of its own.";
@@ -31,6 +32,8 @@ pub enum Command {
     Criteria,
     /// Print the binary's version.
     Version,
+    /// Print the usage text — asked for, not a usage error.
+    Help,
 }
 
 /// The inputs of one supervised run.
@@ -69,7 +72,7 @@ where
         Some("run") => parse_run(args),
         Some("criteria") => reject_extra(args, Command::Criteria),
         Some("--version" | "-V") => reject_extra(args, Command::Version),
-        Some("--help" | "-h") => Err("help requested".to_string()),
+        Some("--help" | "-h") => reject_extra(args, Command::Help),
         _ => Err("unknown command".to_string()),
     }
 }
@@ -224,7 +227,9 @@ mod tests {
     fn the_other_commands_take_no_arguments() {
         assert_eq!(parse(os(&["criteria"])).unwrap(), Command::Criteria);
         assert_eq!(parse(os(&["--version"])).unwrap(), Command::Version);
+        assert_eq!(parse(os(&["--help"])).unwrap(), Command::Help);
         assert!(parse(os(&["criteria", "x"])).is_err());
+        assert!(parse(os(&["--help", "x"])).is_err());
         assert!(parse(os(&[])).is_err());
     }
 }

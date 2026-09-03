@@ -1,13 +1,28 @@
 # swe-lab-supervisor
 
-The in-sandbox supervision runtime of swe-lab, as a static Linux binary. It
-wraps a coding agent (the **actor**) as its child, owns the child's stdin,
-stdout, stderr and process group, drains the actor's `stream-json` output while
-a judge model is consulted at configured boundaries, and writes short
-corrections on the actor's stdin. The design of record is
+The in-sandbox supervision runtime of swe-lab, as a static Linux binary. The
+design: it wraps a coding agent (the **actor**) as its child, owns the child's
+stdin, stdout, stderr and process group, drains the actor's `stream-json`
+output while a judge model is consulted at configured boundaries, and writes
+short corrections on the actor's stdin. The design of record is
 [issue #375](https://github.com/Luolc/swe-lab/issues/375); the decisions this
 implementation made where #375 leaves a choice open are in
 [`docs/trace-synthesis/plans/task-20-native-supervisor-runtime.md`](../../docs/trace-synthesis/plans/task-20-native-supervisor-runtime.md).
+
+## Status
+
+The crate lands in slices, and this section says what the binary at this
+revision actually does; the rest of this README is the contract the slices
+build towards.
+
+- **Complete:** `criteria`, `--version`, `--help`; the config file and its
+  validation ([Config](#config)); the criterion digest check; the endpoint
+  and credential variables ([Environment](#environment)).
+- **Not yet:** `run` never launches an actor. After validating everything
+  above it **refuses with exit 3**, and writes no artifact. The process
+  wrapper (launch, draining, blocking, shutdown) and the judgment loop
+  (boundaries, judge, corrections, the log and the summary) are the next two
+  slices, each of which rewrites this section.
 
 The policy it runs descends from the one `src/swe_lab/trace_synthesis/` runs
 on the host — the same evidence filter, the same criterion artifact (compiled
@@ -29,6 +44,7 @@ swe-lab-supervisor run \
     -- claude -p --output-format stream-json --verbose --input-format stream-json ...
 swe-lab-supervisor criteria     # the embedded criteria and their sha256
 swe-lab-supervisor --version
+swe-lab-supervisor --help
 ```
 
 The actor argv after `--` is executed as given — never joined into a shell
@@ -38,9 +54,10 @@ the Python side.
 **Exit code.** When the wrapper ran cleanly, its exit status is the actor's
 (`128 + signal` when the actor died of a signal), so a script that records
 `$?` sees what it would have seen without the wrapper. `2` is a usage error and
-`3` a refused run (unusable config, or a criterion whose digest is not the
-pinned one) — both before any actor process exists. Never classify a run from
-the exit status alone: the terminal summary is written for that.
+`3` a refused run (unusable config, a criterion whose digest is not the pinned
+one, or — at this revision — every run, see [Status](#status)) — both before
+any actor process exists. Never classify a run from the exit status alone:
+the terminal summary is written for that.
 
 ## Config
 
