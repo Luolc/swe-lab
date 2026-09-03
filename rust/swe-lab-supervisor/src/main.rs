@@ -36,10 +36,11 @@ mod supervisor;
 
 use std::io;
 use std::os::unix::process::ExitStatusExt;
+use std::path::Path;
 use std::process::{ExitCode, ExitStatus};
 use std::time::Duration;
 
-use outputs::{Output, Outputs};
+use outputs::Outputs;
 use summary::Summary;
 
 /// The command line could not be used as given.
@@ -162,11 +163,11 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
     })?;
     let digest = selected.digest.clone();
     let model_name = config.model.name.clone();
-    let (artifacts, _summary) = open_outputs(&mut outputs, args).map_err(|e| {
+    let artifacts = open_outputs(&mut outputs, args).map_err(|e| {
         refused(
             &mut outputs,
             args,
-            format!("creating the outputs: {e}"),
+            format!("opening the outputs: {e}"),
             &model_name,
             &digest,
         )
@@ -200,7 +201,7 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
     };
     ended
         .summary
-        .write(&mut outputs, &args.summary)
+        .write(&outputs, &args.summary)
         .map_err(|e| Failed::Unhealthy(format!("writing the summary: {e}")))?;
     if let Some(signal) = signals::requested(&stop) {
         return Err(Failed::Cancelled {
@@ -221,20 +222,30 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
     Ok(ended.status.map_or(ExitCode::FAILURE, exit_code_of))
 }
 
-/// Every output through the one door, so that no two of them are one file.
-/// The summary is written at the end, but registered now, so that it is
-/// checked against the logs like any other; its handle is returned so that
-/// the file stays what was checked until then.
-fn open_outputs(
-    outputs: &mut Outputs,
-    args: &cli::RunArgs,
-) -> io::Result<(supervisor::Artifacts, Output)> {
+/// Every output through the one door, so that no two of them are one file:
+/// the three logs opened, the summary and its staging name reserved, and
+/// only then — every name having passed — the logs truncated. Nothing on
+/// disk changes before that point, so a refusal here leaves every file as
+/// it was; and nothing is created at the summary's name until the end.
+fn open_outputs(outputs: &mut Outputs, args: &cli::RunArgs) -> io::Result<supervisor::Artifacts> {
     let artifacts = supervisor::Artifacts {
-        actor_event_log: outputs.create(&args.actor_event_log)?,
-        actor_stderr: outputs.create(&args.actor_stderr)?,
-        supervisor_log: outputs.create(&args.supervisor_log)?,
+        actor_event_log: outputs.open(&args.actor_event_log)?,
+        actor_stderr: outputs.open(&args.actor_stderr)?,
+        supervisor_log: outputs.open(&args.supervisor_log)?,
     };
-    Ok((artifacts, outputs.create(&args.summary)?))
+    reserve_summary(outputs, &args.summary)?;
+    Outputs::truncate(&[
+        &artifacts.actor_event_log,
+        &artifacts.actor_stderr,
+        &artifacts.supervisor_log,
+    ])?;
+    Ok(artifacts)
+}
+
+/// The summary's name and its staging name, held against the logs.
+fn reserve_summary(outputs: &mut Outputs, summary: &Path) -> io::Result<()> {
+    outputs.reserve(summary)?;
+    outputs.reserve(&summary::staging_path(summary))
 }
 
 /// A refusal, with its summary written first — best effort: the refusal is
@@ -247,7 +258,8 @@ fn refused(
     model: &str,
     digest: &str,
 ) -> Failed {
-    let _ = Summary::refused(&reason, model, digest).write(outputs, &args.summary);
+    let _ = reserve_summary(outputs, &args.summary)
+        .and_then(|()| Summary::refused(&reason, model, digest).write(outputs, &args.summary));
     Failed::Refused(reason)
 }
 

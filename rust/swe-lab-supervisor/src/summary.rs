@@ -4,7 +4,7 @@
 
 use std::fs::File;
 use std::io::{self, Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::outputs::Outputs;
 
@@ -43,7 +43,9 @@ pub struct Summary {
     pub supervisor_exit: SupervisorExit,
     /// Why, when not clean.
     pub unclean_reason: Option<String>,
-    /// The actor's exit code, when it exited.
+    /// What the actor exited with: its code, or `128 + signal` when it died
+    /// of one — the normalization the report's reader documents and
+    /// requires. Absent only when no actor ran.
     pub actor_exit_code: Option<i32>,
     /// The signal the actor died of, when it was signalled.
     pub actor_exit_signal: Option<i32>,
@@ -113,13 +115,16 @@ impl Summary {
         }
     }
 
-    /// Write the summary atomically.
+    /// Write the summary atomically: whole at `path`, or absent. Both
+    /// `path` and its staging name must have been reserved with `outputs`
+    /// (see [`staging_path`]).
     ///
     /// # Errors
     ///
-    /// The temporary file cannot be written or renamed into place.
-    pub fn write(&self, outputs: &mut Outputs, path: &Path) -> io::Result<()> {
-        let staging = outputs.create(&path.with_extension("json.partial"))?;
+    /// The names were not reserved, or the staging file cannot be written
+    /// or renamed into place.
+    pub fn write(&self, outputs: &Outputs, path: &Path) -> io::Result<()> {
+        let staging = outputs.create_reserved(&staging_path(path))?;
         let mut file = &staging.file;
         file.write_all(
             serde_json::to_string_pretty(self)
@@ -130,6 +135,12 @@ impl Summary {
         file.sync_all()?;
         Outputs::replace(staging, path)
     }
+}
+
+/// Where the summary is staged before its atomic rename onto `path`.
+#[must_use]
+pub fn staging_path(path: &Path) -> PathBuf {
+    path.with_extension("json.partial")
 }
 
 /// The sha256 of a file's contents, or `None` when it cannot be read.
@@ -158,6 +169,15 @@ pub fn file_sha256(path: &Path) -> Option<String> {
 mod tests {
     use super::*;
 
+    /// An `Outputs` with the summary's two names reserved, as the wrapper
+    /// does at the start.
+    fn reserved(path: &Path) -> Outputs {
+        let mut outputs = Outputs::default();
+        outputs.reserve(path).unwrap();
+        outputs.reserve(&staging_path(path)).unwrap();
+        outputs
+    }
+
     #[test]
     fn a_summary_is_written_whole_under_its_final_name_only() {
         let dir = std::env::temp_dir().join(format!(
@@ -171,7 +191,7 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("summary.json");
         Summary::refused("bad config", "m", "abc")
-            .write(&mut Outputs::default(), &path)
+            .write(&reserved(&path), &path)
             .unwrap();
         let text = std::fs::read_to_string(&path).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&text).unwrap();

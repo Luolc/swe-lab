@@ -183,8 +183,12 @@ fn a_leader_that_exits_while_a_descendant_holds_its_stdout_is_ended_within_the_g
     fs::remove_dir_all(&dir).unwrap();
 }
 
+/// A device is not a record with a digest: refused before any actor
+/// exists, not discovered when the first write fails. (A write that fails
+/// mid-run is the cap tests' path: the drain stops and the run is not
+/// accounted for.)
 #[test]
-fn an_event_log_that_cannot_be_written_is_not_a_success() {
+fn an_event_log_that_is_not_a_regular_file_is_refused_before_any_actor_exists() {
     let dir = scratch("dev-full");
     let probe = format!("full-{}", std::process::id());
     let output = wrap(
@@ -194,10 +198,9 @@ fn an_event_log_that_cannot_be_written_is_not_a_success() {
         &probe,
     );
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert_eq!(output.status.code(), Some(1), "{stderr}");
-    assert!(stderr.contains("not accounted for"), "{stderr}");
-    assert!(stderr.contains("stdout"), "{stderr}");
-    assert!(none_alive_within(&probe, Duration::from_secs(5)));
+    assert_eq!(output.status.code(), Some(3), "{stderr}");
+    assert!(stderr.contains("regular file"), "{stderr}");
+    assert_eq!(probes_alive(&probe), 0, "an actor was started");
     fs::remove_dir_all(&dir).unwrap();
 }
 
@@ -291,6 +294,63 @@ fn a_prompt_the_actor_never_reads_does_not_hold_the_wrapper_against_cancellation
         "blocked in the prompt write: {took:?}"
     );
     assert!(none_alive_within(&probe, Duration::from_secs(5)));
+    // The actor existed, so the run ends in a summary — cancelled, and
+    // parseable: the reader on the other side requires an integer exit
+    // code, `128 + signal` for an actor that died of one.
+    let summary: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(dir.join("summary.json")).unwrap()).unwrap();
+    assert_eq!(summary["supervisor_exit"], "terminated", "{summary}");
+    assert_eq!(summary["accounted_for"], false, "{summary}");
+    assert!(summary["actor_exit_code"].is_i64(), "{summary}");
+    assert!(
+        !dir.join("summary.json.partial").exists(),
+        "the staging file was left"
+    );
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+/// A refusal changes nothing on disk: two hard links with content are
+/// refused as one file, and both still hold their content — the check runs
+/// before anything is truncated. The summary's staging name is held the
+/// same way: an event log named `summary.json.partial` would be replaced
+/// by the summary at the end, so it is refused at the start, unchanged.
+#[test]
+fn a_refused_alias_leaves_every_artifact_as_it_was() {
+    let dir = scratch("alias-untouched");
+    let probe = format!("alias-untouched-{}", std::process::id());
+    let (a, b) = (dir.join("a.log"), dir.join("b.log"));
+    fs::write(&a, "keep a\n").unwrap();
+    fs::hard_link(&a, &b).unwrap();
+    let output = wrapper_logging(&dir, config(&dir, 500), "sleep 30", &a, &b, &probe)
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(3), "{output:?}");
+    assert_eq!(fs::read_to_string(&a).unwrap(), "keep a\n");
+    assert_eq!(fs::read_to_string(&b).unwrap(), "keep a\n");
+    assert_eq!(probes_alive(&probe), 0, "an actor was started");
+
+    let staging = dir.join("summary.json.partial");
+    fs::write(&staging, "an event log the summary would replace\n").unwrap();
+    let output = wrapper_logging(
+        &dir,
+        config(&dir, 500),
+        "sleep 30",
+        &staging,
+        &dir.join("actor.stderr"),
+        &probe,
+    )
+    .output()
+    .unwrap();
+    assert_eq!(output.status.code(), Some(3), "{output:?}");
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("one file"),
+        "{output:?}"
+    );
+    assert_eq!(
+        fs::read_to_string(&staging).unwrap(),
+        "an event log the summary would replace\n"
+    );
+    assert_eq!(probes_alive(&probe), 0, "an actor was started");
     fs::remove_dir_all(&dir).unwrap();
 }
 

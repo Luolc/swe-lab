@@ -184,9 +184,10 @@ struct Loop {
 ///
 /// # Errors
 ///
-/// The run could not start: the actor could not be launched, or it did not
-/// take its prompt. Nothing has been supervised; the caller records a
-/// refusal.
+/// The run could not start: the actor could not be launched. Nothing has
+/// been supervised; the caller records a refusal. Once the actor exists,
+/// every ending — the prompt not taken, a cancellation, a fault — is an
+/// `Ended` with its summary.
 pub fn run(
     config: Config,
     criterion_text: &'static str,
@@ -256,19 +257,17 @@ pub fn run(
         unclean: None,
         counts: Counts::default(),
     };
+    // From here the actor exists, and the run ends in a summary whatever
+    // happens: a prompt the actor did not take is a fault of the run —
+    // or, when a stop arrived meanwhile, its cancellation — not a refusal.
     let grace = Duration::from_millis(run.config.timeouts.term_grace_ms);
-    if let Err(error) = run.actor.write_stdin(launch.prompt, stop, grace) {
-        drop(run.inbox);
-        let ended = run
-            .actor
-            .end(grace)
-            .map_err(|e| format!("ending the actor: {e}"))?;
-        return Err(format!(
-            "the actor did not take its prompt ({error}); it ended with {}",
-            ended.status
-        ));
-    }
-    let terminated = run.serve(stop);
+    let terminated = match run.actor.write_stdin(launch.prompt, stop, grace) {
+        Ok(()) => run.serve(stop),
+        Err(error) => {
+            run.fault(format!("the actor did not take its prompt: {error}"));
+            signals::requested(stop).is_some()
+        }
+    };
     Ok(run.finish(terminated, criterion_sha256, &paths))
 }
 
@@ -641,7 +640,10 @@ impl Loop {
                 && counts.events > 0,
             supervisor_exit,
             unclean_reason: unclean,
-            actor_exit_code: status.and_then(|s| s.code()),
+            actor_exit_code: status.and_then(|s| {
+                use std::os::unix::process::ExitStatusExt;
+                s.code().or_else(|| s.signal().map(|signal| 128 + signal))
+            }),
             actor_exit_signal: status.and_then(|s| {
                 use std::os::unix::process::ExitStatusExt;
                 s.signal()

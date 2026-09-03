@@ -89,14 +89,27 @@ Four files, at the paths given on the command line:
   (`spoke`, `silent`, `unjudged`, `lapse`, `stale`, `gap`), each with its
   cursor, time, the origin filter's disposition of the event, and the model
   calls made. The row shape and what each kind means: task 20 §6.
-- `--summary` — the terminal summary, written to a temporary name and renamed
-  when the run ends, so it is either whole or absent: schema version,
-  `accounted_for`, how the wrapper and the actor ended, the counts (events,
-  boundaries, corrections, silent, unjudged, lapses, gaps, stale verdicts,
-  undecodable and oversized lines), the maximum decision lag, the model and
-  criterion digest, and the sha256 of the two logs. A refused run writes one
-  too, with `supervisor_exit: "refused"` and the reason, whenever the summary
-  path itself is writable.
+- `--summary` — the terminal summary, written to a staging name
+  (`<summary>.partial`) and renamed into place when the run ends, so it is
+  either whole or absent — nothing exists at its name until then; the name
+  and the staging name are reserved at the start, against the logs, but not
+  created. It carries the schema version, `accounted_for`, how the wrapper
+  ended (`supervisor_exit`) and how the actor did (`actor_exit_code`: its
+  code, or `128 + signal` when it died of one; `actor_exit_signal` beside
+  it), the counts (events, boundaries, corrections, silent, unjudged,
+  lapses, gaps, stale verdicts, undecodable and oversized lines), the
+  maximum decision lag, the model and criterion digest, and the sha256 of
+  the two logs. Every run in which an actor existed ends in one — a stop
+  that arrives while the prompt is still being written is `terminated`, a
+  prompt the actor did not take is `unclean` — and a refused run writes one
+  too, with `supervisor_exit: "refused"` and the reason, whenever the
+  summary path itself is writable.
+
+The three logs must be three regular files (a device or a pipe is not a
+record with a digest), and no two of the four paths may name one file —
+the same path twice, a hard link, a symlink to another, the summary's
+staging name among them. That is checked before anything is truncated, so
+a refusal leaves every file as it was.
 
 ## Config
 
