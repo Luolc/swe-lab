@@ -24,15 +24,10 @@ committed:
 The driver lives under `experiments/`, which is exempt from the code-quality
 hooks and is not an importable package, so it is loaded by path.
 
-**"No committed artifact carries an operator home path" used to be asserted
-here too, and is not any more** (#399). It scanned one experiment's `runs/`
-under a name — `test_committed_witnesses_carry_no_operator_home_path` — that
-read as a repo-wide guarantee, and #384 was filed because that name misled a
-reader. `tests/test_operator_home_paths.py` now checks every tracked file, so
-this file's domain is strictly inside it. `replay.py`'s own
-`committed_home_paths()` stays, and is not the same check: it walks the
-filesystem, so it also sees a *fresh, uncommitted* run, which no tracked-file
-scan can reach.
+Operator home paths are not this module's subject. Two checks own them, over
+domains neither one covers alone: `tests/test_operator_home_paths.py` reads
+every tracked file, and `replay.py`'s `committed_home_paths()` walks the
+filesystem, so it also sees a run that has not been committed yet.
 """
 
 from __future__ import annotations
