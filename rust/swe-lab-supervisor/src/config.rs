@@ -8,7 +8,7 @@
 //! reference and read in-process. A credential never appears in the file, on
 //! the command line, or in any artifact.
 
-use std::num::NonZeroU32;
+use std::num::{NonZeroU32, NonZeroU64};
 use std::path::Path;
 
 use serde::Deserialize;
@@ -140,14 +140,25 @@ pub struct Timeouts {
     pub term_grace_ms: u64,
 }
 
-/// How much the wrapper buffers.
+/// How much the wrapper buffers and how much the actor may write.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[expect(
+    clippy::struct_field_names,
+    reason = "the fields are the config schema's own names"
+)]
 pub struct Limits {
     /// The ceiling on one line of actor stdout. A line past it is still
     /// written to the event log but reaches no judgment, and the summary
     /// counts it. Tool results can be large, which is why this is explicit.
     pub max_event_line_bytes: NonZeroU32,
+    /// The cap on the event log, exact to the byte: a line that would cross
+    /// it is not written, the actor's stdout is not read further, and the
+    /// run is over and unhealthy. Without it an actor that never stops
+    /// writing fills the sandbox before the summary can be written.
+    pub max_actor_stdout_bytes: NonZeroU64,
+    /// The same cap for the stderr log.
+    pub max_actor_stderr_bytes: NonZeroU64,
 }
 
 /// Read and validate the config file.
@@ -301,7 +312,11 @@ pub(crate) mod tests {
       },
       "model": { "name": "anthropic/claude-sonnet-5" },
       "timeouts": { "model_call_ms": 180000, "term_grace_ms": 10000 },
-      "limits": { "max_event_line_bytes": 16777216 }
+      "limits": {
+        "max_event_line_bytes": 16777216,
+        "max_actor_stdout_bytes": 1073741824,
+        "max_actor_stderr_bytes": 268435456
+      }
     }"#;
 
     fn parsed(raw: &str) -> Result<Config, String> {
@@ -318,6 +333,8 @@ pub(crate) mod tests {
         assert_eq!(config.policy.judge_every_n_assistant_messages.get(), 3);
         assert_eq!(config.policy.block_actor_while_judging, Blocking::Stdout);
         assert_eq!(config.limits.max_event_line_bytes.get(), 16_777_216);
+        assert_eq!(config.limits.max_actor_stdout_bytes.get(), 1 << 30);
+        assert_eq!(config.limits.max_actor_stderr_bytes.get(), 1 << 28);
     }
 
     #[test]
