@@ -14,11 +14,18 @@ publish = false
 # the model endpoint is plain HTTP and TLS termination lives outside the
 # binary. Check `cargo tree` before adding anything: no `*-sys`, no `cc`.
 [dependencies]
+# Safe wrappers for `killpg`, `SIGSTOP`/`SIGCONT` and the non-reaping
+# `waitid`, so the process-group ownership needs no `unsafe` of its own (the
+# `unsafe` stays inside `nix`, which `forbid(unsafe_code)` does not police).
+nix = { version = "0.30", features = ["process", "signal"] }
 # The config file and every JSON line the wrapper reads or writes.
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # The criterion digest, and the artifact digests in the terminal summary.
 sha2 = "0.10"
+# Catching the wrapper's own SIGTERM as a flag, without a signal handler
+# written here (installing one is `unsafe`).
+signal-hook = "0.3"
 
 [[bin]]
 name = "swe-lab-supervisor"

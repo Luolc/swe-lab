@@ -70,11 +70,26 @@ pub struct Policy {
     /// defaulted: the value is a run's choice, and #375 records why no value
     /// has been measured yet.
     pub judge_every_n_assistant_messages: NonZeroU32,
-    /// Whether the wrapper stops reading the actor's stdout while a judgment
-    /// is in flight, so the actor blocks on its next write until the verdict
-    /// is in. Off, the actor runs ahead and a verdict overtaken by newer
-    /// evidence is discarded as stale.
-    pub block_actor_while_judging: bool,
+    /// How the actor is held while a judgment is in flight. Not defaulted:
+    /// blocking and the stale gate are two answers to the same lag, and a
+    /// run says which it uses.
+    pub block_actor_while_judging: Blocking,
+}
+
+/// How the actor is held while a judgment is in flight.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Blocking {
+    /// Not held: the actor runs ahead, and a verdict that newer admitted
+    /// evidence overtook is discarded as stale.
+    Off,
+    /// The wrapper stops reading the actor's stdout; the pipe fills and the
+    /// actor's next write waits for the verdict. The absence of a read,
+    /// which self-releases if the wrapper dies.
+    Stdout,
+    /// `SIGSTOP` to the actor's process group, `SIGCONT` after the verdict.
+    /// Exact, but a real state the wrapper must leave before it exits.
+    Sigstop,
 }
 
 /// Which model answers. Where it answers from is the environment's to say.
@@ -277,7 +292,7 @@ pub(crate) mod tests {
         "cooldown": 4,
         "window": 8,
         "judge_every_n_assistant_messages": 3,
-        "block_actor_while_judging": true
+        "block_actor_while_judging": "stdout"
       },
       "model": { "name": "anthropic/claude-sonnet-5" },
       "timeouts": { "model_call_ms": 180000, "term_grace_ms": 10000 },
@@ -296,7 +311,7 @@ pub(crate) mod tests {
         assert_eq!(config.policy.budget, 3);
         assert_eq!(config.policy.window.get(), 8);
         assert_eq!(config.policy.judge_every_n_assistant_messages.get(), 3);
-        assert!(config.policy.block_actor_while_judging);
+        assert_eq!(config.policy.block_actor_while_judging, Blocking::Stdout);
         assert_eq!(config.limits.max_event_line_bytes.get(), 16_777_216);
     }
 
@@ -319,6 +334,22 @@ pub(crate) mod tests {
             ))
             .is_err()
         );
+    }
+
+    #[test]
+    fn blocking_is_one_of_three_named_modes() {
+        for (name, mode) in [("off", Blocking::Off), ("sigstop", Blocking::Sigstop)] {
+            let raw = VALID.replace(
+                "\"block_actor_while_judging\": \"stdout\"",
+                &format!("\"block_actor_while_judging\": \"{name}\""),
+            );
+            assert_eq!(parsed(&raw).unwrap().policy.block_actor_while_judging, mode);
+        }
+        let raw = VALID.replace(
+            "\"block_actor_while_judging\": \"stdout\"",
+            "\"block_actor_while_judging\": true",
+        );
+        assert!(parsed(&raw).is_err());
     }
 
     #[test]
