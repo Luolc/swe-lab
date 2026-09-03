@@ -607,11 +607,24 @@ what produced this report's P0.
 **Every one of the 496 is `[tool_result]` alone** — that is the only distinct
 block shape observed on a user message carrying a tool result.
 
-**The mechanism, which is why the earlier worry was misplaced.** In the real
-run, `<system-reminder>` blocks sit on the **opening user message** and on
-`role: system` messages. Claude Code delivers them as separate `system`
-messages; it does not append them to a tool-result message. The specific way
-`[tool_result, text]` might have arisen naturally does not arise.
+**The observation, and separately the explanation — they are not the same
+strength and the count's hardness must not bleed into the account of it.**
+
+- **Observation (a count, same standing as the table above).** In this capture,
+  every `<system-reminder>`-bearing text block sits either on the **opening user
+  message** or on a `role: system` message. None sits on a message carrying a
+  `tool_result`.
+- **Explanation (a mechanism claim, and weaker).** *Claude Code delivers
+  reminders as separate `system` messages and does not append them to a
+  tool-result message.* This does **not** follow from the count. It is an
+  induction from where reminders happened to sit in **one** capture — `N=1` at
+  the level of *harness behaviour*, whatever the message counts inside it — and
+  it is the kind of statement a single run cannot establish. **It is recorded
+  here as a candidate explanation awaiting its own test, not as a property of
+  the harness.**
+
+A reader may rely on the first bullet. The second is the fragile half, and it is
+labelled so that a later citation cannot borrow the count's hardness for it.
 
 **How this must be worded, and how it must not.** The result is **0 in 496
 tool-result-carrying user messages, across one rollout on one instance** — it is
@@ -711,6 +724,89 @@ launch rather than by anyone remembering it. Per-run figures are in
   parallel tool calls, sub-agents).
 - **What `--resume-drops-turn` does**, which is the one flag that might make the
   seam A′-shaped rather than merely artifact-free.
+- **`Q8`, below — whether the seam's shape is a property of the mechanism or of
+  our delivery choice.** It is the open question with the most leverage over
+  this report's conclusion.
 - **The `ls` incident in §10 has no committed trace.** It is disclosed
   self-report, not evidence, and is recorded as a method note rather than a
   finding.
+
+
+---
+
+# 13. `Q8` — is `[tool_result, text]` forced, or is it how we chose to deliver? ★
+
+**Not run. Registered here so the question is not lost, and so that running it
+later cannot be mistaken for having run it now.**
+
+### The question
+
+§9.3 establishes that `[tool_result, text]` is a **supervision-only** shape (0 in
+496 on the inference path). It does **not** establish that a segmented loop can
+**only** produce that shape — and those differ by exactly one thing: whether the
+layout is a property of *the resume mechanism* or of *the delivery channel we
+happened to use*.
+
+There is a counter-example in hand. **A′'s correction lands as a separate
+trailing `system` message** — so making a correction arrive that way is
+demonstrably possible in this harness; A′ does it on every intervention,
+including in the real rollout read in §9.3. A′ delivers on the stdin of
+`--input-format stream-json`.
+
+> **Can `--resume-session-at` be combined with `--input-format stream-json`, so
+> that a segmented loop's correction is delivered on that channel and lands as a
+> separate `system` message rather than appended to the `tool_result` user
+> message?**
+
+### Why there is no evidence either way, right now
+
+Every anchored arm in §9 delivered its correction as an **ordinary positional
+prompt** (`claude -p "Continue."`). Every stream-json arm in `streamjson_input`
+ran **without** `--resume-session-at`. **The combination has never been run**, so
+neither answer has support — including the answer that would rescue the design.
+The two flags are not exotic together in principle: `harness.py` already adds
+`--input-format stream-json` conditionally on its own stdin mode.
+
+### The arms
+
+Two arms, differing **only** in the delivery channel, both captured on the wire:
+
+- **Arm S** — anchored resume (`--resume-session-at <last message id>`) **plus**
+  `--input-format stream-json`, correction written on stdin.
+- **Arm P** — anchored resume, correction as a positional prompt. This is what
+  §9.1 already ran, re-run alongside so the comparison is within one session of
+  the machine rather than against an older capture.
+
+**The criterion is a contrast, not a single reading.** Arm S must show the
+correction as a separate trailing `system` message **and** arm P must show
+`[tool_result, text]` in the same batch. If both come out the same, the delivery
+channel is not the lever and the question is answered *no* — which is equally a
+result. Recorded per arm: which message the correction lands in, its role, its
+block list, and whether `correction_text_blocks` still accumulates 0/1/2/3.
+
+**Three things must be re-checked in arm S rather than assumed to carry over:**
+
+1. **The two default-resume artifacts.** Changing the delivery channel may
+   reintroduce `Continue from where you left off.` and the synthetic assistant
+   turn. §9.1's zeros were measured on the positional-prompt path and do not
+   transfer.
+2. **Whether the flags even compose.** `--resume-session-at` requires
+   `--resume`; whether it is accepted alongside `--input-format stream-json` is
+   unknown, and a rejection is a fast, cheap *no*.
+3. **Structural position, not digest.** A′'s block is `len 440` for its own
+   correction text; matching means *a separate trailing `system` message*, never
+   a byte equality — the distinction §9.3 already had to make once.
+
+### What each answer does to this report
+
+- **Yes** — criterion **(b)** is cleared, the `[tool_result, text]`
+  disadvantage disappears, and the per-seam accumulation goes with it (the
+  correction would no longer pile into the tool-result message). The
+  recommendation returns to roughly where §9.1 stood before the P0.
+- **No** — the shape is a property of the mechanism, statement ③ is the final
+  characterisation, and the current recommendation stands unchanged.
+
+**Neither answer is preferred here.** The pull in both directions is worth
+naming, because both are real: this question could rescue a design the report
+has just marked down, and it arrives immediately after a result that went
+against it. Neither is a reason to run it, or not to.
