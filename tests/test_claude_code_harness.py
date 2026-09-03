@@ -1424,6 +1424,9 @@ def test_a_segmented_run_runs_one_script_per_segment_and_records_its_seams(
         events: list[dict[str, object]] = [
             {
                 "type": "assistant",
+                # The anchor a resumed segment is given; without it this test
+                # would silently exercise the unanchored path.
+                "uuid": f"msg-{len(self.scripts)}-uuid",
                 "message": {
                     "id": f"msg-{len(self.scripts)}",
                     "role": "assistant",
@@ -1450,7 +1453,15 @@ def test_a_segmented_run_runs_one_script_per_segment_and_records_its_seams(
       return result
 
   sb = AppendingSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
-  harness = ClaudeCodeHarness(segmented=_segmented())
+  # Proxy capture, because the seam guard reads the wire and nothing else —
+  # an anchored run that captured none is refused rather than trusted.
+  sb.write(
+      PROXY_LOG_NAME,
+      (
+          Path(__file__).resolve().parent / "data/proxy_seam_anchored.jsonl"
+      ).read_bytes(),
+  )
+  harness = ClaudeCodeHarness(capture="proxy", segmented=_segmented())
 
   _ = harness.run(sb, prompt="PROMPT", timeout=100.0)
 
@@ -1470,6 +1481,9 @@ def test_a_segmented_run_runs_one_script_per_segment_and_records_its_seams(
   # reported — the whole point of re-staging per segment.
   staged = (epath.Path(tmp_path) / AGENT_SCRIPT_NAME).read_text()
   assert "--resume sess-1" in staged
+  # And anchored at the previous segment's last message record, which is what
+  # keeps the seam free of a fabricated assistant turn.
+  assert "--resume-session-at msg-1-uuid" in staged
   # And the run's own account is registered as an artifact, so it leaves the
   # sandbox with the trace rather than dying with the container.
   assert "supervisor.jsonl" in harness.native_outputs()

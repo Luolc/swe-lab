@@ -129,15 +129,23 @@
   },
   "domain": {
     "applies_to": "the actor's own session transcript records",
-    "does_not_apply_to": "the harness stream-json event stream",
-    "why": "the event stream carries no requestId, so the positive chain would drop every assistant record it saw",
+    "does_not_apply_to": [
+      "the harness stream-json event stream",
+      "the canonical Message conversation.json is built from"
+    ],
+    "why": "the chain's field names are transcript field names. The event stream spells the same idea differently, so a chain keyed on the transcript spelling drops every assistant record it sees there — and it does that silently, on a one-character difference. Downstream of conversion nothing survives at all: the canonical Message keeps only role and content.",
     "measured": {
       "capture": "~/corpora/swe-lab/first-e2e-2026-09-02/r0/rollout/a0/claude_code.event_stream.jsonl",
       "when": "2026-09-03",
       "assistant_events": 59,
-      "assistant_events_with_requestId": 0,
+      "assistant_events_with_camelcase_requestId": 0,
+      "assistant_events_with_snakecase_request_id": 59,
+      "assistant_events_with_nonnull_snakecase_request_id": 59,
       "distinct_assistant_message_ids": 32,
-      "result_num_turns": 32
+      "result_num_turns": 32,
+      "events_total": 170,
+      "events_with_uuid": 170,
+      "note": "Both spellings are counted because reporting only the zero would read as 'the event stream carries no request id', which is false and is the kind of claim a later reader would build on."
     }
   }
 }

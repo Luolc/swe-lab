@@ -54,6 +54,12 @@ from typing import Any
 
 from swe_lab.sandbox import ExecResult
 
+from .seam_shape import (
+    DirtySeamError,
+    read_seam,
+    seam_is_clean,
+    SeamReading,
+)
 from .supervisor import (
     evidence_of,
     Intervention,
@@ -112,6 +118,15 @@ class SegmentedSupervision:
       ``--max-turns``. The owner's number is 5; it is a parameter because the
       only evidence for any value is the detection-latency distribution this
       loop records, which does not exist yet.
+    anchor_resume: Resume with ``--resume-session-at <message id>`` rather than
+      plain ``--resume``. **On, and a run with it off produces traces that are
+      ineligible** — not "not preferred". Plain ``--resume`` fabricates an
+      ``assistant`` turn the model never wrote, which violates criterion (a) of
+      ``spec.md``; (a) is not what the owner relaxed on 2026-09-03, and §6 of
+      the same spec forbids removing it afterwards. The anchored flag produces
+      none (feasibility report §9.1), so the artifact never exists. Kept as a
+      switch only so the dirty path stays runnable for diagnosis, and every
+      trace it produces is marked ineligible in the account.
     neutral_continue: What the next segment is told when the policy stays
       silent. Short and directionless on purpose — it is the control against
       which a correction's effect is read.
@@ -122,6 +137,7 @@ class SegmentedSupervision:
   wall_clock_seconds: float
   max_cost_usd: float
   turns_per_segment: int = 5
+  anchor_resume: bool = True
   neutral_continue: str = "Continue."
 
 
@@ -134,6 +150,9 @@ class SegmentRequest:
     prompt: What this segment is told — the task on segment 0, and afterwards
       either a correction or :attr:`SegmentedSupervision.neutral_continue`.
     resume_session_id: The session to resume, or ``None`` for segment 0.
+    resume_at_message_id: The message record to anchor the resume at, passed as
+      ``--resume-session-at``. ``None`` on segment 0, and on a run that has
+      :attr:`SegmentedSupervision.anchor_resume` off — the ineligible path.
     turns: The ``--max-turns`` value for this segment.
     timeout: Seconds this segment may take.
   """
@@ -141,6 +160,7 @@ class SegmentRequest:
   index: int
   prompt: str
   resume_session_id: str | None
+  resume_at_message_id: str | None
   turns: int
   timeout: float
 
@@ -175,6 +195,35 @@ class SegmentEnding:
   cost_usd: float | None
   result_uuid: str | None
   event_index: int | None
+
+
+#: The event types that are message records, and therefore the ones
+#: ``--resume-session-at`` can anchor at. A ``result`` is the run's own
+#: bookkeeping and a ``system`` event is the harness's, so neither is one.
+MESSAGE_EVENT_TYPES = ("assistant", "user")
+
+
+def last_message_uuid(events: Sequence[Mapping[str, Any]]) -> str | None:
+  """Return the uuid of the most recent message record in the stream.
+
+  This is the anchor a resumed segment is given. Every event in a real capture
+  carries a ``uuid`` (170 of 170 on the first end-to-end run), so a ``None``
+  here means there was no message record at all rather than a record without an
+  identifier.
+
+  Args:
+    events: The decoded stream, in order.
+
+  Returns:
+    The uuid, or ``None`` when the stream holds no message record.
+  """
+  for event in reversed(events):
+    if event.get("type") not in MESSAGE_EVENT_TYPES:
+      continue
+    uuid = event.get("uuid")
+    if isinstance(uuid, str) and uuid:
+      return uuid
+  return None
 
 
 def parse_events(raw: str) -> list[Mapping[str, Any]]:
@@ -269,6 +318,11 @@ STOP_OTHER_ENDING = "other-ending"
 STOP_MAX_SEGMENTS = "max-segments"
 STOP_WALL_CLOCK = "wall-clock"
 STOP_MAX_COST = "max-cost"
+#: The anchored seam did not hold — or the capture could not say it did. Not a
+#: ceiling and not an ending: the run is stopped because it has begun producing
+#: traces that ``spec.md`` §7 disqualifies, and the loop raises rather than
+#: returning so the run is recorded as an error with its artifacts intact.
+STOP_DIRTY_SEAM = "dirty-seam"
 
 
 def _markers_of(policy: SpeakPolicy) -> tuple[WouldHaveSpoken, ...]:
@@ -299,6 +353,11 @@ class SegmentedRun:
     launch: How one segment is run.
     read_stream: How the appended event stream is read back.
     log: Where the account goes, one JSON object per row.
+    read_wire: How the capture proxy's log is read back, or ``None`` when the
+      run captures no wire. **The guard on the anchored seam is the only check
+      standing behind this path's argument**, so a run that resumes with an
+      anchor and cannot read a wire is refused rather than trusted — see
+      :mod:`swe_lab.trace_synthesis.seam_shape`.
     now: Clock, injected so the log is testable.
   """
 
@@ -307,6 +366,7 @@ class SegmentedRun:
   launch: SegmentLauncher
   read_stream: StreamReader
   log: LogWriter
+  read_wire: StreamReader | None = None
   now: Callable[[], datetime.datetime] = lambda: datetime.datetime.now(
       datetime.UTC
   )
@@ -343,10 +403,18 @@ class SegmentedRun:
     Returns:
       The last segment's process outcome — the run's, since a segmented run
       ends where its last segment does.
+
+    Raises:
+      DirtySeamError: A resumed segment's wire showed the plain-resume
+        artifacts, or could not be read at all. Raised rather than returned:
+        the manager records a raising action as a run error while teardown
+        still collects the artifacts, and the alternative is a trace that
+        reads as ordinary and is ineligible.
     """
     started = self.now()
     prompt = self.task
     session_id: str | None = None
+    anchor: str | None = None
     last: ExecResult = ExecResult(0, "", "")
     cost = 0.0
 
@@ -359,6 +427,9 @@ class SegmentedRun:
           index=self._segments,
           prompt=prompt,
           resume_session_id=session_id,
+          resume_at_message_id=(
+              anchor if self.supervision.anchor_resume else None
+          ),
           turns=self.supervision.turns_per_segment,
           timeout=max(budget, 0.0),
       )
@@ -371,13 +442,61 @@ class SegmentedRun:
       if ending.cost_usd is not None:
         cost = ending.cost_usd
       session_id = ending.session_id or session_id
+      anchor = last_message_uuid(events) or anchor
 
       stop = self._stop_reason(ending, started=started, cost=cost)
+      # Checked before the row is written, so a run the guard stopped says so
+      # in its own account and not only in the exception.
+      dirty = self._seam_reading(request)
+      if dirty is not None:
+        self._segment_row(
+            request,
+            ending,
+            turns=turns,
+            cost=cost,
+            stop=STOP_DIRTY_SEAM,
+            seam=dataclasses.asdict(dirty),
+        )
+        raise DirtySeamError(
+            "the anchored resume seam did not hold on segment"
+            f" {request.index}: {dirty}. A trace carrying the plain-resume"
+            " artifacts is ineligible under spec.md §7, and removing them is"
+            " forbidden by §6"
+        )
       self._segment_row(request, ending, turns=turns, cost=cost, stop=stop)
       if stop is not None:
         return last
 
       prompt = self._seam_prompt(events, turns=turns, index=request.index)
+
+  def _seam_reading(self, request: SegmentRequest) -> SeamReading | None:
+    """Check the wire after a resumed segment; report a reading only if bad.
+
+    Runs only on a segment that actually resumed with an anchor. Segment 0
+    starts a session, and the deliberately ineligible plain-``--resume`` path
+    has nothing to guard: its artifacts are expected there rather than a
+    regression, and the account marks its traces ineligible instead.
+
+    Args:
+      request: The segment that just ran.
+
+    Returns:
+      The reading when the seam cannot be shown to be clean, else ``None``.
+
+    Raises:
+      DirtySeamError: The run resumed with an anchor and captured no wire, so
+        the one check behind this path's argument could not run at all.
+    """
+    if request.resume_at_message_id is None:
+      return None
+    if self.read_wire is None:
+      raise DirtySeamError(
+          "an anchored segmented run captured no wire, so the seam could not"
+          " be checked; this path's eligibility rests on that check, and an"
+          " unchecked run is not evidence that the seam held"
+      )
+    reading = read_seam(self.read_wire())
+    return None if seam_is_clean(reading) else reading
 
   def _stop_reason(
       self,
@@ -509,6 +628,7 @@ class SegmentedRun:
       turns: int,
       cost: float,
       stop: str | None,
+      **extra: object,
   ) -> None:
     """Record one segment's ending, and what its resume fabricated.
 
@@ -524,6 +644,8 @@ class SegmentedRun:
       turns: Cumulative turns after it.
       cost: Cumulative spend after it.
       stop: Why the loop stopped here, or ``None`` if it did not.
+      **extra: Fields specific to this row — the seam reading when the guard
+        refused it.
     """
     self.log(
         {
@@ -540,7 +662,16 @@ class SegmentedRun:
             "resume_artifact_expected": request.resume_session_id is not None,
             "anchor_event_index": ending.event_index,
             "anchor_result_uuid": ending.result_uuid,
+            "resume_at_message_id": request.resume_at_message_id,
+            # Not "not preferred": a trace produced on the plain-resume path
+            # carries a fabricated assistant turn, which spec.md §7
+            # disqualifies and §6 forbids removing. Recorded per segment so
+            # the account states it rather than a reader having to know what
+            # the flag means.
+            "training_eligible": request.resume_session_id is None
+            or request.resume_at_message_id is not None,
             "stop_reason": stop,
+            **extra,
         }
     )
 

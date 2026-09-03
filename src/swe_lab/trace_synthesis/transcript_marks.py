@@ -18,16 +18,21 @@ session writer being wrong in step. A mismatch is a finding: either the driver's
 record of its own seams is wrong, or the pinned build's seam behaviour is not
 the one the feasibility report measured.
 
-**The domain is the session transcript and nothing else.** These fields exist
-only in the records the CLI writes under ``$CLAUDE_CONFIG_DIR/projects/``, which
+**The domain is the session transcript and nothing else**, meaning the records
+the CLI writes under ``$CLAUDE_CONFIG_DIR/projects/``, which
 :class:`~swe_lab.harnesses.claude_code.native_transcript.NativeTranscriptObserver`
-archives. They do not exist downstream: measured on the first end-to-end run's
-capture, **0 of 59 assistant events in the ``stream-json`` stream carry
-``requestId``** while all 59 report a real model name, and by the time
-``convert.py`` has produced a canonical
-:class:`~swe_lab.conversation.Message` only ``role`` and ``content`` survive.
-Applied to either, this chain would answer about every record identically —
-which is why it is a cross-check on a count and never a filter on a corpus.
+archives. The field *names* are that format's, and the way they fail elsewhere
+is worth stating precisely, because the imprecise version is itself a trap:
+
+- In the ``stream-json`` event stream, **0 of 59 assistant events carry
+  ``requestId``** — and **59 of 59 carry a non-null ``request_id``**. The idea
+  is there; the spelling is not. So this chain applied there reports *every*
+  assistant record, silently, on a one-character difference. Quoting only the
+  zero would leave the false claim that the stream carries no request id.
+- Downstream of conversion nothing survives at all: a canonical
+  :class:`~swe_lab.conversation.Message` keeps ``role`` and ``content``.
+
+Both are why this is a cross-check on a count and never a filter on a corpus.
 
 The chain is kept **positive** rather than keyed on the ``<synthetic>`` literal:
 an exclusion list covers only the cases its author thought of, and that marker

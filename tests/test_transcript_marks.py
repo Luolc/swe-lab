@@ -148,10 +148,18 @@ def test_the_declared_domain_is_the_one_the_chain_can_speak_about(
 ):
   """The event stream is not this module's input, and the fixture says why.
 
-  Applied there the chain would report every assistant record; the measurement
-  is committed beside the shapes so the domain claim is auditable rather than
-  only asserted in a docstring.
+  **Both spellings are asserted, and that is the point.** The chain requires
+  ``requestId``; the event stream carries the same idea as ``request_id``, on
+  all 59 assistant events and non-null. So applied there the chain reports
+  every record — not because no request id exists, but because of a
+  one-character difference that produces no error. Asserting only the zero
+  would leave behind the false claim that the event stream carries no request
+  id, which a later reader would build on.
   """
   measured = shapes["domain"]["measured"]
   assert measured["assistant_events"] > 0
-  assert measured["assistant_events_with_requestId"] == 0
+  assert measured["assistant_events_with_camelcase_requestId"] == 0
+  assert (
+      measured["assistant_events_with_nonnull_snakecase_request_id"]
+      == measured["assistant_events"]
+  )

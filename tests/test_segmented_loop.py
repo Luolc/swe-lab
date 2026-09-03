@@ -16,9 +16,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import json
+from pathlib import Path
 from typing import Any
 
+import pytest
+
 from swe_lab.sandbox import ExecResult
+from swe_lab.trace_synthesis.seam_shape import DirtySeamError
 from swe_lab.trace_synthesis.segmented_loop import (
     LOG_KIND_SEGMENT,
     SegmentedRun,
@@ -71,12 +75,18 @@ def _segment(
   """
   lines: list[str] = []
   for message_id in ids:
-    for _ in range(events_per_message):
+    for repeat in range(events_per_message):
       lines.append(
           json.dumps(
               {
                   "type": "assistant",
                   "session_id": session,
+                  # Every event in a real capture carries one (170 of 170 on
+                  # the first end-to-end run), and it is what a resumed
+                  # segment is anchored at — a fixture without it would
+                  # exercise the *unanchored* path while looking like it
+                  # tested the anchored one.
+                  "uuid": f"{message_id}-{repeat}",
                   "message": {
                       "id": message_id,
                       "role": "assistant",
@@ -141,6 +151,14 @@ class FakeActor:
     return self.stream
 
 
+_ANCHORED_WIRE = (
+    Path(__file__).resolve().parent / "data/proxy_seam_anchored.jsonl"
+).read_text(encoding="utf-8")
+_DIRTY_WIRE = (
+    Path(__file__).resolve().parent / "data/proxy_seam_dirty.jsonl"
+).read_text(encoding="utf-8")
+
+
 def _supervision(policy: Any = None, **overrides: Any) -> SegmentedSupervision:
   """Build a supervision config with roomy ceilings unless a test narrows one.
 
@@ -161,12 +179,19 @@ def _supervision(policy: Any = None, **overrides: Any) -> SegmentedSupervision:
   return SegmentedSupervision(**(defaults | overrides))
 
 
-def _run(actor: FakeActor, supervision: SegmentedSupervision) -> list[Any]:
+def _run(
+    actor: FakeActor,
+    supervision: SegmentedSupervision,
+    *,
+    wire: str | None = _ANCHORED_WIRE,
+) -> list[Any]:
   """Drive one loop over a fake actor and return its log rows.
 
   Args:
     actor: The fake.
     supervision: The config.
+    wire: What the capture proxy's log reads as; ``None`` models a run that
+      captured none, which the loop refuses to trust.
 
   Returns:
     The rows written, in order.
@@ -178,6 +203,7 @@ def _run(actor: FakeActor, supervision: SegmentedSupervision) -> list[Any]:
       launch=actor.launch,
       read_stream=actor.read,
       log=rows.append,
+      read_wire=None if wire is None else (lambda: wire),
   )
   _ = loop.run(timeout=10_000.0)
   return rows
@@ -416,3 +442,99 @@ def test_a_policy_lapse_is_bounded_to_its_seam_and_the_run_goes_on():
   assert actor.requests[1].prompt == "Continue."
   assert [row for row in rows if row["kind"] == LOG_KIND_SILENT]
   assert len(actor.requests) == 3
+
+
+# --- the anchored seam, and the guard that is this path's whole argument -----
+
+
+def test_a_resumed_segment_is_anchored_at_the_last_message_record():
+  """`--resume-session-at` is what keeps the seam free of a fabricated turn.
+
+  Anchored at the last *message* record, not the terminal `result` event: the
+  result is the run's own bookkeeping and is not a message the resume can
+  attach to.
+  """
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT, uuid="result-uuid"),
+          _segment(ids=["b"], subtype=_DONE),
+      ]
+  )
+
+  _ = _run(actor, _supervision())
+
+  assert actor.requests[0].resume_at_message_id is None
+  assert actor.requests[1].resume_at_message_id == "a-0"
+
+
+def test_a_dirty_seam_stops_the_run_and_says_it_is_ineligible():
+  """The guard fires, the run is a run error, and the account records why.
+
+  Raised rather than returned: a trace carrying the plain-resume artifacts
+  reads as perfectly ordinary, so the failure has to be made loud where it
+  happens.
+  """
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_DONE),
+      ]
+  )
+
+  with pytest.raises(DirtySeamError, match="did not hold"):
+    _ = _run(actor, _supervision(), wire=_DIRTY_WIRE)
+
+  # The control arm for this test lives one test up: the same actor and the
+  # same policy over an anchored wire runs to completion.
+
+
+def test_an_anchored_run_without_a_wire_is_refused_rather_than_trusted():
+  """A check that could not run must not read like one the seam passed."""
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_DONE),
+      ]
+  )
+
+  with pytest.raises(DirtySeamError, match="captured no wire"):
+    _ = _run(actor, _supervision(), wire=None)
+
+
+def test_the_plain_resume_path_is_runnable_and_marked_ineligible():
+  """It stays available for diagnosis, and every segment says what it is.
+
+  Not "not preferred": the fabricated assistant turn violates criterion (a) of
+  the spec, which the owner did not relax, and §6 forbids removing it
+  afterwards. So the account marks the trace rather than leaving a reader to
+  infer it from a flag.
+  """
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_DONE),
+      ]
+  )
+
+  # No wire at all, and it still runs: the guard belongs to the anchored path.
+  rows = _segment_rows(
+      _run(actor, _supervision(anchor_resume=False), wire=None)
+  )
+
+  assert actor.requests[1].resume_session_id is not None
+  assert actor.requests[1].resume_at_message_id is None
+  assert [row["training_eligible"] for row in rows] == [True, False]
+
+
+def test_an_anchored_run_marks_every_segment_eligible():
+  """The control arm for the row above: not False for everything."""
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_DONE),
+      ]
+  )
+
+  rows = _segment_rows(_run(actor, _supervision()))
+
+  assert [row["training_eligible"] for row in rows] == [True, True]

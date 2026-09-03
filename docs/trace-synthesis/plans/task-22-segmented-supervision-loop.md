@@ -12,37 +12,46 @@ line of work and left exactly one hard requirement — *a synthetic assistant
 record must never be trained on*. "Get it running end to end" is the acceptance
 tone; the shape of the resulting trace is post-processing's problem.
 
-> **The requirement changed shape before any code was written**, and §6 is the
-> whole of why. The identifying fields the feasibility report measured live in
-> the actor's **session transcript**; the trace we train on is the **event
-> stream or the proxy log**, where they do not exist — and by the time
-> `conversation.json` is written, a canonical `Message` keeps only `role` and
-> `content`. Worse, those fields are the candidate record's **own self-report**,
-> so no detector built on them establishes anything. The answer is a
-> **provenance gate** (§6.4): annotate before provenance is discarded, fail
-> rather than pass when it cannot be established, prove authorship against the
-> **captured API responses**, and have the driver record every seam it cut —
-> which it can do exactly, because it cut them. **What that gates is the
-> trace's use as training data, not this task's bring-up.** Ruled by the
-> orchestra on 2026-09-03, on findings from two independent directions.
+> **The requirement changed shape twice before any code was written**, and §6
+> is the whole of why.
+>
+> First: it cannot be met by inspecting the trace. The identifying fields the
+> feasibility report measured are session-transcript fields, the corpus is the
+> event stream or the proxy log, and by the time `conversation.json` is written
+> a canonical `Message` keeps only `role` and `content` — and those fields are
+> the candidate record's own self-report in any case.
+>
+> Then the step that settles it: the fabricated assistant turn violates
+> criterion **(a)**, and **(a) is not what the owner relaxed on 2026-09-03 —
+> (b) is**. `spec.md` §6 forbids removing it afterwards. So on plain `--resume`
+> the spec blocks both directions, and the answer is **not to produce it**:
+> `--resume-session-at` produces none. That argument rests on an undocumented
+> flag whose failure is silent, so the check that it still holds runs on every
+> resumed segment and is the load-bearing part of the design.
+>
+> **What is gated is the delivery of these traces, not the bring-up.** Ruled by
+> the orchestra on 2026-09-03, on findings from two independent directions.
 
 ---
 
 ## 1. What the mechanism is, in one loop
 
 ```
-segment k:  claude -p … --max-turns N  [--resume <session_id>]  < <segment prompt>
+segment k:  claude -p … --max-turns N  [--resume <sid> --resume-session-at <uuid>]  < <prompt>
             └ stdout appended to the one event stream
 
 read the segment's terminal `result` event
   subtype == "success"          → the actor thinks it is done → stop
   subtype == "error_max_turns"  → a seam:
-        record the seam (§6)
+        check the wire: the anchored seam is still clean, else raise (§6.3)
+        record the seam (§6.5)
         build an Observation from the actor's records so far
         policy.consider(observation)
           Intervention  → segment k+1's prompt = intervention.rendered()
           None/Unjudged → segment k+1's prompt = the neutral continue
   anything else                 → stop, and record which ending it was
+
+segment k+1's anchor is the uuid of the last message record in the stream
 
 caps, all three, checked before launching segment k+1:
   segments run    >= max_segments        → stop
@@ -236,137 +245,132 @@ reconciliation of §7.
 
 ---
 
-## 6. The one hard requirement: a provenance gate, and what it gates
+## 6. The one hard requirement, and why this path does not trip the spec
 
-### 6.1 The finding that changed the design, before any code
+### 6.1 The step that decides everything: (a) was not relaxed
 
-The brief specified a filter keyed on the fields the feasibility report
-measured: `message.model == "<synthetic>"`, the absent `requestId` /
-`apiBlockIndex` / `effort`, the extra `isApiErrorMessage`. **Those are session
-transcript fields, and the trace we train on is not the session transcript.**
+`spec.md` §7 says the synthetic assistant turn *"is the single artifact that
+disqualifies the stop-and-resume path"*, and it says so because that turn
+violates criterion **(a)** — SFT loss on tokens the model never wrote. **What
+the owner relaxed on 2026-09-03 is (b)**, the context-shape criterion. So the
+relaxation never covered this artifact, which is exactly consistent with his
+keeping "the synthetic assistant must not be trained on" as the one hard
+requirement rather than in tension with it.
 
-- `spec.md:476`, measured and already in the spec: *"`convert.py` reads the
-  `stream-json` stream (or the proxy log), **never** the persisted transcript"*.
-- Measured here on the first end-to-end capture: **0 of 59 assistant events
-  carry `requestId`**, and all 59 report `message.model: "claude-sonnet-5"`.
-  The chain applied to the event stream would answer about **every** assistant
-  record identically.
-- On the **wire** the synthetic record is worse still: report §6.2 measured it
-  arriving as an ordinary `assistant` message carrying the text
-  `No response requested.` — no marker of any kind.
+And `spec.md` §6 closes the other exit: *"the phase-C conversation itself, with
+nothing removed and nothing added"*. So on the plain-`--resume` path the spec
+blocks both directions — **keeping the artifact violates (a); removing it
+violates §6.** There is no post-processing that rescues that path.
 
-**Reached independently from the other direction, in PR #412's third review
-round, and that reproduction is the stronger one**: the product conversion
-(`ClaudeCodeHarness.to_conversation()` / `proxy_log_to_conversation()`) yields a
-canonical `Message` carrying **only `role` and `content`**, which
-`ConversationObserver` persists as `conversation.json`. Run a real dirty-seam
-capture through it and the synthetic assistant sits at index 7 of 10 canonical
-messages, and the briefed filter returns the list unchanged. **So "every unit
-test is green" and "the fabricated turn is in the training data" hold at the
-same time.** Two paths, one conclusion; the fact is settled and is not re-tested
-here. That branch's report links to this section rather than restating it.
+### 6.2 So the answer is not to produce it
 
-### 6.2 Provenance cannot be supplied by the record being authenticated
+`--resume-session-at` produces **0** synthetic assistant records (measured,
+feasibility report §9.1). Nothing to keep, nothing to remove: (a) and §6 hold at
+once. It is the default, and the only eligible configuration.
 
-The other half, which neither the brief nor my first pass had: **all three
-identifying fields are the candidate record's own self-report.** A record
-carrying `model: "claude-sonnet-5"` and any non-empty `requestId` passes the
-positive chain while having been fabricated. Matching the literal
-`No response requested.` is no better — it gives the same answer for "our seam
-made this" and "the model wrote that sentence".
+The shape it does introduce — the correction landing as `[tool_result, text]` on
+a **user** message — is conditioning rather than assistant tokens, so it does
+not touch (a); §7 says a synthetic *user* turn "is not a disqualifier under
+either criterion", and (b) is relaxed. The path is clean.
 
-So authorship has to come from **an independent source**, and one exists: the
-captured API responses. Reconciling a retained assistant turn against the
-response that produced it is a check the record cannot pass by asserting things
-about itself.
+**Plain `--resume` stays reachable and is marked, not merely discouraged.**
+`SegmentedSupervision.anchor_resume=False` keeps it runnable for diagnosis, and
+every segment row it writes carries `training_eligible: false`. That word is
+chosen over "not preferred": a trace it produces is **ineligible** under §7, and
+saying so in the account is what stops it being picked up later by someone who
+only knows a flag was flipped.
 
-### 6.3 What is gated — the trace's use as training data, not the bring-up
+### 6.3 The wire assertion is the load-bearing part of that argument
 
-Stated in these words deliberately, because it now lives across two PRs and two
-different phrasings of one gate would be the next "same fact, two copies":
+The argument above rests entirely on the behaviour of a **`hideHelp()` flag with
+no compatibility promise**. If a build changes it, nothing goes red — the seam
+quietly reverts to the dirty one and the run keeps producing ineligible traces
+that read as ordinary. **A silent, distant failure on the one property an
+argument rests on is the case that must carry a check rather than a claim.**
 
-- **Phase 1 end-to-end bring-up is not blocked.** The owner said get it running
-  first.
-- **The traces it produces may not be delivered downstream as training data
-  until the provenance gate below is built.**
+So `seam_shape.py` runs on **every resumed segment**, and the loop raises
+`DirtySeamError` when it fires. Raising rather than returning is deliberate: the
+sandbox manager records a raising action as a run error *and still runs
+teardown*, so the artifacts survive to be read while the run is unambiguously
+red.
 
-The basis: **producing a trace is not training on it**; `spec.md` puts training
-itself out of scope; and the owner's hard requirement binds at the **consumer**.
+It is written as a positive chain that **fails closed** — the capture parsed, at
+least one main-loop request, at least one assistant message in it, and *only
+then* the two zeros. An anchored run that captured no wire is refused outright,
+because "the check could not run" and "the seam held" must not look alike.
 
-### 6.4 The gate's acceptance conditions — and this section is their only home
+Its arms, and each was run rather than reasoned about:
 
-Adopted from PR #412's Phase 1 conditions and combined with the seam record the
-orchestra ruled for. **The ADR of §7 points here; nothing copies this list.**
+| arm | what it catches | result |
+|---|---|---|
+| fires on a committed dirty-seam fixture | a detector that reports clean on anything | 1 synthetic assistant, 1 continuation, not clean |
+| reads clean on an anchored fixture | a guard that refuses everything | clean |
+| empty / auxiliary-only / no-assistant capture reads **not clean** | a zero from an instrument that saw nothing | not clean, three ways |
+| mutant: `seam_is_clean` always `True` | — | 3 tests fail, 19 pass |
+| mutant: `seam_is_clean` always `False` | — | 11 fail, 11 pass |
 
-1. **Filter or annotate at the trace → `conversation.json` boundary, before
-   provenance is discarded.** That boundary is exactly where the fields go: the
-   canonical `Message` keeps `role` and `content` and nothing else.
-2. **Fail the run when provenance cannot be established**, rather than passing
-   it through. The `required=False`, never-fails-a-run transcript observer is
-   the shape to avoid here — right for evidence collection, wrong for a gate.
-3. **Establish authorship from an independent source**: reconcile each retained
-   assistant turn against the **captured API response** that produced it. Never
-   the candidate record's own fields (§6.2).
-4. **One end-to-end test from a real dirty-seam fixture** that produces the
-   final canonical conversation and asserts **both** arms: the fabricated record
-   is *absent* **and** the real responses are *still there*. A gate that drops
-   everything satisfies the first arm alone.
-5. **The driver records every seam it cut** (§6.5). Complementary to 3, not a
-   substitute: the driver's record says **where the seams are**, from the
-   production side; the API reconciliation says **which assistant turns are
-   real**, from an independent oracle. Two sources crossing is stronger than
-   either.
+The remaining arm is **live and belongs to the bring-up run**: two segment pairs
+differing only in whether `--resume-session-at` is passed, with the guard red on
+the one without it. A fixture cannot supply that one.
 
-**The structurally stronger repair is named rather than buried.** The
-feasibility report measured that `--resume-session-at` produces **0** synthetic
-assistant records — *not producing* one beats *producing and labelling* one.
-Bring-up follows the owner's "get it running first" and uses plain `--resume`;
-the ADR records that the requirement is met today by 3 + 5, and that moving to
-`--resume-session-at` would make the artifact not exist at all. Evaluated after
-bring-up, not before.
+### 6.4 What is gated, in the wording both PRs use
+
+Narrower than my first pass, and the narrowing came from #412's implementer
+reading the spec's context: §6 says this component's **output is the training
+trace**, so a producer cannot hand the responsibility for producing an eligible
+one downstream.
+
+- **Isolated implementation and diagnostic runs: not blocked.**
+- **Producer-side Phase 1 acceptance, and any delivery or publication of these
+  traces: still gated.**
+- **Anything already produced that does not conform is marked *ineligible*** —
+  not "not used for now".
 
 ### 6.5 What the driver records at each seam
 
-One row per seam in the loop's log, alongside the `LOG_KIND_*` row the policy
-decision already produces:
+One row per segment, alongside the `LOG_KIND_*` row the policy decision
+produces:
 
 | field | why it is only knowable now |
 |---|---|
 | `segment` | which segment ended here |
 | `cut_at_turn` | cumulative distinct assistant `message.id` count at the cut — requirement C.1 |
 | `stop_subtype` | the segment's terminal `result` subtype (§8's known limitation reads this) |
-| `session_id` | what the next segment resumed |
-| `next_prompt` | `"intervention"` or `"neutral-continue"` |
-| `deviation_started_at_turn` | the judge's answer — requirement C.2, `None` when not asked or not given |
-| `resume_artifact_expected` | **True on every resumed segment.** A claim about what *we* did, not a detection of what appeared |
-| `anchor_event_index` / `anchor_result_uuid` | where the seam sits in the appended event stream: the index of the segment's terminal `result` event, and that event's own `uuid` (present on every `result` — verified on the real capture) |
+| `session_id` / `resume_at_message_id` | what the next segment resumed, and the record it anchored at |
+| `deviation_started_steps_ago` | the judge's answer — requirement C.2, `None` when not asked |
+| `training_eligible` | whether this segment's resume was anchored (§6.2) |
+| `resume_artifact_expected` | true on a resumed segment: a claim about what *we* did, not a detection |
+| `anchor_event_index` / `anchor_result_uuid` | where the seam sits in the appended event stream |
 
-The anchors are what let a consumer localize a seam in a corpus that carries no
-marker.
+The anchors let a consumer localize a seam in a corpus that carries no marker —
+which is the residual value of the seam record now that the artifact is not
+supposed to exist at all: it is how a *reader* checks, independently of our
+guard, that it does not.
 
 ### 6.6 The transcript leg, and exactly how far it reaches
 
-`transcript_marks.py` is the cheap second leg of the join in condition 5 — the
-CLI's own session persistence marks the records it fabricated, so its count can
-be reconciled against the driver's seam count. **It is not condition 3 and
-cannot become it**: `test_a_forged_record_passes_the_chain` asserts the
-limitation rather than leaving a green suite to be misread as authentication.
-Its name was narrowed from `model_authored` for that reason — a name wider than
-its coverage is how a check gets trusted past what it checks.
+`transcript_marks.py` reconciles the driver's seam count against what the CLI's
+own session persistence marks. **It is not a provenance check and cannot become
+one**: every field it reads is the candidate record's self-report, and
+`test_a_forged_record_passes_the_chain` asserts that a record simply claiming a
+model and a request id passes. Its name was narrowed from `model_authored` for
+that reason.
+
+**A correction to my own earlier reading, because it is the same trap one level
+down.** I reported "0 of 59 assistant events carry `requestId`" and drew the
+domain conclusion from it. The zero is real for that spelling and **59 of 59
+carry a non-null `request_id`** — the event stream spells it differently. The
+conclusion stands and is if anything sharper: a chain keyed on the transcript's
+spelling reports *every* record downstream, silently, on a one-character
+difference. But "the event stream carries no request id" would have been false,
+and it is the kind of sentence a later reader builds on.
 
 ### 6.7 The open reading the bring-up run closes
 
-**Does the synthetic assistant record appear in the event stream at all?** It is
-measured on the wire (report §6.2) and in the transcript (report §6.1);
-`--replay-user-messages` echoes *user* messages, and this is not one. Both
-answers are results:
-
-- **absent** — a stream-capture corpus never contained it, and the seam record
-  is belt-and-braces there;
-- **present** — the corpus contains an unmarked fabricated record, and the seam
-  anchors of §6.5 are what locates it.
-
-Read on the bring-up run over all three artifacts, and recorded either way.
+Under the anchored flag the fabricated record should not exist anywhere, and the
+guard checks the wire. What the bring-up run adds is the **live control arm** of
+§6.3, plus the transcript leg's agreement with the driver's seam count, plus the
+first §5 latency numbers on a real task.
 
 ## 7. The ADR and the spec reconciliation, in this task's PR
 
@@ -377,12 +381,16 @@ carrier** — a decision, not an implementation detail. It states three things:
    is SFT data generation and post-processing is rich, so a trace need not match
    the shape an interactive user produces), and who ruled it;
 2. the one requirement that was **not** relaxed;
-3. **how that requirement is met today** and what is gated on it — the
-   acceptance conditions of [§6.4](#64-the-gates-acceptance-conditions--and-this-section-is-their-only-home),
-   which the ADR **points at and does not restate**, because that section is
-   their only home and PR #412's report links to the same place. It also
-   records **why today's form is not the strongest**: `--resume-session-at`
-   makes the artifact not exist, and is evaluated after bring-up.
+3. **why this path does not trip §7's disqualifier** — and precisely on the
+   right ground: **because it does not produce the artifact**, not because (a)
+   was relaxed. (a) was not relaxed; (b) was.
+4. **that the wire assertion is a load-bearing part of that argument**, because
+   the argument depends on the behaviour of an undocumented flag: an argument
+   resting on such a behaviour has to carry a check that fails when the
+   behaviour changes, and §6.3 is that check.
+5. **what is gated**, in the §6.4 wording, which the ADR **points at rather
+   than restates** — that section is its only home, and PR #412's report links
+   to the same place.
 
 **And `spec.md` §6 is reconciled in the same PR**, because it currently says the
 synthetic assistant turn is *"the single artifact that disqualifies the
@@ -412,7 +420,9 @@ pointer here, so the fact does not fall between the two tasks.
 | Path | What |
 |---|---|
 | `src/swe_lab/trace_synthesis/segmented_loop.py` | `SegmentedSupervision`, the loop, the seam record of §6.3, the caps, and §5's cost note in its module docstring |
-| `src/swe_lab/trace_synthesis/transcript_marks.py` | the transcript leg of §6.4's condition 5, narrowed to what it covers (§6.6) |
+| `src/swe_lab/trace_synthesis/seam_shape.py` | the guard of §6.3, and `DirtySeamError` |
+| `src/swe_lab/trace_synthesis/transcript_marks.py` | the transcript leg, narrowed to what it covers (§6.6) |
+| `tests/test_seam_shape.py` + `tests/data/proxy_seam_{dirty,anchored}.jsonl` | the guard's arms and its premises |
 | `tests/test_segmented_loop.py` | the loop against a fake `SandboxFs` (`sandbox/testing.py` already scripts successive `run_script` results) |
 | `tests/test_transcript_marks.py` | the two arms, plus the forged-record limitation asserted |
 | `tests/data/assistant_record_shapes.json` | the committed shape fixture |
@@ -451,9 +461,9 @@ pointer here, so the fact does not fall between the two tasks.
 6. The workflow definition, and **one** bring-up run: **1 instance × 1
    rollout**, this task's ceiling and tighter than the repo's own ask-first
    line. It answers, in one go: does the pinned 2.1.212 build compose the flags;
-   does the seam produce the records the report measured; does the synthetic
-   record reach the event stream (§6.7); does the transcript leg agree
-   with the driver's seam count (§6.4 condition 5); and what the §5 latency distribution
+   does the seam produce the records the report measured; does the guard's live
+   control arm hold (§6.3); does the transcript leg agree
+   with the driver's seam count (§6.6); and what the §5 latency distribution
    looks like over one real task.
 
 ---
@@ -480,4 +490,6 @@ quietly absorbs its own corrections teaches nobody what to look for next time.
 | 6 | reuse `max_turns` | Accepted with `max_segments` mandatory, **and the meaning change written into the docstring** |
 | 7 | no ADR mentioned | **Write one, in this PR**, with the three points of §7 |
 | 8 | — | Known limitation recorded here (§8) with a pointer from task 12, so it does not fall between them |
-| 9 | assert the seam shape on the wire | Not required on this path: bring-up accepts the dirty seam, so there is **no clean state to regress from**. The wire assertion returns with `--resume-session-at` |
+| 9 | assert the seam shape on the wire | **Reversed, and the reversal is mine to own.** I argued it was unnecessary because plain resume has no clean state to regress from. The premise went with the path: the anchored seam *is* a clean state, its flag is undocumented, and its failure is silent — so the assertion is now the only guard behind this path's eligibility, and it runs on every resumed segment |
+| 10 | bring-up on plain `--resume`, accepting the dirty seam | **Wrong, and it took reading which criterion the artifact violates.** It violates (a); the owner relaxed (b); §6 forbids removing it afterwards, so the path is blocked both ways. Default is `--resume-session-at`, which produces none. Plain resume stays reachable, and every segment it writes is marked `training_eligible: false` |
+| 11 | — | **My own, and the same trap one level down**: "0 of 59 assistant events carry `requestId`" was true only for that spelling — 59 of 59 carry a non-null `request_id`. The domain conclusion is unchanged and sharper; the sentence was not |

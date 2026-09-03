@@ -904,7 +904,9 @@ class ClaudeCodeHarness(Harness):
       sb.write(
           AGENT_SCRIPT_NAME,
           self._invocation_script(
-              sb.spec.workdir, resume_session_id=request.resume_session_id
+              sb.spec.workdir,
+              resume_session_id=request.resume_session_id,
+              resume_at_message_id=request.resume_at_message_id,
           ).encode(),
           executable=True,
       )
@@ -918,6 +920,15 @@ class ClaudeCodeHarness(Harness):
         launch=launch,
         read_stream=lambda: read_text(sb, EVENT_STREAM_NAME),
         log=rows.append,
+        # Only ``PROXY`` capture records the request bodies, and the seam
+        # guard reads nothing else. A run without one is not quietly trusted:
+        # the loop refuses at its first anchored resume, because "the check
+        # could not run" and "the seam held" must not look the same.
+        read_wire=(
+            (lambda: read_text(sb, PROXY_LOG_NAME))
+            if self.capture == "proxy"
+            else None
+        ),
     )
     try:
       return loop.run(timeout=timeout)
@@ -1021,7 +1032,10 @@ class ClaudeCodeHarness(Harness):
     return event_stream_usage(read_text(sb, EVENT_STREAM_NAME))
 
   def actor_argv(
-      self, *, resume_session_id: str | None = None
+      self,
+      *,
+      resume_session_id: str | None = None,
+      resume_at_message_id: str | None = None,
   ) -> tuple[str, ...]:
     """Return the agent's command as the tokens a process would exec.
 
@@ -1044,6 +1058,12 @@ class ClaudeCodeHarness(Harness):
         that starts one. Only the segmented loop passes it, and it passes it
         **here** rather than assembling a second command beside this one — the
         drift this method's first paragraph exists to prevent.
+      resume_at_message_id: The message record to anchor that resume at,
+        passed as ``--resume-session-at``. The CLI refuses it without
+        ``--resume`` (measured: *"--resume-session-at requires --resume"*), so
+        it is only ever added beside one. It is what keeps the seam free of the
+        fabricated assistant turn, and the flag is undocumented, which is why
+        the loop checks the seam on the wire instead of trusting it.
 
     Returns:
       The binary's absolute path followed by its flags, in the order the run
@@ -1083,6 +1103,8 @@ class ClaudeCodeHarness(Harness):
     ]
     if resume_session_id is not None:
       argv += ["--resume", resume_session_id]
+      if resume_at_message_id is not None:
+        argv += ["--resume-session-at", resume_at_message_id]
     if self.capture != "proxy":
       # Without this the CLI echoes no stdin, so the trace it writes contains
       # what the agent said and not what it was asked — the opening prompt and
@@ -1114,7 +1136,11 @@ class ClaudeCodeHarness(Harness):
     return f'"$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}'
 
   def _invocation_script(
-      self, workdir: str, *, resume_session_id: str | None = None
+      self,
+      workdir: str,
+      *,
+      resume_session_id: str | None = None,
+      resume_at_message_id: str | None = None,
   ) -> str:
     """Build the run script for an *unattended* run.
 
@@ -1155,6 +1181,7 @@ class ClaudeCodeHarness(Harness):
       workdir: The repo path (``$WORKDIR``) the agent ``cd``s into.
       resume_session_id: Passed through to :meth:`actor_argv` for a segment
         that resumes; ``None`` on every unsegmented run and on segment 0.
+      resume_at_message_id: Passed through with it, anchoring that resume.
 
     Returns:
       The bash script text staged as the invocation mount.
@@ -1267,7 +1294,12 @@ class ClaudeCodeHarness(Harness):
       # than inlining it into the argv — no shell-quoting hazard for a large,
       # arbitrary prompt.
       command = (
-          f"{shlex.join(self.actor_argv(resume_session_id=resume_session_id))}"
+          f"{shlex.join(
+              self.actor_argv(
+                  resume_session_id=resume_session_id,
+                  resume_at_message_id=resume_at_message_id,
+              )
+          )}"
           f" < {stdin_source} {capture_redirect} 2> {stderr}"
       )
     lines += [
