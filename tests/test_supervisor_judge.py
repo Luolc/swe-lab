@@ -489,6 +489,20 @@ def test_the_located_deviation_is_read_but_never_coerced() -> None:
   # The rest of the verdict is unaffected either way.
   assert coerced.off_track is True
 
+  # And the case a plain `isinstance` would let through: `bool` subclasses
+  # `int`, so a judge answering `true` would otherwise be recorded as "1 step
+  # ago" — a boolean wearing a measurement's clothes.
+  as_bool = (
+      '{"off_track": true, "self_correcting": false, "reason": "guessing",'
+      ' "deviation_started_steps_ago": true}'
+  )
+  boolean = ModelJudge(
+      model="m",
+      transport=RecordingTransport(answers=[as_bool]),
+      locate_deviation=True,
+  )(observation(), criterion)
+  assert boolean.deviation_started_steps_ago is None
+
 
 def test_a_default_judges_verdict_carries_no_located_deviation() -> None:
   """An A′ verdict reports absence, not a number nobody asked for."""

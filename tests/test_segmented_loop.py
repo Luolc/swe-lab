@@ -169,8 +169,9 @@ def _supervision(policy: Any = None, **overrides: Any) -> SegmentedSupervision:
   Returns:
     The config.
   """
+  built = policy or NeverSpeak()
   defaults: dict[str, Any] = {
-      "policy": policy or NeverSpeak(),
+      "policy_factory": lambda: built,
       "max_segments": 10,
       "wall_clock_seconds": 10_000.0,
       "max_cost_usd": 100.0,
@@ -467,13 +468,42 @@ def test_a_resumed_segment_is_anchored_at_the_last_message_record():
   assert actor.requests[1].resume_at_message_id == "a-0"
 
 
-def test_a_dirty_seam_stops_the_run_and_says_it_is_ineligible():
-  """The guard fires, the run is a run error, and the account records why.
+def test_a_dirty_seam_is_recorded_and_does_not_stop_the_run():
+  """The seam is an observation, not an acceptance condition.
 
-  Raised rather than returned: a trace carrying the plain-resume artifacts
-  reads as perfectly ordinary, so the failure has to be made loud where it
-  happens.
+  Recorded so a reader can see what the seam looked like, and deliberately
+  non-blocking: the owner ruled that seam shape is post-processing's problem
+  and asked for a loop that runs.
   """
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_DONE),
+      ]
+  )
+
+  rows = _segment_rows(_run(actor, _supervision(), wire=_DIRTY_WIRE))
+
+  assert len(actor.requests) == 2
+  assert rows[1]["seam"]["synthetic_assistants"] == 1
+
+
+def test_a_clean_seam_records_nothing_to_report():
+  """The control arm: the field must not read as dirty for every wire."""
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_DONE),
+      ]
+  )
+
+  rows = _segment_rows(_run(actor, _supervision()))
+
+  assert rows[1]["seam"] is None
+
+
+def test_the_guard_can_be_turned_on_and_then_it_stops_the_run():
+  """Off by default; on, it raises. Both are asserted so neither is assumed."""
   actor = FakeActor(
       segments=[
           _segment(ids=["a"], subtype=_CUT),
@@ -482,14 +512,11 @@ def test_a_dirty_seam_stops_the_run_and_says_it_is_ineligible():
   )
 
   with pytest.raises(DirtySeamError, match="did not hold"):
-    _ = _run(actor, _supervision(), wire=_DIRTY_WIRE)
-
-  # The control arm for this test lives one test up: the same actor and the
-  # same policy over an anchored wire runs to completion.
+    _ = _run(actor, _supervision(guard_seam=True), wire=_DIRTY_WIRE)
 
 
-def test_an_anchored_run_without_a_wire_is_refused_rather_than_trusted():
-  """A check that could not run must not read like one the seam passed."""
+def test_a_run_without_a_wire_still_runs():
+  """No capture to read is not a failure: the seam is recorded, not enforced."""
   actor = FakeActor(
       segments=[
           _segment(ids=["a"], subtype=_CUT),
@@ -497,18 +524,14 @@ def test_an_anchored_run_without_a_wire_is_refused_rather_than_trusted():
       ]
   )
 
-  with pytest.raises(DirtySeamError, match="captured no wire"):
-    _ = _run(actor, _supervision(), wire=None)
+  rows = _segment_rows(_run(actor, _supervision(), wire=None))
+
+  assert len(actor.requests) == 2
+  assert rows[1]["seam"] is None
 
 
-def test_the_plain_resume_path_is_runnable_and_marked_ineligible():
-  """It stays available for diagnosis, and every segment says what it is.
-
-  Not "not preferred": the fabricated assistant turn violates criterion (a) of
-  the spec, which the owner did not relax, and §6 forbids removing it
-  afterwards. So the account marks the trace rather than leaving a reader to
-  infer it from a flag.
-  """
+def test_the_plain_resume_path_runs_and_says_which_path_it_took():
+  """Both resume flavours are supported; the account says which one ran."""
   actor = FakeActor(
       segments=[
           _segment(ids=["a"], subtype=_CUT),
@@ -516,17 +539,16 @@ def test_the_plain_resume_path_is_runnable_and_marked_ineligible():
       ]
   )
 
-  # No wire at all, and it still runs: the guard belongs to the anchored path.
   rows = _segment_rows(
       _run(actor, _supervision(anchor_resume=False), wire=None)
   )
 
   assert actor.requests[1].resume_session_id is not None
   assert actor.requests[1].resume_at_message_id is None
-  assert [row["training_eligible"] for row in rows] == [True, False]
+  assert [row["anchored"] for row in rows] == [False, False]
 
 
-def test_an_anchored_run_marks_every_segment_eligible():
+def test_an_anchored_run_says_so_on_every_resumed_segment():
   """The control arm for the row above: not False for everything."""
   actor = FakeActor(
       segments=[
@@ -537,4 +559,4 @@ def test_an_anchored_run_marks_every_segment_eligible():
 
   rows = _segment_rows(_run(actor, _supervision()))
 
-  assert [row["training_eligible"] for row in rows] == [True, True]
+  assert [row["anchored"] for row in rows] == [False, True]

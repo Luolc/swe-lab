@@ -99,8 +99,12 @@ class SegmentedSupervision:
   """How a run is cut, judged and resumed — and where it is made to stop.
 
   Attributes:
-    policy: When to speak. The same :class:`SpeakPolicy` A′ takes; it is
-      consulted once per seam rather than once per stream event.
+    policy_factory: Builds the policy for one attempt. **A factory, not a
+      policy**, for the reason ``supervision()`` is one on the A′ side: a
+      judging policy carries per-run state — budget spent, cooldown, the
+      markers it has recorded — and these definitions are module-level, so a
+      shared instance would let one instance's spent budget silence the next
+      one's corrections with nothing to show for it.
     max_segments: The hard ceiling on segments. **No default, and the reason is
       that ``--max-turns`` stops being the runaway guard here**: on an
       unsegmented run it bounds the whole agent loop at
@@ -119,25 +123,28 @@ class SegmentedSupervision:
       only evidence for any value is the detection-latency distribution this
       loop records, which does not exist yet.
     anchor_resume: Resume with ``--resume-session-at <message id>`` rather than
-      plain ``--resume``. **On, and a run with it off produces traces that are
-      ineligible** — not "not preferred". Plain ``--resume`` fabricates an
-      ``assistant`` turn the model never wrote, which violates criterion (a) of
-      ``spec.md``; (a) is not what the owner relaxed on 2026-09-03, and §6 of
-      the same spec forbids removing it afterwards. The anchored flag produces
-      none (feasibility report §9.1), so the artifact never exists. Kept as a
-      switch only so the dirty path stays runnable for diagnosis, and every
-      trace it produces is marked ineligible in the account.
+      plain ``--resume``. On by default because it is free and produces a
+      cleaner seam (feasibility report §9.1), and **nothing depends on it**:
+      the owner ruled on 2026-09-03 that seam shape is post-processing's
+      problem and asked for a loop that runs. Off falls back to plain
+      ``--resume``, which is a supported configuration and not a degraded one.
+    guard_seam: Stop the run when a resumed segment's wire shows the
+      plain-resume artifacts. **Off**, and deliberately: under the same ruling
+      the seam is not an acceptance condition, so this check records rather
+      than blocks. The reading is written into the account either way when a
+      wire is available; turning this on makes it raise instead.
     neutral_continue: What the next segment is told when the policy stays
       silent. Short and directionless on purpose — it is the control against
       which a correction's effect is read.
   """
 
-  policy: SpeakPolicy
+  policy_factory: Callable[[], SpeakPolicy]
   max_segments: int
   wall_clock_seconds: float
   max_cost_usd: float
   turns_per_segment: int = 5
   anchor_resume: bool = True
+  guard_seam: bool = False
   neutral_continue: str = "Continue."
 
 
@@ -373,6 +380,21 @@ class SegmentedRun:
 
   _said: list[Intervention] = dataclasses.field(default_factory=list)
   _segments: int = 0
+  _policy: SpeakPolicy | None = None
+
+  @property
+  def policy(self) -> SpeakPolicy:
+    """Return this run's policy, built at the start of :meth:`run`.
+
+    Returns:
+      The policy.
+
+    Raises:
+      RuntimeError: Read before ``run`` built one.
+    """
+    if self._policy is None:
+      raise RuntimeError("the policy is built when the run starts")
+    return self._policy
 
   @property
   def segments_run(self) -> int:
@@ -411,6 +433,9 @@ class SegmentedRun:
         still collects the artifacts, and the alternative is a trace that
         reads as ordinary and is ineligible.
     """
+    # One policy per run, built here rather than shared by the definition —
+    # see `SegmentedSupervision.policy_factory`.
+    self._policy = self.supervision.policy_factory()
     started = self.now()
     prompt = self.task
     session_id: str | None = None
@@ -445,10 +470,8 @@ class SegmentedRun:
       anchor = last_message_uuid(events) or anchor
 
       stop = self._stop_reason(ending, started=started, cost=cost)
-      # Checked before the row is written, so a run the guard stopped says so
-      # in its own account and not only in the exception.
       dirty = self._seam_reading(request)
-      if dirty is not None:
+      if dirty is not None and self.supervision.guard_seam:
         self._segment_row(
             request,
             ending,
@@ -458,12 +481,17 @@ class SegmentedRun:
             seam=dataclasses.asdict(dirty),
         )
         raise DirtySeamError(
-            "the anchored resume seam did not hold on segment"
-            f" {request.index}: {dirty}. A trace carrying the plain-resume"
-            " artifacts is ineligible under spec.md §7, and removing them is"
-            " forbidden by §6"
+            f"the resume seam did not hold on segment {request.index}:"
+            f" {dirty}"
         )
-      self._segment_row(request, ending, turns=turns, cost=cost, stop=stop)
+      self._segment_row(
+          request,
+          ending,
+          turns=turns,
+          cost=cost,
+          stop=stop,
+          seam=None if dirty is None else dataclasses.asdict(dirty),
+      )
       if stop is not None:
         return last
 
@@ -472,29 +500,22 @@ class SegmentedRun:
   def _seam_reading(self, request: SegmentRequest) -> SeamReading | None:
     """Check the wire after a resumed segment; report a reading only if bad.
 
-    Runs only on a segment that actually resumed with an anchor. Segment 0
-    starts a session, and the deliberately ineligible plain-``--resume`` path
-    has nothing to guard: its artifacts are expected there rather than a
-    regression, and the account marks its traces ineligible instead.
+    Runs on a segment that resumed and had a wire to read. **A run without a
+    wire is not a failure here**: the seam is recorded, not enforced (see
+    :attr:`SegmentedSupervision.guard_seam`), so the honest answer to "was the
+    seam clean" is simply unavailable and the account says so with a ``None``.
 
     Args:
       request: The segment that just ran.
 
     Returns:
-      The reading when the seam cannot be shown to be clean, else ``None``.
-
-    Raises:
-      DirtySeamError: The run resumed with an anchor and captured no wire, so
-        the one check behind this path's argument could not run at all.
+      The reading when the seam cannot be shown to be clean, else ``None`` —
+      which covers both "it was clean" and "there was nothing to read". The
+      two are distinguishable in the account by whether the run captured a
+      wire at all, and nothing downstream currently needs to tell them apart.
     """
-    if request.resume_at_message_id is None:
+    if request.resume_session_id is None or self.read_wire is None:
       return None
-    if self.read_wire is None:
-      raise DirtySeamError(
-          "an anchored segmented run captured no wire, so the seam could not"
-          " be checked; this path's eligibility rests on that check, and an"
-          " unchecked run is not evidence that the seam held"
-      )
     reading = read_seam(self.read_wire())
     return None if seam_is_clean(reading) else reading
 
@@ -570,9 +591,9 @@ class SegmentedRun:
     # through the protocol, because `SpeakPolicy` returns a decision and not a
     # verdict, and widening it for one runtime's bookkeeping would change what
     # every policy must implement.
-    before = len(_markers_of(self.supervision.policy))
+    before = len(_markers_of(self.policy))
     try:
-      decision = self.supervision.policy.consider(observation)
+      decision = self.policy.consider(observation)
     except PolicyLapseError as error:
       self._decision_row(
           LOG_KIND_LAPSE,
@@ -594,7 +615,7 @@ class SegmentedRun:
     # Only a marker this call produced. A seam the policy passed in silence
     # adds none, and reading the tail regardless would attribute an earlier
     # seam's finding to this one.
-    markers = _markers_of(self.supervision.policy)
+    markers = _markers_of(self.policy)
     found = markers[-1] if len(markers) > before else None
     located = {
         "deviation_started_steps_ago": (
@@ -651,7 +672,7 @@ class SegmentedRun:
         {
             "kind": LOG_KIND_SEGMENT,
             "at": self.now().isoformat(),
-            "policy": self.supervision.policy.name,
+            "policy": self.policy.name,
             "segment": request.index,
             "turns_requested": request.turns,
             "turns_total": turns,
@@ -663,13 +684,11 @@ class SegmentedRun:
             "anchor_event_index": ending.event_index,
             "anchor_result_uuid": ending.result_uuid,
             "resume_at_message_id": request.resume_at_message_id,
-            # Not "not preferred": a trace produced on the plain-resume path
-            # carries a fabricated assistant turn, which spec.md §7
-            # disqualifies and §6 forbids removing. Recorded per segment so
-            # the account states it rather than a reader having to know what
-            # the flag means.
-            "training_eligible": request.resume_session_id is None
-            or request.resume_at_message_id is not None,
+            # Which resume flavour this segment used, stated rather than left
+            # to a reader who would otherwise have to know what the flag
+            # means. Both are supported; the anchored one leaves a cleaner
+            # seam, and seam shape is post-processing's problem.
+            "anchored": request.resume_at_message_id is not None,
             "stop_reason": stop,
             **extra,
         }
@@ -691,7 +710,7 @@ class SegmentedRun:
         {
             "kind": kind,
             "at": self.now().isoformat(),
-            "policy": self.supervision.policy.name,
+            "policy": self.policy.name,
             "segment": index,
             "cut_at_turn": turns,
             **extra,

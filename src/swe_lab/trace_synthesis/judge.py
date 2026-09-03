@@ -383,6 +383,11 @@ class ModelJudge:
         off_track=off_track,
         self_correcting=self_correcting,
         reason=str(answer.get("reason", "")),
+        # `type(...) is int`, deliberately **not** `isinstance`: `bool` is a
+        # subclass of `int` in Python, so `isinstance(True, int)` is True and a
+        # judge answering `true` here would be recorded as "1 step ago" — a
+        # boolean wearing a measurement's clothes, with nothing to catch it.
+        # A lint pass "correcting" this to `isinstance` turns no light red.
         deviation_started_steps_ago=(started if type(started) is int else None),
     )
 

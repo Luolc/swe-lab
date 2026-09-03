@@ -1334,7 +1334,7 @@ def _segmented(*, turns_per_segment: int = 5) -> SegmentedSupervision:
     The plan.
   """
   return SegmentedSupervision(
-      policy=NeverSpeak(),
+      policy_factory=NeverSpeak,
       max_segments=4,
       wall_clock_seconds=1_000.0,
       max_cost_usd=10.0,

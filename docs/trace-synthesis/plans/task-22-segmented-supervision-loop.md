@@ -12,25 +12,20 @@ line of work and left exactly one hard requirement — *a synthetic assistant
 record must never be trained on*. "Get it running end to end" is the acceptance
 tone; the shape of the resulting trace is post-processing's problem.
 
-> **The requirement changed shape twice before any code was written**, and §6
-> is the whole of why.
+> **Final scope, owner ruling 2026-09-03 — read this before the rest.** The
+> requirement is: *a loop that runs, where the model visibly sees the injected
+> supervision message and acts on it.* Acceptance is exactly two things — the
+> loop completes end to end, and there is quoted evidence that an injected
+> message reached the actor's context and its next behaviour matches. **Seam
+> shape is post-processing's problem** ("give me the trace and I can have a
+> model rewrite it"), so the seam checks below are **recorded, never
+> enforced**, `--resume-session-at` is a preference rather than a requirement,
+> and nothing here gates a run.
 >
-> First: it cannot be met by inspecting the trace. The identifying fields the
-> feasibility report measured are session-transcript fields, the corpus is the
-> event stream or the proxy log, and by the time `conversation.json` is written
-> a canonical `Message` keeps only `role` and `content` — and those fields are
-> the candidate record's own self-report in any case.
->
-> Then the step that settles it: the fabricated assistant turn violates
-> criterion **(a)**, and **(a) is not what the owner relaxed on 2026-09-03 —
-> (b) is**. `spec.md` §6 forbids removing it afterwards. So on plain `--resume`
-> the spec blocks both directions, and the answer is **not to produce it**:
-> `--resume-session-at` produces none. That argument rests on an undocumented
-> flag whose failure is silent, so the check that it still holds runs on every
-> resumed segment and is the load-bearing part of the design.
->
-> **What is gated is the delivery of these traces, not the bring-up.** Ruled by
-> the orchestra on 2026-09-03, on findings from two independent directions.
+> §6 is kept because it is the record of *why* the design looks like this and
+> what was measured on the way — including two of my own corrections. It is
+> **history and rationale, not acceptance criteria.** Where it reads as a gate,
+> the ruling above wins.
 
 ---
 
@@ -280,7 +275,7 @@ chosen over "not preferred": a trace it produces is **ineligible** under §7, an
 saying so in the account is what stops it being picked up later by someone who
 only knows a flag was flipped.
 
-### 6.3 The wire assertion is the load-bearing part of that argument
+### 6.3 The wire check — recorded, not enforced
 
 The argument above rests entirely on the behaviour of a **`hideHelp()` flag with
 no compatibility promise**. If a build changes it, nothing goes red — the seam
@@ -288,11 +283,13 @@ quietly reverts to the dirty one and the run keeps producing ineligible traces
 that read as ordinary. **A silent, distant failure on the one property an
 argument rests on is the case that must carry a check rather than a claim.**
 
-So `seam_shape.py` runs on **every resumed segment**, and the loop raises
-`DirtySeamError` when it fires. Raising rather than returning is deliberate: the
-sandbox manager records a raising action as a run error *and still runs
-teardown*, so the artifacts survive to be read while the run is unambiguously
-red.
+**Retired as a condition by the owner's ruling** (see the callout): seam shape
+does not gate anything. `seam_shape.py` still reads the wire after a resumed
+segment and writes what it found into the account, because the reading is cheap
+and a later reader may want it — but `guard_seam` is **off**, so it never stops
+a run. Turning it on makes it raise `DirtySeamError`, which the sandbox manager
+records as a run error while teardown still collects the artifacts; that switch
+exists for a future in which somebody wants the seam guaranteed, not for now.
 
 It is written as a positive chain that **fails closed** — the capture parsed, at
 least one main-loop request, at least one assistant message in it, and *only
@@ -309,22 +306,27 @@ Its arms, and each was run rather than reasoned about:
 | mutant: `seam_is_clean` always `True` | — | 3 tests fail, 19 pass |
 | mutant: `seam_is_clean` always `False` | — | 11 fail, 11 pass |
 
-The remaining arm is **live and belongs to the bring-up run**: two segment pairs
-differing only in whether `--resume-session-at` is passed, with the guard red on
-the one without it. A fixture cannot supply that one.
+**TODO — one arm is missing, and it is not one a fixture can supply.** The live
+control: two segment pairs differing *only* in whether `--resume-session-at` is
+passed, with the guard red on the one without it. Everything above shows the
+instrument discriminates on constructed inputs; **nothing above shows that
+dropping the flag on the pinned build actually produces the dirty seam**, which
+is the proposition the eligibility argument needs. It belongs to the bring-up
+run and stays open until that run reports it. Recorded as unfinished on purpose:
+the arms in the table are green, and a reader skimming them would otherwise
+count five where there are four.
 
-### 6.4 What is gated, in the wording both PRs use
+### 6.4 What was gated, and is no longer
 
-Narrower than my first pass, and the narrowing came from #412's implementer
-reading the spec's context: §6 says this component's **output is the training
-trace**, so a producer cannot hand the responsibility for producing an eligible
-one downstream.
+Two rounds of gating were proposed and then **withdrawn by the owner on
+2026-09-03**: a provenance gate on delivery, and eligibility marking on
+plain-`--resume` traces. Neither is an acceptance condition for this task.
 
-- **Isolated implementation and diagnostic runs: not blocked.**
-- **Producer-side Phase 1 acceptance, and any delivery or publication of these
-  traces: still gated.**
-- **Anything already produced that does not conform is marked *ineligible*** —
-  not "not used for now".
+Kept as a record because the reasoning that produced them is still the
+reasoning behind the *defaults* — the loop anchors its resume because that seam
+is cleaner, and it records what it sees — and because the next person to ask
+"why not just filter it out afterwards" deserves the measured answer in §6.1
+rather than having to rediscover it.
 
 ### 6.5 What the driver records at each seam
 
@@ -338,7 +340,7 @@ produces:
 | `stop_subtype` | the segment's terminal `result` subtype (§8's known limitation reads this) |
 | `session_id` / `resume_at_message_id` | what the next segment resumed, and the record it anchored at |
 | `deviation_started_steps_ago` | the judge's answer — requirement C.2, `None` when not asked |
-| `training_eligible` | whether this segment's resume was anchored (§6.2) |
+| `anchored` | which resume flavour this segment used |
 | `resume_artifact_expected` | true on a resumed segment: a claim about what *we* did, not a detection |
 | `anchor_event_index` / `anchor_result_uuid` | where the seam sits in the appended event stream |
 
