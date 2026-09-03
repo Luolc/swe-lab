@@ -81,6 +81,19 @@ fn a_usage_error_names_the_fault_and_repeats_nothing_the_caller_passed() {
 }
 
 #[test]
+fn help_is_a_command_with_its_text_on_stdout_not_a_usage_error() {
+    for flag in ["--help", "-h"] {
+        let mut command = wrapper();
+        command.arg(flag);
+        let output = command.output().unwrap();
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert_eq!(output.status.code(), Some(0), "{flag}: {stdout}");
+        assert!(stdout.starts_with("usage:"), "{flag}: {stdout}");
+        assert!(output.stderr.is_empty(), "{flag} wrote to stderr");
+    }
+}
+
+#[test]
 fn a_bad_base_url_is_refused_without_the_url() {
     let config = std::env::temp_dir().join(format!(
         "swe-lab-supervisor-refusal-{}-{}.json",
