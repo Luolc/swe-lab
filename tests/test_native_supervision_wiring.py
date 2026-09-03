@@ -61,6 +61,20 @@ _SUPERVISION = NativeSupervision(
 )
 
 
+#: Every artifact the wrapper contributes, and the name each is registered
+#: under. Written once so the assertion and its control arm cannot drift into
+#: covering different sets.
+_SUPERVISOR_ARTIFACTS = {
+    "supervisor_config.json": SUPERVISOR_CONFIG_NAME,
+    "supervisor_log.jsonl": SUPERVISOR_LOG_NAME,
+    "supervisor_summary.json": SUPERVISOR_SUMMARY_NAME,
+    "supervisor_stderr.log": SUPERVISOR_STDERR_NAME,
+    "supervisor.info": SUPERVISOR_INFO_NAME,
+    "supervisor_proxy_log.jsonl": SUPERVISOR_PROXY_LOG_NAME,
+    "supervisor_proxy_stderr.log": SUPERVISOR_PROXY_STDERR_NAME,
+}
+
+
 def _supervised() -> ClaudeCodeHarness:
   return ClaudeCodeHarness(capture="proxy", native_supervision=_SUPERVISION)
 
@@ -239,24 +253,25 @@ def test_an_unsupervised_run_writes_no_config(tmp_path: Path):
 
 
 def test_the_wrappers_artifacts_are_registered_so_the_run_outlives_the_box():
-  """A summary nobody persists cannot classify anything afterwards."""
-  outputs = _supervised().native_outputs()
+  """A summary nobody persists cannot classify anything afterwards.
 
-  assert set(outputs) >= {
-      "supervisor_log.jsonl",
-      "supervisor_summary.json",
-      "supervisor_stderr.log",
-      "supervisor.info",
-      "supervisor_proxy_log.jsonl",
-      "supervisor_proxy_stderr.log",
-  }
-  assert outputs["supervisor_summary.json"] == SUPERVISOR_SUMMARY_NAME
-  assert outputs["supervisor_stderr.log"] == SUPERVISOR_STDERR_NAME
-
-  # The control arm: an unsupervised run registers none of them, so the set
-  # above is the wrapper's contribution rather than the harness's baseline.
+  Asserted as **set equality against the unsupervised run**, in both
+  directions, rather than as a sample of names. A `>=` over some of the keys
+  passes while a name is missing, and a control arm naming two of them passes
+  while a third leaks into the plain run — the arm nobody listed is exactly as
+  green as the ones they did.
+  """
+  supervised = _supervised().native_outputs()
   plain = ClaudeCodeHarness(capture="proxy").native_outputs()
-  assert not set(plain) & {"supervisor_log.jsonl", "supervisor_summary.json"}
+
+  added = {name: supervised[name] for name in set(supervised) - set(plain)}
+  assert added == _SUPERVISOR_ARTIFACTS | {
+      # Not the wrapper's own file, but only a supervised run persists it: it
+      # is the stream the supervisor read while the actor was still running.
+      "event_stream.jsonl": EVENT_STREAM_NAME,
+  }
+  # …and nothing the wrapper contributes is in the plain run under any name.
+  assert not set(plain) & set(_SUPERVISOR_ARTIFACTS)
 
 
 def test_the_wrapper_and_the_correction_channel_cannot_both_own_stdin():

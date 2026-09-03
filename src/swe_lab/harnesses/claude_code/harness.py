@@ -804,6 +804,10 @@ class ClaudeCodeHarness(Harness):
       # classifies the run from; the rest are what a reader needs when that
       # classification says the run was not accounted for.
       trace |= {
+          # What the wrapper was told, kept beside what it did: a reader who
+          # has the summary but not the policy it was produced under cannot
+          # say what "off track" meant for this run.
+          "supervisor_config.json": SUPERVISOR_CONFIG_NAME,
           "supervisor_log.jsonl": SUPERVISOR_LOG_NAME,
           "supervisor_summary.json": SUPERVISOR_SUMMARY_NAME,
           "supervisor_stderr.log": SUPERVISOR_STDERR_NAME,
