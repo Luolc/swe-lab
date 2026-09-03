@@ -1,0 +1,12 @@
+{
+  "steps_present": [
+    "step1.txt",
+    "step2.txt",
+    "step3.txt",
+    "step4.txt",
+    "step5.txt"
+  ],
+  "result_exists": false,
+  "result_lines": [],
+  "nonces_found_in_result": []
+}

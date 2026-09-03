@@ -1,0 +1,13 @@
+# Raw captures never enter the repo. A Claude Code stdout stream and session
+# transcript carry operator-home paths and, unless the run disables project
+# context, the operator's global CLAUDE.md — which names them and carries their
+# email. `AGENTS.md` forbids committing raw trace records or operator PII.
+#
+# What is committed is `runs/*/evidence.json`, built by `evidence.py`, plus
+# `runs/ledger.jsonl` (cost only, no paths). See README.md, "Evidence".
+runs/*/events.jsonl
+runs/*/stderr.log
+runs/*/transcript.jsonl
+runs/*/meta.json
+workdir/
+runs/*.log

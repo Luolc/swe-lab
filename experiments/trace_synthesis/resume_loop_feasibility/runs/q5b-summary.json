@@ -1,0 +1,50 @@
+{
+  "delay_seconds": 380.0,
+  "nodelay_segment2": {
+    "segment": 2,
+    "label": "RESTATE",
+    "first_text": "I'll start reading the step files in order, sleeping between each.",
+    "tools": [
+      "Read"
+    ],
+    "steps_touched": [
+      "step1.txt"
+    ],
+    "exit_code": 1,
+    "result_subtype": "error_max_turns",
+    "input_tokens": 2,
+    "cache_read_input_tokens": 24058,
+    "cache_creation_input_tokens": 205,
+    "output_tokens": 201,
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 205,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "total_cost_usd": 0.007645600000000001,
+    "elapsed_s": 4.447
+  },
+  "delay_segment2": {
+    "segment": 2,
+    "label": "CONTINUE",
+    "first_text": "",
+    "tools": [
+      "Read"
+    ],
+    "steps_touched": [
+      "step1.txt"
+    ],
+    "exit_code": 1,
+    "result_subtype": "error_max_turns",
+    "input_tokens": 2,
+    "cache_read_input_tokens": 18428,
+    "cache_creation_input_tokens": 5901,
+    "output_tokens": 128,
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 5901,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "total_cost_usd": 0.0285736,
+    "elapsed_s": 3.531
+  },
+  "ledger_total_usd": 0.6894
+}

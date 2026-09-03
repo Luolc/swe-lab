@@ -1,0 +1,18 @@
+{
+  "kind": "q1-session-files",
+  "note": "Re-derived from the on-disk session files after the run: the locator used during the run was broken and recorded an empty snapshot. These digests are of the files as they now stand. A before/after pair was never captured and cannot be reconstructed, so 'grew in place' rests on there being one file for the resumed session rather than on a size delta.",
+  "resumed_session_present": true,
+  "control_session_present": true,
+  "sessions": {
+    "resumed": {
+      "bytes": 41509,
+      "sha256": "d3c5b477032adc81d6ae5567da77d434b65fde5b28d19c8a4728ee6dcfc5a02d"
+    },
+    "control": {
+      "bytes": 14386,
+      "sha256": "61e07aa488f1d7ab83f25c4268d44c57f24cf4c1308e1a45a9258b5eda3afef3"
+    }
+  },
+  "distinct_session_files": 2,
+  "invocations_in_q1": 3
+}

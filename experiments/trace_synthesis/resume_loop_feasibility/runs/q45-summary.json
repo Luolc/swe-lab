@@ -1,0 +1,205 @@
+{
+  "arms": [
+    {
+      "tag": "q45-R1",
+      "session_id": "c967a1bb-b8cf-4a4d-8598-5d16b17e36b7",
+      "segments": [
+        {
+          "segment": 1,
+          "label": "RESTATE",
+          "first_text": "I'll read the five step files in order, sleeping 8 seconds between reads, then write the collected TOKEN values to result.txt.",
+          "tools": [
+            "Bash"
+          ],
+          "steps_touched": [
+            null
+          ],
+          "exit_code": 1,
+          "result_subtype": "error_max_turns",
+          "input_tokens": 2,
+          "cache_read_input_tokens": 18428,
+          "cache_creation_input_tokens": 5627,
+          "output_tokens": 179,
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 5627,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "total_cost_usd": 0.0290616,
+          "elapsed_s": 7.489
+        },
+        {
+          "segment": 2,
+          "label": "CONTINUE",
+          "first_text": "",
+          "tools": [
+            "Read"
+          ],
+          "steps_touched": [
+            "step1.txt"
+          ],
+          "exit_code": 1,
+          "result_subtype": "error_max_turns",
+          "input_tokens": 2,
+          "cache_read_input_tokens": 24055,
+          "cache_creation_input_tokens": 323,
+          "output_tokens": 177,
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 323,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "total_cost_usd": 0.007877,
+          "elapsed_s": 6.725
+        },
+        {
+          "segment": 3,
+          "label": "RESTATE",
+          "first_text": "I've read step1.txt (TOKEN 1582e487009ec221ed8e16172f846a2f). Now sleeping 8 seconds before reading step2.txt.",
+          "tools": [
+            "Bash"
+          ],
+          "steps_touched": [
+            null
+          ],
+          "exit_code": 1,
+          "result_subtype": "error_max_turns",
+          "input_tokens": 2,
+          "cache_read_input_tokens": 24378,
+          "cache_creation_input_tokens": 329,
+          "output_tokens": 142,
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 329,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "total_cost_usd": 0.0076156,
+          "elapsed_s": 15.342
+        },
+        {
+          "segment": 4,
+          "label": "CONTINUE",
+          "first_text": "",
+          "tools": [
+            "Read"
+          ],
+          "steps_touched": [
+            "step2.txt"
+          ],
+          "exit_code": 1,
+          "result_subtype": "error_max_turns",
+          "input_tokens": 2,
+          "cache_read_input_tokens": 24707,
+          "cache_creation_input_tokens": 261,
+          "output_tokens": 109,
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 261,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "total_cost_usd": 0.0070794000000000004,
+          "elapsed_s": 6.043
+        },
+        {
+          "segment": 5,
+          "label": "RESTATE",
+          "first_text": "Read step2.txt (TOKEN d5f604c8188f4fbcf61314b3480e372b). Sleeping 8 seconds before step3.txt.",
+          "tools": [
+            "Bash"
+          ],
+          "steps_touched": [
+            null
+          ],
+          "exit_code": 1,
+          "result_subtype": "error_max_turns",
+          "input_tokens": 2,
+          "cache_read_input_tokens": 24968,
+          "cache_creation_input_tokens": 262,
+          "output_tokens": 139,
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 262,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "total_cost_usd": 0.007435600000000001,
+          "elapsed_s": 14.428
+        }
+      ],
+      "ledger": {
+        "steps_present": [
+          "step1.txt",
+          "step2.txt",
+          "step3.txt",
+          "step4.txt",
+          "step5.txt"
+        ],
+        "result_exists": false,
+        "result_lines": [],
+        "nonces_found_in_result": []
+      },
+      "seam_total_cost_usd": 0.059069
+    },
+    {
+      "tag": "q45-Z1",
+      "unsegmented": true,
+      "assistant_messages": 12,
+      "tool_use_blocks": 11,
+      "result_subtype": "success",
+      "usage": {
+        "input_tokens": 24,
+        "cache_creation_input_tokens": 7827,
+        "cache_read_input_tokens": 292909,
+        "output_tokens": 1385,
+        "output_tokens_details": {
+          "thinking_tokens": 13
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 7827,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 46,
+            "cache_read_input_tokens": 25846,
+            "cache_creation_input_tokens": 409,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 409
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "total_cost_usd": 0.1048418,
+      "elapsed_s": 56.237,
+      "ledger": {
+        "steps_present": [
+          "step1.txt",
+          "step2.txt",
+          "step3.txt",
+          "step4.txt",
+          "step5.txt"
+        ],
+        "result_exists": true,
+        "result_lines": [
+          "TOKEN 523e7e8111c01b1b36dfc816d386238b",
+          "TOKEN 22993cd3bf633dffdb3f622da22e9405",
+          "TOKEN 79b2428acda73e1002487ac303fa33db",
+          "TOKEN dbbae486324896ca729605fc708f4064",
+          "TOKEN 99e150e744a2a177910843ab4cc42ba0"
+        ],
+        "nonces_found_in_result": [
+          "step1",
+          "step2",
+          "step3",
+          "step4",
+          "step5"
+        ]
+      }
+    }
+  ],
+  "ledger_total_usd": 0.4613
+}
