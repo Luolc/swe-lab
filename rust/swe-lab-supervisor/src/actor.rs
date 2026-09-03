@@ -621,26 +621,12 @@ fn sweep(mark: &str, group: Pid) -> Result<usize, String> {
     }
 }
 
-/// Every live process of this user's whose initial environment holds
-/// `needle` as one entry.
-///
-/// Whose a process is comes from its `/proc/<pid>` directory, readable
-/// whatever is inside it. Another user's process cannot be a descendant of
-/// this one — a change of uid is not in the model — and could not be killed
-/// from here either: that is a conclusion, not a read that failed, and it
-/// keeps a box full of other users' processes (or one mounted `hidepid`)
-/// from failing every sweep. Only for a process of this user's own is a
-/// read that fails a state unknown — and then the answer cannot be trusted,
-/// and says so. One of this user's own that made itself undumpable (a
-/// setuid exec) shows as root's, and is outside the sweep's sight the same
-/// way.
+/// Every live process of this user's own (see [`own`]) whose initial
+/// environment holds `needle` as one entry. A read of one of those that
+/// fails is a state unknown — the answer cannot be trusted, and says so.
 fn marked_processes(needle: &str) -> Result<Vec<Marked>, String> {
     let entries = fs::read_dir("/proc").map_err(|e| format!("listing /proc: {e}"))?;
     let me = std::process::id();
-    let mine = match owner(me) {
-        Probe::Present(uid) => uid,
-        other => return Err(format!("reading the wrapper's own /proc entry: {other:?}")),
-    };
     let mut found = Vec::new();
     for entry in entries {
         let entry = entry.map_err(|e| format!("listing /proc: {e}"))?;
@@ -654,12 +640,12 @@ fn marked_processes(needle: &str) -> Result<Vec<Marked>, String> {
         if pid == me {
             continue;
         }
-        match owner(pid) {
-            Probe::Present(uid) if uid == mine => {}
-            Probe::Present(_) | Probe::Gone => continue,
+        let owned = match own(pid) {
+            Probe::Present(Some(owned)) => owned,
+            Probe::Present(None) | Probe::Gone => continue,
             Probe::Unprovable(reason) => return Err(reason),
-        }
-        let stat = match stat_fields(pid) {
+        };
+        let stat = match stat_fields(owned) {
             Probe::Present(stat) => stat,
             Probe::Gone => continue,
             Probe::Unprovable(reason) => return Err(reason),
@@ -670,13 +656,13 @@ fn marked_processes(needle: &str) -> Result<Vec<Marked>, String> {
             // is read first and is what says so.
             continue;
         }
-        let environ = match proc_file(pid, "environ") {
+        let environ = match proc_file(owned.0, "environ") {
             Probe::Present(environ) => environ,
             Probe::Gone => continue,
             // Refused. One that exited between the two reads is what
             // `stat` now says it is; a live process of this user's own
             // that cannot be read is the state unknown.
-            Probe::Unprovable(reason) => match stat_fields(pid) {
+            Probe::Unprovable(reason) => match stat_fields(owned) {
                 Probe::Present(stat) if stat.exited() => continue,
                 Probe::Gone => continue,
                 Probe::Present(_) => return Err(reason),
@@ -747,6 +733,39 @@ fn owner(pid: u32) -> Probe<u32> {
     )
 }
 
+/// A pid whose `/proc/<pid>` this user owns, made only by [`own`]. What is
+/// read of a process by way of it — its `stat`, and in particular the rule
+/// that no address space means it has exited, which would take a kernel
+/// thread for an exited process — cannot be reached for a process that is
+/// not ours: the ownership check is that rule's premise, and this type is
+/// what holds the two together, rather than the order of two lines.
+#[derive(Debug, Clone, Copy)]
+struct Owned(u32);
+
+/// Whose the process is, from the owner of its `/proc/<pid>` directory.
+/// `Present(Some)` is this user's own. `Present(None)` is another user's,
+/// which cannot be a descendant of this process — a change of uid is not
+/// in the model — and could not be killed from here either: a conclusion,
+/// not a read that failed, and what keeps a box full of other users'
+/// processes (or one mounted `hidepid`) from failing every sweep. One of
+/// this user's own that made itself undumpable (a setuid exec) shows as
+/// root's, and is outside the sweep's sight the same way.
+fn own(pid: u32) -> Probe<Option<Owned>> {
+    let mine = match owner(std::process::id()) {
+        Probe::Present(uid) => uid,
+        Probe::Gone => {
+            return Probe::Unprovable("the wrapper's own /proc entry is not there".to_string());
+        }
+        Probe::Unprovable(reason) => return Probe::Unprovable(reason),
+    };
+    match owner(pid) {
+        Probe::Present(uid) if uid == mine => Probe::Present(Some(Owned(pid))),
+        Probe::Present(_) => Probe::Present(None),
+        Probe::Gone => Probe::Gone,
+        Probe::Unprovable(reason) => Probe::Unprovable(reason),
+    }
+}
+
 /// What `/proc/<pid>/stat` says of a process, of the fields read here.
 #[derive(Debug, Clone, Copy)]
 struct Stat {
@@ -777,7 +796,8 @@ impl Stat {
 /// — the last one, since the comm may hold parentheses of its own — of
 /// which the first is the state, the third the group, the twentieth the
 /// start time and the twenty-first the address space.
-fn stat_fields(pid: u32) -> Probe<Stat> {
+fn stat_fields(pid: Owned) -> Probe<Stat> {
+    let Owned(pid) = pid;
     let stat = match proc_file(pid, "stat") {
         Probe::Present(stat) => stat,
         Probe::Gone => return Probe::Gone,
@@ -803,11 +823,19 @@ fn stat_fields(pid: u32) -> Probe<Stat> {
     )
 }
 
+/// The start time of the process at `pid` — one of this user's own; another
+/// user's process there now is not the one that was found, and reads as
+/// gone.
 fn start_time(pid: Pid) -> Probe<u64> {
     let Ok(pid) = u32::try_from(pid.as_raw()) else {
         return Probe::Unprovable("a pid below zero".to_string());
     };
-    match stat_fields(pid) {
+    let owned = match own(pid) {
+        Probe::Present(Some(owned)) => owned,
+        Probe::Present(None) | Probe::Gone => return Probe::Gone,
+        Probe::Unprovable(reason) => return Probe::Unprovable(reason),
+    };
+    match stat_fields(owned) {
         Probe::Present(stat) => Probe::Present(stat.started),
         Probe::Gone => Probe::Gone,
         Probe::Unprovable(reason) => Probe::Unprovable(reason),
@@ -1047,6 +1075,14 @@ mod tests {
 
     /// How many live processes carry `PROBE=<value>` in their environment —
     /// the test's own mark on an actor, set on its command.
+    /// A child of this test is this user's own, or the test cannot go on.
+    fn owned(pid: u32) -> Owned {
+        match own(pid) {
+            Probe::Present(Some(owned)) => owned,
+            other => panic!("a child of the test is not this user's own: {other:?}"),
+        }
+    }
+
     fn probes_alive(value: &str) -> usize {
         marked_processes(&format!("PROBE={value}")).unwrap().len()
     }
@@ -1703,10 +1739,7 @@ mod tests {
     /// box is an answer.
     #[test]
     fn a_box_with_other_users_processes_still_gets_a_sweep_answer() {
-        assert!(
-            matches!(owner(1), Probe::Present(_)),
-            "PID 1 is always there"
-        );
+        assert!(matches!(own(1), Probe::Present(_)), "PID 1 is always there");
         marked_processes("PROBE=nobody-has-this").unwrap();
     }
 
@@ -1725,7 +1758,7 @@ mod tests {
             .env("PROBE", &probe)
             .spawn()
             .unwrap();
-        let pid = child.id();
+        let pid = owned(child.id());
         assert!(
             wait_until(Duration::from_secs(5), || matches!(
                 stat_fields(pid),
@@ -1737,7 +1770,7 @@ mod tests {
             panic!("the zombie's stat")
         };
         assert_eq!(zombie.vsize, 0, "{zombie:?}");
-        let Probe::Present(running) = stat_fields(live.id()) else {
+        let Probe::Present(running) = stat_fields(owned(live.id())) else {
             panic!("the live child's stat")
         };
         assert!(running.vsize > 0 && !running.exited(), "{running:?}");

@@ -7,7 +7,8 @@
 //! disallows `File::create` outside this module, and the gate treats the
 //! lint as an error), and a path naming an inode already opened is refused
 //! before anything is written. An output added later gets the check by
-//! construction, not by someone remembering it.
+//! construction, not by someone remembering it. The list of disallowed
+//! ways to create or move a file is an enumeration, and says so.
 
 use std::fs::File;
 use std::io;
@@ -56,6 +57,21 @@ impl Outputs {
             path: path.to_path_buf(),
             file,
         })
+    }
+
+    /// Move `staging` — an output opened here, written and synced — onto
+    /// `path`, atomically: the one way an output's file is replaced. The
+    /// caller registered `path` as an output (the summary, opened before
+    /// the run), or it is the summary of a refusal that never reached the
+    /// outputs, which nothing else has opened.
+    ///
+    /// # Errors
+    ///
+    /// The rename failed; the staging file is left where it was.
+    #[expect(clippy::disallowed_methods, reason = "the door's own rename")]
+    pub fn replace(staging: Output, path: &Path) -> io::Result<()> {
+        drop(staging.file);
+        std::fs::rename(&staging.path, path)
     }
 }
 

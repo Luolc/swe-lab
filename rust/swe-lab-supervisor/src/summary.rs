@@ -119,8 +119,8 @@ impl Summary {
     ///
     /// The temporary file cannot be written or renamed into place.
     pub fn write(&self, outputs: &mut Outputs, path: &Path) -> io::Result<()> {
-        let staging = path.with_extension("json.partial");
-        let mut file = outputs.create(&staging)?.file;
+        let staging = outputs.create(&path.with_extension("json.partial"))?;
+        let mut file = &staging.file;
         file.write_all(
             serde_json::to_string_pretty(self)
                 .map_err(io::Error::other)?
@@ -128,7 +128,7 @@ impl Summary {
         )?;
         file.write_all(b"\n")?;
         file.sync_all()?;
-        std::fs::rename(&staging, path)
+        Outputs::replace(staging, path)
     }
 }
 
