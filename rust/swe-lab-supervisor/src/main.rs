@@ -79,6 +79,12 @@ fn main() -> ExitCode {
                 eprintln!("swe-lab-supervisor: the run is not accounted for: {reason}");
                 ExitCode::from(EXIT_UNHEALTHY)
             }
+            Err(Failed::Cancelled { signal, actor }) => {
+                eprintln!(
+                    "swe-lab-supervisor: cancelled by signal {signal}; the actor ended with {actor}"
+                );
+                ExitCode::from(exit_code_for_signal(signal))
+            }
         },
     }
 }
@@ -90,6 +96,11 @@ enum Failed {
     /// The actor ran, and its record is not whole: an unclean ending, or a
     /// summary that could not be written.
     Unhealthy(String),
+    /// The wrapper was asked to stop by a signal, and did, whatever the actor
+    /// then made of its own ending: a cancelled run is not a result. The
+    /// summary was written and says `terminated`; `actor` is how the actor
+    /// ended, for the diagnostic.
+    Cancelled { signal: i32, actor: String },
 }
 
 /// Validate the run's inputs, run the actor under supervision, write the
@@ -146,12 +157,34 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
         argv: &args.actor_argv,
         prompt: &actor_prompt,
     };
-    let ended = supervisor::run(config, selected.text, &digest, model, launch, &paths, &stop)
-        .map_err(|e| refused(e, &model_name, &digest))?;
+    let ended = match supervisor::run(config, selected.text, &digest, model, launch, &paths, &stop)
+    {
+        Ok(ended) => ended,
+        Err(reason) => {
+            // A stop that arrived while the prompt was still being written
+            // ended the run before it started; that is a cancellation, not
+            // a refusal.
+            if let Some(signal) = signals::requested(&stop) {
+                return Err(Failed::Cancelled {
+                    signal,
+                    actor: reason,
+                });
+            }
+            return Err(refused(reason, &model_name, &digest));
+        }
+    };
     ended
         .summary
         .write(&args.summary)
         .map_err(|e| Failed::Unhealthy(format!("writing the summary: {e}")))?;
+    if let Some(signal) = signals::requested(&stop) {
+        return Err(Failed::Cancelled {
+            signal,
+            actor: ended
+                .status
+                .map_or_else(|| "no status".to_string(), |s| s.to_string()),
+        });
+    }
     if ended.summary.supervisor_exit == summary::SupervisorExit::Unclean {
         return Err(Failed::Unhealthy(
             ended
@@ -161,6 +194,12 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
         ));
     }
     Ok(ended.status.map_or(ExitCode::FAILURE, exit_code_of))
+}
+
+/// A cancelled wrapper exits as a process killed by that signal would, so
+/// a harness reads the cancellation and not the actor's own status.
+fn exit_code_for_signal(signal: i32) -> u8 {
+    u8::try_from(128 + signal).unwrap_or(1)
 }
 
 /// The wrapper exits as the actor did, so a script recording `$?` sees what

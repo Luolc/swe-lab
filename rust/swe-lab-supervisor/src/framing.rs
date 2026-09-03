@@ -4,20 +4,30 @@
 //! large, so the buffer grows to the configured ceiling rather than being
 //! fixed. A line that passes the ceiling is not held: its bytes are handed on
 //! in pieces so the event log can still receive them verbatim, and the line
-//! reaches no judgment.
+//! reaches no judgment. Every frame says whether the actor ended it with a
+//! newline, so the log can reproduce the stream byte for byte — a last line
+//! the actor left unterminated is logged unterminated, not amended.
 
 /// What the framer hands on.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Frame {
-    /// One complete line within the ceiling, newline excluded.
-    Line(Vec<u8>),
-    /// A piece of a line that passed the ceiling. `last` is set on the piece
-    /// that ends at the line's newline (or at end of input).
+    /// One complete line within the ceiling.
+    Line {
+        /// The bytes, newline excluded.
+        bytes: Vec<u8>,
+        /// Whether the actor ended the line with `\n`. False only for the
+        /// last line of the stream, left unterminated at end of input.
+        newline: bool,
+    },
+    /// A piece of a line that passed the ceiling.
     Oversized {
         /// The bytes, verbatim.
         part: Vec<u8>,
         /// Whether this piece ends the line.
         last: bool,
+        /// Whether the line ended with `\n` (meaningful only when `last`;
+        /// false at end of input).
+        newline: bool,
     },
 }
 
@@ -46,7 +56,7 @@ impl Framer {
     pub fn push(&mut self, mut chunk: &[u8], out: &mut Vec<Frame>) {
         while !chunk.is_empty() {
             if let Some(at) = chunk.iter().position(|&byte| byte == b'\n') {
-                out.push(self.end_line(&chunk[..at]));
+                out.push(self.end_line(&chunk[..at], true));
                 chunk = &chunk[at + 1..];
             } else {
                 if let Some(frame) = self.extend_line(chunk) {
@@ -57,37 +67,33 @@ impl Framer {
         }
     }
 
-    /// End of input: hand on whatever is still buffered as a final line
-    /// (unterminated — an actor that died mid-write leaves one).
+    /// End of input: hand on whatever is still buffered as a final line,
+    /// unterminated — an actor that died mid-write leaves one.
     pub fn finish(&mut self, out: &mut Vec<Frame>) {
-        if self.oversized {
-            self.oversized = false;
-            out.push(Frame::Oversized {
-                part: Vec::new(),
-                last: true,
-            });
-        } else if !self.buffer.is_empty() {
-            out.push(Frame::Line(std::mem::take(&mut self.buffer)));
+        if self.oversized || !self.buffer.is_empty() {
+            out.push(self.end_line(&[], false));
         }
     }
 
-    fn end_line(&mut self, head: &[u8]) -> Frame {
+    fn end_line(&mut self, head: &[u8], newline: bool) -> Frame {
         if self.oversized {
             self.oversized = false;
             return Frame::Oversized {
                 part: head.to_vec(),
                 last: true,
+                newline,
             };
         }
-        let mut line = std::mem::take(&mut self.buffer);
-        line.extend_from_slice(head);
-        if line.len() > self.ceiling {
+        let mut bytes = std::mem::take(&mut self.buffer);
+        bytes.extend_from_slice(head);
+        if bytes.len() > self.ceiling {
             Frame::Oversized {
-                part: line,
+                part: bytes,
                 last: true,
+                newline,
             }
         } else {
-            Frame::Line(line)
+            Frame::Line { bytes, newline }
         }
     }
 
@@ -96,13 +102,18 @@ impl Framer {
             return Some(Frame::Oversized {
                 part: chunk.to_vec(),
                 last: false,
+                newline: false,
             });
         }
         if self.buffer.len() + chunk.len() > self.ceiling {
             self.oversized = true;
             let mut part = std::mem::take(&mut self.buffer);
             part.extend_from_slice(chunk);
-            return Some(Frame::Oversized { part, last: false });
+            return Some(Frame::Oversized {
+                part,
+                last: false,
+                newline: false,
+            });
         }
         self.buffer.extend_from_slice(chunk);
         None
@@ -124,14 +135,24 @@ mod tests {
     }
 
     fn line(text: &str) -> Frame {
-        Frame::Line(text.as_bytes().to_vec())
+        Frame::Line {
+            bytes: text.as_bytes().to_vec(),
+            newline: true,
+        }
+    }
+
+    fn unterminated(text: &str) -> Frame {
+        Frame::Line {
+            bytes: text.as_bytes().to_vec(),
+            newline: false,
+        }
     }
 
     #[test]
     fn lines_are_reassembled_across_chunk_boundaries() {
         assert_eq!(
             frames(64, &[b"ab", b"c\nde", b"\n\nf"]),
-            vec![line("abc"), line("de"), line(""), line("f")]
+            vec![line("abc"), line("de"), line(""), unterminated("f")]
         );
     }
 
@@ -144,11 +165,13 @@ mod tests {
                 line("ok"),
                 Frame::Oversized {
                     part: b"toolong".to_vec(),
-                    last: false
+                    last: false,
+                    newline: false,
                 },
                 Frame::Oversized {
                     part: b"er".to_vec(),
-                    last: true
+                    last: true,
+                    newline: true,
                 },
                 line("fine"),
             ]
@@ -159,7 +182,7 @@ mod tests {
             .iter()
             .filter_map(|f| match f {
                 Frame::Oversized { part, .. } => Some(part.clone()),
-                Frame::Line(_) => None,
+                Frame::Line { .. } => None,
             })
             .flatten()
             .collect();
@@ -173,7 +196,8 @@ mod tests {
             frames(3, &[b"abcd\n"]),
             vec![Frame::Oversized {
                 part: b"abcd".to_vec(),
-                last: true
+                last: true,
+                newline: true,
             }]
         );
     }
@@ -190,8 +214,8 @@ mod tests {
     }
 
     #[test]
-    fn an_unterminated_tail_is_a_line_at_end_of_input() {
-        assert_eq!(frames(64, &[b"a\nb"]), vec![line("a"), line("b")]);
+    fn an_unterminated_tail_is_a_line_that_says_it_had_no_newline() {
+        assert_eq!(frames(64, &[b"a\nb"]), vec![line("a"), unterminated("b")]);
         assert_eq!(frames(64, &[b"a\n"]), vec![line("a")]);
         let mut framer = Framer::new(2);
         let mut out = Vec::new();
@@ -201,7 +225,8 @@ mod tests {
             out.last(),
             Some(&Frame::Oversized {
                 part: Vec::new(),
-                last: true
+                last: true,
+                newline: false,
             })
         );
     }

@@ -16,14 +16,31 @@
 //! consumer: the reader blocks on a full queue, the pipe fills, the actor
 //! waits — the same back-pressure the gate applies on purpose. Each log is
 //! capped at a configured size, exactly: a record that would cross the cap is
-//! not written, the stream is not read further, and the run is over. And every
-//! descendant carries a mark in its environment from launch, so that one which
-//! leaves the process group (`setsid`) is still found and killed when the
-//! actor ends.
+//! not written — an oversized one already partly written is rolled back — the
+//! stream is not read further, and the run is over. The event log reproduces
+//! the actor's stdout byte for byte, a last line left unterminated included.
+//! And every descendant carries a mark in its environment from launch, so
+//! that one which leaves the process group (`setsid`) is still found and
+//! killed when the actor ends.
+//!
+//! Two limits of that last mechanism are accepted rather than closed, and
+//! written here so the acceptance is a decision, not a forgetting. The mark
+//! is inherited state: a descendant that clears its own environment before
+//! `setsid` is invisible to the sweep. And a pid is not an identity: between
+//! the sweep's identity check and its `kill`, the process could exit and the
+//! pid be reused — closing that needs `pidfd`, which the pinned `nix` does
+//! not wrap and which would otherwise cost a dependency or `unsafe`. Both are
+//! accepted because the actor is Claude Code, not an adversary, and because
+//! the wrapper runs inside a container that is discarded after the run: the
+//! container is the boundary, the sweep is diligence within it. What the
+//! sweep cannot prove — `/proc` unreadable, marked processes still alive
+//! after its passes — it reports, and the run is not accounted for.
 
+use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs::{self, File};
-use std::io::{self, BufWriter, Read, Write};
+use std::io::{self, Read, Seek, SeekFrom, Write};
+use std::os::fd::AsFd;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, ExitStatus, Stdio};
@@ -33,11 +50,14 @@ use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use nix::errno::Errno;
+use nix::fcntl::{FcntlArg, OFlag, fcntl};
+use nix::poll::{PollFd, PollFlags, PollTimeout, poll};
 use nix::sys::signal::{Signal, kill, killpg};
 use nix::sys::wait::{Id, WaitPidFlag, WaitStatus, waitid};
 use nix::unistd::Pid;
 
 use crate::framing::{Frame, Framer};
+use crate::signals::{self, Stop};
 
 /// How much is taken off a pipe per read.
 const READ_CHUNK_BYTES: usize = 64 * 1024;
@@ -60,6 +80,10 @@ pub const MARK_ENV: &str = "SWE_LAB_SUPERVISOR_MARK";
 /// How many times the sweep for marked stragglers repeats: one may fork
 /// while it is being killed.
 const SWEEP_PASSES: usize = 5;
+
+/// How long a stdin write waits for the pipe to take more before it checks
+/// for cancellation again, in milliseconds.
+const STDIN_POLL_MS: u8 = 100;
 
 /// The reason a drain stops at its cap.
 const CAP_REACHED: &str = "the log's byte cap was reached";
@@ -113,8 +137,9 @@ pub struct Ended {
     /// The same for the stderr drain.
     pub stderr: Option<Result<(), String>>,
     /// Marked descendants found outside the group once the group was
-    /// killed, and killed.
-    pub stragglers: usize,
+    /// killed, and killed — or why the sweep could not prove there are none
+    /// left, which makes the run not accounted for.
+    pub stragglers: Result<usize, String>,
 }
 
 /// The stdout reader's gate. Closed, the reader takes nothing off the pipe;
@@ -263,6 +288,13 @@ impl Actor {
             stderr_drain: None,
         };
         actor.stdin = actor.child.stdin.take();
+        if let Some(stdin) = &actor.stdin {
+            // The write end only: the actor's read end is another file
+            // description, and blocks as before. This is what lets a write
+            // be interrupted rather than wait for good on an actor that
+            // never reads.
+            fcntl(stdin.as_fd(), FcntlArg::F_SETFL(OFlag::O_NONBLOCK))?;
+        }
         let (Some(stdout), Some(stderr)) = (actor.child.stdout.take(), actor.child.stderr.take())
         else {
             return Err(io::Error::other(
@@ -275,7 +307,7 @@ impl Actor {
         actor.stdout_drain = Some(thread::Builder::new().name("actor-stdout".into()).spawn(
             move || {
                 let result =
-                    drain_stdout(stdout, &gate, BufWriter::new(event_log), limits, &*report)
+                    drain_stdout(stdout, &gate, EventLog::new(event_log), limits, &*report)
                         .map_err(|e| e.to_string());
                 report(Event::StdoutClosed(result.clone()));
                 result
@@ -311,21 +343,56 @@ impl Actor {
         self.child.id()
     }
 
-    /// Write on the actor's stdin and flush.
+    /// Write on the actor's stdin, all of it, unless the wrapper is asked to
+    /// stop meanwhile or the actor takes nothing off the pipe for `stall`.
+    /// A pipe holds 64 KiB; a longer write waits for the actor to read, and
+    /// this is where a run whose actor never reads would otherwise hang.
     ///
     /// # Errors
     ///
-    /// The stdin was already closed deliberately, or the write failed — the
-    /// actor is gone, or stopped reading. Either is the supervisor's channel
+    /// `BrokenPipe`: stdin was already closed deliberately, or the actor is
+    /// gone. `Interrupted`: cancelled. `TimedOut`: no progress for `stall`.
+    /// Anything else is the write failing. Each is the supervisor's channel
     /// failing, which the caller classifies.
-    pub fn write_stdin(&mut self, bytes: &[u8]) -> io::Result<()> {
+    pub fn write_stdin(&mut self, bytes: &[u8], stop: &Stop, stall: Duration) -> io::Result<()> {
         let Some(stdin) = self.stdin.as_mut() else {
             return Err(io::Error::new(
                 io::ErrorKind::BrokenPipe,
                 "actor stdin was already closed",
             ));
         };
-        stdin.write_all(bytes)?;
+        let mut offset = 0;
+        let mut last_progress = Instant::now();
+        while offset < bytes.len() {
+            if signals::requested(stop).is_some() {
+                return Err(io::Error::new(
+                    io::ErrorKind::Interrupted,
+                    "cancelled while writing on the actor's stdin",
+                ));
+            }
+            match stdin.write(&bytes[offset..]) {
+                Ok(0) => return Err(io::ErrorKind::WriteZero.into()),
+                Ok(written) => {
+                    offset += written;
+                    last_progress = Instant::now();
+                }
+                Err(error) if error.kind() == io::ErrorKind::Interrupted => {}
+                Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                    if last_progress.elapsed() >= stall {
+                        return Err(io::Error::new(
+                            io::ErrorKind::TimedOut,
+                            "the actor took nothing off its stdin within the grace",
+                        ));
+                    }
+                    let mut wait = [PollFd::new(stdin.as_fd(), PollFlags::POLLOUT)];
+                    match poll(&mut wait, PollTimeout::from(STDIN_POLL_MS)) {
+                        Ok(_) | Err(Errno::EINTR) => {}
+                        Err(errno) => return Err(io::Error::from(errno)),
+                    }
+                }
+                Err(error) => return Err(error),
+            }
+        }
         stdin.flush()
     }
 
@@ -455,7 +522,7 @@ impl Drop for Actor {
         let _ = signal_group(self.group, Signal::SIGKILL);
         let _ = self.child.wait();
         self.reaped = true;
-        sweep(&self.mark, self.group);
+        let _ = sweep(&self.mark, self.group);
     }
 }
 
@@ -492,70 +559,183 @@ fn finish(
     )
 }
 
+/// A live process carrying the actor's mark.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Marked {
+    pid: Pid,
+    group: Pid,
+    /// The kernel's start time of the process (clock ticks since boot): with
+    /// the pid, the nearest thing to an identity `/proc` offers.
+    started: u64,
+}
+
 /// Kill every process whose environment carries the actor's mark and whose
 /// process group is not the actor's — a descendant that called `setsid` —
 /// until none is found or the passes run out. Returns how many distinct
-/// processes were found: one still dying is seen by the next pass too.
-fn sweep(mark: &str, group: Pid) -> usize {
+/// processes were found (one still dying is seen by the next pass too), or
+/// why there is no proof that none is left: `/proc` could not be read, or
+/// marked processes were still alive after the last pass. A pid is checked
+/// against the start time it was found with just before it is signalled;
+/// the window between that check and the `kill` is the accepted residue
+/// described in the module doc.
+fn sweep(mark: &str, group: Pid) -> Result<usize, String> {
     let needle = format!("{MARK_ENV}={mark}");
-    let mut found = std::collections::HashSet::new();
+    let escaped = |found: Vec<Marked>| -> Vec<Marked> {
+        found.into_iter().filter(|m| m.group != group).collect()
+    };
+    let mut killed = HashSet::new();
     for _ in 0..SWEEP_PASSES {
-        let escaped: Vec<Pid> = marked_processes(&needle)
-            .into_iter()
-            .filter(|(_, pgrp)| *pgrp != group)
-            .map(|(pid, _)| pid)
-            .collect();
-        if escaped.is_empty() {
-            break;
+        let stragglers = escaped(marked_processes(&needle)?);
+        if stragglers.is_empty() {
+            return Ok(killed.len());
         }
-        for pid in escaped {
-            if kill(pid, Signal::SIGKILL).is_ok() {
-                found.insert(pid);
+        for straggler in stragglers {
+            if start_time(straggler.pid) != Some(straggler.started) {
+                // Not the process that was found: gone, or its pid reused.
+                continue;
+            }
+            if kill(straggler.pid, Signal::SIGKILL).is_ok() {
+                killed.insert(straggler.pid);
             }
         }
         thread::sleep(EXIT_POLL_INTERVAL);
     }
-    found.len()
+    let left = escaped(marked_processes(&needle)?).len();
+    if left == 0 {
+        Ok(killed.len())
+    } else {
+        Err(format!(
+            "{left} marked process(es) outside the group still alive after {SWEEP_PASSES} sweep passes"
+        ))
+    }
 }
 
-/// Every live process whose initial environment holds `needle` as one entry,
-/// with its process group. Only this user's processes are readable, and
-/// those are the only ones the actor could have made.
-fn marked_processes(needle: &str) -> Vec<(Pid, Pid)> {
-    let Ok(entries) = fs::read_dir("/proc") else {
-        return Vec::new();
-    };
+/// Every live process whose initial environment holds `needle` as one entry.
+/// A process that vanishes while being read, or one that is not this user's
+/// to read (which the actor's descendants all are), is not there; any other
+/// failure to read `/proc` means the answer cannot be trusted, and says so.
+fn marked_processes(needle: &str) -> Result<Vec<Marked>, String> {
+    let entries = fs::read_dir("/proc").map_err(|e| format!("listing /proc: {e}"))?;
     let me = std::process::id();
-    entries
-        .flatten()
-        .filter_map(|entry| {
-            let pid: u32 = entry.file_name().to_str()?.parse().ok()?;
-            if pid == me {
-                return None;
+    let mut found = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("listing /proc: {e}"))?;
+        let Some(pid) = entry
+            .file_name()
+            .to_str()
+            .and_then(|n| n.parse::<u32>().ok())
+        else {
+            continue;
+        };
+        if pid == me {
+            continue;
+        }
+        let environ = match fs::read(entry.path().join("environ")) {
+            Ok(environ) => environ,
+            Err(error) if unreadable_is_absent(&error) => continue,
+            Err(error) => return Err(format!("reading /proc/{pid}/environ: {error}")),
+        };
+        if !environ.split(|b| *b == 0).any(|e| e == needle.as_bytes()) {
+            continue;
+        }
+        let Some((group, started)) = stat_fields(pid) else {
+            // Gone between the two reads.
+            continue;
+        };
+        found.push(Marked {
+            pid: Pid::from_raw(i32::try_from(pid).map_err(|_| "pid does not fit".to_string())?),
+            group: Pid::from_raw(group),
+            started,
+        });
+    }
+    Ok(found)
+}
+
+/// A process that is gone, or not this user's, cannot be the actor's.
+fn unreadable_is_absent(error: &io::Error) -> bool {
+    matches!(
+        error.kind(),
+        io::ErrorKind::NotFound | io::ErrorKind::PermissionDenied
+    ) || error.raw_os_error() == Some(Errno::ESRCH as i32)
+}
+
+/// The process group and start time of a process, from `/proc/<pid>/stat`:
+/// `pid (comm) state ppid pgrp session ... starttime ...` — after the last
+/// `)`, the group is the third field and the start time the twentieth.
+fn stat_fields(pid: u32) -> Option<(i32, u64)> {
+    let stat = fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+    let fields: Vec<&str> = stat.rsplit_once(')')?.1.split_whitespace().collect();
+    Some((fields.get(2)?.parse().ok()?, fields.get(19)?.parse().ok()?))
+}
+
+fn start_time(pid: Pid) -> Option<u64> {
+    stat_fields(u32::try_from(pid.as_raw()).ok()?).map(|(_, started)| started)
+}
+
+/// The event log: every record whole or absent. A line is committed as one
+/// write; an oversized record is written piece by piece from a remembered
+/// offset and rolled back to it when a piece cannot be written — the cap
+/// reached, or the filesystem refusing it after accepting a prefix. Nothing
+/// is buffered: each write reaches the file, so the artifact is complete up
+/// to the last whole record at any moment.
+struct EventLog {
+    file: File,
+    written: u64,
+    /// Where the record being written started, while one is open.
+    record_start: Option<u64>,
+}
+
+impl EventLog {
+    fn new(file: File) -> Self {
+        Self {
+            file,
+            written: 0,
+            record_start: None,
+        }
+    }
+
+    /// Write one piece of the current record, opening the record if none is
+    /// open; on failure the whole record is gone from the file.
+    fn append(&mut self, bytes: &[u8]) -> io::Result<()> {
+        let start = *self.record_start.get_or_insert(self.written);
+        match self.file.write_all(bytes) {
+            Ok(()) => {
+                self.written += u64::try_from(bytes.len()).unwrap_or(u64::MAX);
+                Ok(())
             }
-            let environ = fs::read(entry.path().join("environ")).ok()?;
-            if !environ.split(|b| *b == 0).any(|e| e == needle.as_bytes()) {
-                return None;
+            Err(error) => {
+                self.roll_back(start);
+                Err(error)
             }
-            let stat = fs::read_to_string(entry.path().join("stat")).ok()?;
-            // `pid (comm) state ppid pgrp session ...`: after the last `)`,
-            // the group is the third field.
-            let pgrp: i32 = stat
-                .rsplit_once(')')?
-                .1
-                .split_whitespace()
-                .nth(2)?
-                .parse()
-                .ok()?;
-            Some((Pid::from_raw(i32::try_from(pid).ok()?), Pid::from_raw(pgrp)))
-        })
-        .collect()
+        }
+    }
+
+    /// The current record is complete.
+    fn close(&mut self) {
+        self.record_start = None;
+    }
+
+    /// The current record cannot be completed: take it off the file.
+    fn abandon(&mut self) {
+        if let Some(start) = self.record_start {
+            self.roll_back(start);
+        }
+    }
+
+    fn roll_back(&mut self, start: u64) {
+        // Best effort on a path that is already failing; the drain's error
+        // is what the run is classified by.
+        let _ = self.file.set_len(start);
+        let _ = self.file.seek(SeekFrom::Start(start));
+        self.written = start;
+        self.record_start = None;
+    }
 }
 
 fn drain_stdout(
     mut stdout: ChildStdout,
     gate: &Gate,
-    mut log: BufWriter<File>,
+    mut log: EventLog,
     limits: Limits,
     events: &dyn Fn(Event),
 ) -> io::Result<()> {
@@ -573,34 +753,48 @@ fn drain_stdout(
         relay(&mut pending, &mut log, &mut budget, events)?;
     }
     framer.finish(&mut pending);
-    relay(&mut pending, &mut log, &mut budget, events)?;
-    log.flush()
+    relay(&mut pending, &mut log, &mut budget, events)
 }
 
-/// Append each frame to the event log — flushed per line, so the artifact is
-/// complete up to the last whole line at any moment — and report it. A frame
-/// that would cross the cap is not written, and the drain stops.
+/// Write each frame to the event log as the actor emitted it — its newline
+/// only if the actor wrote one — and report it. A record that would cross
+/// the cap is not written (an oversized one already begun is rolled back),
+/// and the drain stops.
 fn relay(
     frames: &mut Vec<Frame>,
-    log: &mut BufWriter<File>,
+    log: &mut EventLog,
     budget: &mut u64,
     events: &dyn Fn(Event),
 ) -> io::Result<()> {
     for frame in frames.drain(..) {
         match frame {
-            Frame::Line(line) => {
-                charge(budget, line.len(), true)?;
-                log.write_all(&line)?;
-                log.write_all(b"\n")?;
-                log.flush()?;
-                events(Event::Line(line));
+            Frame::Line { mut bytes, newline } => {
+                charge(budget, bytes.len(), newline)?;
+                if newline {
+                    bytes.push(b'\n');
+                }
+                log.append(&bytes)?;
+                log.close();
+                if newline {
+                    bytes.pop();
+                }
+                events(Event::Line(bytes));
             }
-            Frame::Oversized { part, last } => {
-                charge(budget, part.len(), last)?;
-                log.write_all(&part)?;
+            Frame::Oversized {
+                part,
+                last,
+                newline,
+            } => {
+                if let Err(error) = charge(budget, part.len(), last && newline) {
+                    log.abandon();
+                    return Err(error);
+                }
+                log.append(&part)?;
                 if last {
-                    log.write_all(b"\n")?;
-                    log.flush()?;
+                    if newline {
+                        log.append(b"\n")?;
+                    }
+                    log.close();
                     events(Event::Oversized);
                 }
             }
@@ -657,6 +851,10 @@ mod tests {
         stderr: u64::MAX,
     };
 
+    /// No cancellation, ever.
+    static NO_STOP: Stop = Stop::new(0);
+    const PATIENT: Duration = Duration::from_secs(5);
+
     /// A fresh directory under the system temp dir, unique to this test.
     fn scratch(name: &str) -> PathBuf {
         let nanos = std::time::SystemTime::now()
@@ -698,7 +896,7 @@ mod tests {
     /// How many live processes carry `PROBE=<value>` in their environment —
     /// the test's own mark on an actor, set on its command.
     fn probes_alive(value: &str) -> usize {
-        marked_processes(&format!("PROBE={value}")).len()
+        marked_processes(&format!("PROBE={value}")).unwrap().len()
     }
 
     fn wait_until(deadline: Duration, condition: impl Fn() -> bool) -> bool {
@@ -762,10 +960,11 @@ mod tests {
         assert_eq!(ended.status.code(), Some(0));
         assert_eq!(ended.stdout, Some(Ok(())));
         assert_eq!(ended.stderr, Some(Ok(())));
-        assert_eq!(ended.stragglers, 0);
+        assert_eq!(ended.stragglers, Ok(0));
+        // Byte for byte: the last line the actor left unterminated stays so.
         assert_eq!(
             std::fs::read_to_string(dir.join("events.jsonl")).unwrap(),
-            format!("a\nb\n{big}\nc\n")
+            format!("a\nb\n{big}\nc")
         );
         assert_eq!(
             std::fs::read_to_string(dir.join("stderr.log")).unwrap(),
@@ -965,11 +1164,11 @@ mod tests {
     fn closing_stdin_ends_a_cooperative_actor_and_its_exit_status_is_kept() {
         let dir = scratch("stdin");
         let (mut actor, rx) = launch(&dir, "cat; exit 7", 1024);
-        actor.write_stdin(b"echoed\n").unwrap();
+        actor.write_stdin(b"echoed\n", &NO_STOP, PATIENT).unwrap();
         assert!(actor.stdin_open());
         actor.close_stdin();
         assert!(!actor.stdin_open());
-        assert!(actor.write_stdin(b"late\n").is_err());
+        assert!(actor.write_stdin(b"late\n", &NO_STOP, PATIENT).is_err());
         let events = drain(&rx);
         assert_eq!(lines(&events), vec!["echoed"]);
         assert!(
@@ -1015,43 +1214,171 @@ mod tests {
         assert_eq!(logged(), 1000, "the reader did not finish once released");
     }
 
-    #[test]
-    fn the_logs_stop_at_their_caps_exactly_and_the_drains_say_so() {
-        let dir = scratch("caps");
+    /// An actor with the given limits, its events on an unbounded queue.
+    fn launch_with(dir: &Path, script: &str, limits: Limits) -> (Actor, Receiver<Event>) {
         let (tx, rx) = mpsc::channel();
         let actor = Actor::spawn(
-            command(
-                &sh("printf 'abcd\\nabcd\\nabcd\\n'; printf 'oopsie' >&2; sleep 30"),
-                &[],
-            )
-            .unwrap(),
+            command(&sh(script), &[]).unwrap(),
             &dir.join("events.jsonl"),
             &dir.join("stderr.log"),
-            Limits {
-                line: 1024,
-                stdout: 10,
-                stderr: 4,
-            },
+            limits,
             move |event| {
                 let _ = tx.send(event);
             },
         )
         .unwrap();
-        let events = drain(&rx);
-        assert_eq!(lines(&events), vec!["abcd", "abcd"]);
-        assert!(matches!(events.last(), Some(Event::StdoutClosed(Err(e))) if e == CAP_REACHED));
-        let ended = actor.end(Duration::from_secs(5)).unwrap();
-        assert_eq!(ended.status.signal(), Some(15));
-        assert_eq!(ended.stdout, Some(Err(CAP_REACHED.to_string())));
-        assert_eq!(ended.stderr, Some(Err(CAP_REACHED.to_string())));
-        assert_eq!(
-            std::fs::read_to_string(dir.join("events.jsonl")).unwrap(),
-            "abcd\nabcd\n"
+        (actor, rx)
+    }
+
+    /// Receive until `wanted` accepts an event; that event.
+    fn wait_for(rx: &Receiver<Event>, wanted: impl Fn(&Event) -> bool) -> Event {
+        loop {
+            let event = rx.recv_timeout(Duration::from_secs(10)).unwrap();
+            if wanted(&event) {
+                return event;
+            }
+        }
+    }
+
+    fn event_log(dir: &Path) -> Vec<u8> {
+        std::fs::read(dir.join("events.jsonl")).unwrap()
+    }
+
+    #[test]
+    fn the_event_log_stops_at_its_cap_exactly_and_the_drain_says_so() {
+        let dir = scratch("stdout-cap");
+        let (actor, rx) = launch_with(
+            &dir,
+            "printf 'abcd\\nabcd\\nabcd\\n'; sleep 30",
+            Limits {
+                stdout: 10,
+                ..LIMITS
+            },
         );
+        // Causal, not timed: the drain's own verdict arrives before teardown.
+        let closed = wait_for(&rx, |e| matches!(e, Event::StdoutClosed(_)));
+        assert!(matches!(closed, Event::StdoutClosed(Err(e)) if e == CAP_REACHED));
+        let ended = actor.end(Duration::from_secs(5)).unwrap();
+        assert_eq!(ended.stdout, Some(Err(CAP_REACHED.to_string())));
+        assert_eq!(event_log(&dir), b"abcd\nabcd\n");
+    }
+
+    #[test]
+    fn the_stderr_log_stops_at_its_cap_exactly_and_the_drain_says_so() {
+        let dir = scratch("stderr-cap");
+        let (actor, rx) = launch_with(
+            &dir,
+            "printf 'oopsie' >&2; sleep 30",
+            Limits {
+                stderr: 4,
+                ..LIMITS
+            },
+        );
+        let closed = wait_for(&rx, |e| matches!(e, Event::StderrClosed(_)));
+        assert!(matches!(closed, Event::StderrClosed(Err(e)) if e == CAP_REACHED));
+        let ended = actor.end(Duration::from_secs(5)).unwrap();
+        assert_eq!(ended.stderr, Some(Err(CAP_REACHED.to_string())));
         assert_eq!(
             std::fs::read_to_string(dir.join("stderr.log")).unwrap(),
             "oops"
         );
+    }
+
+    #[test]
+    fn a_record_at_the_exact_cap_is_kept_as_the_actor_wrote_it_terminated_or_not() {
+        // Four actors, one per cell: the byte the actor did or did not write
+        // is the byte that does or does not fit.
+        for (script, cap, expected_log, expected_drain) in [
+            ("printf 'abcd'", 4, &b"abcd"[..], Ok(())),
+            ("printf 'abcd'", 3, &b""[..], Err(CAP_REACHED.to_string())),
+            ("printf 'abcd\\n'", 5, &b"abcd\n"[..], Ok(())),
+            (
+                "printf 'abcd\\n'",
+                4,
+                &b""[..],
+                Err(CAP_REACHED.to_string()),
+            ),
+        ] {
+            let dir = scratch("exact-cap");
+            let (actor, rx) = launch_with(
+                &dir,
+                script,
+                Limits {
+                    stdout: cap,
+                    ..LIMITS
+                },
+            );
+            let _ = wait_for(&rx, |e| matches!(e, Event::StdoutClosed(_)));
+            let ended = actor.end(Duration::from_secs(5)).unwrap();
+            assert_eq!(ended.stdout, Some(expected_drain), "{script} at cap {cap}");
+            assert_eq!(event_log(&dir), expected_log, "{script} at cap {cap}");
+        }
+    }
+
+    #[test]
+    fn an_oversized_record_that_crosses_the_cap_leaves_nothing_of_itself_behind() {
+        // 100,001 bytes with a 1,000-byte line ceiling arrive in several
+        // reads and are written piece by piece; the cap falls in the middle.
+        // The record before it stays, the record itself is rolled back
+        // whole: the log ends at the last complete record, never mid-line.
+        let dir = scratch("oversized-rollback");
+        let (actor, rx) = launch_with(
+            &dir,
+            "echo ok; head -c 100001 /dev/zero | tr '\\0' x; sleep 30",
+            Limits {
+                line: 1000,
+                stdout: 70_000,
+                ..LIMITS
+            },
+        );
+        let closed = wait_for(&rx, |e| matches!(e, Event::StdoutClosed(_)));
+        assert!(matches!(closed, Event::StdoutClosed(Err(e)) if e == CAP_REACHED));
+        let ended = actor.end(Duration::from_secs(5)).unwrap();
+        assert_eq!(ended.stdout, Some(Err(CAP_REACHED.to_string())));
+        assert_eq!(event_log(&dir), b"ok\n");
+    }
+
+    #[test]
+    fn a_stdin_write_the_actor_never_takes_is_interrupted_by_cancellation() {
+        let dir = scratch("stdin-cancel");
+        let (mut actor, _rx) = launch(&dir, "exec sleep 30", 1024);
+        let stop = Arc::new(Stop::new(0));
+        let trigger = Arc::clone(&stop);
+        let _canceller = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(200));
+            trigger.store(15, std::sync::atomic::Ordering::Relaxed);
+        });
+        let big = vec![b'x'; 1 << 20];
+        let started = Instant::now();
+        let error = actor
+            .write_stdin(&big, &stop, Duration::from_secs(30))
+            .unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::Interrupted, "{error}");
+        assert!(
+            started.elapsed() < Duration::from_secs(5),
+            "{:?}",
+            started.elapsed()
+        );
+        let _ = actor.end(Duration::from_millis(200));
+    }
+
+    #[test]
+    fn a_stdin_write_the_actor_never_takes_gives_up_after_the_stall() {
+        let dir = scratch("stdin-stall");
+        let (mut actor, _rx) = launch(&dir, "exec sleep 30", 1024);
+        let big = vec![b'x'; 1 << 20];
+        let started = Instant::now();
+        let error = actor
+            .write_stdin(&big, &NO_STOP, Duration::from_millis(300))
+            .unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::TimedOut, "{error}");
+        assert!(started.elapsed() >= Duration::from_millis(300));
+        assert!(
+            started.elapsed() < Duration::from_secs(5),
+            "{:?}",
+            started.elapsed()
+        );
+        let _ = actor.end(Duration::from_millis(200));
     }
 
     #[test]
@@ -1130,15 +1457,16 @@ mod tests {
         let group = Pid::from_raw(i32::try_from(actor.pid()).unwrap());
         let escaped = || {
             marked_processes(&format!("PROBE={probe}"))
+                .unwrap()
                 .iter()
-                .any(|(_, pgrp)| *pgrp != group)
+                .any(|m| m.group != group)
         };
         assert!(
             wait_until(Duration::from_secs(5), escaped),
             "the escaped descendant never appeared"
         );
         let ended = actor.end(Duration::from_millis(500)).unwrap();
-        assert_eq!(ended.stragglers, 1, "{ended:?}");
+        assert_eq!(ended.stragglers, Ok(1), "{ended:?}");
         assert!(
             wait_until(Duration::from_secs(5), || probes_alive(&probe) == 0),
             "a descendant outside the group survived the end"

@@ -21,11 +21,14 @@
 //! **Ending.** A quiet `result` — no judgment pending and nothing delivered —
 //! closes the actor's stdin, and a cooperative actor exits on the EOF. A
 //! correction delivered at a `result` keeps the actor open for another turn.
-//! The loop ends when stdout closes and no judgment is in flight; when a log
-//! stops taking output; when the wrapper is told to stop; or when the leader
-//! has exited and, a descendant still holding its stdout, the grace has
-//! passed. Then the actor's process group is ended, stragglers swept, the
-//! drains finished, and the summary written.
+//! The loop ends when the actor's stdout has closed **and** its leader has
+//! exited — either alone starts the grace, after which the other is not
+//! waited for: an actor that closes stdout and then exits in its own time
+//! gets that time, and a leader gone while a descendant holds its stdout
+//! does not hold the wrapper — and no judgment is in flight; or when a log
+//! stops taking output; or when the wrapper is told to stop. Then the
+//! actor's process group is ended, stragglers swept, the drains finished,
+//! and the summary written.
 //!
 //! **Failure semantics.** A failed judge or writer call is one lapse; the
 //! next boundary is judged normally. A failed stdin write is a gap: the loop
@@ -39,7 +42,6 @@ use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
 use std::process::ExitStatus;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -52,6 +54,7 @@ use crate::evidence::{self, Disposition, INTERVENTION_TAG, Message, Role};
 use crate::model::{Call, Model};
 use crate::policy::{self, Decision, Gates, Judged};
 use crate::prompt::Observation;
+use crate::signals::{self, Stop};
 use crate::stream::user_event_line;
 use crate::summary::{self, Summary, SupervisorExit};
 
@@ -157,6 +160,9 @@ struct Loop {
     /// The leader was seen exited, at this instant; its stdout may still be
     /// held by a descendant.
     leader_exited_at: Option<Instant>,
+    /// The first of stdout closing and the leader exiting was seen at this
+    /// instant; the other gets the grace from here.
+    over_since: Option<Instant>,
     /// A drain stopped with an error: the run ends as soon as no judgment
     /// is in flight.
     faulted: bool,
@@ -179,7 +185,7 @@ pub fn run(
     model: Model,
     launch: Launch<'_>,
     paths: &Paths,
-    stop: &AtomicBool,
+    stop: &Stop,
 ) -> Result<Ended, String> {
     let log = File::create(&paths.supervisor_log)
         .map_err(|e| format!("supervisor log {}: {e}", paths.supervisor_log.display()))?;
@@ -227,13 +233,14 @@ pub fn run(
         pending: Pending::default(),
         stdout_closed: false,
         leader_exited_at: None,
+        over_since: None,
         faulted: false,
         mute: false,
         unclean: None,
         counts: Counts::default(),
     };
     let grace = Duration::from_millis(run.config.timeouts.term_grace_ms);
-    if let Err(error) = run.actor.write_stdin(launch.prompt) {
+    if let Err(error) = run.actor.write_stdin(launch.prompt, stop, grace) {
         drop(run.inbox);
         let ended = run
             .actor
@@ -251,10 +258,10 @@ pub fn run(
 impl Loop {
     /// Consume until the run is over and no judgment is in flight, or until
     /// the wrapper is told to stop. Returns whether it was stopped.
-    fn serve(&mut self, stop: &AtomicBool) -> bool {
+    fn serve(&mut self, stop: &Stop) -> bool {
         let grace = Duration::from_millis(self.config.timeouts.term_grace_ms);
         loop {
-            if stop.load(Ordering::Relaxed) {
+            if signals::requested(stop).is_some() {
                 return true;
             }
             match self.inbox.recv_timeout(TICK) {
@@ -271,7 +278,7 @@ impl Loop {
                         self.fault(format!("the actor's stderr: {error}"));
                     }
                 }
-                Ok(Msg::Judged(ordinal, judged)) => self.complete(ordinal, judged),
+                Ok(Msg::Judged(ordinal, judged)) => self.complete(ordinal, judged, stop),
                 Err(RecvTimeoutError::Timeout) => {}
                 Err(RecvTimeoutError::Disconnected) => {
                     self.fault("the event queue closed".to_string());
@@ -284,11 +291,14 @@ impl Loop {
                     Err(error) => self.fault(format!("observing the actor: {error}")),
                 }
             }
-            let over = self.stdout_closed
-                || self.faulted
+            if self.stdout_closed || self.leader_exited_at.is_some() {
+                self.over_since.get_or_insert_with(Instant::now);
+            }
+            let over = self.faulted
+                || (self.stdout_closed && self.leader_exited_at.is_some())
                 || self
-                    .leader_exited_at
-                    .is_some_and(|at| at.elapsed() >= grace);
+                    .over_since
+                    .is_some_and(|since| since.elapsed() >= grace);
             if over && self.in_flight.is_none() {
                 return false;
             }
@@ -405,7 +415,7 @@ impl Loop {
         });
     }
 
-    fn complete(&mut self, ordinal: u64, judged: Judged) {
+    fn complete(&mut self, ordinal: u64, judged: Judged, stop: &Stop) {
         let Some(boundary) = self.in_flight.take() else {
             self.unclean = Some(format!("judgment {ordinal} completed with none in flight"));
             return;
@@ -460,7 +470,7 @@ impl Loop {
             }
             Decision::Speak(text) => {
                 row.insert("text".into(), json!(text));
-                let (kind, reason) = self.deliver(&boundary, text);
+                let (kind, reason) = self.deliver(&boundary, text, stop);
                 delivered = kind == "spoke";
                 if let Some(reason) = reason {
                     row.insert("reason".into(), json!(reason));
@@ -488,7 +498,12 @@ impl Loop {
 
     /// Deliver a line the policy wrote, unless it is stale or the channel is
     /// gone. Returns the row kind and, when not delivered, the reason.
-    fn deliver(&mut self, boundary: &InFlight, text: String) -> (&'static str, Option<String>) {
+    fn deliver(
+        &mut self,
+        boundary: &InFlight,
+        text: String,
+        stop: &Stop,
+    ) -> (&'static str, Option<String>) {
         if boundary.revision != self.revision {
             self.counts.stale += 1;
             return (
@@ -514,9 +529,10 @@ impl Loop {
             );
         }
         let rendered = format!("<{INTERVENTION_TAG}>\n{text}\n</{INTERVENTION_TAG}>");
+        let grace = Duration::from_millis(self.config.timeouts.term_grace_ms);
         match self
             .actor
-            .write_stdin(user_event_line(&rendered).as_bytes())
+            .write_stdin(user_event_line(&rendered).as_bytes(), stop, grace)
         {
             Ok(()) => {
                 self.counts.corrections += 1;
@@ -575,7 +591,16 @@ impl Loop {
                         unclean.get_or_insert(reason);
                     }
                 }
-                (Some(ended.status), ended.stragglers)
+                let stragglers = match ended.stragglers {
+                    Ok(count) => count,
+                    Err(reason) => {
+                        unclean.get_or_insert_with(|| {
+                            format!("no proof that no descendant of the actor survived: {reason}")
+                        });
+                        0
+                    }
+                };
+                (Some(ended.status), stragglers)
             }
             Err(error) => {
                 unclean.get_or_insert_with(|| format!("ending the actor: {error}"));
