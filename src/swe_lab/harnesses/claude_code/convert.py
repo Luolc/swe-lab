@@ -372,6 +372,15 @@ def user_event_line(text: str) -> str:
   ``--input-format stream-json``, and it is the shape the compliance experiment
   measured, so it is reproduced rather than re-derived.
 
+  **It lives here rather than in ``harness``, and moving it back breaks the
+  package in a way the error message hides.** The harness imports the native
+  supervision module to run the actor under the wrapper, and that module's
+  ``channel`` imports this function; defining it in ``harness`` closes the
+  cycle. What that surfaces as is ``OverrideError: ClaudeCodeHarness.effort has
+  an annotation that cannot be resolved`` — broken CLI overrides, not an
+  ``ImportError`` — and nobody hitting that message would guess at an import
+  cycle from it.
+
   Args:
     text: The message body.
 

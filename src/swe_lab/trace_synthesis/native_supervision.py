@@ -132,6 +132,15 @@ MARK_ENV = "SWE_LAB_SUPERVISOR_MARK"
 #: harness itself starts inside the sandbox, so the harness is the only party
 #: that knows it and it exports the value directly. A host variable of that
 #: name would name something else and would silently take precedence.
+#:
+#: That exclusion is a **security** property, not environment hygiene. The
+#: supervisor sends its requests *with the credential attached*, so an endpoint
+#: the host environment can rewrite is an endpoint a stray same-named variable
+#: can point at any host it likes — a request carrying ``Authorization`` sent
+#: somewhere we did not choose. That is the shape of credential exfiltration,
+#: not of dialling the wrong address. Pinning the endpoint in the harness makes
+#: "the credential only ever reaches the loopback forwarder we started" true by
+#: construction.
 SUPERVISOR_PASS_ENV: tuple[str, ...] = (API_KEY_ENV,)
 
 #: The one terminal-summary schema this consumer reads.
