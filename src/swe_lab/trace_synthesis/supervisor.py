@@ -36,7 +36,6 @@ import json
 from typing import Any, Protocol
 
 from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
-from swe_lab.harnesses.claude_code.convert import event_to_message
 from swe_lab.trace_synthesis.criterion import (
     Criterion,
     CRITERION_SHA256,
@@ -674,6 +673,13 @@ class Supervisor:
     Returns:
       What was said at this event, or ``None``.
     """
+    # Imported here, not at module scope: the `claude_code` package's
+    # ``__init__`` imports its harness, and the harness takes a
+    # ``SegmentedSupervision`` from this package — so a module-level import
+    # closes a cycle whenever a trace-synthesis module is imported first. The
+    # same reasoning `vocabulary.py`'s docstring gives for existing at all.
+    from swe_lab.harnesses.claude_code.convert import event_to_message
+
     self._cursor += 1
     record, self._disposition = self._filter.admit(event_to_message(event))
     if record is not None:
@@ -781,6 +787,9 @@ def evidence_of(events: Sequence[Mapping[str, Any]]) -> tuple[Message, ...]:
   Returns:
     The messages a supervisor would have seen.
   """
+  # Function-local for the reason given in ``Supervisor.observe``.
+  from swe_lab.harnesses.claude_code.convert import event_to_message
+
   evidence_filter = EvidenceFilter()
   kept = [evidence_filter.admit(event_to_message(e))[0] for e in events]
   return tuple(m for m in kept if m is not None)
