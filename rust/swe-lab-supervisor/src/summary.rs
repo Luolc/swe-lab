@@ -6,6 +6,8 @@ use std::fs::File;
 use std::io::{self, Read, Write};
 use std::path::Path;
 
+use crate::outputs::Outputs;
+
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
@@ -116,9 +118,9 @@ impl Summary {
     /// # Errors
     ///
     /// The temporary file cannot be written or renamed into place.
-    pub fn write(&self, path: &Path) -> io::Result<()> {
+    pub fn write(&self, outputs: &mut Outputs, path: &Path) -> io::Result<()> {
         let staging = path.with_extension("json.partial");
-        let mut file = File::create(&staging)?;
+        let mut file = outputs.create(&staging)?.file;
         file.write_all(
             serde_json::to_string_pretty(self)
                 .map_err(io::Error::other)?
@@ -169,7 +171,7 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("summary.json");
         Summary::refused("bad config", "m", "abc")
-            .write(&path)
+            .write(&mut Outputs::default(), &path)
             .unwrap();
         let text = std::fs::read_to_string(&path).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&text).unwrap();

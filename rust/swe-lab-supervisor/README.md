@@ -49,8 +49,9 @@ and is not sent to the actor — the two are edited independently.
 (`128 + signal` when the actor died of a signal), so a script that records
 `$?` sees what it would have seen without the wrapper. `2` is a usage error and
 `3` a refused run (unusable config, an unreadable prompt file, a criterion
-whose digest is not the pinned one, an unusable endpoint, an actor that could
-not be launched) — all before any actor process exists, or before it took its
+whose digest is not the pinned one, an unusable endpoint, two outputs on
+one file — the same path twice, or a hard link or symlink to it — an
+actor that could not be launched) — all before any actor process exists, or before it took its
 prompt. `1` is the case the wrapper's own status replaces the actor's: the
 actor ran, and the run is **not accounted for** — a drain stopped with an
 error or did not finish, the sweep for the actor's descendants could not prove
@@ -69,8 +70,12 @@ swept for at the end: a descendant that clears its own environment before
 (pid plus start time) and its `kill` a pid could in principle be reused. Both
 are accepted, on the record here: the actor is Claude Code, not an adversary,
 and the wrapper runs inside a container that is discarded after the run —
-the container is the boundary, the sweep is diligence within it. What the
-sweep cannot prove, it reports, and the run is not accounted for.
+the container is the boundary, the sweep is diligence within it. A process
+that is not this user's — another user's, or one of its own that made
+itself undumpable — is outside the sweep's sight, and the first outside its
+reach: a conclusion drawn from the owner of its `/proc` entry, not a read
+that failed. What the sweep cannot read of this user's own, and what it
+cannot prove, it reports, and the run is not accounted for.
 
 ## Artifacts
 

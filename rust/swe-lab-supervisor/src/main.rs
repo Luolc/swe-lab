@@ -13,6 +13,11 @@
 //! README is the operational contract; the design record is task 20 in
 //! `docs/trace-synthesis/plans/`.
 
+// The wrapper's outputs go through `outputs::Outputs`, the one door
+// `clippy.toml` points every `File::create` to; a test writing its fixtures
+// is not an output of the wrapper.
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
+
 mod actor;
 mod cli;
 mod config;
@@ -21,6 +26,7 @@ mod evidence;
 mod framing;
 mod http;
 mod model;
+mod outputs;
 mod policy;
 mod prompt;
 mod signals;
@@ -28,10 +34,12 @@ mod stream;
 mod summary;
 mod supervisor;
 
+use std::io;
 use std::os::unix::process::ExitStatusExt;
 use std::process::{ExitCode, ExitStatus};
 use std::time::Duration;
 
+use outputs::{Output, Outputs};
 use summary::Summary;
 
 /// The command line could not be used as given.
@@ -113,21 +121,25 @@ enum Failed {
 /// repeated in a diagnostic: a misplaced token in the actor argv, the config
 /// path or the environment would otherwise land in a log.
 fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
-    let refused = |reason: String, model: &str, digest: &str| -> Failed {
-        // Best effort: the refusal is already the answer, and a summary that
-        // cannot be written leaves the reader with a missing file, which the
-        // consumer treats the same way.
-        let _ = Summary::refused(&reason, model, digest).write(&args.summary);
-        Failed::Refused(reason)
-    };
-    let config = config::load(&args.config).map_err(|e| refused(e, "", ""))?;
-    let selected = criterion::select(&config.criterion.name, &config.criterion.sha256)
-        .map_err(|e| refused(e, &config.model.name, &config.criterion.sha256))?;
+    let mut outputs = Outputs::default();
+    let config = config::load(&args.config).map_err(|e| refused(&mut outputs, args, e, "", ""))?;
+    let selected =
+        criterion::select(&config.criterion.name, &config.criterion.sha256).map_err(|e| {
+            refused(
+                &mut outputs,
+                args,
+                e,
+                &config.model.name,
+                &config.criterion.sha256,
+            )
+        })?;
     let endpoint = config::Endpoint::from_env()
-        .map_err(|e| refused(e, &config.model.name, &selected.digest))?;
+        .map_err(|e| refused(&mut outputs, args, e, &config.model.name, &selected.digest))?;
     // Unread here: whatever the file holds goes to the actor as it is.
     let actor_prompt = std::fs::read(&args.actor_prompt).map_err(|e| {
         refused(
+            &mut outputs,
+            args,
             format!("reading the actor prompt: {e}"),
             &config.model.name,
             &selected.digest,
@@ -141,24 +153,37 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
     };
     let stop = signals::termination_requested().map_err(|e| {
         refused(
+            &mut outputs,
+            args,
             format!("signal handler: {e}"),
             &config.model.name,
             &selected.digest,
         )
     })?;
-    let paths = supervisor::Paths {
-        actor_event_log: args.actor_event_log.clone(),
-        supervisor_log: args.supervisor_log.clone(),
-        actor_stderr: args.actor_stderr.clone(),
-    };
     let digest = selected.digest.clone();
     let model_name = config.model.name.clone();
+    let (artifacts, _summary) = open_outputs(&mut outputs, args).map_err(|e| {
+        refused(
+            &mut outputs,
+            args,
+            format!("creating the outputs: {e}"),
+            &model_name,
+            &digest,
+        )
+    })?;
     let launch = supervisor::Launch {
         argv: &args.actor_argv,
         prompt: &actor_prompt,
     };
-    let ended = match supervisor::run(config, selected.text, &digest, model, launch, &paths, &stop)
-    {
+    let ended = match supervisor::run(
+        config,
+        selected.text,
+        &digest,
+        model,
+        launch,
+        artifacts,
+        &stop,
+    ) {
         Ok(ended) => ended,
         Err(reason) => {
             // A stop that arrived while the prompt was still being written
@@ -170,12 +195,12 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
                     actor: reason,
                 });
             }
-            return Err(refused(reason, &model_name, &digest));
+            return Err(refused(&mut outputs, args, reason, &model_name, &digest));
         }
     };
     ended
         .summary
-        .write(&args.summary)
+        .write(&mut outputs, &args.summary)
         .map_err(|e| Failed::Unhealthy(format!("writing the summary: {e}")))?;
     if let Some(signal) = signals::requested(&stop) {
         return Err(Failed::Cancelled {
@@ -194,6 +219,36 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
         ));
     }
     Ok(ended.status.map_or(ExitCode::FAILURE, exit_code_of))
+}
+
+/// Every output through the one door, so that no two of them are one file.
+/// The summary is written at the end, but registered now, so that it is
+/// checked against the logs like any other; its handle is returned so that
+/// the file stays what was checked until then.
+fn open_outputs(
+    outputs: &mut Outputs,
+    args: &cli::RunArgs,
+) -> io::Result<(supervisor::Artifacts, Output)> {
+    let artifacts = supervisor::Artifacts {
+        actor_event_log: outputs.create(&args.actor_event_log)?,
+        actor_stderr: outputs.create(&args.actor_stderr)?,
+        supervisor_log: outputs.create(&args.supervisor_log)?,
+    };
+    Ok((artifacts, outputs.create(&args.summary)?))
+}
+
+/// A refusal, with its summary written first — best effort: the refusal is
+/// already the answer, and a summary that cannot be written leaves the
+/// reader with a missing file, which the consumer treats the same way.
+fn refused(
+    outputs: &mut Outputs,
+    args: &cli::RunArgs,
+    reason: String,
+    model: &str,
+    digest: &str,
+) -> Failed {
+    let _ = Summary::refused(&reason, model, digest).write(outputs, &args.summary);
+    Failed::Refused(reason)
 }
 
 /// A cancelled wrapper exits as a process killed by that signal would, so

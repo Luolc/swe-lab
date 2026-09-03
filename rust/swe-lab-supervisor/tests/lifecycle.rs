@@ -7,8 +7,9 @@
 
 // An integration test's helpers are not inside a `#[test]` function, so the
 // tests-only unwrap allowance in clippy.toml does not reach them; a panic is
-// the right failure signal here as in any test.
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+// the right failure signal here as in any test. A test's fixtures are not
+// outputs of the wrapper, so its one-door rule for those does not apply.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::disallowed_methods)]
 
 use std::fs;
 use std::path::{Path, PathBuf};

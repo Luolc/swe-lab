@@ -6,3 +6,14 @@ allow-expect-in-tests = true
 # Proper nouns that trip `doc_markdown` (pedantic) but are not code. `..`
 # extends clippy's built-in list rather than replacing it.
 doc-valid-idents = ["OpenAI", "OpenRouter", ".."]
+
+# Every file the wrapper writes is opened through `outputs::Outputs::create`,
+# which refuses two outputs on one file. A file created anywhere else is a
+# second door that check does not guard — so there is none: the gate treats
+# this lint as an error. Tests (unit and integration) are allowed to write
+# their fixtures, at their crate roots.
+disallowed-methods = [
+    { path = "std::fs::File::create", reason = "open an output through outputs::Outputs::create, which refuses two outputs on one file" },
+    { path = "std::fs::OpenOptions::new", reason = "open an output through outputs::Outputs::create, which refuses two outputs on one file" },
+    { path = "std::fs::write", reason = "open an output through outputs::Outputs::create, which refuses two outputs on one file" },
+]

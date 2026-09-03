@@ -52,6 +52,7 @@ use crate::actor::{self, Actor, Event, Gate};
 use crate::config::{self, Blocking, Config};
 use crate::evidence::{self, Disposition, INTERVENTION_TAG, Message, Role};
 use crate::model::{Call, Model};
+use crate::outputs::Output;
 use crate::policy::{self, Decision, Gates, Judged};
 use crate::prompt::Observation;
 use crate::signals::{self, Stop};
@@ -65,15 +66,23 @@ const TICK: Duration = Duration::from_millis(100);
 /// The word every row carries; the one policy this binary implements.
 const POLICY_NAME: &str = "speak-when-off-track";
 
-/// Where the run's files go.
-#[derive(Debug, Clone)]
-pub struct Paths {
+/// The run's outputs, opened by the caller through the wrapper's one door
+/// for them ([`Outputs`](crate::outputs::Outputs)), so that no two are one
+/// file.
+#[derive(Debug)]
+pub struct Artifacts {
     /// The actor's stdout, line by line.
-    pub actor_event_log: PathBuf,
+    pub actor_event_log: Output,
     /// The supervisor's account, one JSON object per line.
-    pub supervisor_log: PathBuf,
+    pub supervisor_log: Output,
     /// The actor's stderr.
-    pub actor_stderr: PathBuf,
+    pub actor_stderr: Output,
+}
+
+/// Where the two digested artifacts are, for the summary.
+struct Paths {
+    actor_event_log: PathBuf,
+    supervisor_log: PathBuf,
 }
 
 /// What the actor is launched with.
@@ -175,20 +184,28 @@ struct Loop {
 ///
 /// # Errors
 ///
-/// The run could not start: the supervisor log could not be created, the
-/// actor could not be launched, or it did not take its prompt. Nothing has
-/// been supervised; the caller records a refusal.
+/// The run could not start: the actor could not be launched, or it did not
+/// take its prompt. Nothing has been supervised; the caller records a
+/// refusal.
 pub fn run(
     config: Config,
     criterion_text: &'static str,
     criterion_sha256: &str,
     model: Model,
     launch: Launch<'_>,
-    paths: &Paths,
+    artifacts: Artifacts,
     stop: &Stop,
 ) -> Result<Ended, String> {
-    let log = File::create(&paths.supervisor_log)
-        .map_err(|e| format!("supervisor log {}: {e}", paths.supervisor_log.display()))?;
+    let Artifacts {
+        actor_event_log,
+        supervisor_log,
+        actor_stderr,
+    } = artifacts;
+    let paths = Paths {
+        actor_event_log: actor_event_log.path,
+        supervisor_log: supervisor_log.path,
+    };
+    let log = supervisor_log.file;
     let (outbox, inbox) = actor::event_queue();
     let command = actor::command(launch.argv, &[config::BASE_URL_ENV, config::API_KEY_ENV])
         .map_err(|e| format!("actor command: {e}"))?;
@@ -201,8 +218,8 @@ pub fn run(
     let relay = outbox.clone();
     let actor = Actor::spawn(
         command,
-        &paths.actor_event_log,
-        &paths.actor_stderr,
+        actor_event_log.file,
+        actor_stderr.file,
         limits,
         move |event| {
             // The loop being gone means the wrapper is already on its way out.
@@ -252,7 +269,7 @@ pub fn run(
         ));
     }
     let terminated = run.serve(stop);
-    Ok(run.finish(terminated, criterion_sha256, paths))
+    Ok(run.finish(terminated, criterion_sha256, &paths))
 }
 
 impl Loop {
