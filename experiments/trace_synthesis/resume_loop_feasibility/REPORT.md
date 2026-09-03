@@ -123,6 +123,10 @@ unit is the whole exchange and the flag buys no granularity.
 Assistant messages equal N exactly, and the unbounded control is strictly larger
 on all four counts *and* finishes. **A turn is one model round-trip.**
 
+**`N=1` per arm** (four arms, one task, one model). The arms differ by more than
+sampling noise could produce — 1 vs 2 vs 3 vs 12 — so a single run of each
+carries the counting claim; it does not establish that the count never varies.
+
 The binary's schema string `Maximum number of agentic turns (API round-trips)
 before stopping` says the same thing; it is a docstring, it was not treated as
 evidence, and this table is what the claim rests on.
@@ -176,6 +180,9 @@ reported as an error.**
 | 5 | segment 2 issued **zero** tool calls | ✅ 0 — it came from context |
 | 6 | fresh-session control, same question | ✅ **did not** produce the nonce |
 | 7 | segment 2 exited cleanly | ✅ `success` |
+
+**`N=1`** for the chain and `N=1` for the control arm. Seven conditions holding
+together is not seven samples.
 
 Arm 6 is what makes arm 4 informative; arm 5 is what makes it *context* rather
 than a tool finding the value again.
@@ -236,6 +243,8 @@ The resumed segment's request body:
 **Both seam records reach the wire.** So the actor's next output is generated in
 a context containing them, and removing them from the trace removes the cause of
 text the trace keeps. `Q3b` exists **on this path**.
+
+**`N=1`** — one capture, one resumed segment.
 
 > **Read §9 before citing this section.** Everything in §6.2 and §6.3 is a
 > measurement of the **plain `--resume`** seam. `--resume-session-at` removes
@@ -331,7 +340,9 @@ re-priced context. The quadratic Σ(prefix) growth in the table is **common to
 both arms** and is a property of any agent loop, not of segmenting.
 
 **All cache creation landed in `ephemeral_1h_input_tokens`; `ephemeral_5m` was
-0 on every call.**
+0 on every call.** That is the field's value and nothing more — **§8.2 measures
+a retention that contradicts reading it as a one-hour TTL**, and this sentence
+must not be cited on its own as evidence about how long a prefix survives.
 
 ### 8.1 Amendment 1 — the guard that was a treatment
 
@@ -407,15 +418,33 @@ A four-segment loop, `--max-turns 1` per segment, segment *n* resuming with
 Credential gate first, both directions: `[REDACTED]` **25** occurrences,
 credential shapes **0**.
 
-| request | messages | role sequence | seam text blocks | synthetic assistant | `<system-reminder>` |
-| --- | --- | --- | --- | --- | --- |
-| segment 1 | 4 | `user, system, assistant, user` | **0** | **0** | 3 |
-| segment 2 | 6 | `user, system, assistant, user, assistant, user` | **0** | **0** | 3 |
-| segment 3 | 8 | `user, system, assistant, user, assistant, user, assistant, user` | **0** | **0** | 3 |
+Five requests were captured for the four segments; the two smallest are
+auxiliary calls (1 and 2 messages) rather than main-loop turns, and the table
+below is **captured requests**, not a per-segment mapping:
 
-**Both detectors demonstrably fire elsewhere** — the seam counts read 1 and 1 on
-the plain-`--resume` capture in §6.2, and the reminder count reads 3 rather than
-0 — so these zeros are informative rather than empty.
+| captured request | messages | role sequence | seam text blocks | synthetic assistant | `<system-reminder>` |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 1 | `user` | **0** | **0** | 0 |
+| 2 | 2 | `user, system` | **0** | **0** | 3 |
+| 3 | 4 | `user, system, assistant, user` | **0** | **0** | 3 |
+| 4 | 6 | `user, system, assistant, user, assistant, user` | **0** | **0** | 3 |
+| 5 | 8 | `user, system, assistant, user, assistant, user, assistant, user` | **0** | **0** | 3 |
+
+**Both detectors demonstrably fire, and on this same code path.** The zeros
+above are produced by `run_matrix.wire_shapes()`; running *that same function*
+over the plain-`--resume` capture of §6.2 returns `seam_user_text_blocks: 1`
+and `seam_synthetic_assistant: 1` on the resumed request, and the reminder
+count reads 3 rather than 0 everywhere. So a broken detector and a genuine zero
+are distinguished here by evidence rather than by assumption.
+
+**This was not true when §6.2 was written.** Those numbers came from an inline
+script, so "the detector fires" compared *two different pieces of code* — which
+establishes nothing about the one reporting the zeros. The cross-check above is
+the repair; regenerate it with:
+
+```sh
+python -c "import run_matrix, pathlib; print(run_matrix.wire_shapes(pathlib.Path('<scratch>/wire/proxy.jsonl')))"
+```
 
 The correction's landing shape, from the request body:
 
