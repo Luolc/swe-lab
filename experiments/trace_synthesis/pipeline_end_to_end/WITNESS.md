@@ -155,6 +155,20 @@ their types              attachment
 conversation messages    73
 carrying it              3  msg[19], msg[29], msg[32]
 their roles              system
+filter disagreements     0  (this witness vs supervisor.jsonl)
+evidence held when spoke cursor 4: 0, cursor 8: 3, cursor 12: 6
+from_isbn defined at     openlibrary/core/models.py:377  (read off the grep result)
+grep naming it           event 7 at 2026-09-02T07:23:34.719Z  (a hit on the signature line)
+first Read covering it   event 13 at 2026-09-02T07:23:38.071Z
+first Read of isbn.py    event 49 at 2026-09-02T07:24:01.701Z
+covering Read in window  cursor 4: no, cursor 8: no, cursor 12: no  (it is event 13)
+spoke minus that Read s  9.5, 26.3, 45.0
+note line 32  answered by  line 34 at 2026-09-02T07:23:53.867Z
+  I've already read the current `from_isbn` implementation (models.py:377-446) — it does a crude `
+note line 51  answered by  line 61 at 2026-09-02T07:24:42.592Z
+  I already reviewed the current `from_isbn` body at the start (models.py:377-446) — confirmed its
+note line 57  answered by  line 61 at 2026-09-02T07:24:42.592Z
+  I already reviewed the current `from_isbn` body at the start (models.py:377-446) — confirmed its
 verifier flagged         ["suspicious_git"]
 verifier high_confidence []
 verifier suspicious_git  4 commands
@@ -191,7 +205,7 @@ claude_code.proxy_log.jsonl bytes 3064215
 corpus files             122
 ```
 
-Three of these lines are worth reading twice, because each is a coordinate that
+Some of these lines are worth reading twice, because each is a coordinate that
 a summary would drop:
 
 - **Two ratios, and each one names its denominator.** They share a numerator
@@ -213,6 +227,18 @@ a summary would drop:
 - **`metric supervision.unhealthy False`** is the *absence* of the key, not a
   zero: the channel leaves no key rather than a zero, so this line says the
   metric was never emitted.
+- **`evidence held when spoke cursor 4: 0`.** The first correction was decided
+  at a boundary where the observation's evidence was empty — every one of the
+  first four events was excluded by the filter, so nothing the actor had
+  produced was in front of the judge. It is printed beside the other two counts
+  because the three are not the same kind of judgement, and a single
+  `corrections 3` cannot say so.
+- **`spoke minus that Read s 9.5, 26.3, 45.0`** against
+  `first Read covering it event 13`. All three corrections were written after
+  the actor had already read the function they say it had not read. The line
+  number they turn on is taken from the actor's own grep output rather than
+  written into the script, so a different instance does not silently reuse
+  this one's `377`.
 
 ## Where the corpus lives
 

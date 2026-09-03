@@ -157,6 +157,130 @@ print(f"conversation messages    {len(conversation)}")
 print(f"carrying it              {len(carried)}  " + ", ".join(f"msg[{i}]" for i in carried))
 print("their roles              " + ", ".join(sorted({conversation[i]["role"] for i in carried})))
 
+# What the corrections said about the actor, against what the actor had done.
+# Point 3's claim carries a "because of a real deviation" clause that §4's
+# closure criterion does not test, so the readings that bear on it are printed
+# here rather than left to be inferred from the counts above.
+#
+# `EvidenceFilter.admit` is re-implemented rather than imported: this witness
+# runs on the corpus with the standard library alone, and one that imports the
+# code under examination cannot contradict it.
+events = rows("claude_code.event_stream.jsonl")
+
+
+def admitted(event):
+  """Return the disposition `EvidenceFilter` gives this event, or None."""
+  if event.get("type") == "assistant":
+    return "assistant"
+  content = (event.get("message") or {}).get("content") or []
+  hit = any(b.get("type") == "tool_result" for b in content if isinstance(b, dict))
+  return "tool-result" if hit else None
+
+
+def blocks(event, kind):
+  """Yield an event's content blocks of one type."""
+  for b in ((event.get("message") or {}).get("content") or []):
+    if isinstance(b, dict) and b.get("type") == kind:
+      yield b
+
+
+def result_text(event):
+  """Return the concatenated text of an event's tool results."""
+  out = []
+  for b in blocks(event, "tool_result"):
+    inner = b.get("content")
+    out.append(inner if isinstance(inner, str) else json.dumps(inner))
+  return "".join(out)
+
+
+def first(predicate):
+  """Return the 1-indexed position and timestamp of the first match."""
+  for i, event in enumerate(events, 1):
+    if predicate(event):
+      return i, event.get("timestamp")
+  return None, None
+
+
+# Cross-check before use: the same events, dispositioned by this function and by
+# the run's own supervisor, must agree row for row. A disagreement would mean
+# the readings below describe a filter the run did not use.
+disagreements = sum(
+    (admitted(e) or "excluded-nothing-to-keep") != s["evidence"]
+    for e, s in zip(events, sup, strict=True)
+)
+print(f"filter disagreements     {disagreements}  (this witness vs supervisor.jsonl)")
+
+# How much evidence the judge held at each boundary that spoke. The supervisor
+# appends an admitted record before building the observation, so the count at
+# cursor n is taken over events 1..n.
+held = [sum(1 for e in events[: x["cursor"]] if admitted(e)) for x in spoke]
+print("evidence held when spoke " + ", ".join(
+    f"cursor {x['cursor']}: {n}" for x, n in zip(spoke, held, strict=True)))
+
+# Naming the function and reading it are different actions, and the three
+# corrections distinguish them: the first says the file was never opened, the
+# third says the *body* never landed. So the line number is read off the actor's
+# own grep rather than written here, and "read the body" is a property of the
+# request — a Read whose window covers that line — not a substring hunt over
+# output that a one-line grep hit would also satisfy.
+TARGET = "openlibrary/core/models.py"
+grep_at, grep_when = first(lambda e: "def from_isbn" in result_text(e))
+defined = int(re.search(r"(\d+):\s+def from_isbn", result_text(events[grep_at - 1])).group(1))
+
+
+def covers(event, path, line):
+  """Whether the event is a Read of `path` whose window contains `line`."""
+  for b in blocks(event, "tool_use"):
+    got = b.get("input") or {}
+    if b.get("name") != "Read" or path not in str(got.get("file_path", "")):
+      continue
+    start = got.get("offset", 1)
+    if start <= line < start + got.get("limit", 1 << 30):
+      return True
+  return False
+
+
+body_at, body_when = first(lambda e: covers(e, TARGET, defined))
+isbn_at, isbn_when = first(lambda e: covers(e, "openlibrary/utils/isbn.py", 1))
+print(f"from_isbn defined at     {TARGET}:{defined}  (read off the grep result)")
+print(f"grep naming it           event {grep_at} at {grep_when}  (a hit on the signature line)")
+print(f"first Read covering it   event {body_at} at {body_when}")
+print(f"first Read of isbn.py    event {isbn_at} at {isbn_when}")
+
+# Whether that Read was inside the evidence each judgement actually held. This
+# separates "the judge was wrong" from "the judge was right about a prefix the
+# actor had left behind", which the delta below cannot do on its own.
+print("covering Read in window  " + ", ".join(
+    f"cursor {x['cursor']}: {'yes' if body_at <= x['cursor'] else 'no'}" for x in spoke)
+    + f"  (it is event {body_at})")
+
+stamp = dt.datetime.fromisoformat(body_when.replace("Z", "+00:00"))
+print("spoke minus that Read s  " + ", ".join(
+    f"{(dt.datetime.fromisoformat(x['at']) - stamp).total_seconds():.1f}" for x in spoke))
+
+# The actor's own answer to each note. Transcript rows are stored out of
+# chronological order, so "next" is by timestamp and not by line, and what is
+# printed is the next assistant text rather than a verdict about it.
+stamped = sorted(
+    ((json.loads(l).get("timestamp") or "", i, json.loads(l))
+     for i, l in enumerate(lines, 1)),
+    key=lambda t: t[0],
+)
+
+
+def says(row):
+  """Return an assistant row's text blocks, joined; empty for anything else."""
+  if row.get("type") != "assistant":
+    return ""
+  return "".join(b.get("text", "") for b in blocks(row, "text"))
+
+
+for line_no, note in zip(where, noted, strict=True):
+  when, at_line, row = next(
+      t for t in stamped if t[0] > note["timestamp"] and says(t[2]))
+  print(f"note line {line_no:<3} answered by  line {at_line} at {when}")
+  print(f"  {says(row)[:96]}")
+
 # The integrity side, both readings. The verifier's own list and the purge's
 # before/after are two different questions asked of the same repository.
 verifier = json.loads((r / "verifier.json").read_text())

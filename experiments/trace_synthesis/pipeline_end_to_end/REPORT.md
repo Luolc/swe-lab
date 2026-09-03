@@ -52,7 +52,7 @@ Three slots each, and none of them may be merged:
 | 1 | Supervisor attached to the actor's **live** stream | `supervisor.jsonl` has 170 rows, first `at 07:23:35.650499+00:00` (cursor 1), last `at 07:42:14.572388+00:00` (cursor 170); `metrics["supervision.boundaries"] = 170`. Counted independently off the actor's own `claude_code.event_stream.jsonl`: **170 events** — two files, two write paths, same number. Corroborated by `claude_code.proxy_log.jsonl`: 33 real API exchanges, so the stream being watched was a working actor's, not a synthetic one. And Assertion A carries the half the pipeline cannot vouch for (see point 3). | **closed** | A (+ proxy corroboration) |
 | 2a | Barrier holds: no gold patch, no hidden tests in the supervisor's input | Consumed as-is per §4, not re-verified here; `test_supervisor_input_carries_no_privileged_field` is where it lives. This run adds a *different* fact, not a substitute: the three delivered corrections carry no answer either (§1a). | consumed, **not re-verified** | none |
 | 2b | Criterion sha verified, mismatch refuses **the run** | Closed by the suite, not by this run: `test_a_forged_criterion_stops_the_run_before_a_sandbox_exists` (`tests/test_rollout.py`) and `test_the_shipped_supervised_arm_carries_the_pinned_criterion` (`tests/test_workflow_registry.py`), both on `main`. A run against a *correct* criterion says nothing about a forged one. | **closed** by the suite | none |
-| 3 | Policy speaks at least once **because of a real deviation** | Three `kind: "spoke"` rows, cursors **4 / 8 / 12**, `at` 07:23:47.541 / 07:24:04.404 / 07:24:23.080, `policy: "speak-when-off-track"` on all 170 rows (never `speak-at`); `metrics["supervision.corrections"] = 3`. **Assertion A:** all three texts appear in the actor's own native session transcript — `claude_code.native_transcript.tar.gz` → `projects/-app/f4ddae90-a7d2-440a-9e56-36e8a90c08ce.jsonl`, 122 lines, `supervisor_note` on lines **32 / 51 / 57** (1-indexed), `type: attachment`. That file is written by Claude Code for its own resume, by nothing of ours. | **closed** | A |
+| 3 | Policy speaks at least once **because of a real deviation** | Three `kind: "spoke"` rows, cursors **4 / 8 / 12**, `at` 07:23:47.541 / 07:24:04.404 / 07:24:23.080, `policy: "speak-when-off-track"` on all 170 rows (never `speak-at`); `metrics["supervision.corrections"] = 3`. **Assertion A:** all three texts appear in the actor's own native session transcript — `claude_code.native_transcript.tar.gz` → `projects/-app/f4ddae90-a7d2-440a-9e56-36e8a90c08ce.jsonl`, 122 lines, `supervisor_note` on lines **32 / 51 / 57** (1-indexed), `type: attachment`. That file is written by Claude Code for its own resume, by nothing of ours. **That is all of what §4 asks, and §4 asks nothing about the deviation** — its test is a `spoke` row whose policy is not `speak-at`, plus Assertion A for delivery. On the half §4 leaves untested this run's record runs the other way, three times out of three: **§1b**. | **closed** on §4's test, which does not reach *"because of a real deviation"* — §1b | A |
 | 4 | Correction arrives **mid-turn**, matching the measured wire shape | `claude_code.proxy_log.jsonl` (3,064,215 bytes, final): 33 requests carry a `messages` array, **24** carry the block, **63** occurrences of `<supervisor_note>` in total, of which **3 sit in the last message** — one per intervention — and **0 appear in any response**. The carrying message is `role: "system"` with one `type: "text"` block wrapping `<system-reminder>The user sent a new message while you were working: <supervisor_note>…</supervisor_note>…</system-reminder>`. **Structural agreement** with `experiments/trace_synthesis/sandbox_fold_check/` — role, wrapper and position — and deliberately **not** byte-identity: that measurement is about *its own probe text*, and this run's injected text is different, which is the whole of why it is not borrowable. | **closed on B**, with the trust assumption below | B |
 | 5 | Rollout completes, patch taken **against the pre-agent baseline**, grading runs | `run.json` → `extra.patch_base_ref = 64501d9b938bd7986b36dd2cd4fdb7af930b2750` (ADR-0014); `metrics["patch_is_empty"] = 0.0`, `patch.diff` 3,107 bytes. Grading ran: the `unit_test` entry's `metrics["unit_test.resolved"]` is **present** (`0.0`), which is what §4 makes the criterion — presence, not value. | **closed** | none |
 | 6 | Trace persisted, **interjection in it**, provenance complete | `conversation.json`: 73 messages, of which **msg[19], msg[29], msg[32]** are `role: "system"` and carry `supervisor_note` — the interjections survived conversion. Provenance: `run.json` carries `run_ts`, `backend`, `instance_id`, `sweep_id`, `tier`, `rollout_id`, `attempt`, `status`, and `extra["agent_model"] = "claude-sonnet-5"`. (The top-level `model` field is empty **by design** — `src/swe_lab/sandbox/persist.py:66-71`: nothing in-tree sets it, and a rollout records its actor in `extra`. Not a provenance gap; written down so the next reader does not re-derive it.) | **closed** | none |
@@ -83,10 +83,17 @@ way.
 
 **Did any of them leak the answer?** No. None contains gold-patch content, a
 test name, a file line to change, or a solution sketch. All three are
-procedural — *you are designing before you have read what is there* — which
-is what someone watching over a shoulder says. They are quoted in full here
-because that judgment has no other evidence: paraphrasing them would ask the
-reader to take it on trust.
+procedural — they say *you are designing before you have read what is there*.
+They are quoted in full here because that judgment has no other evidence:
+paraphrasing them would ask the reader to take it on trust.
+
+**Procedural is not the same as apt, and only the first of those is settled
+here.** These read like what someone watching over a shoulder says, and a
+shoulder-watcher can see the screen. Each of these was judged against a prefix
+the actor had already left behind, and all three were false of the actor by the
+time they arrived — §1b, correction by correction. The paragraph above is about
+their *content*; it says nothing about their *truth*, and nothing in it is
+weakened by §1b: a false statement can be as free of the answer as a true one.
 
 **One thing the texts do show, and it is not a leak:** all three say the same
 thing three times. See §7.
@@ -106,6 +113,101 @@ the file is not growing under the count):
 - **In any response: 0.** The load-bearing count. The block appears only in
   what the actor *sent*, never in what came back — so it is the actor's
   context, not our own narration folded into the capture.
+
+### 1b. Was it a real deviation? Three checks, three noes
+
+Point 3's claim has two halves and its closure test has one. The claim is
+*"policy speaks at least once **because of a real deviation**"*; what
+[§4](PREREGISTRATION.md#4-per-point-closure--file-field-judgment) closes on is a
+`spoke` row whose `policy` is not `speak-at`, plus Assertion A for delivery.
+Nothing in that test can fail when the deviation is not real, and the same is
+true of the acceptance table the claim is copied from, which offers
+`SpeakAt` as the thing being excluded
+([`plans/README.md`](../../../docs/trace-synthesis/plans/README.md#task-01-one-instance-end-to-end):
+*"a run whose only utterances are scheduled does not satisfy this point"*).
+
+**So the gap is not that the report over-read its evidence — it is that the
+criterion was written narrower than the claim it is labelled with, in both
+places, before the run.** This section is what the run says about the half no
+criterion covers. It cannot move the verdict — §4 is frozen
+([§9](PREREGISTRATION.md#9-what-may-still-change)), and a criterion rewritten
+after seeing the result is the thing a pre-registration exists to prevent, in
+whichever direction it is rewritten.
+
+**The three corrections, each against the evidence that produced it and against
+the actor it reached.** Every reading is in `WITNESS.md`'s block; the function
+they all turn on is at `models.py:377`, taken from the actor's own `grep`
+output (event 7, 07:23:34.719Z) rather than written into the witness.
+
+| # | judged at | evidence the judge held | had the actor read it? | delivered | the actor's answer |
+|---|---|---|---|---|---|
+| 1 | cursor 4 | **0 records — empty** | not in the window | 07:23:47.541, **9.5 s** after event 13 | line 34, 07:23:53.867Z |
+| 2 | cursor 8 | 3 records | not in the window | 07:24:04.404, **26.3 s** after event 13 | line 61, 07:24:42.592Z |
+| 3 | cursor 12 | 6 records | not in the window | 07:24:23.080, **45.0 s** after event 13 | line 61, 07:24:42.592Z |
+
+**Event 13 (07:23:38.071Z) is the actor's first `Read` of `models.py` whose
+window covers line 377** — `offset 370, limit 60`. It is *not* in the evidence
+any of the three judgements held: it is event 13, and the three judged at
+cursors 4, 8 and 12. Correction 2's other half is the same story with a second
+file: it says no read of the *canonical-ISBN* logic has landed, and the actor
+read `utils/isbn.py` at event 49, 07:24:01.701Z — **2.7 s before that
+correction was written**.
+
+**Two different failures, and merging them would lose the one that matters.**
+Corrections 2 and 3 are sound judgements on a stale prefix: what they assert was
+true of everything in front of the judge, and false of the actor. Correction 1
+is not that. Its observation carried **no evidence at all** — every one of the
+first four events was excluded by the filter, `Supervisor.observe` appends only
+admitted records (`supervisor.py:592-594`), and `SpeakWhenOffTrack.consider`
+calls the judge regardless (`supervisor.py:468`). So the first thing this
+pipeline ever said to an actor was decided on an empty input, and the specific
+claim in it — that `models.py` had not been opened — could only have come from
+the task text. *(Those two line numbers are read from the checkout, not from the
+run's record. The file's last change is `3e97442`, which `WITNESS.md` records as
+the repository state at run time, so the lines that ran are the lines in the
+file today.)*
+
+**The actor answered, and this fills a slot the pre-registration left open.**
+[§5](PREREGISTRATION.md#5-evidence-for-points-1-3-and-4--two-assertions-not-one-on-two-different-bases)
+reserved one — *"a third thing, stronger than either assertion if it happens:
+the actor's subsequent behavior visibly changing in response to the correction …
+Recorded alongside either branch above, if observed, but never what closes any
+of the three points."* It was observed, and it points the other way: the actor's
+own transcript answers the notes rather than acting on them.
+
+> line 34 — *I've already read the current `from_isbn` implementation
+> (models.py:377-446) — it does a crude `isbn.startswith("B")` check for ASIN
+> and has confused branching logic…*
+>
+> line 61 — *I already reviewed the current `from_isbn` body at the start
+> (models.py:377-446) — confirmed its bugs.*
+
+Two texts, not three: line 61 is the next assistant text after **both** the
+second and third notes, because nothing the actor said between them carried
+text. Both are in the same file Assertion A rests on — written by Claude Code
+for its own resume, by nothing of ours — so the rebuttal has the same standing
+as the delivery it rebuts. §5's slot is filled with a **negative** observation,
+which is exactly what a slot reserved before the run is for.
+
+**What this changes, and what it does not.**
+
+- **The verdict stays what §4 assigns it: `closed`.** All of §4's conditions
+  were met and none of them is about the deviation. Reading this section as
+  "point 3 failed" would be substituting a criterion nobody registered.
+- **The claim it is labelled with is not established, and this run argues
+  against it.** The row now says both, because saying only the first is the
+  overstatement this section exists to remove.
+- **The pre-registration's vocabulary has no word for this.** `closed` /
+  `not closed` / `left open` are verdicts on *criteria*; the finding here is
+  that a criterion is narrower than its claim, which is a property of the pair
+  and not of either. Recorded as the gap it is rather than forced into one of
+  the three.
+- **Nothing here touches [§7a](#7a-the-supervisor-runs-an-order-of-magnitude-slower-than-the-actor).**
+  §7a already reports that the three were judged early and delivered late; what
+  it does not say is that they were *wrong*, and it is not amended here — this
+  section is where a reading that bears on a closure judgement belongs, since
+  §7 is barred from closing, weakening or strengthening any of the seven
+  points.
 
 ## 2. The three readouts
 
