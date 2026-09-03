@@ -14,7 +14,9 @@ does.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
+import datetime
 import json
 from pathlib import Path
 from typing import Any
@@ -33,6 +35,7 @@ from swe_lab.trace_synthesis.segmented_loop import (
     STOP_MAX_SEGMENTS,
     STOP_NO_RESULT_EVENT,
     STOP_OTHER_ENDING,
+    STOP_WALL_CLOCK,
     turns_taken,
 )
 from swe_lab.trace_synthesis.supervisor import (
@@ -185,6 +188,7 @@ def _run(
     supervision: SegmentedSupervision,
     *,
     wire: str | None = _ANCHORED_WIRE,
+    now: Callable[[], datetime.datetime] | None = None,
 ) -> list[Any]:
   """Drive one loop over a fake actor and return its log rows.
 
@@ -193,6 +197,7 @@ def _run(
     supervision: The config.
     wire: What the capture proxy's log reads as; ``None`` models a run that
       captured none, which the loop refuses to trust.
+    now: Optional clock for a wall-clock boundary test.
 
   Returns:
     The rows written, in order.
@@ -205,6 +210,7 @@ def _run(
       read_stream=actor.read,
       log=rows.append,
       read_wire=None if wire is None else (lambda: wire),
+      now=now or (lambda: datetime.datetime.now(datetime.UTC)),
   )
   _ = loop.run(timeout=10_000.0)
   return rows
@@ -220,6 +226,28 @@ def _segment_rows(rows: list[Any]) -> list[Any]:
     The segment rows, in order.
   """
   return [row for row in rows if row["kind"] == LOG_KIND_SEGMENT]
+
+
+def _shipped_supervision(*override: str) -> SegmentedSupervision:
+  """Apply CLI overrides to the registered segmented workflow.
+
+  Args:
+    *override: Full ``--rollout...`` override spellings.
+
+  Returns:
+    The rebuilt segmented-supervision configuration.
+  """
+  from swe_lab.cli.overrides import apply_overrides, parse_overrides
+  from swe_lab.harnesses.claude_code import ClaudeCodeHarness
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.workflow.definitions import SEGMENTED_ROLLOUT
+
+  (entry,) = apply_overrides(SEGMENTED_ROLLOUT, parse_overrides(override))
+  assert isinstance(entry.task, CodingAgentTask)
+  harness = entry.task.harness
+  assert isinstance(harness, ClaudeCodeHarness)
+  assert harness.segmented is not None
+  return harness.segmented
 
 
 # --- the turn counter -------------------------------------------------------
@@ -241,6 +269,97 @@ def test_a_turn_is_a_message_not_an_event():
 
 
 # --- where it stops ---------------------------------------------------------
+
+
+def test_the_shipped_segment_defaults_are_roomy_but_finite():
+  """Defaults permit long runs while retaining runaway guards."""
+  supervision = _shipped_supervision()
+
+  assert supervision.turns_per_segment == 5
+  assert supervision.max_segments == 1_000
+  assert supervision.wall_clock_seconds == 86_400.0
+  assert supervision.max_cost_usd == 1_000.0
+
+
+def test_a_turns_override_reaches_the_actor_argv():
+  """A non-default segment length reaches the process command."""
+  from swe_lab.cli.overrides import apply_overrides, parse_overrides
+  from swe_lab.harnesses.claude_code import ClaudeCodeHarness
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.workflow.definitions import SEGMENTED_ROLLOUT
+
+  (entry,) = apply_overrides(
+      SEGMENTED_ROLLOUT,
+      parse_overrides(["--rollout.harness.segmented.turns_per_segment=7"]),
+  )
+  assert isinstance(entry.task, CodingAgentTask)
+  harness = entry.task.harness
+  assert isinstance(harness, ClaudeCodeHarness)
+  argv = harness.actor_argv()
+
+  assert argv[argv.index("--max-turns") + 1] == "7"
+
+
+def test_a_max_segments_override_reaches_the_loop_ceiling():
+  """A non-default segment ceiling changes the branch that stops the loop."""
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_CUT),
+          _segment(ids=["c"], subtype=_DONE),
+      ]
+  )
+  supervision = _shipped_supervision(
+      "--rollout.harness.segmented.max_segments=2"
+  )
+
+  rows = _run(actor, supervision)
+
+  assert len(actor.requests) == 2
+  assert _segment_rows(rows)[-1]["stop_reason"] == STOP_MAX_SEGMENTS
+
+
+def test_a_wall_clock_override_reaches_the_loop_ceiling():
+  """A non-default wall ceiling changes the branch that stops the loop."""
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_DONE),
+      ]
+  )
+  supervision = _shipped_supervision(
+      "--rollout.harness.segmented.wall_clock_seconds=1"
+  )
+  start = datetime.datetime(2026, 9, 3, tzinfo=datetime.UTC)
+  readings = iter([start, start, start + datetime.timedelta(seconds=2)])
+
+  rows = _run(
+      actor,
+      supervision,
+      now=lambda: next(readings, start + datetime.timedelta(seconds=2)),
+  )
+
+  assert len(actor.requests) == 1
+  assert actor.requests[0].timeout == 1.0
+  assert _segment_rows(rows)[-1]["stop_reason"] == STOP_WALL_CLOCK
+
+
+def test_a_cost_override_reaches_the_loop_comparison():
+  """A non-default cost ceiling is compared with the actor's result event."""
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT, cost=0.75),
+          _segment(ids=["b"], subtype=_DONE, cost=0.8),
+      ]
+  )
+  supervision = _shipped_supervision(
+      "--rollout.harness.segmented.max_cost_usd=0.5"
+  )
+
+  rows = _run(actor, supervision)
+
+  assert len(actor.requests) == 1
+  assert _segment_rows(rows)[-1]["stop_reason"] == STOP_MAX_COST
 
 
 def test_the_loop_stops_when_the_actor_says_it_is_done():

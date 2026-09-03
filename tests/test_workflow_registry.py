@@ -350,6 +350,20 @@ def test_a_supervised_rollout_and_its_control_can_both_be_started_by_name():
   assert plain.task.supervision_factory is None
 
 
+def test_the_segmented_rollout_and_unit_test_chain_matches_the_other_arms():
+  """The segmented carrier is registered with the shared grading tail."""
+  segmented = workflow_definition("segmented_rollout_and_unit_test")
+  supervised = workflow_definition("supervised_rollout_and_unit_test")
+  control = workflow_definition("control_rollout_and_unit_test")
+
+  assert [entry.key for entry in segmented] == [
+      definitions.ROLLOUT_KEY,
+      definitions.UNIT_TEST_KEY,
+  ]
+  assert segmented[0] is definitions.SEGMENTED_ROLLOUT[0]
+  assert segmented[1] is supervised[1] is control[1] is definitions.UNIT_TEST[0]
+
+
 def test_the_two_arms_put_the_actor_in_the_same_environment():
   """Comparability comes from the harness, not from a flag.
 

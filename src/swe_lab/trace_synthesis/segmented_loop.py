@@ -105,14 +105,16 @@ class SegmentedSupervision:
       markers it has recorded — and these definitions are module-level, so a
       shared instance would let one instance's spent budget silence the next
       one's corrections with nothing to show for it.
-    max_segments: The hard ceiling on segments. **No default, and the reason is
-      that ``--max-turns`` stops being the runaway guard here**: on an
+    max_segments: The hard ceiling on segments. The large default keeps normal
+      rollouts away from it while remaining finite, because ``--max-turns``
+      stops being the runaway guard here: on an
       unsegmented run it bounds the whole agent loop at
       :attr:`~swe_lab.harnesses.claude_code.harness.ClaudeCodeHarness.max_turns`,
       and under segmentation it bounds *one segment*. The run-level guard is
-      ``max_segments * turns_per_segment``, so a default would be a runaway
-      loop nobody chose.
+      ``max_segments * turns_per_segment``. It must stay bounded so a segment
+      whose ending is misread cannot resume forever.
     wall_clock_seconds: The ceiling on elapsed time, checked between segments.
+      Its large default is a runaway guard, not a spending limit.
     max_cost_usd: The ceiling on cumulative spend, read from each segment's own
       terminal ``result`` event. **Deliberately not ``--max-budget-usd``**: that
       flag writes a running balance into the actor's context, so the actor can
@@ -139,9 +141,9 @@ class SegmentedSupervision:
   """
 
   policy_factory: Callable[[], SpeakPolicy]
-  max_segments: int
-  wall_clock_seconds: float
-  max_cost_usd: float
+  max_segments: int = 1_000
+  wall_clock_seconds: float = 86_400.0
+  max_cost_usd: float = 1_000.0
   turns_per_segment: int = 5
   anchor_resume: bool = True
   guard_seam: bool = False
