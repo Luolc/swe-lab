@@ -44,10 +44,14 @@ pub struct Call {
     /// The `finish_reason` of the first choice, when reported.
     pub finish_reason: Option<String>,
     /// The answer's text before parsing, or `None` when the choice carried no
-    /// string content.
+    /// string content — or when no answer came.
     pub raw: Option<String>,
     /// How long the call took.
     pub took: Duration,
+    /// Why the call produced no answer to parse, when it did not: transport,
+    /// a non-2xx status, a body that is not JSON. Every attempted call is
+    /// on record; this is the record of one that failed.
+    pub error: Option<String>,
 }
 
 impl Call {
@@ -62,6 +66,7 @@ impl Call {
             "finish_reason": self.finish_reason,
             "raw": self.raw,
             "took_ms": u64::try_from(self.took.as_millis()).unwrap_or(u64::MAX),
+            "error": self.error,
         })
     }
 }
@@ -78,14 +83,15 @@ pub struct Verdict {
 }
 
 /// A call that produced no usable answer: the reason, and the record of the
-/// call when a response was received at all.
+/// attempt — there is always one, since the record is made before the
+/// request is sent.
 #[derive(Debug)]
 pub struct Failed {
     /// Why the answer could not be used.
     pub reason: String,
-    /// The call's record, when a response came back. Boxed so the error
-    /// variant stays small on the happy path.
-    pub call: Option<Box<Call>>,
+    /// The call's record. Boxed so the error variant stays small on the
+    /// happy path.
+    pub call: Box<Call>,
 }
 
 /// How to reach the model.
@@ -115,14 +121,14 @@ impl Model {
         let Some(raw) = call.raw.as_deref() else {
             return Err(Failed {
                 reason: "the answer carried no text".to_string(),
-                call: Some(Box::new(call)),
+                call: Box::new(call),
             });
         };
         match parse_verdict(raw) {
             Ok(verdict) => Ok((verdict, call)),
             Err(reason) => Err(Failed {
                 reason,
-                call: Some(Box::new(call)),
+                call: Box::new(call),
             }),
         }
     }
@@ -139,8 +145,20 @@ impl Model {
             Some(text) => Ok((text, call)),
             None => Err(Failed {
                 reason: "the answer carried no text".to_string(),
-                call: Some(Box::new(call)),
+                call: Box::new(call),
             }),
+        }
+    }
+
+    /// `text` with every exact occurrence of the bearer replaced. Nothing
+    /// derived from a response — the answer's text, a model name, an error
+    /// body — enters a record, a log row or the actor's stdin before it has
+    /// been through here: an endpoint that reflects `Authorization` would
+    /// otherwise write the credential into the artifacts.
+    fn redact(&self, text: &str) -> String {
+        match self.bearer.as_deref() {
+            Some(bearer) if !bearer.is_empty() => text.replace(bearer, "[REDACTED]"),
+            _ => text.to_string(),
         }
     }
 
@@ -159,55 +177,63 @@ impl Model {
                 {"role": "user", "content": prompt},
             ],
         });
+        // The record exists before the request: an attempt that fails is
+        // still an attempt, and the row shows it.
         let started = Instant::now();
-        let response = http::post_json(
+        let mut call = Call {
+            purpose,
+            requested_model: self.name.clone(),
+            response_model: None,
+            max_tokens_sent: max_tokens,
+            finish_reason: None,
+            raw: None,
+            took: Duration::ZERO,
+            error: None,
+        };
+        let failed = |mut call: Call, reason: String| {
+            call.took = started.elapsed();
+            call.error = Some(reason.clone());
+            Failed {
+                reason,
+                call: Box::new(call),
+            }
+        };
+        let response = match http::post_json(
             &self.endpoint,
             self.bearer.as_deref(),
             payload.to_string().as_bytes(),
             started + self.call_timeout,
-        )
-        .map_err(|reason| Failed {
-            reason: format!("call failed: {reason}"),
-            call: None,
-        })?;
-        let took = started.elapsed();
+        ) {
+            Ok(response) => response,
+            Err(reason) => return Err(failed(call, format!("call failed: {reason}"))),
+        };
+        call.took = started.elapsed();
         if response.status / 100 != 2 {
-            return Err(Failed {
-                reason: format!(
-                    "answered HTTP {}: {}",
-                    response.status,
-                    String::from_utf8_lossy(&response.body)
-                        .chars()
-                        .take(300)
-                        .collect::<String>()
-                ),
-                call: None,
-            });
+            let excerpt = self.redact(
+                &String::from_utf8_lossy(&response.body)
+                    .chars()
+                    .take(300)
+                    .collect::<String>(),
+            );
+            return Err(failed(
+                call,
+                format!("answered HTTP {}: {excerpt}", response.status),
+            ));
         }
-        let body: Value = serde_json::from_slice(&response.body).map_err(|e| Failed {
-            reason: format!("answered non-JSON: {e}"),
-            call: None,
-        })?;
+        let body: Value = match serde_json::from_slice(&response.body) {
+            Ok(body) => body,
+            Err(e) => return Err(failed(call, format!("answered non-JSON: {e}"))),
+        };
         let choice = body.get("choices").and_then(|c| c.get(0));
-        Ok(Call {
-            purpose,
-            requested_model: self.name.clone(),
-            response_model: body
-                .get("model")
-                .and_then(Value::as_str)
-                .map(str::to_string),
-            max_tokens_sent: max_tokens,
-            finish_reason: choice
-                .and_then(|c| c.get("finish_reason"))
-                .and_then(Value::as_str)
-                .map(str::to_string),
-            raw: choice
+        let text = |value: Option<&Value>| value.and_then(Value::as_str).map(|t| self.redact(t));
+        call.response_model = text(body.get("model"));
+        call.finish_reason = text(choice.and_then(|c| c.get("finish_reason")));
+        call.raw = text(
+            choice
                 .and_then(|c| c.get("message"))
-                .and_then(|m| m.get("content"))
-                .and_then(Value::as_str)
-                .map(str::to_string),
-            took,
-        })
+                .and_then(|m| m.get("content")),
+        );
+        Ok(call)
     }
 }
 
@@ -339,18 +365,81 @@ mod tests {
         let (endpoint, _requests) = serve_once(Box::leak(reply.into_boxed_str()));
         let failed = model(endpoint).judge("PROMPT").unwrap_err();
         assert!(failed.reason.contains("no text"));
-        let call = failed.call.unwrap();
+        let call = *failed.call;
         assert_eq!(call.finish_reason.as_deref(), Some("length"));
         assert_eq!(call.raw, None);
     }
 
+    const BEARER: &str = "sk-REFLECTED-SECRET-MUST-NOT-BE-RECORDED";
+
+    fn with_bearer(endpoint: Endpoint) -> Model {
+        Model {
+            bearer: Some(BEARER.to_string()),
+            ..model(endpoint)
+        }
+    }
+
+    /// An endpoint that reflects the request's `Authorization` header in an
+    /// error body would write the credential into the lapse's reason and
+    /// the call's record; both carry the redaction instead. And the attempt
+    /// is on record — the row shows a request was made, and why it gave no
+    /// answer.
     #[test]
-    fn a_non_2xx_answer_is_a_failure_without_a_call_record() {
-        let (endpoint, _requests) =
-            serve_once("HTTP/1.1 401 Unauthorized\r\nContent-Length: 9\r\n\r\nno access");
-        let failed = model(endpoint).write("PROMPT").unwrap_err();
-        assert!(failed.reason.contains("HTTP 401"));
-        assert!(failed.call.is_none());
+    fn a_non_2xx_answer_is_a_failure_with_the_attempt_on_record_and_the_bearer_redacted() {
+        let body = format!("denied: Bearer {BEARER} is not valid here");
+        let reply = format!(
+            "HTTP/1.1 401 Unauthorized\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        );
+        let (endpoint, _requests) = serve_once(Box::leak(reply.into_boxed_str()));
+        let failed = with_bearer(endpoint).write("PROMPT").unwrap_err();
+        assert!(failed.reason.contains("HTTP 401"), "{}", failed.reason);
+        assert!(failed.reason.contains("[REDACTED]"), "{}", failed.reason);
+        assert!(!failed.reason.contains(BEARER), "{}", failed.reason);
+        let call = *failed.call;
+        assert_eq!(call.purpose, "writer");
+        assert_eq!(call.raw, None);
+        let error = call.error.as_deref().expect("the attempt's error");
+        assert!(
+            error.contains("HTTP 401") && !error.contains(BEARER),
+            "{error}"
+        );
+        assert!(!call.to_json().to_string().contains(BEARER));
+    }
+
+    /// A successful answer that reflects the credential is redacted before
+    /// it becomes text anything downstream sees — the log row, the actor's
+    /// stdin, the next prompt.
+    #[test]
+    fn a_reflected_bearer_in_an_answer_never_reaches_the_text() {
+        let reply = canned(&format!("Use {BEARER} to log in."), "stop");
+        let (endpoint, _requests) = serve_once(Box::leak(reply.into_boxed_str()));
+        let (text, call) = with_bearer(endpoint).write("PROMPT").unwrap();
+        assert_eq!(text, "Use [REDACTED] to log in.");
+        assert_eq!(call.raw.as_deref(), Some("Use [REDACTED] to log in."));
+    }
+
+    /// A request that never reached a server is an attempt too, with its
+    /// reason on the record.
+    #[test]
+    fn a_call_that_could_not_connect_is_on_record() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        drop(listener);
+        let endpoint = Endpoint {
+            address,
+            path: "/v1/chat/completions".to_string(),
+        };
+        let failed = model(endpoint).judge("PROMPT").unwrap_err();
+        assert!(
+            failed.reason.starts_with("call failed"),
+            "{}",
+            failed.reason
+        );
+        let call = *failed.call;
+        assert_eq!(call.purpose, "judge");
+        assert!(call.error.is_some());
+        assert_eq!(call.raw, None);
     }
 
     #[test]
