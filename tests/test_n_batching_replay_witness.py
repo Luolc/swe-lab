@@ -1,8 +1,8 @@
 """The `N`-batching replay's committed witness, and the driver that made it.
 
-Two things about
+These properties of
 `experiments/trace_synthesis/n_batching_replay/` are asserted here rather than
-inside the experiment, because both failures are silent and the artifacts are
+inside the experiment, because each failure is silent and the artifacts are
 committed:
 
 - **No committed artifact carries an operator home path.** The corpus is read
@@ -21,6 +21,10 @@ committed:
   landed there — an undefined name in the manifest literal — and was invisible
   because every committed artifact predated it and `self-check` stops before
   `cmd_run`.
+- **A boundary the policy did not judge is recorded as such.** The driver's row
+  kinds are read as the supervisor's, so collapsing `Unjudged` into a spoken
+  correction writes a correction that was never decided on into the one
+  artifact whose purpose is to be a faithful replay.
 
 The driver lives under `experiments/`, which is exempt from the code-quality
 hooks and is not an importable package, so it is loaded by path.
@@ -36,6 +40,15 @@ import sys
 from types import ModuleType
 
 import pytest
+
+from swe_lab.trace_synthesis.supervisor import (
+    Intervention,
+    LOG_KIND_SILENT,
+    LOG_KIND_SPOKE,
+    LOG_KIND_UNJUDGED,
+    Observation,
+    Unjudged,
+)
 
 _DRIVER = (
     Path(__file__).resolve().parents[1]
@@ -93,6 +106,76 @@ def test_the_driver_reproduces_the_shipped_supervisor(
   # window: a driver can produce the right row kinds off the wrong evidence.
   assert found["driver_prompts"] == found["shipped_prompts"]
   assert len(found["driver_rows"]) == 170
+
+
+def test_the_driver_gives_unjudged_its_own_row_kind(
+    driver: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  """An `Unjudged` decision is its own row kind, never a correction.
+
+  `SpeakWhenOffTrack.consider` answers three ways, and only one of them is a
+  correction. A driver that classifies the other two together writes a `spoke`
+  row for a boundary at which nothing was decided — a correction asserted by
+  the very artifact whose purpose is to be a faithful replay. The row kinds
+  must therefore be the shipped `Supervisor`'s own.
+
+  Runs without the corpus and pays for no model call, so the whole of this
+  check is reachable wherever the suite runs.
+  """
+  decisions: list[Intervention | Unjudged | None] = [
+      Unjudged(reason="no actor evidence in the window"),
+      None,
+      Intervention(text="run the failing test before changing anything"),
+  ]
+
+  def consider(observation: Observation) -> Intervention | Unjudged | None:
+    """Return the next scripted decision.
+
+    Args:
+      observation: Ignored; what the policy would judge is not what is tested.
+
+    Returns:
+      The next of `decisions`, in order.
+    """
+    del observation
+    return decisions.pop(0)
+
+  policy = driver._stub_policy()
+  monkeypatch.setattr(policy, "consider", consider)
+  events = [
+      {
+          "type": "assistant",
+          "message": {
+              "role": "assistant",
+              "content": [{"type": "text", "text": f"step {index}"}],
+          },
+      }
+      for index in range(3)
+  ]
+
+  rows = list(
+      driver.replay(
+          arm=driver.Arm("unjudged-probe", None),
+          events=events,
+          task="t",
+          policy=policy,
+          boundaries=(1, 2, 3),
+          criterion=policy.criterion,
+      )
+  )
+
+  # The vocabulary is the shipped `Supervisor`'s, not a parallel one.
+  assert [row["kind"] for row in rows] == [
+      LOG_KIND_UNJUDGED,
+      LOG_KIND_SILENT,
+      LOG_KIND_SPOKE,
+  ]
+  assert rows[0]["reason"] == "no actor evidence in the window"
+  assert [row["text"] for row in rows] == [
+      None,
+      None,
+      "run the failing test before changing anything",
+  ]
 
 
 def test_a_fresh_run_writes_its_manifest(

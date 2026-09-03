@@ -40,9 +40,15 @@ from swe_lab.trace_synthesis.judge import (
 from swe_lab.trace_synthesis.supervisor import (
     EvidenceFilter,
     Intervention,
+    LOG_KIND_GAP,
+    LOG_KIND_LAPSE,
+    LOG_KIND_SILENT,
+    LOG_KIND_SPOKE,
+    LOG_KIND_UNJUDGED,
     Observation,
     PolicyLapseError,
     SpeakWhenOffTrack,
+    Unjudged,
 )
 
 HERE = pathlib.Path(__file__).parent
@@ -351,18 +357,25 @@ def replay(
     try:
       intervention = policy.consider(observation)
     except PolicyLapseError as error:
-      row |= {"kind": "lapse", "reason": repr(error)}
+      row |= {"kind": LOG_KIND_LAPSE, "reason": repr(error)}
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
-      row |= {"kind": "gap", "reason": repr(error)}
+      row |= {"kind": LOG_KIND_GAP, "reason": repr(error)}
     else:
-      marker = policy.markers[-1] if policy.markers else None
-      spoke = intervention is not None
-      if spoke:
+      # Classified by type, and with the shipped `Supervisor`'s own row
+      # vocabulary: `Unjudged` is neither a silence nor a correction, and a
+      # witness that collapses a distinction its subject makes is not a
+      # witness.
+      if isinstance(intervention, Unjudged):
+        row |= {
+            "kind": LOG_KIND_UNJUDGED,
+            "reason": intervention.reason,
+            "text": None,
+        }
+      elif intervention is None:
+        row |= {"kind": LOG_KIND_SILENT, "text": None}
+      else:
         said.append(intervention)
-      row |= {
-          "kind": "spoke" if spoke else "silent",
-          "text": intervention.text if spoke else None,
-      }
+        row |= {"kind": LOG_KIND_SPOKE, "text": intervention.text}
     calls = transport.drain()
     judge_call = policy.judge.calls[-1] if policy.judge.calls else None
     row |= {
