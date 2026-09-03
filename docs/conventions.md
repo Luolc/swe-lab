@@ -518,6 +518,14 @@ retroactively (owner's calibration, 2026-09-01).
 
 ## Hazards (learned the hard way)
 
+**How we know a check checked anything** — the undiscriminating-observation
+family, the media it hid in here, and the review rules that do not follow from
+it — is [`docs/evidence.md`](evidence.md). It is a separate file because this one
+answers *how is the code laid out and run*, and that one answers *why do we
+believe this result*; the cross-repo statement of the invariant itself is in
+`~/.agents/AGENTS.md` → 质量门.
+
+
 - **The local suite and CI have different jurisdictions.** Two halves, and both
   are load-bearing when several agents share this box.
 
