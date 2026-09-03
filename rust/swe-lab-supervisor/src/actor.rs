@@ -40,10 +40,11 @@ use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs::{self, File};
 use std::io::{self, Read, Seek, SeekFrom, Write};
-use std::os::fd::AsFd;
+use std::os::fd::{AsFd, BorrowedFd, OwnedFd};
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::process::CommandExt;
 use std::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, ExitStatus, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::sync::{Arc, Condvar, Mutex, PoisonError};
 use std::thread::{self, JoinHandle};
@@ -54,7 +55,7 @@ use nix::fcntl::{FcntlArg, OFlag, fcntl};
 use nix::poll::{PollFd, PollFlags, PollTimeout, poll};
 use nix::sys::signal::{Signal, kill, killpg};
 use nix::sys::wait::{Id, WaitPidFlag, WaitStatus, waitid};
-use nix::unistd::Pid;
+use nix::unistd::{Pid, pipe2};
 
 use crate::framing::{Frame, Framer};
 use crate::signals::{self, Stop};
@@ -64,6 +65,15 @@ const READ_CHUNK_BYTES: usize = 64 * 1024;
 
 /// How often the leader is checked for exit while the grace period runs.
 const EXIT_POLL_INTERVAL: Duration = Duration::from_millis(20);
+/// How long [`Actor::freeze`] waits for the kernel to have stopped every
+/// member of the group. A stop is delivered when a task next returns to
+/// user space, which a task in the middle of disk I/O does when that I/O
+/// completes; a group that has not settled within this is reported as not
+/// confirmed, and the boundary goes unjudged rather than judged on evidence
+/// that may still be moving.
+const STOP_CONFIRMATION_BOUND: Duration = Duration::from_secs(2);
+/// The longest pause between two looks at the group while confirming.
+const STOP_POLL_MAX: Duration = Duration::from_millis(16);
 
 /// How many stdout lines may be queued ahead of the consumer. The reader
 /// blocks on a full queue, so what the wrapper holds of an actor faster than
@@ -110,6 +120,10 @@ pub enum Event {
     StdoutClosed(Result<(), String>),
     /// The same for stderr and its log.
     StderrClosed(Result<(), String>),
+    /// Everything the actor had written to stdout when [`Actor::barrier`]
+    /// was asked for has been reported ahead of this — the pipe was found
+    /// empty, or at its end. Carries the id the barrier was asked with.
+    Barrier(u64),
 }
 
 /// What bounds the actor's output, all in bytes.
@@ -228,6 +242,11 @@ pub struct Actor {
     gate: Arc<Gate>,
     /// `SIGSTOP` was sent to the group and no `SIGCONT` has followed. A real
     /// state the wrapper guarantees it leaves before it exits.
+    /// The write end of the pipe that wakes the stdout reader for a
+    /// barrier; the reader holds the read end.
+    wake: OwnedFd,
+    /// The id of the barrier asked for and not yet reported, or zero.
+    barrier: Arc<AtomicU64>,
     frozen: bool,
     reaped: bool,
     stdout_drain: Option<JoinHandle<Result<(), String>>>,
@@ -291,6 +310,10 @@ impl Actor {
                 )));
             }
         };
+        // The reader's wake-up: a byte on this pipe makes it look for a
+        // barrier request. Close-on-exec, so the actor never holds it.
+        let (wake_read, wake_write) = pipe2(OFlag::O_CLOEXEC | OFlag::O_NONBLOCK)?;
+        let barrier = Arc::new(AtomicU64::new(0));
         let child = command.spawn()?;
         let group = Pid::from_raw(
             i32::try_from(child.id()).map_err(|_| io::Error::other("actor pid does not fit"))?,
@@ -303,6 +326,8 @@ impl Actor {
             mark,
             stdin: None,
             gate: Arc::new(Gate::new()),
+            wake: wake_write,
+            barrier: Arc::clone(&barrier),
             frozen: false,
             started: floor,
             reaped: false,
@@ -328,9 +353,16 @@ impl Actor {
         let report = Arc::clone(&events);
         actor.stdout_drain = Some(thread::Builder::new().name("actor-stdout".into()).spawn(
             move || {
-                let result =
-                    drain_stdout(stdout, &gate, EventLog::new(event_log), limits, &*report)
-                        .map_err(|e| e.to_string());
+                let result = drain_stdout(
+                    stdout,
+                    &gate,
+                    EventLog::new(event_log),
+                    limits,
+                    &*report,
+                    &wake_read,
+                    &barrier,
+                )
+                .map_err(|e| e.to_string());
                 report(Event::StdoutClosed(result.clone()));
                 result
             },
@@ -431,17 +463,43 @@ impl Actor {
         self.stdin.is_some()
     }
 
-    /// `SIGSTOP` the whole group. The stdout pipe keeps draining, so nothing
-    /// the actor already wrote is lost, and it writes nothing more until
-    /// [`Actor::thaw`].
+    /// `SIGSTOP` the whole group, and return once every member is confirmed
+    /// stopped. The stdout pipe keeps draining, so nothing the actor already
+    /// wrote is lost, and it writes nothing more until [`Actor::thaw`].
+    ///
+    /// The signal alone is not the confirmation: `killpg` names the members
+    /// it finds, and a member in the middle of a fork when it is sent has a
+    /// child a moment later that the signal never reached. So the group is
+    /// read from `/proc` until two looks in a row find the same members,
+    /// every thread of each stopped; a look that finds one running sends the
+    /// signal again, for the child the first one missed.
     ///
     /// # Errors
     ///
-    /// The group could not be signalled.
-    pub fn freeze(&mut self) -> io::Result<()> {
-        killpg(self.group, Signal::SIGSTOP).map_err(io::Error::from)?;
+    /// The group could not be signalled, or could not be confirmed stopped
+    /// within [`STOP_CONFIRMATION_BOUND`]. The group may be stopped either
+    /// way; the caller thaws it.
+    pub fn freeze(&mut self) -> Result<(), String> {
+        signal_group(self.group, Signal::SIGSTOP).map_err(|e| format!("SIGSTOP: {e}"))?;
         self.frozen = true;
-        Ok(())
+        confirm_stopped(self.group)
+    }
+
+    /// Ask the stdout reader for a barrier: once it has reported every line
+    /// the actor had written by now, it reports [`Event::Barrier`] with
+    /// `id`, in order behind them. Meaningful for a group that is frozen —
+    /// then "by now" is "ever, until the thaw". `id` is not zero.
+    ///
+    /// # Errors
+    ///
+    /// The reader could not be woken.
+    pub fn barrier(&self, id: u64) -> io::Result<()> {
+        self.barrier.store(id, Ordering::SeqCst);
+        match nix::unistd::write(&self.wake, &[1u8]) {
+            // A byte already waiting wakes the reader just the same.
+            Ok(_) | Err(Errno::EAGAIN) => Ok(()),
+            Err(errno) => Err(io::Error::from(errno)),
+        }
     }
 
     /// `SIGCONT` the group if it was frozen. Idempotent, and tolerant of a
@@ -798,6 +856,8 @@ fn own(pid: u32) -> Probe<Option<Owned>> {
 struct Stat {
     /// The state letter: `R`, `S`, `D`, `T`, `Z`, `X`, ...
     state: u8,
+    /// The parent.
+    ppid: u32,
     /// The process group.
     group: i32,
     /// The start time, in clock ticks since boot.
@@ -818,36 +878,190 @@ impl Stat {
     }
 }
 
-/// The state, process group, start time and address space of a process,
-/// from `/proc/<pid>/stat`: the fields after the comm's closing parenthesis
-/// — the last one, since the comm may hold parentheses of its own — of
-/// which the first is the state, the third the group, the twentieth the
-/// start time and the twenty-first the address space.
+/// The state, parent, process group, start time and address space of a
+/// process, from `/proc/<pid>/stat`.
 fn stat_fields(pid: Owned) -> Probe<Stat> {
     let Owned(pid) = pid;
-    let stat = match proc_file(pid, "stat") {
-        Probe::Present(stat) => stat,
+    match proc_file(pid, "stat") {
+        Probe::Present(stat) => parse_stat(&stat).map_or_else(
+            || Probe::Unprovable(format!("/proc/{pid}/stat did not parse")),
+            Probe::Present,
+        ),
+        Probe::Gone => Probe::Gone,
+        Probe::Unprovable(reason) => Probe::Unprovable(reason),
+    }
+}
+
+/// The fields read here, from a `stat` line: those after the comm's
+/// closing parenthesis — the last one, since the comm may hold parentheses
+/// of its own — of which the first is the state, the second the parent,
+/// the third the group, the twentieth the start time and the twenty-first
+/// the address space. A thread's line (`task/<tid>/stat`) has the same
+/// shape.
+fn parse_stat(stat: &[u8]) -> Option<Stat> {
+    let close = stat.iter().rposition(|b| *b == b')')?;
+    let fields: Vec<&[u8]> = stat[close + 1..]
+        .split(u8::is_ascii_whitespace)
+        .filter(|field| !field.is_empty())
+        .collect();
+    let field = |index: usize| std::str::from_utf8(fields.get(index)?).ok();
+    Some(Stat {
+        state: *fields.first()?.first()?,
+        ppid: field(1)?.parse().ok()?,
+        group: field(2)?.parse().ok()?,
+        started: field(19)?.parse().ok()?,
+        vsize: field(20)?.parse().ok()?,
+    })
+}
+
+/// How a process stands with respect to a group stop.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Halt {
+    /// Every thread is stopped (or already gone).
+    Stopped,
+    /// Waiting in `kernel_clone` for a child it vforked to exec or exit: it
+    /// runs no code of its own until then, and neither does the child if
+    /// the child is stopped. Stopped, by any measure but the letter — once
+    /// the child is found stopped too.
+    VforkWait,
+    /// A thread runs, sleeps interruptibly, or waits in the kernel for
+    /// something other than a vforked child; it stops when it next returns
+    /// to user space.
+    Running,
+}
+
+/// One live member of a process group.
+#[derive(Debug, Clone, Copy)]
+struct Member {
+    pid: u32,
+    ppid: u32,
+    halt: Halt,
+}
+
+/// The live members of `group` among this user's processes.
+fn group_members(group: Pid) -> Result<Vec<Member>, String> {
+    let entries = fs::read_dir("/proc").map_err(|e| format!("listing /proc: {e}"))?;
+    let me = std::process::id();
+    let mut members = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("listing /proc: {e}"))?;
+        let Some(pid) = entry
+            .file_name()
+            .to_str()
+            .and_then(|n| n.parse::<u32>().ok())
+        else {
+            continue;
+        };
+        if pid == me {
+            continue;
+        }
+        let owned = match own(pid) {
+            Probe::Present(Some(owned)) => owned,
+            Probe::Present(None) | Probe::Gone => continue,
+            Probe::Unprovable(reason) => return Err(reason),
+        };
+        let stat = match stat_fields(owned) {
+            Probe::Present(stat) => stat,
+            Probe::Gone => continue,
+            Probe::Unprovable(reason) => return Err(reason),
+        };
+        if stat.group != group.as_raw() || stat.exited() {
+            continue;
+        }
+        let halt = match threads_halt(owned) {
+            Probe::Present(halt) => halt,
+            Probe::Gone => continue,
+            Probe::Unprovable(reason) => return Err(reason),
+        };
+        members.push(Member {
+            pid,
+            ppid: stat.ppid,
+            halt,
+        });
+    }
+    Ok(members)
+}
+
+/// How the threads of one process stand, from `/proc/<pid>/task/*/stat`:
+/// the process's own line shows its main thread only.
+fn threads_halt(pid: Owned) -> Probe<Halt> {
+    let Owned(pid) = pid;
+    let tasks = match probe(
+        fs::read_dir(format!("/proc/{pid}/task")).and_then(Iterator::collect::<io::Result<Vec<_>>>),
+        || format!("listing /proc/{pid}/task"),
+    ) {
+        Probe::Present(tasks) => tasks,
         Probe::Gone => return Probe::Gone,
         Probe::Unprovable(reason) => return Probe::Unprovable(reason),
     };
-    let parsed = || -> Option<Stat> {
-        let close = stat.iter().rposition(|b| *b == b')')?;
-        let fields: Vec<&[u8]> = stat[close + 1..]
-            .split(u8::is_ascii_whitespace)
-            .filter(|field| !field.is_empty())
-            .collect();
-        let field = |index: usize| std::str::from_utf8(fields.get(index)?).ok();
-        Some(Stat {
-            state: *fields.first()?.first()?,
-            group: field(2)?.parse().ok()?,
-            started: field(19)?.parse().ok()?,
-            vsize: field(20)?.parse().ok()?,
-        })
-    };
-    parsed().map_or_else(
-        || Probe::Unprovable(format!("/proc/{pid}/stat did not parse")),
-        Probe::Present,
-    )
+    let mut halt = Halt::Stopped;
+    for task in tasks {
+        let Some(tid) = task.file_name().to_str().map(str::to_owned) else {
+            continue;
+        };
+        let state = match proc_file(pid, &format!("task/{tid}/stat")) {
+            Probe::Present(stat) => match parse_stat(&stat) {
+                Some(stat) => stat.state,
+                None => {
+                    return Probe::Unprovable(format!("/proc/{pid}/task/{tid}/stat did not parse"));
+                }
+            },
+            Probe::Gone => continue,
+            Probe::Unprovable(reason) => return Probe::Unprovable(reason),
+        };
+        match state {
+            b'T' | b't' | b'Z' | b'X' => {}
+            b'D' => match proc_file(pid, &format!("task/{tid}/wchan")) {
+                Probe::Present(wchan) if wchan.trim_ascii() == b"kernel_clone" => {
+                    halt = Halt::VforkWait;
+                }
+                Probe::Present(_) | Probe::Gone => return Probe::Present(Halt::Running),
+                Probe::Unprovable(reason) => return Probe::Unprovable(reason),
+            },
+            _ => return Probe::Present(Halt::Running),
+        }
+    }
+    Probe::Present(halt)
+}
+
+/// Wait until every member of `group` is confirmed stopped: two looks in a
+/// row that find the same members, each stopped, with the signal sent
+/// again after any look that finds one that is not (see [`Actor::freeze`]).
+fn confirm_stopped(group: Pid) -> Result<(), String> {
+    let deadline = Instant::now() + STOP_CONFIRMATION_BOUND;
+    let mut previous: Option<Vec<u32>> = None;
+    let mut pause = Duration::from_millis(1);
+    loop {
+        let members = group_members(group)?;
+        let stopped = |member: &Member| match member.halt {
+            Halt::Stopped => true,
+            Halt::Running => false,
+            Halt::VforkWait => members
+                .iter()
+                .any(|child| child.ppid == member.pid && child.halt == Halt::Stopped),
+        };
+        let (halted, running): (Vec<&Member>, Vec<&Member>) =
+            members.iter().partition(|member| stopped(member));
+        if running.is_empty() {
+            let pids: Vec<u32> = halted.iter().map(|member| member.pid).collect();
+            if previous.as_ref() == Some(&pids) {
+                return Ok(());
+            }
+            previous = Some(pids);
+        } else {
+            previous = None;
+            signal_group(group, Signal::SIGSTOP).map_err(|e| format!("SIGSTOP: {e}"))?;
+        }
+        if Instant::now() >= deadline {
+            return Err(format!(
+                "the actor's group was not confirmed stopped within {STOP_CONFIRMATION_BOUND:?}: {} of {} members still running",
+                running.len(),
+                members.len()
+            ));
+        }
+        thread::sleep(pause);
+        pause = (pause * 2).min(STOP_POLL_MAX);
+    }
 }
 
 /// The start time of the process at `pid` — one of this user's own; another
@@ -942,6 +1156,8 @@ fn drain_stdout(
     mut log: EventLog,
     limits: Limits,
     events: &dyn Fn(Event),
+    wake: &OwnedFd,
+    barrier: &AtomicU64,
 ) -> io::Result<()> {
     let mut framer = Framer::new(limits.line);
     let mut chunk = vec![0u8; READ_CHUNK_BYTES];
@@ -949,15 +1165,74 @@ fn drain_stdout(
     let mut budget = limits.stdout;
     loop {
         gate.wait_open();
-        let read = stdout.read(&mut chunk)?;
-        if read == 0 {
-            break;
+        // Wait for stdout or a wake-up, whichever comes first: a barrier
+        // asked for while the actor is stopped would otherwise wait behind
+        // a read that nothing will satisfy.
+        let (readable, woken) = {
+            let mut wait = [
+                PollFd::new(stdout.as_fd(), PollFlags::POLLIN),
+                PollFd::new(wake.as_fd(), PollFlags::POLLIN),
+            ];
+            match poll(&mut wait, PollTimeout::NONE) {
+                Ok(_) | Err(Errno::EINTR) => {}
+                Err(errno) => return Err(io::Error::from(errno)),
+            }
+            (ready(&wait[0]), ready(&wait[1]))
+        };
+        if woken {
+            drain_wake(wake)?;
         }
-        framer.push(&chunk[..read], &mut pending);
-        relay(&mut pending, &mut log, &mut budget, events)?;
+        if readable {
+            let read = stdout.read(&mut chunk)?;
+            if read == 0 {
+                break;
+            }
+            framer.push(&chunk[..read], &mut pending);
+            relay(&mut pending, &mut log, &mut budget, events)?;
+        }
+        // A barrier is reported once nothing is left to read right now;
+        // whatever was read above went ahead of it.
+        let asked = barrier.load(Ordering::SeqCst);
+        if asked != 0 && !readable_now(stdout.as_fd())? {
+            barrier.store(0, Ordering::SeqCst);
+            events(Event::Barrier(asked));
+        }
     }
     framer.finish(&mut pending);
-    relay(&mut pending, &mut log, &mut budget, events)
+    relay(&mut pending, &mut log, &mut budget, events)?;
+    // At the end everything is drained by definition.
+    let asked = barrier.swap(0, Ordering::SeqCst);
+    if asked != 0 {
+        events(Event::Barrier(asked));
+    }
+    Ok(())
+}
+
+/// Whether a polled descriptor has anything to say: data, a hang-up, or an
+/// error — each of which a read must go and see.
+fn ready(polled: &PollFd<'_>) -> bool {
+    polled.revents().is_some_and(|flags| !flags.is_empty())
+}
+
+/// Whether a read on `fd` would return right now.
+fn readable_now(fd: BorrowedFd<'_>) -> io::Result<bool> {
+    let mut probe = [PollFd::new(fd, PollFlags::POLLIN)];
+    match poll(&mut probe, PollTimeout::ZERO) {
+        Ok(_) | Err(Errno::EINTR) => Ok(ready(&probe[0])),
+        Err(errno) => Err(io::Error::from(errno)),
+    }
+}
+
+/// Take the wake-up bytes off the pipe, so that it reads as quiet again.
+fn drain_wake(wake: &OwnedFd) -> io::Result<()> {
+    let mut bytes = [0u8; 64];
+    loop {
+        match nix::unistd::read(wake, &mut bytes) {
+            Ok(0) | Err(Errno::EAGAIN) => return Ok(()),
+            Ok(_) | Err(Errno::EINTR) => {}
+            Err(errno) => return Err(io::Error::from(errno)),
+        }
+    }
 }
 
 /// Write each frame to the event log as the actor emitted it — its newline

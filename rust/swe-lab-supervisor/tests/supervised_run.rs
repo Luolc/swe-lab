@@ -23,6 +23,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::mpsc;
 use std::thread;
+use std::time::Duration;
 
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -151,11 +152,13 @@ fn settled_actor_states(script: &Path, expect_stopped: bool) -> Vec<char> {
 }
 
 /// A chat-completions endpoint on loopback that answers requests, in order,
-/// with the given assistant contents, and every further request with a 500.
+/// with the given assistant contents — each after `delay` — and every
+/// further request with a 500.
 fn endpoint(
     script: PathBuf,
     expect_stopped: bool,
     contents: Vec<String>,
+    delay: Duration,
 ) -> (u16, mpsc::Receiver<Answered>) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
@@ -166,6 +169,7 @@ fn endpoint(
             let (mut socket, _) = listener.accept().unwrap();
             let request = read_request(&mut socket);
             let states = settled_actor_states(&script, expect_stopped);
+            thread::sleep(delay);
             let (http_status, content) = match contents.next() {
                 Some(content) => ("200 OK", content),
                 None => (
@@ -208,14 +212,43 @@ struct Run {
     answered: Vec<Answered>,
 }
 
+/// One run of the wrapper around a scripted actor and a scripted endpoint.
+struct Scenario<'a> {
+    /// Names the scratch directory.
+    name: &'a str,
+    blocking: &'a str,
+    actor: &'a str,
+    judge_every_n_assistant_messages: u32,
+    answers: Vec<String>,
+    /// How long the endpoint takes over each answer.
+    answer_delay: Duration,
+}
+
 fn supervise(blocking: &str) -> Run {
+    supervise_scenario(&Scenario {
+        name: blocking,
+        blocking,
+        actor: ACTOR,
+        judge_every_n_assistant_messages: 2,
+        answers: vec![
+            json!({"off_track": true, "self_correcting": false, "reason": MARKER}).to_string(),
+            CORRECTION.to_string(),
+            json!({"off_track": false, "self_correcting": false, "reason": "the tests are running"})
+                .to_string(),
+        ],
+        answer_delay: Duration::ZERO,
+    })
+}
+
+fn supervise_scenario(scenario: &Scenario<'_>) -> Run {
     let dir = std::env::temp_dir().join(format!(
-        "swe-lab-supervisor-e2e-{blocking}-{}",
+        "swe-lab-supervisor-e2e-{}-{}",
+        scenario.name,
         std::process::id()
     ));
     fs::create_dir_all(&dir).unwrap();
     let script = dir.join("actor.sh");
-    fs::write(&script, ACTOR).unwrap();
+    fs::write(&script, scenario.actor).unwrap();
     let config = dir.join("config.json");
     fs::write(
         &config,
@@ -228,8 +261,8 @@ fn supervise(blocking: &str) -> Run {
                 "budget": 1,
                 "cooldown": 1,
                 "window": 8,
-                "judge_every_n_assistant_messages": 2,
-                "block_actor_while_judging": blocking,
+                "judge_every_n_assistant_messages": scenario.judge_every_n_assistant_messages,
+                "block_actor_while_judging": scenario.blocking,
             },
             "model": {"name": "fake-model"},
             "timeouts": {"model_call_ms": 10_000, "term_grace_ms": 2_000},
@@ -244,13 +277,9 @@ fn supervise(blocking: &str) -> Run {
     .unwrap();
     let (port, answers) = endpoint(
         script.clone(),
-        blocking == "sigstop",
-        vec![
-            json!({"off_track": true, "self_correcting": false, "reason": MARKER}).to_string(),
-            CORRECTION.to_string(),
-            json!({"off_track": false, "self_correcting": false, "reason": "the tests are running"})
-                .to_string(),
-        ],
+        scenario.blocking == "sigstop",
+        scenario.answers.clone(),
+        scenario.answer_delay,
     );
     let prompt = dir.join("prompt.stream.json");
     fs::write(&prompt, PROMPT_LINE).unwrap();
@@ -490,4 +519,138 @@ fn a_run_is_supervised_end_to_end_while_gating_the_actor_stdout() {
 #[test]
 fn a_run_is_supervised_end_to_end_while_stopping_the_actor() {
     supervise_and_check("sigstop");
+}
+
+const SILENT: &str = r#"{"off_track": false, "self_correcting": false, "reason": "fine"}"#;
+
+/// An actor that writes a boundary line and the line after it in one
+/// `write`, then its result, and waits on stdin.
+const TWO_LINES_AT_ONCE_ACTOR: &str = r#"
+( sleep 30; kill -TERM $$ ) >/dev/null 2>&1 </dev/null &
+read -r prompt || exit 90
+printf '%s\n%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"FIRST_OF_TWO"}]}}' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"SECOND_OF_TWO"}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","is_error":false}'
+cat >/dev/null
+exit 0
+"#;
+
+/// Under `sigstop`, the judge is started only once the actor is confirmed
+/// stopped and its stdout is drained to a barrier, so a boundary line and
+/// the line the actor wrote in the same breath are both in the snapshot.
+/// The control: the snapshot taken on consuming the first line, as before,
+/// never holds the second — that ordering fails this test every time.
+/// (`dash` writes one `printf` in one `write`, checked with `strace`.)
+#[test]
+fn under_sigstop_the_snapshot_holds_everything_written_before_the_stop() {
+    let run = supervise_scenario(&Scenario {
+        name: "barrier",
+        blocking: "sigstop",
+        actor: TWO_LINES_AT_ONCE_ACTOR,
+        judge_every_n_assistant_messages: 1,
+        answers: vec![SILENT.to_string()],
+        answer_delay: Duration::ZERO,
+    });
+    let context = format!(
+        "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
+        run.wrapper_stderr, run.supervisor_log, run.summary
+    );
+    assert_eq!(run.status, Some(0), "{context}");
+    assert_eq!(run.answered.len(), 1, "{context}");
+    let judge = prompt_of(&run.answered[0]);
+    assert!(judge.contains("FIRST_OF_TWO"), "{judge}");
+    assert!(judge.contains("SECOND_OF_TWO"), "{judge}");
+    let states = &run.answered[0].actor_states;
+    assert!(
+        !states.is_empty() && states.iter().all(|s| *s == 'T'),
+        "not stopped while judged: {states:?}"
+    );
+    let summary: Value = serde_json::from_str(&run.summary).unwrap();
+    assert_eq!(summary["boundaries"], 1, "{context}");
+    assert_eq!(summary["silent"], 1, "{context}");
+    assert_eq!(summary["accounted_for"], true, "{context}");
+    let rows = rows_of(&run.supervisor_log);
+    let judged: Vec<&Value> = rows
+        .iter()
+        .filter(|r| r.get("boundary").is_some())
+        .collect();
+    assert_eq!(judged.len(), 1, "{context}");
+    // Both lines were admitted before the snapshot — and the result too,
+    // when the actor got it out before the stop landed.
+    assert!(judged[0]["cursor"].as_u64().unwrap() >= 2, "{context}");
+    fs::remove_dir_all(&run.dir).unwrap();
+}
+
+/// An actor whose three boundary lines come one every 300 ms while the
+/// judge takes a second over each answer.
+const THREE_BOUNDARIES_ACTOR: &str = r#"
+( sleep 30; kill -TERM $$ ) >/dev/null 2>&1 </dev/null &
+read -r prompt || exit 90
+printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"ONE"}]}}'
+sleep 0.3
+printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"TWO"}]}}'
+sleep 0.3
+printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"THREE"}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","is_error":false}'
+cat >/dev/null
+exit 0
+"#;
+
+/// A boundary that falls during a judgment keeps the ordinal it is given
+/// and is judged, on the snapshot then current, once that judgment is in;
+/// a third boundary before then supersedes it, on record. Three boundaries
+/// fell, so the summary counts three — not the four that allocating anew
+/// on completion used to count.
+#[test]
+fn a_boundary_during_a_judgment_keeps_its_ordinal_and_is_judged_after_it() {
+    let run = supervise_scenario(&Scenario {
+        name: "pending",
+        blocking: "off",
+        actor: THREE_BOUNDARIES_ACTOR,
+        judge_every_n_assistant_messages: 1,
+        answers: vec![SILENT.to_string(), SILENT.to_string()],
+        answer_delay: Duration::from_secs(1),
+    });
+    let context = format!(
+        "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
+        run.wrapper_stderr, run.supervisor_log, run.summary
+    );
+    assert_eq!(run.status, Some(0), "{context}");
+    assert_eq!(run.answered.len(), 2, "{context}");
+    let first = prompt_of(&run.answered[0]);
+    assert!(first.contains("ONE") && !first.contains("TWO"), "{first}");
+    let second = prompt_of(&run.answered[1]);
+    assert!(
+        second.contains("ONE") && second.contains("TWO") && second.contains("THREE"),
+        "{second}"
+    );
+    let summary: Value = serde_json::from_str(&run.summary).unwrap();
+    assert_eq!(summary["boundaries"], 3, "{context}");
+    assert_eq!(summary["silent"], 2, "{context}");
+    assert_eq!(summary["unjudged"], 1, "{context}");
+    assert_eq!(summary["accounted_for"], true, "{context}");
+    let rows = rows_of(&run.supervisor_log);
+    // Rows are in the order they were written: the superseded boundary's
+    // before the first judgment's, which was still in flight then.
+    let mut boundaries: Vec<(u64, &str)> = rows
+        .iter()
+        .filter_map(|r| Some((r.get("boundary")?.as_u64()?, r["kind"].as_str()?)))
+        .collect();
+    boundaries.sort_unstable();
+    assert_eq!(
+        boundaries,
+        vec![(1, "silent"), (2, "unjudged"), (3, "silent")],
+        "{context}"
+    );
+    let superseded = rows
+        .iter()
+        .find(|r| r.get("boundary") == Some(&json!(2)))
+        .unwrap();
+    assert!(
+        superseded["reason"]
+            .as_str()
+            .unwrap()
+            .contains("superseded"),
+        "{context}"
+    );
+    fs::remove_dir_all(&run.dir).unwrap();
 }

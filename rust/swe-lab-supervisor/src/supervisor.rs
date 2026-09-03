@@ -44,7 +44,7 @@ use std::path::PathBuf;
 use std::process::ExitStatus;
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender};
-use std::thread;
+use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde_json::{Map, Value, json};
@@ -108,24 +108,64 @@ pub struct Ended {
 /// What the loop receives.
 enum Msg {
     Actor(Event),
-    Judged(u64, Judged),
+    /// A judgment's outcome: the policy's, or why the judge gave none —
+    /// its thread panicked.
+    Judged(u64, Result<Judged, String>),
 }
 
-/// One judgment in flight.
+/// One boundary underway.
 struct InFlight {
     ordinal: u64,
+    /// The snapshot's cursor and revision, as of when the judge started.
     cursor: u64,
     revision: u64,
     disposition: Disposition,
     started: Instant,
-    blocking_note: Option<String>,
+    /// The judge's thread, once started. Until then the boundary waits for
+    /// the reader's barrier: the actor is stopped, and what it wrote before
+    /// the stop is still on its way in.
+    judge: Option<JoinHandle<()>>,
+}
+
+/// The judge thread's word to the loop, sent on the way out whatever
+/// happens: a panic below it sends the word as well, saying so.
+struct Report {
+    outbox: SyncSender<Msg>,
+    ordinal: u64,
+    sent: bool,
+}
+
+impl Report {
+    fn judged(mut self, judged: Judged) {
+        self.sent = true;
+        let _ = self.outbox.send(Msg::Judged(self.ordinal, Ok(judged)));
+    }
+}
+
+impl Drop for Report {
+    fn drop(&mut self) {
+        if !self.sent {
+            let _ = self.outbox.send(Msg::Judged(
+                self.ordinal,
+                Err("the judge thread panicked".to_string()),
+            ));
+        }
+    }
+}
+
+/// A boundary that fell while a judgment was in flight: it keeps the
+/// ordinal it was given, and starts once that judgment is in.
+#[derive(Debug, Clone, Copy)]
+struct PendingBoundary {
+    ordinal: u64,
+    disposition: Disposition,
 }
 
 /// What arrived while a judgment was in flight and waits on its completion.
 #[derive(Debug, Default)]
 struct Pending {
-    /// A boundary fell: one judgment starts on the current snapshot.
-    boundary: bool,
+    /// A boundary fell: its judgment starts on the snapshot then current.
+    boundary: Option<PendingBoundary>,
     /// The actor emitted a `result`: the turn's fate is decided once the
     /// judgment (and any pending boundary) is in.
     result: bool,
@@ -290,10 +330,21 @@ impl Loop {
             match self.inbox.recv_timeout(TICK) {
                 Ok(Msg::Actor(Event::Line(line))) => self.consume_line(&line),
                 Ok(Msg::Actor(Event::Oversized)) => self.counts.oversized += 1,
+                Ok(Msg::Actor(Event::Barrier(id))) => self.barrier_reached(id),
                 Ok(Msg::Actor(Event::StdoutClosed(result))) => {
                     self.stdout_closed = true;
                     if let Err(error) = result {
                         self.fault(format!("the actor's stdout: {error}"));
+                    }
+                    // The reader reports a barrier before its end; one still
+                    // awaited here means the reader stopped short of it.
+                    if let Some(boundary) = self.in_flight.take_if(|b| b.judge.is_none()) {
+                        self.release();
+                        self.unjudged(
+                            boundary.ordinal,
+                            boundary.disposition,
+                            "the actor's stdout closed before the judgment could start",
+                        );
                     }
                 }
                 Ok(Msg::Actor(Event::StderrClosed(result))) => {
@@ -301,7 +352,7 @@ impl Loop {
                         self.fault(format!("the actor's stderr: {error}"));
                     }
                 }
-                Ok(Msg::Judged(ordinal, judged)) => self.complete(ordinal, judged, stop),
+                Ok(Msg::Judged(ordinal, outcome)) => self.complete(ordinal, outcome, stop),
                 Err(RecvTimeoutError::Timeout) => {}
                 Err(RecvTimeoutError::Disconnected) => {
                     self.fault("the event queue closed".to_string());
@@ -356,25 +407,38 @@ impl Loop {
             self.revision += 1;
         }
         let is_result = event.get("type").and_then(Value::as_str) == Some("result");
+        // A result asks that the turn's last evidence be judged; a boundary
+        // that has yet to take its snapshot will judge it, so it is not a
+        // boundary of its own then.
+        let covered = self.pending.boundary.is_some()
+            || self.in_flight.as_ref().is_some_and(|b| b.judge.is_none());
         let due = self.assistant_since_boundary
             >= self.config.policy.judge_every_n_assistant_messages.get()
-            || (is_result && self.revision > self.last_judged_revision);
+            || (is_result && self.revision > self.last_judged_revision && !covered);
         if due {
             self.assistant_since_boundary = 0;
-            if self.in_flight.is_some() {
-                self.boundary_ordinal += 1;
-                self.counts.boundaries += 1;
-                self.counts.unjudged += 1;
-                self.pending.boundary = true;
-                let mut row = self.row("unjudged", disposition);
-                row.insert("boundary".into(), json!(self.boundary_ordinal));
-                row.insert(
-                    "reason".into(),
-                    json!("a judgment was in flight; superseded by the next boundary"),
-                );
-                self.write_row(row);
-            } else {
-                self.start_boundary(disposition);
+            match &self.in_flight {
+                None => self.start_boundary(None, disposition),
+                // The boundary underway has not taken its snapshot yet:
+                // this line is in it.
+                Some(boundary) if boundary.judge.is_none() => {}
+                Some(_) => {
+                    // The boundary keeps the ordinal it gets now and starts
+                    // when the judgment in flight is in; a third boundary
+                    // before then supersedes it, on record.
+                    if let Some(previous) = self.pending.boundary.take() {
+                        self.unjudged(
+                            previous.ordinal,
+                            previous.disposition,
+                            "superseded by the next boundary before its judgment could start",
+                        );
+                    }
+                    let ordinal = self.allocate_boundary();
+                    self.pending.boundary = Some(PendingBoundary {
+                        ordinal,
+                        disposition,
+                    });
+                }
             }
         } else {
             let row = self.row("observed", disposition);
@@ -390,14 +454,91 @@ impl Loop {
         }
     }
 
-    fn start_boundary(&mut self, disposition: Disposition) {
+    /// Start a boundary: with the ordinal it was given when it fell during
+    /// a judgment, or with a new one.
+    fn start_boundary(&mut self, allocated: Option<u64>, disposition: Disposition) {
+        let ordinal = allocated.unwrap_or_else(|| self.allocate_boundary());
+        let boundary = InFlight {
+            ordinal,
+            cursor: self.cursor,
+            revision: self.revision,
+            disposition,
+            started: Instant::now(),
+            judge: None,
+        };
+        match self.config.policy.block_actor_while_judging {
+            Blocking::Off => self.spawn_judge(boundary),
+            Blocking::Stdout => {
+                self.gate.close();
+                self.spawn_judge(boundary);
+            }
+            Blocking::Sigstop => {
+                // Stopped and confirmed so, then drained to a barrier: the
+                // snapshot is taken when the barrier arrives, with
+                // everything the actor wrote before it stopped admitted.
+                if let Err(reason) = self.actor.freeze() {
+                    self.release();
+                    self.unjudged(
+                        ordinal,
+                        disposition,
+                        format!("the actor could not be held still: {reason}"),
+                    );
+                    return;
+                }
+                if let Err(error) = self.actor.barrier(ordinal) {
+                    self.fault(format!("asking the stdout reader for a barrier: {error}"));
+                    self.release();
+                    self.unjudged(
+                        ordinal,
+                        disposition,
+                        "the stdout reader could not be asked for a barrier",
+                    );
+                    return;
+                }
+                self.in_flight = Some(boundary);
+            }
+        }
+    }
+
+    fn allocate_boundary(&mut self) -> u64 {
         self.boundary_ordinal += 1;
         self.counts.boundaries += 1;
+        self.boundary_ordinal
+    }
+
+    /// The reader's barrier: everything the actor wrote before it stopped
+    /// is admitted. This is the snapshot the boundary is judged on.
+    fn barrier_reached(&mut self, id: u64) {
+        let Some(mut boundary) = self
+            .in_flight
+            .take_if(|b| b.ordinal == id && b.judge.is_none())
+        else {
+            self.fault(format!(
+                "barrier {id} reached with no boundary waiting for it"
+            ));
+            return;
+        };
+        if self.faulted {
+            self.release();
+            self.unjudged(
+                boundary.ordinal,
+                boundary.disposition,
+                "the run faulted before the judgment could start",
+            );
+            return;
+        }
+        boundary.cursor = self.cursor;
+        boundary.revision = self.revision;
+        self.spawn_judge(boundary);
+    }
+
+    /// Start the judge on the evidence as it is now.
+    fn spawn_judge(&mut self, mut boundary: InFlight) {
         self.last_judged_revision = self.revision;
         let evidence: Vec<Message> = self.evidence.iter().cloned().collect();
         let said = self.said.clone();
         let task = self.config.task.clone();
-        let ordinal = self.boundary_ordinal;
+        let ordinal = boundary.ordinal;
         let cooldown = u64::from(self.config.policy.cooldown);
         let gates = Gates {
             budget_left: self.spoken_at.len() < self.config.policy.budget as usize,
@@ -406,52 +547,141 @@ impl Loop {
                 .last()
                 .is_none_or(|&last| ordinal - last >= cooldown),
         };
-        let blocking_note = match self.config.policy.block_actor_while_judging {
-            Blocking::Off => None,
-            Blocking::Stdout => {
-                self.gate.close();
-                None
-            }
-            Blocking::Sigstop => self
-                .actor
-                .freeze()
-                .err()
-                .map(|e| format!("SIGSTOP failed, judged unblocked: {e}")),
-        };
-        self.in_flight = Some(InFlight {
-            ordinal,
-            cursor: self.cursor,
-            revision: self.revision,
-            disposition,
-            started: Instant::now(),
-            blocking_note,
-        });
         let model = Arc::clone(&self.model);
         let criterion = self.criterion_text;
         let outbox = self.outbox.clone();
-        let _judge = thread::spawn(move || {
-            let observation = Observation {
-                task: &task,
-                evidence: &evidence,
-                said: &said,
-            };
-            let judged = policy::judge_boundary(&model, criterion, &observation, gates);
-            let _ = outbox.send(Msg::Judged(ordinal, judged));
-        });
+        let spawned = thread::Builder::new()
+            .name(format!("judge-{ordinal}"))
+            .spawn(move || {
+                let report = Report {
+                    outbox,
+                    ordinal,
+                    sent: false,
+                };
+                let observation = Observation {
+                    task: &task,
+                    evidence: &evidence,
+                    said: &said,
+                };
+                report.judged(policy::judge_boundary(
+                    &model,
+                    criterion,
+                    &observation,
+                    gates,
+                ));
+            });
+        match spawned {
+            Ok(handle) => {
+                boundary.judge = Some(handle);
+                self.in_flight = Some(boundary);
+            }
+            Err(error) => {
+                self.unclean.get_or_insert_with(|| {
+                    format!("the judge for boundary {ordinal} could not be started: {error}")
+                });
+                self.release();
+                self.unjudged(
+                    ordinal,
+                    boundary.disposition,
+                    format!("the judge could not be started: {error}"),
+                );
+            }
+        }
     }
 
-    fn complete(&mut self, ordinal: u64, judged: Judged, stop: &Stop) {
-        let Some(boundary) = self.in_flight.take() else {
-            self.unclean = Some(format!("judgment {ordinal} completed with none in flight"));
+    fn complete(&mut self, ordinal: u64, outcome: Result<Judged, String>, stop: &Stop) {
+        let Some(mut boundary) = self
+            .in_flight
+            .take_if(|b| b.ordinal == ordinal && b.judge.is_some())
+        else {
+            self.unclean.get_or_insert_with(|| {
+                format!("judgment {ordinal} completed with no such boundary in flight")
+            });
             return;
         };
-        if boundary.ordinal != ordinal {
-            self.unclean = Some(format!(
-                "judgment {ordinal} completed while {} was in flight",
-                boundary.ordinal
-            ));
-            return;
+        // Reaped: the thread has reported, so this returns at once. A panic
+        // arrived as the outcome and is the reason below.
+        if let Some(handle) = boundary.judge.take() {
+            let _ = handle.join();
         }
+        let lag = boundary.started.elapsed();
+        self.counts.max_lag = self.counts.max_lag.max(lag);
+        let mut row = self.row("", boundary.disposition);
+        row.insert("cursor".into(), json!(boundary.cursor));
+        row.insert("boundary".into(), json!(boundary.ordinal));
+        row.insert("decision_lag_ms".into(), json!(millis(lag)));
+        let mut delivered = false;
+        let kind = match outcome {
+            Err(reason) => {
+                self.unclean
+                    .get_or_insert_with(|| format!("boundary {ordinal}: {reason}"));
+                self.counts.unjudged += 1;
+                row.insert("reason".into(), json!(reason));
+                "unjudged"
+            }
+            Ok(judged) => {
+                if let Some(marker) = &judged.marker {
+                    row.insert("marker".into(), json!(marker));
+                }
+                row.insert(
+                    "calls".into(),
+                    Value::Array(judged.calls.iter().map(Call::to_json).collect()),
+                );
+                match judged.decision {
+                    Decision::Unjudged(reason) => {
+                        self.counts.unjudged += 1;
+                        row.insert("reason".into(), json!(reason));
+                        "unjudged"
+                    }
+                    Decision::Silent => {
+                        self.counts.silent += 1;
+                        "silent"
+                    }
+                    Decision::Lapse(reason) => {
+                        self.counts.lapses += 1;
+                        row.insert("reason".into(), json!(reason));
+                        "lapse"
+                    }
+                    Decision::Speak(text) => {
+                        row.insert("text".into(), json!(text));
+                        let (kind, reason) = self.deliver(&boundary, text, stop);
+                        delivered = kind == "spoke";
+                        if let Some(reason) = reason {
+                            row.insert("reason".into(), json!(reason));
+                        }
+                        kind
+                    }
+                }
+            }
+        };
+        row.insert("kind".into(), json!(kind));
+        self.write_row(row);
+        // The actor was held — stopped, or gated — through the freshness
+        // check and the stdin write above; only now is it let go.
+        self.release();
+
+        if let Some(pending) = self.pending.boundary.take() {
+            if self.continuing() {
+                self.start_boundary(Some(pending.ordinal), pending.disposition);
+                return;
+            }
+            self.unjudged(
+                pending.ordinal,
+                pending.disposition,
+                "the run ended before its judgment could start",
+            );
+        }
+        if self.pending.result {
+            self.pending.result = false;
+            if !delivered {
+                self.actor.close_stdin();
+            }
+        }
+    }
+
+    /// Let the actor go on: the gate opens, or the group is thawed. Every
+    /// way out of a boundary passes here.
+    fn release(&mut self) {
         match self.config.policy.block_actor_while_judging {
             Blocking::Off => {}
             Blocking::Stdout => self.gate.open(),
@@ -463,64 +693,20 @@ impl Loop {
                 }
             }
         }
-        let lag = boundary.started.elapsed();
-        self.counts.max_lag = self.counts.max_lag.max(lag);
-        let mut row = self.row("", boundary.disposition);
-        row.insert("cursor".into(), json!(boundary.cursor));
-        row.insert("boundary".into(), json!(boundary.ordinal));
-        row.insert("decision_lag_ms".into(), json!(millis(lag)));
-        if let Some(marker) = &judged.marker {
-            row.insert("marker".into(), json!(marker));
-        }
-        if let Some(note) = &boundary.blocking_note {
-            row.insert("blocking".into(), json!(note));
-        }
-        row.insert(
-            "calls".into(),
-            Value::Array(judged.calls.iter().map(Call::to_json).collect()),
-        );
-        let mut delivered = false;
-        let kind = match judged.decision {
-            Decision::Unjudged(reason) => {
-                self.counts.unjudged += 1;
-                row.insert("reason".into(), json!(reason));
-                "unjudged"
-            }
-            Decision::Silent => {
-                self.counts.silent += 1;
-                "silent"
-            }
-            Decision::Lapse(reason) => {
-                self.counts.lapses += 1;
-                row.insert("reason".into(), json!(reason));
-                "lapse"
-            }
-            Decision::Speak(text) => {
-                row.insert("text".into(), json!(text));
-                let (kind, reason) = self.deliver(&boundary, text, stop);
-                delivered = kind == "spoke";
-                if let Some(reason) = reason {
-                    row.insert("reason".into(), json!(reason));
-                }
-                kind
-            }
-        };
-        row.insert("kind".into(), json!(kind));
-        self.write_row(row);
+    }
 
-        if self.pending.boundary {
-            self.pending.boundary = false;
-            if !self.stdout_closed && !self.faulted && self.leader_exited_at.is_none() {
-                self.start_boundary(self.last_disposition);
-                return;
-            }
-        }
-        if self.pending.result {
-            self.pending.result = false;
-            if !delivered {
-                self.actor.close_stdin();
-            }
-        }
+    /// Account for a boundary at which no decision was sought.
+    fn unjudged(&mut self, ordinal: u64, disposition: Disposition, reason: impl Into<String>) {
+        self.counts.unjudged += 1;
+        let mut row = self.row("unjudged", disposition);
+        row.insert("boundary".into(), json!(ordinal));
+        row.insert("reason".into(), json!(reason.into()));
+        self.write_row(row);
+    }
+
+    /// Whether there is a run left to supervise.
+    fn continuing(&self) -> bool {
+        !self.stdout_closed && !self.faulted && self.leader_exited_at.is_none()
     }
 
     /// Deliver a line the policy wrote, unless it is stale or the channel is
@@ -622,7 +808,26 @@ impl Loop {
         }
     }
 
-    fn finish(self, terminated: bool, criterion_sha256: &str, paths: &Paths) -> Ended {
+    fn finish(mut self, terminated: bool, criterion_sha256: &str, paths: &Paths) -> Ended {
+        // A boundary still underway is on record as such. A judge still
+        // running is not waited for: only a cancellation gets here with
+        // one, its call has a deadline of its own, and the process ends
+        // and takes the thread with it.
+        if let Some(boundary) = self.in_flight.take() {
+            let reason = if boundary.judge.is_some() {
+                "the run ended while the judgment was in flight"
+            } else {
+                "the run ended before the judgment could start"
+            };
+            self.unjudged(boundary.ordinal, boundary.disposition, reason);
+        }
+        if let Some(pending) = self.pending.boundary.take() {
+            self.unjudged(
+                pending.ordinal,
+                pending.disposition,
+                "the run ended before its judgment could start",
+            );
+        }
         let Loop {
             config,
             actor,
