@@ -326,9 +326,9 @@ never-speaking supervisor said yes.
 **A3 (post-hoc arm). Speaking changes what the judge subsequently says.** This
 rests entirely on `replicate_budget0`, added after the registered passes. With
 the boundary set and the evidence window held identical and the `said` block the
-only measured difference, `off_track` went from 6/330 to 219/280, within the
-limit A1 states. The judge's own prior
-corrections are in its prompt, and its later reasons read as a response to them
+only measured difference, `off_track` went from 6/330 to 219/280. The judge's
+own prior corrections are in its prompt, and its later reasons read as a
+response to them
 ("Repeated prompts about running the tests have gone unanswered"). **This is a
 feedback loop between the supervisor's memory and its own judgement**, and it is
 what spends the budget: 91 and 104 would-have-spoken markers per run, of which
