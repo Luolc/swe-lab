@@ -61,6 +61,24 @@ fn wrap(dir: &Path, script: &str, event_log: &Path, probe: &str) -> Output {
 }
 
 fn wrapper(dir: &Path, config: PathBuf, script: &str, event_log: &Path, probe: &str) -> Command {
+    wrapper_logging(
+        dir,
+        config,
+        script,
+        event_log,
+        &dir.join("actor.stderr"),
+        probe,
+    )
+}
+
+fn wrapper_logging(
+    dir: &Path,
+    config: PathBuf,
+    script: &str,
+    event_log: &Path,
+    stderr_log: &Path,
+    probe: &str,
+) -> Command {
     let prompt = dir.join("prompt.stream.json");
     fs::write(
         &prompt,
@@ -81,7 +99,7 @@ fn wrapper(dir: &Path, config: PathBuf, script: &str, event_log: &Path, probe: &
         .arg("--summary")
         .arg(dir.join("summary.json"))
         .arg("--actor-stderr")
-        .arg(dir.join("actor.stderr"))
+        .arg(stderr_log)
         .args(["--", "sh", "-c", script])
         .env("SWE_LAB_SUPERVISOR_BASE_URL", "http://127.0.0.1:9/v1")
         .env("PROBE", probe);
@@ -273,4 +291,39 @@ fn a_prompt_the_actor_never_reads_does_not_hold_the_wrapper_against_cancellation
     );
     assert!(none_alive_within(&probe, Duration::from_secs(5)));
     fs::remove_dir_all(&dir).unwrap();
+}
+
+/// One file named twice — the same path, or two links to one inode — would
+/// let the two drains overwrite each other while both report success; the
+/// wrapper refuses before any actor exists, and the refusal names the
+/// fault, not the paths.
+#[test]
+fn one_path_for_both_logs_is_refused_before_any_actor_exists() {
+    let dir = scratch("alias-path");
+    let probe = format!("alias-path-{}", std::process::id());
+    let log = dir.join("one.log");
+    let output = wrapper_logging(&dir, config(&dir, 500), "sleep 30", &log, &log, &probe)
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(3), "{output:?}");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("one file"), "{stderr}");
+    assert!(!stderr.contains("one.log"), "{stderr}");
+    assert_eq!(probes_alive(&probe), 0, "an actor was started");
+}
+
+#[test]
+fn two_links_to_one_file_for_the_logs_are_refused_before_any_actor_exists() {
+    let dir = scratch("alias-link");
+    let probe = format!("alias-link-{}", std::process::id());
+    let (a, b) = (dir.join("a.log"), dir.join("b.log"));
+    fs::write(&a, "").unwrap();
+    fs::hard_link(&a, &b).unwrap();
+    let output = wrapper_logging(&dir, config(&dir, 500), "sleep 30", &a, &b, &probe)
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(3), "{output:?}");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("one file"), "{stderr}");
+    assert_eq!(probes_alive(&probe), 0, "an actor was started");
 }
