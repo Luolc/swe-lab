@@ -123,6 +123,17 @@ API_KEY_ENV = "SWE_LAB_SUPERVISOR_API_KEY"
 #: the actor — the two above still are.
 MARK_ENV = "SWE_LAB_SUPERVISOR_MARK"
 
+#: The variable names a sandbox running the wrapper must inherit **by
+#: reference** — the backend's ``pass_env``, which passes a name and lets the
+#: value cross without a rendered form.
+#:
+#: :data:`BASE_URL_ENV` is deliberately **not** in it. The endpoint is not a
+#: host secret to forward: it is the loopback address of a forwarder the
+#: harness itself starts inside the sandbox, so the harness is the only party
+#: that knows it and it exports the value directly. A host variable of that
+#: name would name something else and would silently take precedence.
+SUPERVISOR_PASS_ENV: tuple[str, ...] = (API_KEY_ENV,)
+
 #: The one terminal-summary schema this consumer reads.
 SUMMARY_SCHEMA_VERSION = 1
 
@@ -179,9 +190,10 @@ class Blocking(enum.StrEnum):
 
 #: The fields whose Rust type is not a number, and the JSON type each must
 #: have. Checked through :func:`getattr` like the numeric ones rather than off
-#: the attributes directly: the annotations already say ``str`` and ``bool``,
-#: and the point of the check is the caller who is not type-checked — a
-#: downstream consumer, or ``dataclasses.replace``, which takes ``Any``.
+#: the attributes directly: the annotations already say ``str`` and
+#: ``Blocking``, and the point of the check is the caller who is not
+#: type-checked — a downstream consumer, or ``dataclasses.replace``, which
+#: takes ``Any``.
 NON_NUMERIC_FIELDS: Mapping[str, type] = {
     "model": str,
     "block_actor_while_judging": Blocking,
