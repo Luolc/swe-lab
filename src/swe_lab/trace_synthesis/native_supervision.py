@@ -316,7 +316,12 @@ class NativeSupervision:
         "schema_version": CONFIG_SCHEMA_VERSION,
         "task": task,
         "criterion": {
-            "name": criterion_path.stem,
+            # The pinned name, never the loaded path's: `criterion_path` is a
+            # test seam, and a renamed copy of the artifact has the same digest
+            # and would otherwise name a criterion the binary does not carry.
+            # What identifies the criterion is the digest; what selects it out
+            # of the binary's own is this name, and only one of them is ours.
+            "name": CRITERION_NAME,
             "sha256": criterion.digest,
         },
         "policy": {

@@ -32,11 +32,13 @@ from swe_lab.trace_synthesis.channel import (
     CORRECTIONS_METRIC,
 )
 from swe_lab.trace_synthesis.criterion import (
+    CRITERION_PATH,
     CRITERION_SHA256,
     CriterionRejectedError,
 )
 from swe_lab.trace_synthesis.native_supervision import (
     CONFIG_SCHEMA_VERSION,
+    CRITERION_NAME,
     NativeSupervision,
     NON_NUMERIC_FIELDS,
     NUMERIC_FIELDS,
@@ -118,6 +120,31 @@ def test_the_config_carries_no_endpoint_and_no_credential() -> None:
   assert json.loads(rendered)["model"]["name"] == "anthropic/claude-sonnet-5"
   for forbidden in ("endpoint", "api_key", "base_url", "Authorization"):
     assert forbidden not in rendered
+
+
+def test_the_criterion_is_named_by_the_pin_not_by_the_path_it_loaded_from(
+    tmp_path: Path,
+) -> None:
+  """A renamed copy of the artifact still names the criterion the binary has.
+
+  The digest identifies the criterion; the name selects it out of the ones
+  compiled into the binary. Taking the name from the loaded path would let a
+  renamed copy — same bytes, same digest, so `load_criterion` accepts it —
+  render a name no binary carries, and the run would be refused at startup for
+  a criterion that is in fact the right one.
+
+  Args:
+    tmp_path: Where the renamed copy is written.
+  """
+  renamed = tmp_path / "renamed-criterion.md"
+  _ = renamed.write_bytes(CRITERION_PATH.read_bytes())
+
+  document = _SUPERVISION.config_document(task="t", criterion_path=renamed)
+
+  assert document["criterion"] == {
+      "name": CRITERION_NAME,
+      "sha256": CRITERION_SHA256,
+  }
 
 
 def test_a_forged_criterion_is_refused_before_a_config_exists(
