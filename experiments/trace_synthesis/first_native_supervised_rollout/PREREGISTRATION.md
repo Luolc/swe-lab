@@ -343,3 +343,58 @@ same producer, the row is an echo and not a check.
 | 13 | the file is unaltered | the wrapper, about its own file (integrity only) |
 | 17 | which upstream answered | the upstream, in its response headers |
 | 19 | headers were recorded | the proxy |
+
+## Addenda — appended after freezing, criteria text untouched
+
+An addendum is not an amendment. Nothing above this line is edited, because a
+frozen document's value is that it cannot be: the moment it may be revised
+*when the revision is obviously an improvement*, it is no longer frozen, and
+"obviously an improvement" is judged by someone who has seen the results.
+
+### A.1 Criterion 7's `supervision.boundaries` is counted differently than when this froze
+
+*Appended 2026-09-03 by `swelab-integ-impl`, before the run, following the
+counting change in [#393](https://github.com/Luolc/swe-lab/pull/393). Criterion
+7 is unchanged and stays unchanged.*
+
+Criterion 7 records `supervision.boundaries` alongside the actor's assistant
+message count and the configured `judge_every_n_assistant_messages`, and its
+note gives the expected relation as roughly `assistant_messages / N`. **The
+criterion is frozen; the definition of one of its quantities is not, and it
+moved.**
+
+**The change**, read from the source rather than from a description of it —
+`supervisor.rs` in #393:
+
+> A result asks that the turn's last evidence be judged; a boundary that has
+> yet to take its snapshot will judge it, so it is not a boundary of its own
+> then.
+
+Before: an actor `result` event always counted as a boundary. After: it does
+not when a boundary is already pending its snapshot, because that boundary will
+judge the same evidence — a boundary that never separately happened is no
+longer counted. Under `N = 1` with a slow judge, the old rule over-counted.
+
+**What this does and does not do to criterion 7's expected relation:**
+
+- **The shape is unchanged.** Boundaries that fall while a judgment is in
+  flight are still recorded — as `unjudged` — and still counted, so the
+  `assistant_messages / N` term stands exactly as registered.
+- **An additive term shrinks.** The difference between the two definitions is
+  bounded by the number of `result` events, and only those coinciding with a
+  pending boundary. This run is a single-turn invocation, so the bound is
+  **one boundary**.
+
+So this is a difference in magnitude, not in kind, and it cannot flip criterion
+7 — which has no threshold by design. It is recorded because **a reader
+comparing the reported numbers against the expected relation has to know which
+definition produced them**, and nothing in the frozen text says.
+
+**The report must state, beside criterion 7's three numbers, that this run's
+`boundaries` uses the post-#393 counting and that the criterion was frozen
+before it.** Written here rather than left as an intention, because an
+obligation that lives only in someone's memory of what to do after the run is
+the one that does not survive the run.
+
+This is the same failure the censoring rules above are written against, one
+level down: **the criteria are reviewed, the definitions they cite are not.**
