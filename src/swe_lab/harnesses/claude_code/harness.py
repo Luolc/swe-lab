@@ -425,6 +425,25 @@ class ClaudeCodeHarness(Harness):
     return self.correction_channel or self.capture != "proxy"
 
   @property
+  def _narrates_event_stream(self) -> bool:
+    """Whether the agent writes its own ``stream-json`` trace to a file.
+
+    Two orthogonal decisions meet here: recording traffic through the proxy
+    says nothing about whether the actor should also narrate itself, and a
+    supervised run needs both — the proxy log is the trace, and the event
+    stream is the only *live* view of the actor there is.
+
+    Read by :meth:`actor_argv`, which picks the output format, and by the
+    invocation script, which picks where that output goes. One property rather
+    than one condition in each, because the two must agree: an agent narrating
+    into ``/dev/null`` is a supervisor with nothing to read.
+
+    Returns:
+      Whether the run wants the agent's own event stream.
+    """
+    return self.capture != "proxy" or self.correction_channel
+
+  @property
   @override
   def accepts_corrections(self) -> bool:
     """Whether this run has the live stdin channel.
@@ -649,6 +668,65 @@ class ClaudeCodeHarness(Harness):
       return {}
     return event_stream_usage(read_text(sb, EVENT_STREAM_NAME))
 
+  def actor_argv(self) -> tuple[str, ...]:
+    """Return the agent's command as the tokens a process would exec.
+
+    **The one construction of this run's flags.** The invocation script is a
+    consumer of these tokens rather than a second place they are assembled,
+    which is what lets a process wrapper launch the same actor the script
+    would: the native supervision runtime takes an argv after ``--`` and
+    executes it as given, joining nothing into a shell command and adding no
+    flags of its own (#375). A second construction beside this one would be a
+    supervised run differing from an unsupervised one by more than the
+    supervision — the drift ``correction_channel`` is a field rather than a
+    subclass to avoid.
+
+    Tokens, so nothing here needs a shell to be meaningful: no redirect, no
+    variable, no quoting. The run's redirects and its stdin belong to whoever
+    runs the tokens — the script, or the wrapper.
+
+    Returns:
+      The binary's absolute path followed by its flags, in the order the run
+      passes them.
+    """
+    # Always denied: not covered by --dangerously-skip-permissions, and each
+    # hangs an unattended run in its own way (see the constant).
+    denied = ",".join(UNATTENDED_DENIED_TOOLS)
+    argv = [
+        BINARY_AT,
+        "-p",
+        "--model",
+        self.model,
+        "--output-format",
+        *(
+            ("stream-json", "--verbose")
+            if self._narrates_event_stream
+            else ("json",)
+        ),
+        "--dangerously-skip-permissions",
+        "--disallowedTools",
+        denied,
+        "--effort",
+        self.effort,
+        # Undocumented in --help on 2.1.220, but accepted — verified against a
+        # bogus flag in the same position, which is rejected outright.
+        "--max-turns",
+        str(int(self.max_turns)),
+    ]
+    if self.capture != "proxy":
+      # Without this the CLI echoes no stdin, so the trace it writes contains
+      # what the agent said and not what it was asked — the opening prompt and
+      # any mid-run injection are simply absent (ADR-0017). The proxy path
+      # needs nothing here: its trace is the wire, which carries both already.
+      argv.append("--replay-user-messages")
+    if self.bare:
+      argv.insert(2, "--bare")
+    if self.max_budget_usd is not None:
+      argv += ["--max-budget-usd", str(self.max_budget_usd)]
+    if self._stdin_is_stream_json:
+      argv += ["--input-format", "stream-json"]
+    return tuple(argv)
+
   def _stdin_path(self) -> str:
     """Return the workspace file the agent reads its input from.
 
@@ -700,7 +778,6 @@ class ClaudeCodeHarness(Harness):
 
     """
     config_dir = shlex.quote(f"{AGENT_HOME}/.claude")
-    binary = shlex.quote(BINARY_AT)
     stderr = f'"$SANDBOX_WORKSPACE"/{AGENT_STDERR_NAME}'
     lines = [
         "set -u",
@@ -732,43 +809,15 @@ class ClaudeCodeHarness(Harness):
     if self.capture == "proxy":
       lines += _proxy_start_lines(self.proxy_target)
       lines.append(f"export ANTHROPIC_BASE_URL={PROXY_BASE_URL}")
-    if self.capture != "proxy" or self.correction_channel:
+    if self._narrates_event_stream:
       # Streamed, and to a file: a supervisor reads this while the actor is
       # still running, so it has to exist during the run rather than be
       # reconstructed after it.
-      event_stream = f'"$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}'
-      output_format = "stream-json --verbose"
-      capture_redirect = f"> {event_stream}"
+      capture_redirect = f'> "$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}'
     else:
       # An unsupervised proxy run has no reader for the agent's own stdout —
       # the trace comes from the proxy log — so it is discarded.
-      output_format = "json"
       capture_redirect = "> /dev/null"
-    # Always denied: not covered by --dangerously-skip-permissions, and each
-    # hangs an unattended run in its own way (see the constant).
-    denied = ",".join(UNATTENDED_DENIED_TOOLS)
-    flags = [
-        "-p",
-        f"--model {shlex.quote(self.model)}",
-        f"--output-format {output_format}",
-        "--dangerously-skip-permissions",
-        f"--disallowedTools {shlex.quote(denied)}",
-        f"--effort {self.effort}",
-        # Undocumented in --help on 2.1.220, but accepted — verified against a
-        # bogus flag in the same position, which is rejected outright.
-        f"--max-turns {int(self.max_turns)}",
-    ]
-    if self.capture != "proxy":
-      # Without this the CLI echoes no stdin, so the trace it writes contains
-      # what the agent said and not what it was asked — the opening prompt and
-      # any mid-run injection are simply absent (ADR-0017). The proxy path
-      # needs nothing here: its trace is the wire, which carries both already.
-      flags.append("--replay-user-messages")
-    if self.bare:
-      flags.insert(1, "--bare")
-    if self.max_budget_usd is not None:
-      flags.append(f"--max-budget-usd {self.max_budget_usd}")
-
     if self.subagent_wait_ceiling_ms is not None:
       # After the caller env block on purpose: this bound is the harness's, and
       # a prompt-supplied env must not raise it.
@@ -789,8 +838,6 @@ class ClaudeCodeHarness(Harness):
           "fi",
       ]
 
-    if self._stdin_is_stream_json:
-      flags.append("--input-format stream-json")
     if self.correction_channel:
       # Before the agent: a redirect from a FIFO blocks until a writer opens
       # the other end, so an agent started first would wait forever.
@@ -804,7 +851,7 @@ class ClaudeCodeHarness(Harness):
         # than inlining it into the argv — no shell-quoting hazard for a large,
         # arbitrary prompt.
         (
-            f"{binary} {' '.join(flags)}"
+            f"{shlex.join(self.actor_argv())}"
             f" < {stdin_source} {capture_redirect} 2> {stderr}"
         ),
         *status_tail(exit_file),

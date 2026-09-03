@@ -164,6 +164,61 @@ def test_invocation_script_shape_and_quoting():
   assert '> "$SANDBOX_WORKSPACE"/claude.event_stream.jsonl' in script
 
 
+_ARGV_CONFIGURATIONS = (
+    ClaudeCodeHarness(),
+    ClaudeCodeHarness(capture="proxy"),
+    ClaudeCodeHarness(capture="proxy", correction_channel=True),
+    ClaudeCodeHarness(bare=False, max_budget_usd=1.5),
+    ClaudeCodeHarness(model="a model", effort="low", max_turns=7),
+)
+
+
+@pytest.mark.parametrize("harness", _ARGV_CONFIGURATIONS)
+def test_the_script_runs_exactly_the_argv_the_harness_hands_out(
+    harness: ClaudeCodeHarness,
+) -> None:
+  """The invocation script is a consumer of `actor_argv`, not a second one.
+
+  A process wrapper launches the actor from these tokens, so a flag the script
+  adds on its own is a supervised run differing from an unsupervised one by
+  more than the supervision — and it is invisible in the traces either
+  produces.
+
+  Args:
+    harness: The configuration to render.
+  """
+  script = _script("/app", harness)
+
+  command = next(
+      line for line in script.splitlines() if line.startswith(BINARY_AT)
+  )
+
+  assert shlex.split(command.split(" < ")[0]) == list(harness.actor_argv())
+
+
+@pytest.mark.parametrize("harness", _ARGV_CONFIGURATIONS)
+def test_the_actor_argv_needs_no_shell_to_mean_what_it_says(
+    harness: ClaudeCodeHarness,
+) -> None:
+  """Every token is one a wrapper can `exec` without interpreting it.
+
+  The native runtime executes the argv after `--` as given: no shell, no
+  expansion. A token carrying a redirect or a variable would arrive at the
+  agent literally.
+
+  Args:
+    harness: The configuration to render.
+  """
+  argv = harness.actor_argv()
+
+  # The absence below is only evidence if there is an argv to inspect.
+  assert argv[0] == BINARY_AT
+  assert len(argv) > 1
+  for token in argv:
+    assert "$" not in token
+    assert token not in ("<", ">", ">>", "2>", "|", "&", ";")
+
+
 def test_bare_can_be_turned_off_for_an_oauth_composition():
   # Bare reads neither OAuth nor the keychain, so a composition authenticating
   # by CLAUDE_CODE_OAUTH_TOKEN must opt out — and then gets no API-key guard.
