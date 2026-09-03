@@ -690,6 +690,29 @@ structural position — a separate trailing `system` message — not the digest.
   fires"*, never *"equal role sequences imply equal shape"*. **Widening a
   detector's sensitivity never widens the set of propositions it can speak to.**
 - **Counting events is not counting messages** (§2).
+- **Every control arm is also an existence proof, and we spend only half of
+  it.** *"X differs from Y"* and *"Y is reachable"* are two halves of one
+  observation. A control is constructed in order to negate, so the negating
+  half has someone waiting for it and the affirming half does not — and what
+  nobody is waiting for does not get collected.
+
+  The instance is this report's own. A′'s separate trailing `system` message was
+  used throughout §6 and §9 as the **contrast** that proved our seam was the
+  wrong shape. The same observation says, just as plainly, that **a correction
+  arriving as a separate `system` message is achievable in this harness** —
+  which makes *"can a segmented loop get there too?"* the obvious next question.
+  It was not asked here; it was asked by a reader, and it is now `Q8` — the open
+  question with the most leverage over this report's conclusion.
+
+  This is the same family as the entries above and points the other way. Those
+  describe an observation **mistaken for something it is not** — undiscriminating,
+  or sound but aimed past its proposition. This one describes an observation
+  **used for only half of what it says**. The first is misuse and announces
+  itself eventually, because a wrong conclusion eventually collides with
+  something. The second is waste, and it is silent: nothing ever collides with a
+  question that was not asked. Here it came within one review round of leaving a
+  design marked down on a property that may not be the mechanism's at all.
+
 - **The reversal is the shape to expect.** §6.2 was a correct measurement whose
   scope was one flag wider than the sentence it was about to be written into.
 
