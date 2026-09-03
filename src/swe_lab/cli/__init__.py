@@ -7,7 +7,7 @@ dispatcher stays a thin table so it never grows into one giant file). Run it as
 
 import typer
 
-from .host_env import adopt_host_scoped_token
+from .host_env import adopt_host_scoped_credentials
 from .promote import promote_cmd
 from .run import run_cmd
 
@@ -22,10 +22,10 @@ def root() -> None:
   # a single-command app into that one command.
   #
   # It is also the one place every subcommand passes through, which is where
-  # the repo-scoped OAuth token gets handed back to the name a run reads —
-  # called explicitly here rather than run as an import side effect, so
-  # importing any part of this package never edits the process environment.
-  adopt_host_scoped_token()
+  # each shell-scoped credential gets handed to the name a run reads — called
+  # explicitly here rather than run as an import side effect, so importing any
+  # part of this package never edits the process environment.
+  adopt_host_scoped_credentials()
 
 
 _ = app.command(

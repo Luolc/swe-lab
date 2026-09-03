@@ -22,6 +22,7 @@ from enum import StrEnum
 from typing import Any, override
 
 from swe_lab.conversation import ConversationObserver
+from swe_lab.credential_sources import adopted_credential_sources
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.harnesses import Harness, HarnessOutcomeObserver
 from swe_lab.sandbox import (
@@ -382,6 +383,15 @@ class CodingAgentTask(Task):
     model = getattr(self.harness, "model", "")
     if model:
       extra["agent_model"] = model
+    # Which shell name each credential was adopted from, when the CLI adopted
+    # one. **Names, never values.** Adoption is otherwise invisible: the run
+    # reads a canonical name and cannot say where that value came from, so a
+    # reader of a finished run could not tell a supervisor key taken from the
+    # machine-wide pool from one exported deliberately for this run. Absent
+    # when nothing was adopted, which is what CI looks like.
+    adopted = adopted_credential_sources()
+    if adopted:
+      extra["credential_env_adopted_from"] = dict(adopted)
     observer = outcome_of(result)
     if observer is not None:
       extra["agent_outcome"] = observer.outcome.value
