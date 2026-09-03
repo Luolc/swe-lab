@@ -1,10 +1,12 @@
 //! The run's settings: one schema-versioned JSON file, non-secret by design.
 //!
 //! The file carries what a run *is* — the task, the pinned criterion, the
-//! policy's numbers, where the model endpoint is — and nothing a deployment
-//! must keep secret. A provider credential never appears here or on the
-//! command line; it reaches the binary only through the environment variable
-//! the config *names* (`model.api_key_env`), and the value is read in-process.
+//! policy's numbers, the model's name — and nothing about where the model is
+//! or how to authenticate to it. Those two are deployment facts and travel the
+//! way the actor's own do (`ANTHROPIC_BASE_URL` plus a token): as environment
+//! variables, [`BASE_URL_ENV`] and [`API_KEY_ENV`], passed into the sandbox by
+//! reference and read in-process. A credential never appears in the file, on
+//! the command line, or in any artifact.
 
 use std::num::NonZeroU32;
 use std::path::Path;
@@ -75,22 +77,39 @@ pub struct Policy {
     pub block_actor_while_judging: bool,
 }
 
-/// The model endpoint. Plain HTTP by design: TLS is terminated outside the
-/// binary, which keeps the dependency tree pure Rust and the artifact static.
+/// Which model answers. Where it answers from is the environment's to say.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Model {
     /// The model name sent on every request. No default, for the same reason
     /// `budget` has none.
     pub name: String,
-    /// An `http://` URL of an OpenAI-shaped chat-completions endpoint.
-    pub endpoint: String,
-    /// The environment variable holding the bearer credential, if the
-    /// endpoint needs one. The variable's value may hold several keys
-    /// comma-separated; the first is used, split in-process so no key ever
-    /// reaches a command line. Absent, no `Authorization` header is sent.
-    #[serde(default)]
-    pub api_key_env: Option<String>,
+}
+
+/// The environment variable holding the base URL of the OpenAI-shaped
+/// chat-completions API — `http://host[:port]/v1`; the binary appends
+/// `/chat/completions`. Required. Plain HTTP by design: TLS is terminated
+/// outside the binary, which keeps the dependency tree pure Rust and the
+/// artifact static.
+pub const BASE_URL_ENV: &str = "SWE_LAB_SUPERVISOR_BASE_URL";
+
+/// The environment variable holding the bearer credential, if the endpoint
+/// needs one. Its value may hold several keys comma-separated; the first is
+/// used, split in-process so no key ever reaches a command line. Unset or
+/// empty, no `Authorization` header is sent. Both variables are removed from
+/// the actor's environment before it is launched.
+pub const API_KEY_ENV: &str = "SWE_LAB_SUPERVISOR_API_KEY";
+
+/// The bearer credential from [`API_KEY_ENV`], or `None` when the variable
+/// is unset or holds no key. Split here, never in a shell.
+#[must_use]
+pub fn api_key_from_env() -> Option<String> {
+    std::env::var(API_KEY_ENV)
+        .ok()?
+        .split(',')
+        .map(str::trim)
+        .find(|key| !key.is_empty())
+        .map(str::to_string)
 }
 
 /// How long the wrapper waits, in milliseconds.
@@ -156,7 +175,6 @@ impl Config {
         if self.model.name.is_empty() {
             return Err("model.name must name a model".to_string());
         }
-        Endpoint::parse(&self.model.endpoint).map_err(|e| format!("model.endpoint: {e}"))?;
         if self.timeouts.model_call_ms == 0 {
             return Err("timeouts.model_call_ms must be positive".to_string());
         }
@@ -171,19 +189,38 @@ fn is_sha256_hex(digest: &str) -> bool {
             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 
-/// Where a model request goes: an `http://` URL taken apart.
+/// Where a model request goes: the base URL from [`BASE_URL_ENV`], taken
+/// apart, with the chat-completions path appended.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Endpoint {
     /// The host to connect to, as written.
     pub host: String,
     /// The port, `80` when the URL gives none.
     pub port: u16,
-    /// The request target, `/` when the URL gives none. Query included.
+    /// The request target: the base URL's path plus `/chat/completions`.
     pub path: String,
 }
 
 impl Endpoint {
-    /// Take an `http://host[:port][/path]` URL apart.
+    /// Read the base URL from the environment and take it apart.
+    ///
+    /// # Errors
+    ///
+    /// The variable is unset or empty, or its value is not usable — see
+    /// [`Endpoint::parse`].
+    pub fn from_env() -> Result<Self, String> {
+        match std::env::var(BASE_URL_ENV) {
+            Ok(url) if !url.is_empty() => {
+                Self::parse(&url).map_err(|e| format!("{BASE_URL_ENV}: {e}"))
+            }
+            _ => Err(format!(
+                "{BASE_URL_ENV} is unset or empty, so the supervisor cannot reach a model"
+            )),
+        }
+    }
+
+    /// Take an `http://host[:port][/base]` URL apart and append the
+    /// chat-completions path.
     ///
     /// # Errors
     ///
@@ -199,9 +236,9 @@ impl Endpoint {
         let Some(rest) = url.strip_prefix("http://") else {
             return Err(format!("{url:?} is not an http:// URL"));
         };
-        let (authority, path) = match rest.find('/') {
-            Some(at) => (&rest[..at], &rest[at..]),
-            None => (rest, "/"),
+        let (authority, base) = match rest.find('/') {
+            Some(at) => (&rest[..at], rest[at..].trim_end_matches('/')),
+            None => (rest, ""),
         };
         let (host, port) = match authority.rsplit_once(':') {
             Some((host, port)) => (
@@ -217,7 +254,7 @@ impl Endpoint {
         Ok(Self {
             host: host.to_string(),
             port,
-            path: path.to_string(),
+            path: format!("{base}/chat/completions"),
         })
     }
 }
@@ -242,11 +279,7 @@ pub(crate) mod tests {
         "judge_every_n_assistant_messages": 3,
         "block_actor_while_judging": true
       },
-      "model": {
-        "name": "anthropic/claude-sonnet-5",
-        "endpoint": "http://127.0.0.1:8080/v1/chat/completions",
-        "api_key_env": "OPENROUTER_API_KEYS"
-      },
+      "model": { "name": "anthropic/claude-sonnet-5" },
       "timeouts": { "model_call_ms": 180000, "term_grace_ms": 10000 },
       "limits": { "max_event_line_bytes": 16777216 }
     }"#;
@@ -264,10 +297,6 @@ pub(crate) mod tests {
         assert_eq!(config.policy.window.get(), 8);
         assert_eq!(config.policy.judge_every_n_assistant_messages.get(), 3);
         assert!(config.policy.block_actor_while_judging);
-        assert_eq!(
-            config.model.api_key_env.as_deref(),
-            Some("OPENROUTER_API_KEYS")
-        );
         assert_eq!(config.limits.max_event_line_bytes.get(), 16_777_216);
     }
 
@@ -312,15 +341,22 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn a_missing_key_env_means_no_credential_is_sent() {
-        let raw = VALID.replace(",\n        \"api_key_env\": \"OPENROUTER_API_KEYS\"", "");
-        assert_eq!(parsed(&raw).unwrap().model.api_key_env, None);
+    fn the_file_cannot_carry_an_endpoint_or_a_credential() {
+        // Both are the environment's: a file that names them is refused as
+        // unknown fields rather than read.
+        for field in ["\"endpoint\": \"http://x/v1\"", "\"api_key\": \"sk-...\""] {
+            let raw = VALID.replace(
+                "\"model\": { \"name\": \"anthropic/claude-sonnet-5\" }",
+                &format!("\"model\": {{ \"name\": \"m\", {field} }}"),
+            );
+            assert!(parsed(&raw).is_err(), "{field} was accepted");
+        }
     }
 
     #[test]
-    fn an_endpoint_is_taken_apart_and_https_is_refused_with_the_reason() {
+    fn a_base_url_is_taken_apart_and_https_is_refused_with_the_reason() {
         assert_eq!(
-            Endpoint::parse("http://127.0.0.1:8080/v1/chat/completions").unwrap(),
+            Endpoint::parse("http://127.0.0.1:8080/v1").unwrap(),
             Endpoint {
                 host: "127.0.0.1".to_string(),
                 port: 8080,
@@ -328,11 +364,15 @@ pub(crate) mod tests {
             }
         );
         assert_eq!(
+            Endpoint::parse("http://judge/api/v1/").unwrap().path,
+            "/api/v1/chat/completions"
+        );
+        assert_eq!(
             Endpoint::parse("http://judge").unwrap(),
             Endpoint {
                 host: "judge".to_string(),
                 port: 80,
-                path: "/".to_string(),
+                path: "/chat/completions".to_string(),
             }
         );
         assert!(

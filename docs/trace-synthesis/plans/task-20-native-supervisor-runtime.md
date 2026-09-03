@@ -13,22 +13,37 @@ Status lives in [`README.md`](README.md), not here.
 
 ## 1. Where it lives, and what it may depend on
 
-- **In this repository**, under `rust/`, beside the Python `src/`. The parity
-  fixtures, the Python consumer of the terminal summary and CI all live here;
-  a second repository would buy coordination cost and nothing else.
+- **In this repository**, under `rust/`, beside the Python `src/`. The
+  criterion artifact, the Python consumer of the terminal summary and CI all
+  live here; a second repository would buy coordination cost and nothing
+  else.
 - **Pure-Rust dependencies only.** The artifact is a static
   `x86_64-unknown-linux-musl` binary linked self-contained by the toolchain;
   one crate that compiles C would add a musl C toolchain to the build surface.
   So there is no TLS in the binary — both mainstream TLS stacks carry C and
-  assembly — and the model endpoint is plain HTTP, terminated outside the
-  binary (the actor's own calls already go to a loopback proxy via
-  `ANTHROPIC_BASE_URL`; the supervisor's endpoint follows the same pattern).
-  Should a deployment turn out to need the binary to dial a provider
-  directly, that is an ADR — it changes the dependency shape and the
-  deployment contract together — not a `Cargo.toml` edit.
+  assembly — and the model endpoint is plain HTTP on loopback: a second
+  `cc-reverse-proxy` instance in the sandbox, started by the Python side with
+  `--target https://openrouter.ai/api`, terminates TLS and forwards the bytes
+  unchanged (its log redacts the credential header). The actor's own calls
+  already go through the first instance via `ANTHROPIC_BASE_URL`; the
+  supervisor's follow the same pattern. `https://` is refused by the binary,
+  and that refusal guards the invariant, not a stopgap: the binary only ever
+  speaks to loopback. Should that change, it is an ADR — dependency shape and
+  deployment contract move together — not a `Cargo.toml` edit.
+- **Where the model is and how to authenticate are environment variables**
+  (`SWE_LAB_SUPERVISOR_BASE_URL`, `SWE_LAB_SUPERVISOR_API_KEY`), passed into
+  the sandbox by reference the way the actor's own are, read in-process, and
+  removed from the actor's environment before it is launched. The config
+  file carries neither: it is non-secret run settings only.
 - **Static is a structural property**, checked in CI as the absence of a
-  `PT_INTERP` program header. Not a word grepped out of `file` or `ldd`: a
-  modern musl build is `static-pie linked`, and the wording moves.
+  `PT_INTERP` program header — after the artifact is proven to exist and to
+  be an ELF with a program-header table, because a missing file also has no
+  `PT_INTERP`. Not a word grepped out of `file` or `ldd`: a modern musl build
+  is `static-pie linked`, and the wording moves. The pure-Rust tree is
+  checked the same way, by name in `cargo tree`, after `cargo tree` is shown
+  to have listed the crate itself; "builds without `musl-tools`" is not a
+  test of it, because rustc still names the link driver `cc` for the musl
+  target and a box without gcc fails both ways.
 - **The criterion is compiled in from the Python side's own artifact file**
   (`include_str!` of `src/swe_lab/trace_synthesis/criteria/general-practice.md`),
   so the two runtimes hold byte-identical text by construction, and a config
@@ -61,9 +76,9 @@ than in #375:
   wrapper stops reading the actor's stdout for the duration of a judgment
   (§4). Neither is a default.
 
-`model.api_key_env` is optional (a local stub needs no credential); it names
-an environment variable, never carries a value. The credential is read
-in-process and split on commas there — the Python side's rule, kept.
+`model` carries only the name. The endpoint and the credential are the
+environment's (§1); a local stub needs no credential, and the binary sends
+no `Authorization` header when the variable is unset.
 
 ## 3. Judgment boundaries under batching
 
@@ -76,8 +91,6 @@ in-process and split on commas there — the Python side's rule, kept.
 - **`N = 1` is "every assistant message", not "every event".** The Python
   runtime consults the policy at every stream event; no `N` reproduces that,
   and it is not meant to — every-event judging is what #375 §2 batches away.
-  Parity fixtures therefore cover the filter, the prompt bytes, the gates and
-  the classifications, not the boundary set.
 - **`cooldown` is counted in judgment boundaries.** The Python docstring says
   "how many boundaries must pass between interventions" and implements it as
   a cursor difference, which under every-event judging is the same thing.
@@ -147,32 +160,45 @@ gap line of v0.3.0 is kept exactly: a bad judge or writer answer, a call past
 failed actor-stdin write, a broken policy state or an unclean ending is a
 **gap**.
 
-## 7. Three measured defects, carried across visibly
+## 7. Three measured defects, fixed here rather than reproduced
 
-All three come from the replay experiment and none has an ADR yet. The rule
-applied: reproduce the Python semantics where they are semantics (or parity
-has no meaning), isolate each behind one named place, and point at the issue
-so that the ADR changes one thing.
+All three come from the replay experiment
+([`n_batching_replay/REPORT.md`](../../../experiments/trace_synthesis/n_batching_replay/REPORT.md)),
+and the owner's ruling is that the native runtime does not align with a host
+runtime measured to be wrong in three places: no parity fixtures, no seams
+reserved for a later ADR, the correct behaviour directly. The two runtimes
+therefore diverge on purpose and are not A/B-comparable; #375 removes the
+host runtime anyway. The acceptance is not "matches Python" but "is right on
+its own": the judge sees what the actor actually did, speaking does not put
+the judge into a self-confirmation loop, and a judgment is not swallowed by
+a token ceiling.
 
-1. **[#383](https://github.com/Luolc/swe-lab/issues/383) — `max_tokens = 512`
-   on the judge is inside the reasoning distribution.** A constant, not a
-   semantic; fixed directly. The judge's ceiling clears the measured
-   distribution (successful calls: median 89, max 441 reasoning tokens; every
-   lapse: 512) with margin, and the constant's comment says so. The writer's
-   256 stays: no writer lapse was measured. `finish_reason` is recorded on
-   every call row, which is the issue's third candidate — it changes what the
-   record says, not what the judge is.
-2. **[#380](https://github.com/Luolc/swe-lab/issues/380) — the renderer emits
-   only text blocks**, so admitted tool results render empty. Reproduced, in
-   one named rendering function that the ADR will replace.
-3. **[#381](https://github.com/Luolc/swe-lab/issues/381) — the supervisor's
-   own corrections enter the judge's prompt** and drive its verdicts.
-   Reproduced, behind one named function that decides what the judge is told
-   it has already said.
+1. **[#380](https://github.com/Luolc/swe-lab/issues/380) — the judge sees
+   tool results.** The host renderer emitted only text blocks, so the 31
+   admitted tool results of the first corpus rendered empty and the judge
+   held 0 non-empty records when it wrote each correction. The prompt
+   renders tool-result content, under an explicit budget — a per-record cap
+   and a per-window cap, with a visible truncation marker — since a tool
+   result can be a whole file. The values and their basis are in the
+   renderer's comment.
+2. **[#381](https://github.com/Luolc/swe-lab/issues/381) — what the
+   supervisor has said goes to the writer, not the judge.** With the
+   `# What you have already said to them` section in the judge's prompt,
+   `off_track` went from 6/330 to 219/280 the moment the supervisor spoke.
+   The judge is asked about the actor's evidence alone; the writer is told
+   what has been said so it does not repeat itself.
+3. **[#383](https://github.com/Luolc/swe-lab/issues/383) — `max_tokens` does
+   not cut the judgment off.** Every one of the replay's 85 lapses was the
+   judge's 512-token ceiling reached while the model was still reasoning
+   (successful calls: median 89, max 441 reasoning tokens). The judge's
+   ceiling clears that distribution with margin; the constant's comment says
+   so. `finish_reason` is recorded on every call, so a ceiling hit is
+   distinguishable from an unparseable answer in the account.
 
 ## 8. Out of scope here
 
 The Python side of the migration — `NativeSupervision`, the `AgentAsset`,
-the harness argv handoff, `capture="stream_replay"`, the summary consumer and
-the removal of the host runtime — and the parity fixtures. Those are their
-own tasks; this one is the binary, its tests, and its CI.
+the second proxy instance and the environment it passes, the harness argv
+handoff, `capture="stream_replay"`, the summary consumer and the removal of
+the host runtime. Those are their own tasks; this one is the binary, its
+tests, and its CI.

@@ -56,11 +56,21 @@ fn main() -> ExitCode {
 fn run(args: &cli::RunArgs) -> Result<ExitCode, String> {
     let config = config::load(&args.config)?;
     let selected = criterion::select(&config.criterion.name, &config.criterion.sha256)?;
+    let endpoint = config::Endpoint::from_env()?;
+    // Only whether one is present is ever said; the value goes nowhere.
+    let credential = if config::api_key_from_env().is_some() {
+        "set"
+    } else {
+        "unset"
+    };
     Err(format!(
-        "the runtime is not built yet; config {} and criterion {} ({}) are valid, and the actor would be {:?}",
+        "the runtime is not built yet; config {}, criterion {} ({}) and endpoint {}:{}{} (credential {credential}) are valid, and the actor would be {:?}",
         args.config.display(),
         selected.name,
         selected.digest,
+        endpoint.host,
+        endpoint.port,
+        endpoint.path,
         args.actor_argv
     ))
 }

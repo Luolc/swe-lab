@@ -9,12 +9,13 @@ corrections on the actor's stdin. The design of record is
 implementation made where #375 leaves a choice open are in
 [`docs/trace-synthesis/plans/task-20-native-supervisor-runtime.md`](../../docs/trace-synthesis/plans/task-20-native-supervisor-runtime.md).
 
-The policy it runs is the one `src/swe_lab/trace_synthesis/` runs on the host
-today — same evidence filter, same criterion artifact (compiled in from the
-same file, so the two cannot drift without the digest saying so), same judge
-and writer prompts. What the binary adds is what only a process wrapper can
-do: continuous draining, actor blocking, stale-verdict discard, and one owner
-for the actor's shutdown.
+The policy it runs descends from the one `src/swe_lab/trace_synthesis/` runs
+on the host — the same evidence filter, the same criterion artifact (compiled
+in from the same file, so the two cannot drift without the digest saying so),
+the same two model calls — with the three defects the replay experiment
+measured in the host runtime fixed rather than reproduced (task 20 §7). What
+the binary adds is what only a process wrapper can do: continuous draining,
+actor blocking, stale-verdict discard, and one owner for the actor's shutdown.
 
 ## Usage
 
@@ -44,7 +45,9 @@ the exit status alone: the terminal summary is written for that.
 ## Config
 
 One JSON file, schema-versioned, **non-secret**. Every field below is
-required unless marked optional; an unknown field is refused, not ignored.
+required; an unknown field is refused, not ignored. Where the model is and how
+to authenticate to it are not in the file at all — see
+[Environment](#environment).
 
 ```json
 {
@@ -59,11 +62,7 @@ required unless marked optional; an unknown field is refused, not ignored.
     "judge_every_n_assistant_messages": 3,
     "block_actor_while_judging": true
   },
-  "model": {
-    "name": "anthropic/claude-sonnet-5",
-    "endpoint": "http://127.0.0.1:8080/v1/chat/completions",
-    "api_key_env": "OPENROUTER_API_KEYS"
-  },
+  "model": { "name": "anthropic/claude-sonnet-5" },
   "timeouts": { "model_call_ms": 180000, "term_grace_ms": 10000 },
   "limits": { "max_event_line_bytes": 16777216 }
 }
@@ -83,14 +82,7 @@ required unless marked optional; an unknown field is refused, not ignored.
   whether the wrapper stops reading the actor's stdout while a judgment is in
   flight (the actor blocks on its next write) or lets it run ahead and
   discards overtaken verdicts as stale.
-- `model` — `endpoint` is an `http://` URL of an OpenAI-shaped
-  chat-completions endpoint. **Plain HTTP only**: the binary carries no TLS,
-  so termination belongs to the deployment (a loopback forwarder in the
-  sandbox, the way the actor's own calls already go through
-  `ANTHROPIC_BASE_URL`). `api_key_env` (optional) names the environment
-  variable holding the bearer credential; its value may be several keys
-  comma-separated and the first is used, split in-process. The credential
-  itself never appears in the config, the argv, or any artifact.
+- `model` — the model name sent on every request, recorded in the summary.
 - `timeouts` — `model_call_ms` bounds one judge or writer call; a call past it
   is one recorded lapse. `term_grace_ms` bounds shutdown: how long the actor's
   process group gets to honour `SIGTERM` before `SIGKILL`, and how long the
@@ -99,6 +91,18 @@ required unless marked optional; an unknown field is refused, not ignored.
   stdout. Framing uses a growable buffer up to it; a longer line is still
   written to the event log verbatim but reaches no judgment, and the summary
   counts it.
+
+## Environment
+
+Two variables, read by the binary in-process and removed from the actor's
+environment before it is launched. They travel into the sandbox the way the
+actor's own `ANTHROPIC_BASE_URL` and token do — by reference, never on a
+command line.
+
+| Variable | Meaning |
+| --- | --- |
+| `SWE_LAB_SUPERVISOR_BASE_URL` | **Required.** The base URL of an OpenAI-shaped chat-completions API, `http://host[:port]/v1`; the binary appends `/chat/completions`. **Plain HTTP only** — `https://` is refused with the reason: the binary carries no TLS, so it speaks to a loopback forwarder in the sandbox (the `cc-reverse-proxy` instance the Python side starts with `--target https://openrouter.ai/api`), which terminates TLS and forwards the bytes unchanged. |
+| `SWE_LAB_SUPERVISOR_API_KEY` | Optional. The bearer credential the endpoint needs, put in the `Authorization` header by the binary and forwarded by the proxy. Several keys may be comma-separated; the first is used, split in-process. Unset or empty, no header is sent. It appears in no config, argv, log or summary. |
 
 ## Building
 
