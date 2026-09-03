@@ -53,7 +53,9 @@ deviation is `SpeakWhenOffTrack`, built by `supervising_policy` over a
 the *same* policy on the same criterion and differ in one number: the control's
 budget is zero. The budget gates speech and never gates judgement
 ([task 05 §4.4](task-05-supervisor-the-component.md)), so both arms consult the
-judge at every boundary and record what they would have said. What the arms are
+judge at every boundary carrying evidence and record what they would have said
+(a boundary whose evidence window is empty is judged in neither arm — task 05
+§4.3). What the arms are
 and are not matched on is stated once, beside the two definitions, at
 `workflow.definitions.CONTROL_BUDGET` — read it there rather than here.
 `SpeakAt` remains a knob for tests — a run whose utterances are scheduled cannot satisfy acceptance point 3.
@@ -94,8 +96,8 @@ consequences the wiring must respect, both already stated by the component:
    the superseded record that carries over unchanged.
 2. Run `swe-lab run supervised_rollout_and_unit_test` for that instance;
    `control_rollout_and_unit_test` is the paired arm, and a run of it **fails
-   point 3** by construction — it judges every boundary and has nothing left to
-   spend.
+   point 3** by construction — it judges every boundary it has evidence for and
+   has nothing left to spend.
 3. Read the seven points off the persisted record and artifacts. Each is a check
    against a file on disk, not a judgement about the run.
 4. Write the [experiment](../../experiments/playbook.md) `REPORT.md`.

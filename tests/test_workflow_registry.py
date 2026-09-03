@@ -15,6 +15,7 @@ from typing import Any, final, override
 from etils import epath
 import pytest
 
+from swe_lab.conversation import Message, Role, TextBlock
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.swebench_pro.unit_test import SweBenchProVerdict
 from swe_lab.evaluation.verdict import UnitTestSpec
@@ -34,6 +35,7 @@ from swe_lab.sandbox.observers.diff_extract import BASE_REF_NAME
 from swe_lab.sandbox.testing import FakeSandboxConfig
 from swe_lab.trace_synthesis.criterion import load_criterion
 from swe_lab.trace_synthesis.supervisor import (
+    Intervention,
     Observation,
     SpeakWhenOffTrack,
     Verdict,
@@ -428,6 +430,14 @@ def _policy_of(entry: WorkflowEntry) -> SpeakWhenOffTrack:
   return policy
 
 
+# Something for the judge to look at: a boundary whose evidence window is
+# empty is not judged in either arm, which would make this comparison a
+# reading about nothing.
+EVIDENCE = (
+    Message(role=Role.ASSISTANT, content=[TextBlock(text="editing blind")]),
+)
+
+
 def test_the_control_arm_pays_the_same_judge_calls_as_the_treatment():
   """The judge runs at both shipped budgets; only the writer differs.
 
@@ -467,10 +477,12 @@ def test_the_control_arm_pays_the_same_judge_calls_as_the_treatment():
         budget=budget,
     )
     spoke = sum(
-        policy.consider(
-            Observation(task="t", evidence=(), cursor=cursor, said=())
+        isinstance(
+            policy.consider(
+                Observation(task="t", evidence=EVIDENCE, cursor=cursor, said=())
+            ),
+            Intervention,
         )
-        is not None
         for cursor in range(1, 13)
     )
     readings[budget] = (

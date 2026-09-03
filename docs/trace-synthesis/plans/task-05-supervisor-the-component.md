@@ -300,11 +300,29 @@ number nobody chose ends up in a result.
 
 ### 4.3 Silence is structural, not hoped for
 
+**A boundary with no evidence is not judged at all.** Before the gates, an
+empty evidence window returns `Unjudged` and the judge is not called: there is
+nothing of the actor's to measure against the criterion, and a judge asked
+anyway answers about a record it was never shown. This is the head of a run and
+nothing else — the window is empty only until the actor's first message — and it
+is where the failure was observed. Replaying the first end-to-end run's 170
+events through `EvidenceFilter`: its first correction went out at `cursor` 4,
+where the judge held **zero** admitted records (events 1–4 are `system/init`,
+`system/thinking_tokens`, `rate_limit_event`, `system/thinking_tokens`, every
+one of them `excluded-nothing-to-keep`), and it asserted a fact — that the actor
+had not yet opened `models.py` to see how `from_isbn` branches — which the actor
+answered by pointing at the read it had already done (`models.py:377-446`).
+The rule is about *zero* evidence and nothing wider: cursors 8 and 12 were
+judged on 3 and 6 records and are a different question — judgement quality, and
+how `window` should couple to the batch — which this does not touch and must not
+be read as mitigating. It costs the matched control nothing: the skip reads the
+evidence window alone, so both arms skip the same boundaries.
+
 **The budget gates speech, not judgement**, and the order follows from that —
 an earlier draft of this section put budget first, which would have made
 `SpeakWhenOffTrack(budget=0)` skip the judge entirely and quietly destroy the
-matched control §4.4 depends on. `consider()` returns `None` unless every gate
-passes, in this order:
+matched control §4.4 depends on. Past that precondition, `consider()` returns
+`None` unless every gate passes, in this order:
 
 1. the judge says off-track, else silent;
 2. the judge says it will not self-correct, else silent;
@@ -317,8 +335,8 @@ passes, in this order:
    boundary (§6.1) — never a retry.
 
 The cost of this ordering is stated rather than hidden: **the judge runs on
-every boundary even after the budget is spent**, so a `budget=0` policy still
-pays for a judge it can never act on. Why that is worth paying is stated once,
+every boundary carrying evidence even after the budget is spent**, so a
+`budget=0` policy still pays for a judge it can never act on. Why that is worth paying is stated once,
 at `workflow.definitions.CONTROL_BUDGET`.
 
 A policy that speaks by default cannot be produced by omitting a parameter,
@@ -327,7 +345,12 @@ often. The guarantee is tested three ways: a judge that always says on-track
 yields zero interventions; `budget=0` yields zero **interventions and a non-zero
 count of would-have-spoken markers** when the judge always says off-track — the
 marker count is what proves the judge still ran; and `budget=k` yields at most
-`k` on a trace where it always says off-track.
+`k` on a trace where it always says off-track. The precondition has its own:
+`test_a_boundary_with_no_evidence_is_never_put_to_the_judge` asserts the judge
+is not **called** — not that it answered and was ignored — and that such a
+boundary leaves the markers, the budget and the cooldown untouched;
+`test_a_boundary_with_no_evidence_is_recorded_as_unjudged_not_silent` asserts
+the log says so in a row a reader can tell from a silence.
 
 ### 4.4 The implementations, and why `budget=0` replaces a second control
 
@@ -617,7 +640,7 @@ that added it).
   policy sharing every other line.
 - One end-to-end test drives the component over a **recorded** event stream with
   a stub sink and asserts the log accounts for every cursor: a judgement, a
-  silence, a lapse, or an explicit gap.
+  silence, a boundary nothing was judged at, a lapse, or an explicit gap.
 - **No live run is part of this task's acceptance.** Live behaviour is the rig's
   measurement, and this task must not consume its budget.
 

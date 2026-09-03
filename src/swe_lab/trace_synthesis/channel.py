@@ -384,8 +384,10 @@ class SupervisedRun(SandboxObserver):
 
     A gap and a silence are both ``None`` back from ``observe``, and they mean
     opposite things: one is a decision, the other is a boundary that went
-    unjudged or a correction that was never delivered. Read here because the
-    log is where the supervisor already tells them apart.
+    unsupervised or a correction that was never delivered. Read here because
+    the log is where the supervisor already tells them apart — as it does the
+    third ``None``, a boundary the policy took no decision at, which is neither
+    a decision nor a failure and is counted as neither.
 
     A lapse is the third thing, and it is counted rather than latched: the
     policy named the boundary it could not cover and asserted the next one is

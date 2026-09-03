@@ -29,16 +29,20 @@ from swe_lab.trace_synthesis.supervisor import (
     PolicyLapseError,
     SpeakAt,
     SpeakWhenOffTrack,
+    Unjudged,
     Verdict,
 )
 
 
-def observation(cursor: int, *, records: int = 0) -> Observation:
+def observation(cursor: int, *, records: int = 1) -> Observation:
   """Build an observation at a cursor.
 
   Args:
     cursor: How many events have been consumed.
-    records: How many evidence records to synthesize.
+    records: How many evidence records to synthesize. One by default, because
+      a boundary with none is not judged at all — a separate invariant, with
+      its own test below — and every gate here is about a boundary that *is*
+      judged.
 
   Returns:
     An observation a policy can be handed.
@@ -255,6 +259,33 @@ def test_the_cooldown_separates_later_interventions() -> None:
   assert too_soon is None
   assert far_enough is not None
   assert len(speaker.markers) == 3
+
+
+def test_a_boundary_with_no_evidence_is_never_put_to_the_judge() -> None:
+  """The judge is not consulted when the window holds nothing.
+
+  What is pinned is the *absence of the call*, not a silent answer: a judge
+  handed zero records still answers, and that answer is about a record it was
+  never shown. Observed rather than imagined — the first end-to-end run's
+  first correction was written at a boundary with zero admitted records, and
+  the actor rebutted it.
+
+  The accounting is pinned with it: such a boundary produces no
+  would-have-spoken marker, spends no budget and starts no cooldown, so the
+  first boundary that does carry evidence is still spoken at.
+  """
+  speaker, judge, writer = policy(OFF_TRACK, budget=1, cooldown=4)
+
+  empty = [speaker.consider(observation(index, records=0)) for index in (1, 2)]
+
+  assert judge.calls == []
+  assert writer.calls == 0
+  assert all(isinstance(one, Unjudged) for one in empty)
+  assert speaker.markers == ()
+  # The budget is whole and the cooldown never started, so the first boundary
+  # carrying evidence is judged and spoken at.
+  assert speaker.consider(observation(3)) is not None
+  assert [marker.cursor for marker in speaker.markers] == [3]
 
 
 def test_the_judge_sees_only_the_window() -> None:

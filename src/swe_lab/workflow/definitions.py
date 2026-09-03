@@ -129,8 +129,11 @@ SUPERVISOR_MODEL = "anthropic/claude-sonnet-5"
 SUPERVISOR_BUDGET = 3
 # The control arm's budget. Zero rather than a silent policy, because
 # `SpeakWhenOffTrack` gates *speech* on the budget and never gates judgement:
-# it consults the judge on every boundary and records what it would have said
-# before the budget is looked at. So the arms are matched on the *judging*
+# it consults the judge on every boundary carrying evidence and records what it
+# would have said before the budget is looked at. (A boundary whose evidence
+# window is empty is judged in neither arm — that skip reads the evidence
+# window alone, so two arms fed one stream skip the same boundaries and the
+# matching below is untouched.) So the arms are matched on the *judging*
 # side — same calls, same waits, same cost per boundary — and differ on the
 # writing side, where a call is what a delivered correction is: the treatment
 # pays for the ones it makes and the control for none. That difference is the
