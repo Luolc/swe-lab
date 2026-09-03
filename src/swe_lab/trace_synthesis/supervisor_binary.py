@@ -18,6 +18,16 @@ host, a ``dest`` puts the file exactly there.
   code path with real checks, not a documented intention; when the release
   exists this becomes a developer convenience rather than the only way in.
 
+**The probe runs a file somebody else named, so it is treated as hostile.**
+Two separate measures, because neither is sufficient. It executes under a
+minimal environment (:data:`_PROBE_ENV`), since ``--version`` needs no
+credential — but a child running as this user can read the parent's
+environment out of ``/proc`` whatever we pass it, so that alone would not be a
+boundary. The one that is: **child output is never repeated in an exception.**
+An error message travels into logs, tracebacks and CI transcripts, so a
+process that printed a credential and exited nonzero would otherwise have
+written it there. Diagnosis is left to whoever can run the file themselves.
+
 **What the check here does and does not establish.** It asks the binary to
 answer ``--version`` *on this host* and requires the answer to name itself.
 That is a positive premise rather than a list of exclusions: ``[ -x ]`` admits
@@ -51,6 +61,17 @@ BINARY_ENV = "SWE_LAB_SUPERVISOR_BINARY"
 #: that needs longer than this to say its own name is not one we want holding
 #: a rollout open.
 VERSION_TIMEOUT_S = 30.0
+
+#: The environment the probe runs under. ``--version`` needs nothing from us,
+#: and this path executes **a file an operator named** — a wrong path, a stale
+#: build, in principle anything. Handing that process our environment would
+#: hand it :data:`~.native_supervision.API_KEY_ENV` and the actor's own token
+#: for no reason at all.
+#:
+#: ``PATH`` alone, because a binary that re-execs something expects to find it
+#: and a probe that fails for the want of a `PATH` teaches nothing about the
+#: wrapper.
+_PROBE_ENV = {"PATH": os.defpath}
 
 _BIN_SUBDIR = "bin"
 _CACHE_NAMESPACE = "swe-lab-supervisor"
@@ -100,6 +121,7 @@ def supervisor_version(binary: epath.PathLike) -> str:
         text=True,
         timeout=VERSION_TIMEOUT_S,
         check=False,
+        env=_PROBE_ENV,
     )
   except OSError as error:
     raise RuntimeError(
@@ -107,14 +129,15 @@ def supervisor_version(binary: epath.PathLike) -> str:
     ) from error
   if answer.returncode != 0:
     raise RuntimeError(
-        f"{path} --version exited {answer.returncode}:"
-        f" {answer.stderr.strip() or '(no stderr)'}"
+        f"{path} --version exited {answer.returncode}. Run it yourself to see"
+        " what it printed; its output is deliberately not repeated here."
     )
   fields = answer.stdout.split()
   if len(fields) < 2 or fields[0] != BINARY_NAME:
     raise RuntimeError(
-        f"{path} --version answered {answer.stdout.strip()!r}, which does not"
-        f" name {BINARY_NAME} and a version; it is some other program"
+        f"{path} --version exited 0 but does not name {BINARY_NAME} and a"
+        " version; it is some other program. Run it yourself to see what it"
+        " printed; its output is deliberately not repeated here."
     )
   return fields[1]
 

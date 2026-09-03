@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import stat
+import subprocess
 
 import pytest
 
@@ -132,6 +133,82 @@ def test_a_program_that_is_not_this_one_is_refused(answer: str, tmp_path: Path):
 
   with pytest.raises(RuntimeError, match="does not name"):
     _ = supervisor_version(binary)
+
+
+# ─── the probe runs a file somebody else named (P0, PR #400) ────────────────
+
+#: Not a credential, and shaped so a grep for it cannot match anything else.
+#: It proves the *mechanism* — that what the child prints reaches the
+#: exception — without putting a real secret near a test.
+_SENTINEL = "swe-lab-sentinel-b3f1a7"
+
+
+def test_the_probe_never_repeats_what_the_child_printed(tmp_path: Path):
+  """An exception travels into logs, tracebacks and CI transcripts.
+
+  The file being run is one an operator named — a wrong path, a stale build,
+  in principle anything — so a process that printed a credential and exited
+  nonzero would have written it wherever this error was reported.
+
+  **The sentinel is baked into the script rather than read from the
+  environment, and that is the whole design of this test.** Sourcing it from
+  the environment would make this pass as soon as *either* fix is in place:
+  with the probe's environment scrubbed the child prints nothing, so an
+  exception that echoed stderr verbatim would still show no sentinel. The two
+  measures would mask each other and the test would name one property while
+  measuring another. (Measured: with the sentinel taken from the environment,
+  restoring the verbatim echo left this green.)
+  """
+  loud = _script(tmp_path / "loud", f'echo "{_SENTINEL}" >&2; exit 9')
+
+  # The input is live: this script does print it, to a caller who looks.
+  direct = subprocess.run(
+      [str(loud)], capture_output=True, text=True, check=False
+  )
+  assert _SENTINEL in direct.stderr
+
+  with pytest.raises(RuntimeError) as raised:
+    _ = supervisor_version(loud)
+
+  assert _SENTINEL not in str(raised.value)
+
+
+def test_the_probe_repeats_nothing_from_a_program_that_exits_zero_either(
+    tmp_path: Path,
+):
+  """The other error path prints too, and it is the likelier one.
+
+  A binary that answers 0 with the wrong text reaches the "does not name"
+  branch, and a credential printed on stdout would have been quoted into it.
+  """
+  loud = _script(tmp_path / "loud", f'echo "{_SENTINEL}"')
+
+  with pytest.raises(RuntimeError) as raised:
+    _ = supervisor_version(loud)
+
+  assert _SENTINEL not in str(raised.value)
+
+
+def test_the_probe_does_not_hand_the_child_our_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+  """`--version` needs no credential, so the probe passes none.
+
+  Not a boundary on its own — a child running as this user can read
+  `/proc/<parent>/environ` whatever we pass it — which is why the errors above
+  say nothing either. This narrows what a merely careless binary picks up;
+  those stop a deliberate leak from being written down.
+  """
+  reporter = _script(
+      tmp_path / "reporter",
+      f'echo "{BINARY_NAME} 1.0.0"; echo "$SENTINEL_VAR" > "{tmp_path}/seen"',
+  )
+  monkeypatch.setenv("SENTINEL_VAR", _SENTINEL)
+
+  assert supervisor_version(reporter) == "1.0.0"
+
+  # The child ran, and saw nothing where the variable would have been.
+  assert (tmp_path / "seen").read_text().strip() == ""
 
 
 def test_without_a_release_or_a_local_build_there_is_nothing_to_verify(
