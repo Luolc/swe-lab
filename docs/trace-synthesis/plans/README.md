@@ -397,11 +397,13 @@ backend, bind-mounted or not.
   artifact CI verifies structurally.
 - **Verification:** the crate's own tests, and CI's `rust` job.
 - **Dependencies:** [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
-  (the channel), task 05 (the policy it reproduces). Not blocked on the three
-  open defects [#380](https://github.com/Luolc/swe-lab/issues/380),
+  (the channel), task 05 (the policy it descends from). The three defects the
+  replay measured in the host runtime —
+  [#380](https://github.com/Luolc/swe-lab/issues/380),
   [#381](https://github.com/Luolc/swe-lab/issues/381),
-  [#383](https://github.com/Luolc/swe-lab/issues/383): each is carried across
-  behind one named place (plan §7).
+  [#383](https://github.com/Luolc/swe-lab/issues/383) — are fixed in this
+  runtime rather than reproduced (plan §7); the two runtimes diverge on
+  purpose.
   **Scope:** L
 
 ## Task 06: Trace-quality scorer (decide whether to build)
