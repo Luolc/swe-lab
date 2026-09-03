@@ -180,10 +180,12 @@ Two rules on the guidebook:
    optional; whether the reason is genuinely derivable is again a reader's
    judgement, not a test.
 
-The guidebook is **private**: it is intended never to enter the actor's context
-or the training trace. Nothing enforces that yet — see
+The guidebook is **private from the actor, not from the Supervisor**: phase C's
+Supervisor receives it in full, while it is intended never to enter the actor's
+context or the training trace. Nothing enforces that yet — see
 [§12](#12-invariants-intended-enforced-where-marked) for the test that must land
-with the code.
+with the code. The remaining guidebook/supervision passages await later
+alignment.
 
 ### Phase C — the guided rollout
 

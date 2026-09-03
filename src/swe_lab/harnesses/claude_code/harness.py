@@ -47,6 +47,7 @@ from swe_lab.sandbox import (
     SandboxError,
     SandboxFs,
     SandboxObserver,
+    WORKSPACE_ENV,
 )
 from swe_lab.trace_synthesis.native_supervision import (
     API_KEY_ENV as SUPERVISOR_API_KEY_ENV,
@@ -905,6 +906,15 @@ class ClaudeCodeHarness(Harness):
     """
     assert self.segmented is not None
 
+    guidebook: str | None = None
+    if self.segmented.guidebook_name is not None:
+      guidebook = read_text(sb, self.segmented.guidebook_name)
+      _ = sb.run_command(
+          f'rm -f -- "${WORKSPACE_ENV}"/'
+          f"{shlex.quote(self.segmented.guidebook_name)}",
+          timeout=min(timeout, 10.0),
+      )
+
     def launch(request: SegmentRequest) -> ExecResult:
       if request.index == 0:
         # One truncation, before the first of the appending redirects. A stale
@@ -938,6 +948,7 @@ class ClaudeCodeHarness(Harness):
             if self.capture == "proxy"
             else None
         ),
+        guidebook=guidebook,
     )
     try:
       return loop.run(timeout=timeout)
