@@ -148,10 +148,17 @@ reused since names another, which is left alone — and every held
 continuation and the group's are attempted whatever another did, the
 failures counted in one error. The actor's end takes every step whatever an
 earlier one did — the continuation, the gate, `SIGTERM`, the grace,
-`SIGKILL`, the reap, the sweep — and returns nothing, an error included,
-before both drains are joined, bounded by one grace for the two: a reader
-still running would be writing the event log the summary digests next.
-What went wrong on the way is carried out and makes the run unclean. Both
+`SIGKILL`, the reap, the sweep — and then settles both drains before it
+returns anything, an error included: one grace for the two to reach end of
+file; a reader still going then (something the sweep could not find holds
+its pipe) is told to stop and woken, comes back at once and is joined, the
+drain on record as stopped short. The one reader no wake-up reaches is one
+stuck in a write to its log; it is left behind after a further bound (one
+second), the drain on record as unfinished, and **the event log gets no
+digest** — a digest of a file a reader may still write looks exactly like a
+correct one, so none is published: null rather than false. Never an
+unbounded wait: a held pipe must not become a hung wrapper. What went
+wrong on the way is carried out and makes the run unclean. Both
 mechanisms sit behind the reader's gate and the `Actor` handle; a config
 picks one (§2).
 

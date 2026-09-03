@@ -90,8 +90,9 @@ const JUDGMENT_ROW_RESERVE: u64 = 16 * 1024;
 /// text has a ceiling of its own (`prompt::MAX_INTERVENTION_CHARS`).
 const MAX_ROW_STRING_CHARS: usize = 256;
 
-/// What a delivery may add to a boundary's row after it was fitted: its
-/// kind, and a bounded reason it was not delivered.
+/// The room a delivery's outcome row (`spoke` or `gap`, behind the
+/// `correction` row) takes at most: the row's fixed fields and a bounded
+/// reason. Tied to the largest such row by the reserve's named test.
 const DELIVERY_MARGIN: u64 = 2 * 1024;
 
 /// How long the loop sleeps between checks of the stop flag, the leader and
@@ -1114,34 +1115,11 @@ impl Loop {
         // holds the receiver.
         drop(inbox);
         let grace = Duration::from_millis(config.timeouts.term_grace_ms);
-        let (status, stragglers) = match actor.end(grace) {
-            Ok(ended) => {
-                if !ended.teardown.is_empty() {
-                    unclean.get_or_insert_with(|| {
-                        format!("ending the actor: {}", ended.teardown.join("; "))
-                    });
-                }
-                for (stream, drain) in [("stdout", ended.stdout), ("stderr", ended.stderr)] {
-                    if let Some(reason) = drain_fault(stream, drain) {
-                        unclean.get_or_insert(reason);
-                    }
-                }
-                let stragglers = match ended.stragglers {
-                    Ok(count) => count,
-                    Err(reason) => {
-                        unclean.get_or_insert_with(|| {
-                            format!("no proof that no descendant of the actor survived: {reason}")
-                        });
-                        0
-                    }
-                };
-                (Some(ended.status), stragglers)
-            }
-            Err(error) => {
-                unclean.get_or_insert_with(|| format!("ending the actor: {error}"));
-                (None, 0)
-            }
-        };
+        let Teardown {
+            status,
+            stragglers,
+            stdout_settled,
+        } = end_actor(actor, grace, &mut unclean);
         // Debug builds only: a hold here, for the test that a stop raised
         // after the run's fate was decided changes nothing.
         hold_before_summary();
@@ -1157,7 +1135,16 @@ impl Loop {
                 None
             }
         };
-        let actor_event_log_sha256 = digest("event log", &mut event_log);
+        // No digest of a file that cannot be vouched for as at rest: a
+        // digest of a file still growing looks exactly like a correct one,
+        // and would let a reader take a record that was still changing for
+        // a verified one. Null rather than false; the run is unclean
+        // already, and `accounted_for` requires the digest.
+        let actor_event_log_sha256 = if stdout_settled {
+            digest("event log", &mut event_log)
+        } else {
+            None
+        };
         let supervisor_log_sha256 = digest("supervisor log", log.get_mut());
         let supervisor_exit = if cancelled.is_some() {
             SupervisorExit::Terminated
@@ -1296,13 +1283,63 @@ thread_local! {
     static FAIL_JUDGE_SPAWN: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
+/// What ending the actor left: its status and stragglers, and whether the
+/// stdout reader is done with the event log — joined, at end of file or
+/// stopped short. One left behind, stuck in a write, may still add to the
+/// file, and `stdout_settled` is false.
+struct Teardown {
+    status: Option<ExitStatus>,
+    stragglers: usize,
+    stdout_settled: bool,
+}
+
+/// End the actor and account for how that went: every fault into
+/// `unclean`, first one wins.
+fn end_actor(actor: Actor, grace: Duration, unclean: &mut Option<String>) -> Teardown {
+    let mut settled = false;
+    let (status, stragglers) = match actor.end(grace) {
+        Ok(ended) => {
+            if !ended.teardown.is_empty() {
+                unclean.get_or_insert_with(|| {
+                    format!("ending the actor: {}", ended.teardown.join("; "))
+                });
+            }
+            settled = ended.stdout.is_some();
+            for (stream, drain) in [("stdout", ended.stdout), ("stderr", ended.stderr)] {
+                if let Some(reason) = drain_fault(stream, drain) {
+                    unclean.get_or_insert(reason);
+                }
+            }
+            let stragglers = match ended.stragglers {
+                Ok(count) => count,
+                Err(reason) => {
+                    unclean.get_or_insert_with(|| {
+                        format!("no proof that no descendant of the actor survived: {reason}")
+                    });
+                    0
+                }
+            };
+            (Some(ended.status), stragglers)
+        }
+        Err(error) => {
+            unclean.get_or_insert_with(|| format!("ending the actor: {error}"));
+            (None, 0)
+        }
+    };
+    Teardown {
+        status,
+        stragglers,
+        stdout_settled: settled,
+    }
+}
+
 /// What a drain's ending says against the run, if anything.
 fn drain_fault(stream: &str, drain: Option<Result<(), String>>) -> Option<String> {
     match drain {
         Some(Ok(())) => None,
         Some(Err(error)) => Some(format!("the actor's {stream}: {error}")),
         None => Some(format!(
-            "the actor's {stream}: the drain did not finish within the grace; a process the wrapper could not find still holds the pipe"
+            "the actor's {stream}: the drain did not finish within the grace nor stop when told — stuck in a write to its log — and was left behind"
         )),
     }
 }
@@ -1580,6 +1617,68 @@ mod tests {
         }
     }
 
+    /// A stdout reader left behind — stuck in a write to an event log that
+    /// is a pipe nobody reads — leaves the event log unsettled: the account
+    /// is unclean and says so, and `finish` takes no digest of that log.
+    /// The control is a reader that reaches end of file.
+    #[test]
+    fn an_actor_whose_reader_was_left_behind_leaves_the_event_log_unsettled() {
+        use std::os::unix::fs::OpenOptionsExt;
+        for stuck in [true, false] {
+            let dir = std::env::temp_dir().join(format!(
+                "swe-lab-supervisor-unsettled-{stuck}-{}",
+                std::process::id()
+            ));
+            std::fs::create_dir_all(&dir).unwrap();
+            let (log, reader, script) = if stuck {
+                let fifo = dir.join("events.fifo");
+                nix::unistd::mkfifo(&fifo, nix::sys::stat::Mode::S_IRWXU).unwrap();
+                let reader = File::options()
+                    .read(true)
+                    .custom_flags(nix::fcntl::OFlag::O_NONBLOCK.bits())
+                    .open(&fifo)
+                    .unwrap();
+                let log = File::options().write(true).open(&fifo).unwrap();
+                (log, Some(reader), "while :; do echo flood; done")
+            } else {
+                (
+                    File::create(dir.join("events.jsonl")).unwrap(),
+                    None,
+                    "echo one",
+                )
+            };
+            let argv: Vec<OsString> = ["sh", "-c", script].iter().map(OsString::from).collect();
+            let actor = Actor::spawn(
+                actor::command(&argv, &[]).unwrap(),
+                log,
+                File::create(dir.join("stderr.log")).unwrap(),
+                actor::Limits {
+                    line: 1024,
+                    stdout: u64::MAX,
+                    stderr: u64::MAX,
+                },
+                |_| {},
+            )
+            .unwrap();
+            thread::sleep(Duration::from_millis(300));
+            let mut unclean = None;
+            let teardown = end_actor(actor, Duration::from_millis(500), &mut unclean);
+            assert_eq!(teardown.stdout_settled, !stuck, "stuck: {stuck}");
+            if stuck {
+                assert!(
+                    unclean
+                        .as_deref()
+                        .is_some_and(|u| u.contains("left behind")),
+                    "{unclean:?}"
+                );
+            } else {
+                assert_eq!(unclean, None);
+            }
+            drop(reader);
+            std::fs::remove_dir_all(dir).unwrap();
+        }
+    }
+
     /// The room held for a judgment's row is enough for the row with every
     /// string that came from outside at its ceiling and the raw answers
     /// gone — before the delivery's word, with the margin the delivery
@@ -1641,6 +1740,20 @@ mod tests {
         row.insert("kind".into(), json!("unjudged"));
         row.insert("reason".into(), json!(bounded_widest));
         assert!(bytes(&row) <= JUDGMENT_ROW_RESERVE, "{}", bytes(&row));
+        // The largest outcome row a delivery adds behind the `correction`
+        // row: every field `speak` gives it, at its ceiling.
+        let mut outcome = Map::new();
+        outcome.insert("cursor".into(), json!(u64::MAX));
+        outcome.insert("at".into(), json!(utc_now_iso8601()));
+        outcome.insert("policy".into(), json!(POLICY_NAME));
+        outcome.insert("kind".into(), json!("spoke"));
+        outcome.insert(
+            "evidence".into(),
+            json!(Disposition::ExcludedOwnIntervention.as_str()),
+        );
+        outcome.insert("boundary".into(), json!(u64::MAX));
+        outcome.insert("reason".into(), json!(bounded_widest));
+        assert!(bytes(&outcome) <= DELIVERY_MARGIN, "{}", bytes(&outcome));
     }
 
     /// Control characters do not survive bounding, and a cut is marked.

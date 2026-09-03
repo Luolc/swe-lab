@@ -44,7 +44,7 @@ use std::os::fd::{AsFd, BorrowedFd, OwnedFd};
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::process::CommandExt;
 use std::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, ExitStatus, Stdio};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::sync::{Arc, Condvar, Mutex, PoisonError};
 use std::thread::{self, JoinHandle};
@@ -98,6 +98,16 @@ const STDIN_POLL_MS: u8 = 100;
 /// The reason a drain stops at its cap.
 const CAP_REACHED: &str = "the log's byte cap was reached";
 
+/// The message a drain ends with when it was told to stop before end of
+/// file: the grace was spent and something the sweep could not find still
+/// held the pipe.
+const STOPPED_BEFORE_EOF: &str = "stopped before end of file: something the wrapper could not find still held the pipe when the grace was spent";
+
+/// How long a reader told to stop is given to come back before it is left
+/// behind: it returns at once from a wait on its pipe, and the bound is for
+/// the one wait no wake-up reaches — a write to its log that has stalled.
+const READER_STOP_BOUND: Duration = Duration::from_secs(1);
+
 /// The queue between the reader threads and their consumer, bounded to
 /// [`EVENT_QUEUE_LINES`] entries.
 #[must_use]
@@ -145,8 +155,11 @@ pub struct Ended {
     /// The leader's exit status.
     pub status: ExitStatus,
     /// How the stdout drain ended: `Ok` at end of file, or the error it
-    /// stopped with. `None` if it had not finished within the grace — a
-    /// writer the sweep could not find still holds the pipe.
+    /// stopped with — [`STOPPED_BEFORE_EOF`] when the grace was spent with
+    /// the pipe still held and the reader was told to stop, and came back.
+    /// `None` when it did not come back either — stuck in a write to its
+    /// log — and was left behind, still holding the log: the caller takes
+    /// no digest of that log.
     pub stdout: Option<Result<(), String>>,
     /// The same for the stderr drain.
     pub stderr: Option<Result<(), String>>,
@@ -247,8 +260,13 @@ pub struct Actor {
     /// `SIGSTOP` was sent to the group and no `SIGCONT` has followed. A real
     /// state the wrapper guarantees it leaves before it exits.
     /// The write end of the pipe that wakes the stdout reader for a
-    /// barrier; the reader holds the read end.
+    /// barrier, or to stop; the reader holds the read end.
     wake: OwnedFd,
+    /// The same for the stderr reader, which is only ever woken to stop.
+    wake_stderr: OwnedFd,
+    /// Set by [`Actor::end`] once the grace is spent: a reader woken after
+    /// this returns without waiting for end of file.
+    stopping: Arc<AtomicBool>,
     /// The id of the barrier asked for and not yet reported, or zero.
     barrier: Arc<AtomicU64>,
     frozen: bool,
@@ -321,7 +339,9 @@ impl Actor {
         // The reader's wake-up: a byte on this pipe makes it look for a
         // barrier request. Close-on-exec, so the actor never holds it.
         let (wake_read, wake_write) = pipe2(OFlag::O_CLOEXEC | OFlag::O_NONBLOCK)?;
+        let (wake_stderr_read, wake_stderr_write) = pipe2(OFlag::O_CLOEXEC | OFlag::O_NONBLOCK)?;
         let barrier = Arc::new(AtomicU64::new(0));
+        let stopping = Arc::new(AtomicBool::new(false));
         let child = command.spawn()?;
         let group = Pid::from_raw(
             i32::try_from(child.id()).map_err(|_| io::Error::other("actor pid does not fit"))?,
@@ -335,6 +355,8 @@ impl Actor {
             stdin: None,
             gate: Arc::new(Gate::new()),
             wake: wake_write,
+            wake_stderr: wake_stderr_write,
+            stopping: Arc::clone(&stopping),
             barrier: Arc::clone(&barrier),
             frozen: false,
             held: Vec::new(),
@@ -360,35 +382,34 @@ impl Actor {
         let events = Arc::new(events);
         let gate = Arc::clone(&actor.gate);
         let report = Arc::clone(&events);
+        let stop_stdout = Arc::clone(&stopping);
         actor.stdout_drain = Some(thread::Builder::new().name("actor-stdout".into()).spawn(
             move || {
+                let wakeup = Wakeup {
+                    pipe: &wake_read,
+                    barrier: &barrier,
+                    stopping: &stop_stdout,
+                };
                 let result = drain_stdout(
                     stdout,
                     &gate,
                     EventLog::new(event_log),
                     limits,
                     &*report,
-                    &wake_read,
-                    &barrier,
+                    wakeup,
                 )
                 .map_err(|e| e.to_string());
                 report(Event::StdoutClosed(result.clone()));
                 result
             },
         )?);
-        #[cfg(test)]
-        if FAIL_STDERR_THREAD.with(std::cell::Cell::get) {
-            return Err(io::Error::other(
-                "injected: the stderr reader could not start",
-            ));
-        }
-        actor.stderr_drain = Some(thread::Builder::new().name("actor-stderr".into()).spawn(
-            move || {
-                let result =
-                    drain_stderr(stderr, stderr_log, limits.stderr).map_err(|e| e.to_string());
-                events(Event::StderrClosed(result.clone()));
-                result
-            },
+        actor.stderr_drain = Some(spawn_stderr_reader(
+            stderr,
+            stderr_log,
+            limits.stderr,
+            wake_stderr_read,
+            stopping,
+            events,
         )?);
         Ok(actor)
     }
@@ -580,14 +601,22 @@ impl Actor {
     /// up to `grace` for the leader to exit, `SIGKILL` to whatever is left —
     /// grandchildren included — the reap (an unreaped leader is what keeps
     /// its pid naming this group and no other), the sweep for stragglers, and
-    /// up to `grace` more for the two drains to reach end of file. A consumer
-    /// that stopped receiving must drop its receiver before calling this, or
-    /// a reader blocked on the full queue never reaches it.
+    /// up to `grace` more for the two drains to reach end of file. A drain
+    /// still going then — something the sweep could not find holds its pipe
+    /// — is told to stop and woken, comes back at once and is joined, on
+    /// record as stopped short. The one reader no wake-up reaches is one
+    /// stuck in a write to its log; it is left behind after
+    /// [`READER_STOP_BOUND`] more, reported unfinished (`None`), and the
+    /// caller takes no digest of that log. Every step is taken whatever the
+    /// ones before it did; what went wrong on the way is carried in
+    /// [`Ended::teardown`]. A consumer that stopped receiving must drop its
+    /// receiver before calling this, or a reader blocked on the full queue
+    /// never reaches it.
     ///
     /// # Errors
     ///
-    /// A signal or the final wait failed for a reason other than the group
-    /// being already gone.
+    /// The leader could not be reaped — its status is unknown. Returned
+    /// only once the drains are settled all the same.
     pub fn end(mut self, grace: Duration) -> io::Result<Ended> {
         // Every step is taken whatever the ones before it did; what went
         // wrong is carried out, not returned early — nothing leaves here
@@ -631,14 +660,31 @@ impl Actor {
         let status = self.child.wait();
         self.reaped = status.is_ok();
         let stragglers = sweep(&self.mark, self.group, self.started);
-        // Bounded: one `grace` for both drains together, from here. A drain
-        // that has not ended by then — a writer the sweep could not find
-        // still holds its pipe — is reported `None`, a fault upstream, and
-        // its thread is left behind; it is never waited for without bound,
-        // which would turn a held pipe into a hung wrapper.
+        // Bounded, in two stages. First one `grace` for both drains
+        // together, for the reads to reach end of file. A drain still going
+        // then is one whose pipe something the sweep could not find still
+        // holds: it is told to stop and woken, and comes back at once, the
+        // drain reported as stopped short — unless it is stuck in a write
+        // to its log, the one wait no wake-up reaches; that one is left
+        // behind after `READER_STOP_BOUND` more and reported unfinished,
+        // and the caller takes no digest of a log a reader may still write.
+        // Never an unbounded wait: a held pipe must not become a hung
+        // wrapper.
         let deadline = Instant::now() + grace;
-        let stdout = finish(&mut self.stdout_drain, deadline);
-        let stderr = finish(&mut self.stderr_drain, deadline);
+        let mut stdout = finish(&mut self.stdout_drain, deadline);
+        let mut stderr = finish(&mut self.stderr_drain, deadline);
+        if stdout.is_none() || stderr.is_none() {
+            self.stopping.store(true, Ordering::SeqCst);
+            let _ = nix::unistd::write(&self.wake, &[1u8]);
+            let _ = nix::unistd::write(&self.wake_stderr, &[1u8]);
+            let deadline = Instant::now() + READER_STOP_BOUND;
+            if stdout.is_none() {
+                stdout = finish(&mut self.stdout_drain, deadline);
+            }
+            if stderr.is_none() {
+                stderr = finish(&mut self.stderr_drain, deadline);
+            }
+        }
         let status = status.map_err(|error| {
             let earlier = if teardown.is_empty() {
                 String::new()
@@ -672,6 +718,34 @@ impl Drop for Actor {
         self.reaped = true;
         let _ = sweep(&self.mark, self.group, self.started);
     }
+}
+
+/// The stderr reader's thread.
+fn spawn_stderr_reader<F>(
+    stderr: ChildStderr,
+    log: File,
+    cap: u64,
+    wake: OwnedFd,
+    stopping: Arc<AtomicBool>,
+    events: Arc<F>,
+) -> io::Result<JoinHandle<Result<(), String>>>
+where
+    F: Fn(Event) + Send + Sync + 'static,
+{
+    #[cfg(test)]
+    if FAIL_STDERR_THREAD.with(std::cell::Cell::get) {
+        return Err(io::Error::other(
+            "injected: the stderr reader could not start",
+        ));
+    }
+    thread::Builder::new()
+        .name("actor-stderr".into())
+        .spawn(move || {
+            let result =
+                drain_stderr(stderr, log, cap, &wake, &stopping).map_err(|e| e.to_string());
+            events(Event::StderrClosed(result.clone()));
+            result
+        })
 }
 
 /// A teardown step's failure, noted and moved past.
@@ -769,6 +843,8 @@ fn finish(
         thread::sleep(EXIT_POLL_INTERVAL);
     }
     if !handle.is_finished() {
+        // Still going: kept, so that a later bound can be waited on.
+        *drain = Some(handle);
         return None;
     }
     Some(
@@ -1350,9 +1426,13 @@ fn drain_stdout(
     mut log: EventLog,
     limits: Limits,
     events: &dyn Fn(Event),
-    wake: &OwnedFd,
-    barrier: &AtomicU64,
+    wakeup: Wakeup<'_>,
 ) -> io::Result<()> {
+    let Wakeup {
+        pipe: wake,
+        barrier,
+        stopping,
+    } = wakeup;
     let mut framer = Framer::new(limits.line);
     let mut chunk = vec![0u8; READ_CHUNK_BYTES];
     let mut pending = Vec::new();
@@ -1361,20 +1441,13 @@ fn drain_stdout(
         gate.wait_open();
         // Wait for stdout or a wake-up, whichever comes first: a barrier
         // asked for while the actor is stopped would otherwise wait behind
-        // a read that nothing will satisfy.
-        let (readable, woken) = {
-            let mut wait = [
-                PollFd::new(stdout.as_fd(), PollFlags::POLLIN),
-                PollFd::new(wake.as_fd(), PollFlags::POLLIN),
-            ];
-            match poll(&mut wait, PollTimeout::NONE) {
-                Ok(_) | Err(Errno::EINTR) => {}
-                Err(errno) => return Err(io::Error::from(errno)),
-            }
-            (ready(&wait[0]), ready(&wait[1]))
-        };
+        // a read that nothing will satisfy — and so would the stop.
+        let (readable, woken) = readable_or_woken(stdout.as_fd(), wake)?;
         if woken {
             drain_wake(wake)?;
+            if stopping.load(Ordering::SeqCst) {
+                return Err(io::Error::other(STOPPED_BEFORE_EOF));
+            }
         }
         if readable {
             let read = stdout.read(&mut chunk)?;
@@ -1400,6 +1473,31 @@ fn drain_stdout(
         events(Event::Barrier(asked));
     }
     Ok(())
+}
+
+/// What the stdout reader is woken for, and told.
+#[derive(Clone, Copy)]
+struct Wakeup<'a> {
+    /// The read end of the wake pipe.
+    pipe: &'a OwnedFd,
+    /// The id of the barrier asked for, or zero.
+    barrier: &'a AtomicU64,
+    /// Whether to stop rather than wait for end of file.
+    stopping: &'a AtomicBool,
+}
+
+/// Wait until `fd` has something to say or a byte arrives on `wake`,
+/// whichever comes first; which of the two it was.
+fn readable_or_woken(fd: BorrowedFd<'_>, wake: &OwnedFd) -> io::Result<(bool, bool)> {
+    let mut wait = [
+        PollFd::new(fd, PollFlags::POLLIN),
+        PollFd::new(wake.as_fd(), PollFlags::POLLIN),
+    ];
+    match poll(&mut wait, PollTimeout::NONE) {
+        Ok(_) | Err(Errno::EINTR) => {}
+        Err(errno) => return Err(io::Error::from(errno)),
+    }
+    Ok((ready(&wait[0]), ready(&wait[1])))
 }
 
 /// Whether a polled descriptor has anything to say: data, a hang-up, or an
@@ -1492,11 +1590,29 @@ fn charge(budget: &mut u64, bytes: usize, newline: bool) -> io::Result<()> {
 }
 
 /// Copy stderr to its log up to the cap, exact to the byte; past it, the
-/// drain stops and the actor's next stderr write eventually blocks.
-fn drain_stderr(mut stderr: ChildStderr, mut log: File, cap: u64) -> io::Result<()> {
+/// drain stops and the actor's next stderr write eventually blocks. Told
+/// to stop (`stopping`, with a byte on `wake`), it returns without waiting
+/// for end of file.
+fn drain_stderr(
+    mut stderr: ChildStderr,
+    mut log: File,
+    cap: u64,
+    wake: &OwnedFd,
+    stopping: &AtomicBool,
+) -> io::Result<()> {
     let mut chunk = vec![0u8; READ_CHUNK_BYTES];
     let mut budget = cap;
     loop {
+        let (readable, woken) = readable_or_woken(stderr.as_fd(), wake)?;
+        if woken {
+            drain_wake(wake)?;
+            if stopping.load(Ordering::SeqCst) {
+                return Err(io::Error::other(STOPPED_BEFORE_EOF));
+            }
+        }
+        if !readable {
+            continue;
+        }
         let read = stderr.read(&mut chunk)?;
         if read == 0 {
             return Ok(());
@@ -1590,17 +1706,52 @@ mod tests {
         }
     }
 
-    /// The actor's end takes every step whatever an earlier one did, and
-    /// returns nothing before both drains are joined, bounded by the grace:
-    /// an actor whose event log is a pipe nobody reads has a stdout drain
-    /// that cannot finish, and `end` — its continuation failing, injected —
-    /// returns after the grace, the failure carried in `teardown`, the
-    /// drain `None`, the leader reaped. Before, the failure returned at
-    /// once, the drain left running over a log the caller digests next.
+    /// A pipe something the sweep cannot find still holds: an unmarked
+    /// `setsid` holder keeps the actor's stdout open past the group's death,
+    /// so the drain cannot reach end of file. Told to stop once the grace is
+    /// spent, it comes back and is joined — `end` returns with the drain
+    /// stopped short, and the event log does not change after that. Before,
+    /// the drain was left running, the handle dropped.
     #[test]
-    fn ending_an_actor_takes_every_step_and_joins_its_drains_within_the_grace() {
+    fn a_reader_whose_pipe_is_still_held_is_stopped_and_joined_when_the_grace_is_spent() {
+        let dir = scratch("end-held-pipe");
+        let (actor, _rx) = launch(&dir, "setsid env -i sleep 5 & echo held; exit 0", 1024);
+        thread::sleep(Duration::from_millis(300));
+        let grace = Duration::from_millis(500);
+        let started = Instant::now();
+        let ended = actor.end(grace).unwrap();
+        let took = started.elapsed();
+        assert!(
+            took >= grace && took < grace + READER_STOP_BOUND,
+            "{took:?}"
+        );
+        assert!(ended.teardown.is_empty(), "{:?}", ended.teardown);
+        match &ended.stdout {
+            Some(Err(reason)) => assert!(reason.contains("stopped before end of file"), "{reason}"),
+            other => panic!("the held drain: {other:?}"),
+        }
+        assert!(ended.stderr.is_some());
+        let log = dir.join("events.jsonl");
+        let size = fs::metadata(&log).unwrap().len();
+        thread::sleep(Duration::from_millis(200));
+        assert_eq!(
+            fs::metadata(&log).unwrap().len(),
+            size,
+            "the log changed after `end`"
+        );
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// The residue: a reader stuck in a write to its log — the event log is
+    /// a pipe nobody reads, so the write never returns — is the one wait no
+    /// wake-up reaches. `end` — its continuation failing, injected — takes
+    /// every step, waits the grace and the stop bound, and returns with the
+    /// failure carried and the drain reported unfinished, the leader
+    /// reaped. Before, the failure returned at once.
+    #[test]
+    fn a_reader_stuck_in_a_write_is_left_behind_after_the_grace_and_the_stop_bound() {
         use std::os::unix::fs::OpenOptionsExt;
-        let dir = scratch("end-teardown");
+        let dir = scratch("end-stuck-write");
         let fifo = dir.join("events.fifo");
         mkfifo(&fifo, Mode::S_IRWXU).unwrap();
         // The read end is held open and never read: the writer fills the
@@ -1632,14 +1783,15 @@ mod tests {
         let grace = Duration::from_millis(500);
         let started = Instant::now();
         let ended = actor.end(grace).unwrap();
-        assert!(started.elapsed() >= grace, "{:?}", started.elapsed());
-        assert!(started.elapsed() < grace * 4, "{:?}", started.elapsed());
+        let took = started.elapsed();
+        assert!(took >= grace + READER_STOP_BOUND, "{took:?}");
+        assert!(took < (grace + READER_STOP_BOUND) * 3, "{took:?}");
         assert!(
             ended.teardown.iter().any(|step| step.contains("injected")),
             "{:?}",
             ended.teardown
         );
-        assert_eq!(ended.stdout, None, "a drain nobody reads finished?");
+        assert_eq!(ended.stdout, None, "a drain stuck in a write came back?");
         assert!(ended.stderr.is_some());
         assert!(!ended.status.success());
         drop(reader);

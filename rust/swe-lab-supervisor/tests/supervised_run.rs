@@ -1177,3 +1177,57 @@ fn events_during_a_judgment_cannot_take_the_room_held_for_its_record() {
     assert_eq!(judged["calls"][0]["purpose"], "judge", "{context}");
     fs::remove_dir_all(&run.dir).unwrap();
 }
+
+/// One assistant line, then stdin closed while the actor lives on a while.
+const STDIN_CLOSING_ACTOR: &str = r#"
+( sleep 30; kill -TERM $$ ) >/dev/null 2>&1 </dev/null &
+read -r prompt || exit 90
+printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"ONE"}]}}'
+exec 0<&-
+sleep 2
+exit 0
+"#;
+
+/// The other half of the pair: the `correction` row on disk, then the write
+/// to stdin fails — the actor closed it — and the outcome row is a `gap`
+/// for the same boundary, no `spoke`, no correction counted, one gap.
+#[test]
+fn a_correction_the_actor_would_not_take_is_a_gap_behind_its_record() {
+    let run = supervise_scenario(&Scenario {
+        name: "gap-after-record",
+        blocking: "off",
+        actor: STDIN_CLOSING_ACTOR,
+        judge_every_n_assistant_messages: 1,
+        answers: vec![
+            json!({"off_track": true, "self_correcting": false, "reason": MARKER}).to_string(),
+            CORRECTION.to_string(),
+        ],
+        answer_delay: Duration::from_millis(200),
+        stdout_cap: 1_048_576,
+        cancel_after: None,
+        hold_before_summary: None,
+    });
+    let context = format!(
+        "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
+        run.wrapper_stderr, run.supervisor_log, run.summary
+    );
+    let rows = rows_of(&run.supervisor_log);
+    let kinds: Vec<&str> = rows.iter().map(|r| r["kind"].as_str().unwrap()).collect();
+    let at = kinds
+        .iter()
+        .position(|kind| *kind == "correction")
+        .expect(&context);
+    assert_eq!(kinds[at + 1], "gap", "{context}");
+    assert_eq!(rows[at]["boundary"], rows[at + 1]["boundary"], "{context}");
+    assert_eq!(rows[at]["text"], CORRECTION, "{context}");
+    assert!(
+        rows[at + 1]["reason"].as_str().unwrap().contains("stdin"),
+        "{context}"
+    );
+    assert!(!kinds.contains(&"spoke"), "{context}");
+    let summary: Value = serde_json::from_str(&run.summary).unwrap();
+    assert_eq!(summary["corrections"], 0, "{context}");
+    assert_eq!(summary["gaps"], 1, "{context}");
+    assert_eq!(summary["accounted_for"], false, "{context}");
+    fs::remove_dir_all(&run.dir).unwrap();
+}
