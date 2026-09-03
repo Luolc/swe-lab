@@ -46,7 +46,10 @@ load through `load_dataset`) and **forwards** `sandbox_spec`, `prompt`,
 `gold_patch`, `required_tests` and `solution_sha` to it unchanged. It augments
 `mounts()` with the three failure files and, for a baseline-patched source, its
 base ref. `unit_test_spec()` delegates compilation while restoring that same
-baseline contract whenever the captured failed patch is graded.
+baseline contract whenever the captured failed patch is graded. Before the
+Oracle can run that procedure, `OracleAnalysisTask` recognizes the staged base
+ref and composes the existing `BaselineVerifyObserver`, which recomputes,
+verifies and restores the recorded tree.
 
 Why this shape and not a flattened copy of the underlying row plus the
 failure:

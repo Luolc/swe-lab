@@ -56,5 +56,6 @@ uv run python -m swe_lab run oracle_analysis <instance_id> --dataset oracle_fail
 - Every task run against a row stages the three failure files
   (`failed_conversation.json`, `failed_verdict.json`, `failed_patch.diff`);
   a baseline-patched failure additionally stages `patch.base_ref.txt` and
-  rebuilds its matching grading procedure; a run that must not see the failure
-  runs the underlying instance instead
+  rebuilds its matching grading procedure, and Oracle analysis verifies and
+  restores that recorded tree before the agent starts; a run that must not see
+  the failure runs the underlying instance instead
