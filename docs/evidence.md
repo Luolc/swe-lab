@@ -6,23 +6,13 @@ follow from it. The invariant itself is cross-repo and lives in
 `~/.agents/AGENTS.md` → 质量门 → **「无分辨力的观察不算检查」**; it is not
 restated here.
 
-**Every rule below carries a dated instance, and that is not decoration.** A rule
-separated from the case that produced it becomes an aphorism, and an aphorism
-changes nobody's action — which is the failure this whole file is about. So the
-instances are load-bearing: **do not shorten this file by deleting them.** If it
-must shrink, drop a whole rule, evidence and all, and say why.
+Each rule below carries a dated instance; **rule 12** says why that is not
+decoration.
 
-`~/.agents/AGENTS.md` also already owns three of its consequences — a check must not run
-through a pipe (the pipe reports the last stage's status), a criterion asserts a
-**positive premise** rather than excluding the bad cases you thought of, and the
-second kind, where a correct check is blind because it runs in the wrong
-environment (`docker run --init`, PID 1 and zombie reaping). Read those there.
-
-**When to stop adding control arms.** The counter-measure recurses — an arm is
-itself a check — and unbounded that is ritual, paid for out of the attention the
-next real defect needs. Two questions: *does this check bear load* (would being
-wrong switch off a downstream review?), and *is its failure silent and distant*?
-**Stop when the remaining failure mode is loud and immediate.**
+`~/.agents/AGENTS.md` also owns the consequences that follow from the invariant
+— the pipe rule, the positive-premise rule, and the wrong-environment case.
+**Their conditions and reasoning are stated there and deliberately not here**, so
+this file cannot become a second, abbreviated copy of them that drifts.
 
 ## The media it took here
 
@@ -98,14 +88,29 @@ invariant is an example above, not a rule here.
    would anyone be unaware?* A known-red check destroys the discriminating power
    of "the suite is red" for everyone, and is how a correct check gets deleted as
    flaky.
-9. **Force-push only while no reviewer has recorded a head; once one is
-   recorded, append commits instead of rewriting.** A re-review reads the
-   `old..new` delta, and rewriting history erases that starting point — turning
-   an incremental re-review into a full re-read, on a round where the reviewer's
-   attention has already been spent once. Squashing two of your own commits
-   *before* anyone has cited a head is fine, and saves them reading one change
-   twice (2026-09-03, #410).
+9. **Once a reviewer has recorded a reviewed head, add commits — never rewrite
+   what they already read.** A re-review reads the `old..new` delta, so
+   rewriting erases their starting point and turns an incremental re-review into
+   a full re-read, on a round where their attention has already been spent once.
+   **Whether rewriting history is permitted at all is not this file's to say** —
+   `~/.agents/AGENTS.md` owns that, and this rule creates no exception to it.
+   (2026-09-03, #410: a reviewer recorded a head while a follow-up was being
+   written; appending left them a one-commit delta to read.)
 10. **Make the machine poorer rather than finding a stricter one.** Scarcity can
-   be manufactured locally; abundance cannot. Reproducing a CI failure by
-   removing what the local box has is faster and more faithful than reasoning
-   about what CI lacks.
+    be manufactured locally; abundance cannot. Reproducing a CI failure by
+    removing what the local box has is faster and more faithful than reasoning
+    about what CI lacks.
+11. **Stop adding control arms when the remaining failure mode is loud and
+    immediate.** The counter-measure recurses — an arm is itself a check — and
+    unbounded that is ritual, paid out of the attention the next real defect
+    needs. Two questions: does this check bear load (would being wrong switch off
+    a downstream review?), and is its failure silent and distant? (2026-09-03,
+    #406: a hash comparison got one positive premise — `grep -c` for the
+    sentence, non-zero on each side — and stopped there, because an empty slice
+    would make that count `0` on the spot.)
+12. **Do not shorten this file by deleting the instances.** A rule cut from the
+    case that produced it is an aphorism, and an aphorism changes nobody's
+    action — the failure this whole file is about. If it must shrink, drop a
+    whole rule *with* its evidence and say why. (2026-09-03, #410: written when
+    this file was assembled, because tidying-by-deleting-cases is its predictable
+    decay and the file would otherwise contradict itself.)
