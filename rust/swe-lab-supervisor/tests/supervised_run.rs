@@ -222,6 +222,8 @@ struct Scenario<'a> {
     answers: Vec<String>,
     /// How long the endpoint takes over each answer.
     answer_delay: Duration,
+    /// `limits.max_actor_stdout_bytes`, which also caps the supervisor log.
+    stdout_cap: u64,
 }
 
 fn supervise(blocking: &str) -> Run {
@@ -237,6 +239,7 @@ fn supervise(blocking: &str) -> Run {
                 .to_string(),
         ],
         answer_delay: Duration::ZERO,
+        stdout_cap: 1_048_576,
     })
 }
 
@@ -268,7 +271,7 @@ fn supervise_scenario(scenario: &Scenario<'_>) -> Run {
             "timeouts": {"model_call_ms": 10_000, "term_grace_ms": 2_000},
             "limits": {
                 "max_event_line_bytes": 65_536,
-                "max_actor_stdout_bytes": 1_048_576,
+                "max_actor_stdout_bytes": scenario.stdout_cap,
                 "max_actor_stderr_bytes": 1_048_576,
             },
         })
@@ -545,6 +548,7 @@ fn under_sigstop_the_snapshot_holds_everything_written_before_the_stop() {
         judge_every_n_assistant_messages: 1,
         answers: vec![SILENT.to_string()],
         answer_delay: Duration::ZERO,
+        stdout_cap: 1_048_576,
     });
     let context = format!(
         "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
@@ -570,9 +574,23 @@ fn under_sigstop_the_snapshot_holds_everything_written_before_the_stop() {
         .filter(|r| r.get("boundary").is_some())
         .collect();
     assert_eq!(judged.len(), 1, "{context}");
-    // Both lines were admitted before the snapshot — and the result too,
-    // when the actor got it out before the stop landed.
-    assert!(judged[0]["cursor"].as_u64().unwrap() >= 2, "{context}");
+    // The boundary's row is about the event it fell at; its snapshot holds
+    // both lines — and the result too, when the actor got it out before
+    // the stop landed.
+    assert_eq!(judged[0]["cursor"], 1, "{context}");
+    assert!(
+        judged[0]["snapshot_cursor"].as_u64().unwrap() >= 2,
+        "{context}"
+    );
+    // Every event is on record, the folded second line as observed and
+    // as folded into the boundary rather than one of its own.
+    let events = summary["events"].as_u64().unwrap();
+    let mut cursors: Vec<u64> = rows.iter().filter_map(|r| r["cursor"].as_u64()).collect();
+    cursors.sort_unstable();
+    assert_eq!(cursors, (1..=events).collect::<Vec<u64>>(), "{context}");
+    let folded = rows.iter().find(|r| r["cursor"] == 2).unwrap();
+    assert_eq!(folded["kind"], "observed", "{context}");
+    assert_eq!(folded["folded_into"], 1, "{context}");
     fs::remove_dir_all(&run.dir).unwrap();
 }
 
@@ -605,6 +623,7 @@ fn a_boundary_during_a_judgment_keeps_its_ordinal_and_is_judged_after_it() {
         judge_every_n_assistant_messages: 1,
         answers: vec![SILENT.to_string(), SILENT.to_string()],
         answer_delay: Duration::from_secs(1),
+        stdout_cap: 1_048_576,
     });
     let context = format!(
         "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
@@ -648,6 +667,15 @@ fn a_boundary_during_a_judgment_keeps_its_ordinal_and_is_judged_after_it() {
             .contains("superseded"),
         "{context}"
     );
+    // Each boundary's row is about the event it fell at; the third's
+    // snapshot was taken after the result, once the first judgment was in.
+    assert_eq!(superseded["cursor"], 2, "{context}");
+    let third = rows
+        .iter()
+        .find(|r| r.get("boundary") == Some(&json!(3)))
+        .unwrap();
+    assert_eq!(third["cursor"], 3, "{context}");
+    assert_eq!(third["snapshot_cursor"], 4, "{context}");
     fs::remove_dir_all(&run.dir).unwrap();
 }
 
@@ -691,6 +719,7 @@ fn under_sigstop_a_descendant_that_left_the_group_is_stopped_too() {
         judge_every_n_assistant_messages: 1,
         answers: vec![SILENT.to_string(), SILENT.to_string()],
         answer_delay: Duration::from_millis(500),
+        stdout_cap: 1_048_576,
     });
     let context = format!(
         "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
@@ -707,6 +736,102 @@ fn under_sigstop_a_descendant_that_left_the_group_is_stopped_too() {
     assert!(
         states.len() >= 3 && states.iter().all(|s| *s == 'T'),
         "not every process of the actor's was stopped: {states:?}"
+    );
+    let summary: Value = serde_json::from_str(&run.summary).unwrap();
+    assert_eq!(summary["accounted_for"], true, "{context}");
+    fs::remove_dir_all(&run.dir).unwrap();
+}
+
+/// One assistant line, the result, and a wait on stdin.
+const ONE_LINE_ACTOR: &str = r#"
+( sleep 30; kill -TERM $$ ) >/dev/null 2>&1 </dev/null &
+read -r prompt || exit 90
+printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"ONE"}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","is_error":false}'
+cat >/dev/null
+exit 0
+"#;
+
+/// A judge is not asked when the supervisor log could not keep the
+/// record of the call: the endpoint sees no request, and the run ends as
+/// a fault that says so. The control is the same run under a cap with
+/// room, which asks.
+#[test]
+fn a_judge_is_not_asked_when_its_record_could_not_be_kept() {
+    let run = supervise_scenario(&Scenario {
+        name: "no-room",
+        blocking: "off",
+        actor: ONE_LINE_ACTOR,
+        judge_every_n_assistant_messages: 1,
+        answers: vec![SILENT.to_string()],
+        answer_delay: Duration::ZERO,
+        stdout_cap: 1024,
+    });
+    let context = format!(
+        "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
+        run.wrapper_stderr, run.supervisor_log, run.summary
+    );
+    assert_eq!(run.status, Some(1), "{context}");
+    assert!(run.answered.is_empty(), "{context}");
+    let summary: Value = serde_json::from_str(&run.summary).unwrap();
+    assert_eq!(summary["accounted_for"], false, "{context}");
+    assert!(
+        summary["unclean_reason"]
+            .as_str()
+            .unwrap()
+            .contains("no room left in the supervisor log"),
+        "{context}"
+    );
+    assert_eq!(summary["boundaries"], 1, "{context}");
+    assert_eq!(summary["unjudged"], 1, "{context}");
+    fs::remove_dir_all(&run.dir).unwrap();
+
+    let run = supervise_scenario(&Scenario {
+        name: "room",
+        blocking: "off",
+        actor: ONE_LINE_ACTOR,
+        judge_every_n_assistant_messages: 1,
+        answers: vec![SILENT.to_string()],
+        answer_delay: Duration::ZERO,
+        stdout_cap: 65_536,
+    });
+    assert_eq!(run.status, Some(0), "{}", run.wrapper_stderr);
+    assert_eq!(run.answered.len(), 1);
+    fs::remove_dir_all(&run.dir).unwrap();
+}
+
+/// A boundary's row that would cross the log's cap is written without the
+/// raw answers, each call saying so, rather than dropped whole: the call
+/// stays on record, and the run stays accounted for.
+#[test]
+fn a_boundary_row_that_would_cross_the_cap_keeps_the_call_and_drops_the_raw_answer() {
+    let long_reason =
+        json!({"off_track": false, "self_correcting": false, "reason": "x".repeat(14_000)});
+    let run = supervise_scenario(&Scenario {
+        name: "reduced",
+        blocking: "off",
+        actor: ONE_LINE_ACTOR,
+        judge_every_n_assistant_messages: 1,
+        answers: vec![long_reason.to_string()],
+        answer_delay: Duration::ZERO,
+        stdout_cap: 12_288,
+    });
+    let context = format!(
+        "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
+        run.wrapper_stderr, run.supervisor_log, run.summary
+    );
+    assert_eq!(run.status, Some(0), "{context}");
+    assert_eq!(run.answered.len(), 1, "{context}");
+    let rows = rows_of(&run.supervisor_log);
+    let judged = rows.iter().find(|r| r.get("boundary").is_some()).unwrap();
+    assert_eq!(judged["kind"], "silent", "{context}");
+    let call = &judged["calls"][0];
+    assert_eq!(call["purpose"], "judge", "{context}");
+    assert_eq!(call["finish_reason"], "stop", "{context}");
+    assert!(call["raw"].is_null(), "{context}");
+    assert!(
+        call["raw_omitted"].as_str().unwrap().contains("not kept"),
+        "{context}"
     );
     let summary: Value = serde_json::from_str(&run.summary).unwrap();
     assert_eq!(summary["accounted_for"], true, "{context}");

@@ -59,6 +59,13 @@ use crate::signals::{self, Stop};
 use crate::stream::user_event_line;
 use crate::summary::{self, Summary, SupervisorExit};
 
+/// What the supervisor log must have left before a judge is started: room
+/// for the boundary's row without the model's raw answers, which is what
+/// the row is reduced to when the full one would not fit. A judge is not
+/// asked when even that could not be kept — a request without a record is
+/// what the account exists to rule out.
+const JUDGMENT_ROW_RESERVE: u64 = 8 * 1024;
+
 /// How long the loop sleeps between checks of the stop flag and the leader
 /// when no event arrives.
 const TICK: Duration = Duration::from_millis(100);
@@ -109,7 +116,11 @@ enum Msg {
 /// One boundary underway.
 struct InFlight {
     ordinal: u64,
-    /// The snapshot's cursor and revision, as of when the judge started.
+    /// The event the boundary fell at: what its row is about.
+    trigger_cursor: u64,
+    /// The snapshot's cursor and revision, as of when the judge started —
+    /// at or after the trigger, since lines the actor had already written
+    /// are admitted first (§5).
     cursor: u64,
     revision: u64,
     disposition: Disposition,
@@ -151,6 +162,8 @@ impl Drop for Report {
 #[derive(Debug, Clone, Copy)]
 struct PendingBoundary {
     ordinal: u64,
+    /// The event it fell at.
+    cursor: u64,
     disposition: Disposition,
 }
 
@@ -238,71 +251,7 @@ pub fn run(
     artifacts: Artifacts,
     stop: &Stop,
 ) -> Result<Ended, String> {
-    let Artifacts {
-        actor_event_log,
-        supervisor_log,
-        actor_stderr,
-    } = artifacts;
-    // A second handle on the event log, for the digest at the end: the
-    // reader thread takes the first, and this one reads back the same open
-    // file, whatever is at its name by then.
-    let event_log = actor_event_log
-        .file
-        .try_clone()
-        .map_err(|e| format!("keeping a handle on the event log: {e}"))?;
-    let log = supervisor_log.file;
-    let (outbox, inbox) = actor::event_queue();
-    let command = actor::command(launch.argv, &[config::BASE_URL_ENV, config::API_KEY_ENV])
-        .map_err(|e| format!("actor command: {e}"))?;
-    let limits = actor::Limits {
-        line: usize::try_from(config.limits.max_event_line_bytes.get())
-            .map_err(|_| "limits.max_event_line_bytes does not fit".to_string())?,
-        stdout: config.limits.max_actor_stdout_bytes.get(),
-        stderr: config.limits.max_actor_stderr_bytes.get(),
-    };
-    let relay = outbox.clone();
-    let actor = Actor::spawn(
-        command,
-        actor_event_log.file,
-        actor_stderr.file,
-        limits,
-        move |event| {
-            // The loop being gone means the wrapper is already on its way out.
-            let _ = relay.send(Msg::Actor(event));
-        },
-    )
-    .map_err(|e| format!("launching the actor: {e}"))?;
-    let gate = actor.gate();
-    let mut run = Loop {
-        config,
-        criterion_text,
-        model: Arc::new(model),
-        actor,
-        gate,
-        outbox,
-        inbox,
-        log: BufWriter::new(log),
-        event_log,
-        log_written: 0,
-        cursor: 0,
-        evidence: VecDeque::new(),
-        revision: 0,
-        said: Vec::new(),
-        assistant_since_boundary: 0,
-        last_judged_revision: 0,
-        boundary_ordinal: 0,
-        spoken_at: Vec::new(),
-        last_disposition: Disposition::ExcludedNothingToKeep,
-        in_flight: None,
-        pending: Pending::default(),
-        stdout_closed: false,
-        leader_exited_at: None,
-        over_since: None,
-        faulted: false,
-        mute: false,
-        unclean: None,
-        counts: Counts::default(),
-    };
+    let mut run = Loop::new(config, criterion_text, model, launch.argv, artifacts)?;
     // From here the actor exists, and the run ends in a summary whatever
     // happens: a prompt the actor did not take is a fault of the run —
     // or, when a stop arrived meanwhile, its cancellation — not a refusal.
@@ -318,6 +267,83 @@ pub fn run(
 }
 
 impl Loop {
+    /// Launch the actor and hold everything the loop runs on. On `Err` no
+    /// actor exists; from `Ok` on, dropping the loop ends it.
+    fn new(
+        config: Config,
+        criterion_text: &'static str,
+        model: Model,
+        argv: &[OsString],
+        artifacts: Artifacts,
+    ) -> Result<Self, String> {
+        let Artifacts {
+            actor_event_log,
+            supervisor_log,
+            actor_stderr,
+        } = artifacts;
+        // A second handle on the event log, for the digest at the end: the
+        // reader thread takes the first, and this one reads back the same
+        // open file, whatever is at its name by then.
+        let event_log = actor_event_log
+            .file
+            .try_clone()
+            .map_err(|e| format!("keeping a handle on the event log: {e}"))?;
+        let log = supervisor_log.file;
+        let (outbox, inbox) = actor::event_queue();
+        let command = actor::command(argv, &[config::BASE_URL_ENV, config::API_KEY_ENV])
+            .map_err(|e| format!("actor command: {e}"))?;
+        let limits = actor::Limits {
+            line: usize::try_from(config.limits.max_event_line_bytes.get())
+                .map_err(|_| "limits.max_event_line_bytes does not fit".to_string())?,
+            stdout: config.limits.max_actor_stdout_bytes.get(),
+            stderr: config.limits.max_actor_stderr_bytes.get(),
+        };
+        let relay = outbox.clone();
+        let actor = Actor::spawn(
+            command,
+            actor_event_log.file,
+            actor_stderr.file,
+            limits,
+            move |event| {
+                // The loop being gone means the wrapper is already on its
+                // way out.
+                let _ = relay.send(Msg::Actor(event));
+            },
+        )
+        .map_err(|e| format!("launching the actor: {e}"))?;
+        let gate = actor.gate();
+        Ok(Self {
+            config,
+            criterion_text,
+            model: Arc::new(model),
+            actor,
+            gate,
+            outbox,
+            inbox,
+            log: BufWriter::new(log),
+            event_log,
+            log_written: 0,
+            cursor: 0,
+            evidence: VecDeque::new(),
+            revision: 0,
+            said: Vec::new(),
+            assistant_since_boundary: 0,
+            last_judged_revision: 0,
+            boundary_ordinal: 0,
+            spoken_at: Vec::new(),
+            last_disposition: Disposition::ExcludedNothingToKeep,
+            in_flight: None,
+            pending: Pending::default(),
+            stdout_closed: false,
+            leader_exited_at: None,
+            over_since: None,
+            faulted: false,
+            mute: false,
+            unclean: None,
+            counts: Counts::default(),
+        })
+    }
+
     /// Consume until the run is over and no judgment is in flight, or until
     /// the wrapper is told to stop. Returns whether it was stopped.
     fn serve(&mut self, stop: &Stop) -> bool {
@@ -341,6 +367,7 @@ impl Loop {
                         self.release();
                         self.unjudged(
                             boundary.ordinal,
+                            boundary.trigger_cursor,
                             boundary.disposition,
                             "the actor's stdout closed before the judgment could start",
                         );
@@ -417,10 +444,17 @@ impl Loop {
         if due {
             self.assistant_since_boundary = 0;
             match &self.in_flight {
-                None => self.start_boundary(None, disposition),
+                None => {
+                    self.start_boundary(None, disposition);
+                }
                 // The boundary underway has not taken its snapshot yet:
-                // this line is in it.
-                Some(boundary) if boundary.judge.is_none() => {}
+                // this line is in it — on record as observed, and as
+                // folded into that boundary rather than one of its own.
+                Some(boundary) if boundary.judge.is_none() => {
+                    let mut row = self.row("observed", disposition);
+                    row.insert("folded_into".into(), json!(boundary.ordinal));
+                    self.write_row(row);
+                }
                 Some(_) => {
                     // The boundary keeps the ordinal it gets now and starts
                     // when the judgment in flight is in; a third boundary
@@ -428,6 +462,7 @@ impl Loop {
                     if let Some(previous) = self.pending.boundary.take() {
                         self.unjudged(
                             previous.ordinal,
+                            previous.cursor,
                             previous.disposition,
                             "superseded by the next boundary before its judgment could start",
                         );
@@ -435,6 +470,7 @@ impl Loop {
                     let ordinal = self.allocate_boundary();
                     self.pending.boundary = Some(PendingBoundary {
                         ordinal,
+                        cursor: self.cursor,
                         disposition,
                     });
                 }
@@ -453,12 +489,22 @@ impl Loop {
         }
     }
 
-    /// Start a boundary: with the ordinal it was given when it fell during
-    /// a judgment, or with a new one.
-    fn start_boundary(&mut self, allocated: Option<u64>, disposition: Disposition) {
-        let ordinal = allocated.unwrap_or_else(|| self.allocate_boundary());
+    /// Start a boundary: the one that fell during a judgment and waited,
+    /// or a new one at the current event. Returns whether a boundary is
+    /// underway afterwards — a judge running, or one waiting for the
+    /// barrier; `false` means it went on record as unjudged instead.
+    fn start_boundary(
+        &mut self,
+        waited: Option<PendingBoundary>,
+        disposition: Disposition,
+    ) -> bool {
+        let (ordinal, trigger_cursor) = match waited {
+            Some(pending) => (pending.ordinal, pending.cursor),
+            None => (self.allocate_boundary(), self.cursor),
+        };
         let boundary = InFlight {
             ordinal,
+            trigger_cursor,
             cursor: self.cursor,
             revision: self.revision,
             disposition,
@@ -469,7 +515,7 @@ impl Loop {
             Blocking::Off => self.spawn_judge(boundary),
             Blocking::Stdout => {
                 self.gate.close();
-                self.spawn_judge(boundary);
+                self.spawn_judge(boundary)
             }
             Blocking::Sigstop => {
                 // Stopped and confirmed so, then drained to a barrier: the
@@ -479,22 +525,25 @@ impl Loop {
                     self.release();
                     self.unjudged(
                         ordinal,
+                        trigger_cursor,
                         disposition,
                         format!("the actor could not be held still: {reason}"),
                     );
-                    return;
+                    return false;
                 }
                 if let Err(error) = self.actor.barrier(ordinal) {
                     self.fault(format!("asking the stdout reader for a barrier: {error}"));
                     self.release();
                     self.unjudged(
                         ordinal,
+                        trigger_cursor,
                         disposition,
                         "the stdout reader could not be asked for a barrier",
                     );
-                    return;
+                    return false;
                 }
                 self.in_flight = Some(boundary);
+                true
             }
         }
     }
@@ -521,6 +570,7 @@ impl Loop {
             self.release();
             self.unjudged(
                 boundary.ordinal,
+                boundary.trigger_cursor,
                 boundary.disposition,
                 "the run faulted before the judgment could start",
             );
@@ -531,8 +581,27 @@ impl Loop {
         self.spawn_judge(boundary);
     }
 
-    /// Start the judge on the evidence as it is now.
-    fn spawn_judge(&mut self, mut boundary: InFlight) {
+    /// Start the judge on the evidence as it is now. Returns whether it
+    /// runs; when it does not, the boundary is on record as unjudged.
+    fn spawn_judge(&mut self, mut boundary: InFlight) -> bool {
+        let ordinal = boundary.ordinal;
+        let cap = self.config.limits.max_actor_stdout_bytes.get();
+        if self.log_written.saturating_add(JUDGMENT_ROW_RESERVE) > cap {
+            // No request without a record: the account is what a call is
+            // evidence through, and it is about to be full.
+            self.fault(format!(
+                "no room left in the supervisor log for a judgment's record ({} of its cap of {cap} bytes written)",
+                self.log_written
+            ));
+            self.release();
+            self.unjudged(
+                ordinal,
+                boundary.trigger_cursor,
+                boundary.disposition,
+                "the supervisor log has no room left for the judgment's record",
+            );
+            return false;
+        }
         self.last_judged_revision = self.revision;
         let evidence: Vec<Message> = self.evidence.iter().cloned().collect();
         let said = self.said.clone();
@@ -549,6 +618,11 @@ impl Loop {
         let model = Arc::clone(&self.model);
         let criterion = self.criterion_text;
         let outbox = self.outbox.clone();
+        #[cfg(test)]
+        if FAIL_JUDGE_SPAWN.with(std::cell::Cell::get) {
+            self.judge_not_started(&boundary, &std::io::Error::other("injected"));
+            return false;
+        }
         let spawned = thread::Builder::new()
             .name(format!("judge-{ordinal}"))
             .spawn(move || {
@@ -573,19 +647,31 @@ impl Loop {
             Ok(handle) => {
                 boundary.judge = Some(handle);
                 self.in_flight = Some(boundary);
+                true
             }
             Err(error) => {
-                self.unclean.get_or_insert_with(|| {
-                    format!("the judge for boundary {ordinal} could not be started: {error}")
-                });
-                self.release();
-                self.unjudged(
-                    ordinal,
-                    boundary.disposition,
-                    format!("the judge could not be started: {error}"),
-                );
+                self.judge_not_started(&boundary, &error);
+                false
             }
         }
+    }
+
+    /// A judge that could not be started: unclean, and the boundary on
+    /// record as unjudged.
+    fn judge_not_started(&mut self, boundary: &InFlight, error: &std::io::Error) {
+        self.unclean.get_or_insert_with(|| {
+            format!(
+                "the judge for boundary {} could not be started: {error}",
+                boundary.ordinal
+            )
+        });
+        self.release();
+        self.unjudged(
+            boundary.ordinal,
+            boundary.trigger_cursor,
+            boundary.disposition,
+            format!("the judge could not be started: {error}"),
+        );
     }
 
     fn complete(&mut self, ordinal: u64, outcome: Result<Judged, String>, stop: &Stop) {
@@ -606,7 +692,8 @@ impl Loop {
         let lag = boundary.started.elapsed();
         self.counts.max_lag = self.counts.max_lag.max(lag);
         let mut row = self.row("", boundary.disposition);
-        row.insert("cursor".into(), json!(boundary.cursor));
+        row.insert("cursor".into(), json!(boundary.trigger_cursor));
+        row.insert("snapshot_cursor".into(), json!(boundary.cursor));
         row.insert("boundary".into(), json!(boundary.ordinal));
         row.insert("decision_lag_ms".into(), json!(millis(lag)));
         let mut delivered = false;
@@ -654,6 +741,9 @@ impl Loop {
             }
         };
         row.insert("kind".into(), json!(kind));
+        if !self.fits(&row) {
+            reduce(&mut row);
+        }
         self.write_row(row);
         // The actor was held — stopped, or gated — through the freshness
         // check and the stdin write above; only now is it let go.
@@ -661,14 +751,19 @@ impl Loop {
 
         if let Some(pending) = self.pending.boundary.take() {
             if self.continuing() {
-                self.start_boundary(Some(pending.ordinal), pending.disposition);
-                return;
+                if self.start_boundary(Some(pending), pending.disposition) {
+                    // The result, if one waits, is settled once this
+                    // boundary's judgment is in.
+                    return;
+                }
+            } else {
+                self.unjudged(
+                    pending.ordinal,
+                    pending.cursor,
+                    pending.disposition,
+                    "the run ended before its judgment could start",
+                );
             }
-            self.unjudged(
-                pending.ordinal,
-                pending.disposition,
-                "the run ended before its judgment could start",
-            );
         }
         if self.pending.result {
             self.pending.result = false;
@@ -694,13 +789,32 @@ impl Loop {
         }
     }
 
-    /// Account for a boundary at which no decision was sought.
-    fn unjudged(&mut self, ordinal: u64, disposition: Disposition, reason: impl Into<String>) {
+    /// Account for a boundary at which no decision was sought: its row is
+    /// about the event it fell at.
+    fn unjudged(
+        &mut self,
+        ordinal: u64,
+        cursor: u64,
+        disposition: Disposition,
+        reason: impl Into<String>,
+    ) {
         self.counts.unjudged += 1;
         let mut row = self.row("unjudged", disposition);
+        row.insert("cursor".into(), json!(cursor));
         row.insert("boundary".into(), json!(ordinal));
         row.insert("reason".into(), json!(reason.into()));
         self.write_row(row);
+    }
+
+    /// Whether `row` can still be written under the log's cap.
+    fn fits(&self, row: &Map<String, Value>) -> bool {
+        let cap = self.config.limits.max_actor_stdout_bytes.get();
+        serde_json::to_vec(&Value::Object(row.clone())).is_ok_and(|line| {
+            u64::try_from(line.len() + 1)
+                .ok()
+                .and_then(|bytes| self.log_written.checked_add(bytes))
+                .is_some_and(|after| after <= cap)
+        })
     }
 
     /// Whether there is a run left to supervise.
@@ -818,11 +932,17 @@ impl Loop {
             } else {
                 "the run ended before the judgment could start"
             };
-            self.unjudged(boundary.ordinal, boundary.disposition, reason);
+            self.unjudged(
+                boundary.ordinal,
+                boundary.trigger_cursor,
+                boundary.disposition,
+                reason,
+            );
         }
         if let Some(pending) = self.pending.boundary.take() {
             self.unjudged(
                 pending.ordinal,
+                pending.cursor,
                 pending.disposition,
                 "the run ended before its judgment could start",
             );
@@ -927,6 +1047,30 @@ impl Loop {
         };
         Ended { status, summary }
     }
+}
+
+/// A boundary's row without the model's raw answers: what is written when
+/// the full row would cross the log's cap. The record of each call stays
+/// — purpose, models, ceiling, finish reason, duration, error — and each
+/// says its raw answer was not kept, so a reader does not take the
+/// absence for an answer that carried no text.
+fn reduce(row: &mut Map<String, Value>) {
+    if let Some(Value::Array(calls)) = row.get_mut("calls") {
+        for call in calls.iter_mut().filter_map(Value::as_object_mut) {
+            call.insert("raw".into(), Value::Null);
+            call.insert(
+                "raw_omitted".into(),
+                json!("the supervisor log is near its cap; the raw answer was not kept"),
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+thread_local! {
+    /// Makes the next judge spawn fail, for the test of the path a real
+    /// failure takes.
+    static FAIL_JUDGE_SPAWN: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
 /// What a drain's ending says against the run, if anything.
