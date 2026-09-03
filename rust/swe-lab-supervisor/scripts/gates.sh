@@ -30,9 +30,12 @@ RUSTDOCFLAGS="-D warnings" cargo doc --no-deps
 
 # The release artifact links self-contained only while every dependency is
 # pure Rust; a crate that compiles or links C would need a musl C toolchain
-# on every builder. Caught here by name, before the build gets to try.
-echo "==> no C in the dependency tree"
-tree=$(cargo tree -e normal,build --prefix none --format '{p}')
+# on every builder. Caught here by name, before the build gets to try — and
+# for the graph that ships: `cargo tree` resolves the host's graph unless
+# told the target, so a dependency behind a musl-only `[target.…]` section
+# would be linked into the artifact and absent from the host's tree.
+echo "==> no C in the dependency tree ($target)"
+tree=$(cargo tree --target "$target" -e normal,build --prefix none --format '{p}')
 printf '%s\n' "$tree" | grep -q "^$crate " \
   || { echo "cargo tree did not list $crate itself; its output is not a dependency tree" >&2; exit 1; }
 if printf '%s\n' "$tree" | grep -E '^(cc|cmake|pkg-config) |-sys '; then

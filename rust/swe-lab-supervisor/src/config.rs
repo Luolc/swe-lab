@@ -157,9 +157,12 @@ pub struct Limits {
 /// The file cannot be read, is not the schema this binary reads, or carries a
 /// value the runtime cannot honour. Every error names the field.
 pub fn load(path: &Path) -> Result<Config, String> {
-    let raw = std::fs::read(path).map_err(|e| format!("config {}: {e}", path.display()))?;
+    // The path is the caller's and is not repeated: it is on the command
+    // line they wrote, and a diagnostic that formats caller input is how a
+    // misplaced value reaches a log.
+    let raw = std::fs::read(path).map_err(|e| format!("reading the config file: {e}"))?;
     let config: Config =
-        serde_json::from_slice(&raw).map_err(|e| format!("config {}: {e}", path.display()))?;
+        serde_json::from_slice(&raw).map_err(|e| format!("parsing the config file: {e}"))?;
     config.validate()?;
     Ok(config)
 }
@@ -240,7 +243,9 @@ impl Endpoint {
     /// # Errors
     ///
     /// Any other scheme — `https://` is refused with the reason, since the
-    /// binary carries no TLS — an empty host, or an unparseable port.
+    /// binary carries no TLS — an empty host, or an unparseable port. The
+    /// message names the fault, never the value: a URL can carry a signed
+    /// token or a private host.
     pub fn parse(url: &str) -> Result<Self, String> {
         if url.starts_with("https://") {
             return Err(
@@ -249,7 +254,7 @@ impl Endpoint {
             );
         }
         let Some(rest) = url.strip_prefix("http://") else {
-            return Err(format!("{url:?} is not an http:// URL"));
+            return Err("not an http:// URL".to_string());
         };
         let (authority, base) = match rest.find('/') {
             Some(at) => (&rest[..at], rest[at..].trim_end_matches('/')),
@@ -259,12 +264,12 @@ impl Endpoint {
             Some((host, port)) => (
                 host,
                 port.parse::<u16>()
-                    .map_err(|_| format!("port {port:?} is not a port number"))?,
+                    .map_err(|_| "the port is not a port number".to_string())?,
             ),
             None => (authority, 80),
         };
         if host.is_empty() {
-            return Err(format!("{url:?} has no host"));
+            return Err("the URL has no host".to_string());
         }
         Ok(Self {
             host: host.to_string(),
@@ -411,8 +416,17 @@ pub(crate) mod tests {
                 .unwrap_err()
                 .contains("TLS")
         );
-        assert!(Endpoint::parse("http://:8080/").is_err());
-        assert!(Endpoint::parse("http://host:notaport/").is_err());
-        assert!(Endpoint::parse("judge:8080").is_err());
+        // The fault is named; the value never is, whatever it carries.
+        for (url, fault) in [
+            ("http://:8080/", "no host"),
+            ("http://host:notaport/", "port"),
+            ("judge:8080", "not an http://"),
+            ("http://sk-SECRET-TOKEN@host:x/", "port"),
+        ] {
+            let error = Endpoint::parse(url).unwrap_err();
+            assert!(error.contains(fault), "{url}: {error}");
+            assert!(!error.contains("SECRET"), "{url}: {error}");
+            assert!(!error.contains("notaport"), "{url}: {error}");
+        }
     }
 }
