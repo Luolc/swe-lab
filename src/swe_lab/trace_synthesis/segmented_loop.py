@@ -138,6 +138,8 @@ class SegmentedSupervision:
     neutral_continue: What the next segment is told when the policy stays
       silent. Short and directionless on purpose — it is the control against
       which a correction's effect is read.
+    guidebook_name: Workspace input containing the phase-B guidebook, or
+      ``None`` when this run uses only the general-practice criterion.
   """
 
   policy_factory: Callable[[], SpeakPolicy]
@@ -148,6 +150,7 @@ class SegmentedSupervision:
   anchor_resume: bool = True
   guard_seam: bool = False
   neutral_continue: str = "Continue."
+  guidebook_name: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -377,6 +380,8 @@ class SegmentedRun:
       standing behind this path's argument**, so a run that resumes with an
       anchor and cannot read a wire is refused rather than trusted — see
       :mod:`swe_lab.trace_synthesis.seam_shape`.
+    guidebook: The complete phase-B artifact, when the configured workflow
+      supplied one.
     now: Clock, injected so the log is testable.
   """
 
@@ -386,6 +391,7 @@ class SegmentedRun:
   read_stream: StreamReader
   log: LogWriter
   read_wire: StreamReader | None = None
+  guidebook: str | None = None
   now: Callable[[], datetime.datetime] = lambda: datetime.datetime.now(
       datetime.UTC
   )
@@ -602,6 +608,7 @@ class SegmentedRun:
         evidence=evidence_of(events),
         cursor=len(events),
         said=tuple(self._said),
+        guidebook=self.guidebook,
     )
     # Requirement C's second quantity. A policy that judges records where it
     # *found* a deviation; only the judge is asked where it *began*, and only

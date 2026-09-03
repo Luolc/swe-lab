@@ -2,6 +2,7 @@
 
 from collections.abc import Callable, Mapping
 import contextlib
+import dataclasses
 import json
 import os
 from pathlib import Path
@@ -9,7 +10,7 @@ import shlex
 import subprocess
 import threading
 import time
-from typing import get_args, override
+from typing import Any, get_args, override
 
 from etils import epath
 import pytest
@@ -1487,3 +1488,95 @@ def test_a_segmented_run_runs_one_script_per_segment_and_records_its_seams(
   # And the run's own account is registered as an artifact, so it leaves the
   # sandbox with the trace rather than dying with the container.
   assert "supervisor.jsonl" in harness.native_outputs()
+
+
+def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
+    tmp_path: Path,
+) -> None:
+  """Drive the registered handoff through the harness and segmented loop."""
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
+  from swe_lab.trace_synthesis.judge import supervising_policy
+  from swe_lab.workflow import definitions, workflow_definition
+
+  class AppendingSandbox(FakeSandbox):
+    """Append one capped segment and then one completed segment."""
+
+    @override
+    def run_script(
+        self,
+        name: str,
+        *,
+        timeout: float,
+        env: Mapping[str, str] | None = None,
+    ) -> ExecResult:
+      result = super().run_script(name, timeout=timeout, env=env)
+      if name == AGENT_SCRIPT_NAME:
+        done = len([s for s in self.scripts if s == AGENT_SCRIPT_NAME]) > 1
+        events: list[dict[str, object]] = [
+            {
+                "type": "assistant",
+                "uuid": f"message-{len(self.scripts)}-uuid",
+                "message": {
+                    "id": f"message-{len(self.scripts)}",
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": "working"}],
+                },
+            },
+            {
+                "type": "result",
+                "subtype": "success" if done else "error_max_turns",
+                "session_id": "session-1",
+                "uuid": f"result-{len(self.scripts)}",
+                "total_cost_usd": 0.02,
+            },
+        ]
+        existing = (
+            self.read(EVENT_STREAM_NAME).decode()
+            if self.exists(EVENT_STREAM_NAME)
+            else ""
+        )
+        self.write(
+            EVENT_STREAM_NAME, (existing + _stream_text(events)).encode()
+        )
+      return result
+
+  payloads: list[dict[str, Any]] = []
+
+  def transport(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+    payloads.append(dict(payload))
+    content = (
+        '{"off_track": true, "self_correcting": false, "reason": "drift"}'
+        if len(payloads) == 1
+        else "look again"
+    )
+    return {
+        "model": "served/model",
+        "choices": [{"message": {"content": content}}],
+    }
+
+  registered_workflow = workflow_definition("oracle_guided_trace")
+  assert registered_workflow is definitions.ORACLE_GUIDED_TRACE
+  _, rollout, _ = registered_workflow
+  assert isinstance(rollout.task, CodingAgentTask)
+  registered = rollout.task.harness
+  assert isinstance(registered, ClaudeCodeHarness)
+  assert registered.segmented is not None
+  supervision = dataclasses.replace(
+      registered.segmented,
+      policy_factory=lambda: supervising_policy(
+          model="model", transport=transport, budget=1, cooldown=0
+      ),
+  )
+  harness = dataclasses.replace(registered, segmented=supervision)
+  sentinel = "GUIDEBOOK-HANDOFF-SENTINEL-94ad"
+  sb = AppendingSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+  sb.write(GUIDEBOOK_NAME, sentinel.encode())
+
+  _ = harness.run(sb, prompt="solve it", timeout=100.0)
+
+  assert len(payloads) == 2
+  for payload in payloads:
+    messages = payload["messages"]
+    assert isinstance(messages, list)
+    assert sentinel in messages[1]["content"]

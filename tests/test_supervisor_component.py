@@ -29,17 +29,13 @@ from swe_lab.trace_synthesis.supervisor import (
 # Exactly what a policy may see. Adding a field to Observation must fail this
 # test, which is the point: a denylist catches the names we thought of, an
 # allowlist catches the one we did not.
-ALLOWED_OBSERVATION_FIELDS = {"task", "evidence", "cursor", "said"}
-
-PRIVILEGED_NAMES = (
-    "gold_patch",
-    "reference_patch",
-    "test_patch",
-    "hidden_tests",
-    "fail_to_pass",
-    "pass_to_pass",
-    "fix_commit",
-)
+ALLOWED_OBSERVATION_FIELDS = {
+    "task",
+    "evidence",
+    "cursor",
+    "said",
+    "guidebook",
+}
 
 
 def assistant_event(text: str) -> dict[str, object]:
@@ -147,16 +143,32 @@ class Speaks:
     return Intervention(text=self._text)
 
 
-def test_supervisor_input_carries_no_privileged_field() -> None:
-  """The barrier is the constructor: no field can carry the solution.
-
-  A supervisor handed the gold patch or the hidden tests would produce traces
-  whose steering came from the answer rather than from the guidebook, and no
-  reading of the trace afterwards could tell the difference.
-  """
+def test_supervisor_input_carries_the_guidebook() -> None:
+  """The phase-B artifact reaches the policy with the actor's evidence."""
   fields = {f.name for f in dataclasses.fields(Observation)}
   assert fields == ALLOWED_OBSERVATION_FIELDS
-  assert not fields.intersection(PRIVILEGED_NAMES)
+
+  seen: list[str | None] = []
+
+  class ReadsTheGuidebook:
+
+    @property
+    def name(self) -> str:
+      return "reads-the-guidebook"
+
+    def consider(self, observation: Observation) -> None:
+      seen.append(observation.guidebook)
+      return None
+
+  supervisor = Supervisor(
+      policy=ReadsTheGuidebook(),
+      task="the task",
+      guidebook="GUIDEBOOK-SENTINEL-a81f",
+      sink=lambda _: None,
+      log=lambda _: None,
+  )
+  _ = supervisor.observe(assistant_event("working"))
+  assert seen == ["GUIDEBOOK-SENTINEL-a81f"]
 
 
 def test_the_task_is_given_not_read_off_the_stream() -> None:

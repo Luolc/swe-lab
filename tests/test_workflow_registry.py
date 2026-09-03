@@ -364,6 +364,27 @@ def test_the_segmented_rollout_and_unit_test_chain_matches_the_other_arms():
   assert segmented[1] is supervised[1] is control[1] is definitions.UNIT_TEST[0]
 
 
+def test_oracle_guided_trace_feeds_the_guidebook_to_segmented_supervision():
+  """The phase-B artifact is the phase-C supervisor's declared input."""
+  from swe_lab.harnesses.claude_code import ClaudeCodeHarness
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
+
+  oracle, rollout, grading = workflow_definition("oracle_guided_trace")
+
+  assert [oracle.key, rollout.key, grading.key] == [
+      definitions.ORACLE_ANALYSIS_KEY,
+      definitions.ROLLOUT_KEY,
+      definitions.UNIT_TEST_KEY,
+  ]
+  assert isinstance(rollout.task, CodingAgentTask)
+  assert [item.name for item in rollout.task.extra_inputs] == [GUIDEBOOK_NAME]
+  assert isinstance(rollout.task.harness, ClaudeCodeHarness)
+  segmented = rollout.task.harness.segmented
+  assert segmented is not None
+  assert segmented.guidebook_name == GUIDEBOOK_NAME
+
+
 def test_the_two_arms_put_the_actor_in_the_same_environment():
   """Comparability comes from the harness, not from a flag.
 

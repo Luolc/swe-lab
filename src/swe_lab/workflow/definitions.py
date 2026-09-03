@@ -31,8 +31,9 @@ from swe_lab.harnesses.claude_code.constants import (
 import swe_lab.harnesses.codex as _codex
 import swe_lab.harnesses.grok_build as _grok
 from swe_lab.rollout import CodingAgentTask, SupervisionFactory
-from swe_lab.sandbox import DockerHostSandboxConfig
+from swe_lab.sandbox import ArtifactSchema, DockerHostSandboxConfig
 from swe_lab.trace_synthesis.channel import supervision
+from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
 from swe_lab.trace_synthesis.judge import (
     openrouter_transport,
     supervising_policy,
@@ -245,33 +246,59 @@ SEGMENT_COOLDOWN = 0
 # `--replay-user-messages` the event stream echoes the messages the actor
 # received, so an injected correction is visible in the trace beside what the
 # actor did next.
-SEGMENTED_ROLLOUT: WorkflowDef = (
-    WorkflowEntry(
-        ROLLOUT_KEY,
-        CodingAgentTask(
-            harness=ClaudeCodeHarness(
-                model=DEFAULT_MODEL,
-                bare=False,
-                capture="stream",
-                segmented=SegmentedSupervision(
-                    policy_factory=lambda: supervising_policy(
-                        model=SUPERVISOR_MODEL,
-                        transport=openrouter_transport,
-                        budget=SUPERVISOR_BUDGET,
-                        cooldown=SEGMENT_COOLDOWN,
-                        window=SUPERVISOR_WINDOW,
-                        # The one thing only a live run can record: how many
-                        # turns late each correction was.
-                        locate_deviation=True,
-                    ),
-                ),
-            ),
-        ),
-        timeout=_AGENT_TIMEOUT_S,
-        sandbox=DockerHostSandboxConfig(
-            network=True, pass_env=(OAUTH_TOKEN_ENV,)
-        ),
-    ),
+def _segmented_rollout(*, guidebook_name: str | None = None) -> WorkflowDef:
+  """Build the segmented rollout, optionally with a guidebook input.
+
+  Args:
+    guidebook_name: The phase-B artifact to give the supervisor, or ``None``.
+
+  Returns:
+    The one-entry segmented rollout definition.
+  """
+  return (
+      WorkflowEntry(
+          ROLLOUT_KEY,
+          CodingAgentTask(
+              harness=ClaudeCodeHarness(
+                  model=DEFAULT_MODEL,
+                  bare=False,
+                  capture="stream",
+                  segmented=SegmentedSupervision(
+                      policy_factory=lambda: supervising_policy(
+                          model=SUPERVISOR_MODEL,
+                          transport=openrouter_transport,
+                          budget=SUPERVISOR_BUDGET,
+                          cooldown=SEGMENT_COOLDOWN,
+                          window=SUPERVISOR_WINDOW,
+                          # The one thing only a live run can record: how many
+                          # turns late each correction was.
+                          locate_deviation=True,
+                      ),
+                      guidebook_name=guidebook_name,
+                  ),
+              ),
+              extra_inputs=(
+                  (
+                      ArtifactSchema(
+                          guidebook_name,
+                          description="the Oracle's phase-B guidebook",
+                      ),
+                  )
+                  if guidebook_name is not None
+                  else ()
+              ),
+          ),
+          timeout=_AGENT_TIMEOUT_S,
+          sandbox=DockerHostSandboxConfig(
+              network=True, pass_env=(OAUTH_TOKEN_ENV,)
+          ),
+      ),
+  )
+
+
+SEGMENTED_ROLLOUT: WorkflowDef = _segmented_rollout()
+_GUIDEBOOK_SEGMENTED_ROLLOUT: WorkflowDef = _segmented_rollout(
+    guidebook_name=GUIDEBOOK_NAME
 )
 
 SEGMENTED_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (
@@ -398,8 +425,15 @@ ORACLE_ANALYSIS: WorkflowDef = (
     ),
 )
 
+ORACLE_GUIDED_TRACE: WorkflowDef = (
+    *ORACLE_ANALYSIS,
+    *_GUIDEBOOK_SEGMENTED_ROLLOUT,
+    *UNIT_TEST,
+)
+
 register_workflow("git_integrity_audit", GIT_INTEGRITY_AUDIT)
 register_workflow("oracle_analysis", ORACLE_ANALYSIS)
+register_workflow("oracle_guided_trace", ORACLE_GUIDED_TRACE)
 register_workflow("rollout", ROLLOUT)
 register_workflow("unit_test", UNIT_TEST)
 register_workflow("rollout_and_unit_test", ROLLOUT_AND_UNIT_TEST)
