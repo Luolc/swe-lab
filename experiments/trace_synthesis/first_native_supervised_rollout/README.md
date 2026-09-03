@@ -78,7 +78,7 @@ evidence outlives all of them.
 
 Credentials reach the sandbox by name (`pass_env`) and appear in no command
 line: `SWE_LAB_SUPERVISOR_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN`. **Neither is
-the name your shell exports**, and `swe_lab.host_env` closes both gaps in-process
+the name your shell exports**, and `swe_lab.cli.host_env` closes both gaps in-process
 at the CLI entry point — the OAuth token narrows from the repo-scoped name, the
 supervisor key is adopted from the machine-wide `OPENROUTER_API_KEYS`. Which
 name each was taken from lands in the run record as
