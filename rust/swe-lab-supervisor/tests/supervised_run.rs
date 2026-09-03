@@ -230,6 +230,9 @@ struct Scenario<'a> {
     stdout_cap: u64,
     /// Send the wrapper `SIGTERM` this long after launching it.
     cancel_after: Option<Duration>,
+    /// Hold the wrapper this long between the actor's end and the summary
+    /// (a debug-build hook).
+    hold_before_summary: Option<Duration>,
 }
 
 fn supervise(blocking: &str) -> Run {
@@ -247,7 +250,20 @@ fn supervise(blocking: &str) -> Run {
         answer_delay: Duration::ZERO,
         stdout_cap: 1_048_576,
         cancel_after: None,
+        hold_before_summary: None,
     })
+}
+
+/// A wrapper that hangs is a failed test, not a hung suite: unless the
+/// returned sender is dropped within a minute, the wrapper is killed.
+fn watchdog(wrapper: Pid) -> mpsc::Sender<()> {
+    let (done, timer) = mpsc::channel::<()>();
+    thread::spawn(move || {
+        if timer.recv_timeout(Duration::from_mins(1)) == Err(mpsc::RecvTimeoutError::Timeout) {
+            let _ = kill(wrapper, Signal::SIGKILL);
+        }
+    });
+    done
 }
 
 fn supervise_scenario(scenario: &Scenario<'_>) -> Run {
@@ -318,20 +334,25 @@ fn supervise_scenario(scenario: &Scenario<'_>) -> Run {
             "SWE_LAB_SUPERVISOR_API_KEY",
             format!("{KEY_SENTINEL},second-key-never-sent"),
         )
+        .envs(scenario.hold_before_summary.map(|hold| {
+            (
+                "SWE_LAB_SUPERVISOR_DEBUG_HOLD_BEFORE_SUMMARY_MS",
+                hold.as_millis().to_string(),
+            )
+        }))
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .spawn()
         .unwrap();
+    let wrapper = Pid::from_raw(i32::try_from(child.id()).unwrap());
+    let done = watchdog(wrapper);
     if let Some(after) = scenario.cancel_after {
         thread::sleep(after);
-        kill(
-            Pid::from_raw(i32::try_from(child.id()).unwrap()),
-            Signal::SIGTERM,
-        )
-        .unwrap();
+        kill(wrapper, Signal::SIGTERM).unwrap();
     }
     let output = child.wait_with_output().unwrap();
+    drop(done);
     let read = |name: &str| fs::read_to_string(dir.join(name)).unwrap_or_default();
     Run {
         status: output.status.code(),
@@ -569,6 +590,7 @@ fn under_sigstop_the_snapshot_holds_everything_written_before_the_stop() {
         answer_delay: Duration::ZERO,
         stdout_cap: 1_048_576,
         cancel_after: None,
+        hold_before_summary: None,
     });
     let context = format!(
         "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
@@ -645,6 +667,7 @@ fn a_boundary_during_a_judgment_keeps_its_ordinal_and_is_judged_after_it() {
         answer_delay: Duration::from_secs(1),
         stdout_cap: 1_048_576,
         cancel_after: None,
+        hold_before_summary: None,
     });
     let context = format!(
         "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
@@ -742,6 +765,7 @@ fn under_sigstop_a_descendant_that_left_the_group_is_stopped_too() {
         answer_delay: Duration::from_millis(500),
         stdout_cap: 1_048_576,
         cancel_after: None,
+        hold_before_summary: None,
     });
     let context = format!(
         "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
@@ -789,6 +813,7 @@ fn a_judge_is_not_asked_when_its_record_could_not_be_kept() {
         answer_delay: Duration::ZERO,
         stdout_cap: 1024,
         cancel_after: None,
+        hold_before_summary: None,
     });
     let context = format!(
         "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
@@ -818,6 +843,7 @@ fn a_judge_is_not_asked_when_its_record_could_not_be_kept() {
         answer_delay: Duration::ZERO,
         stdout_cap: 65_536,
         cancel_after: None,
+        hold_before_summary: None,
     });
     assert_eq!(run.status, Some(0), "{}", run.wrapper_stderr);
     assert_eq!(run.answered.len(), 1);
@@ -830,7 +856,7 @@ fn a_judge_is_not_asked_when_its_record_could_not_be_kept() {
 #[test]
 fn a_boundary_row_that_would_cross_the_cap_keeps_the_call_and_drops_the_raw_answer() {
     let long_reason =
-        json!({"off_track": false, "self_correcting": false, "reason": "x".repeat(14_000)});
+        json!({"off_track": false, "self_correcting": false, "reason": "x".repeat(20_000)});
     let run = supervise_scenario(&Scenario {
         name: "reduced",
         blocking: "off",
@@ -838,8 +864,9 @@ fn a_boundary_row_that_would_cross_the_cap_keeps_the_call_and_drops_the_raw_answ
         judge_every_n_assistant_messages: 1,
         answers: vec![long_reason.to_string()],
         answer_delay: Duration::ZERO,
-        stdout_cap: 12_288,
+        stdout_cap: 17_408,
         cancel_after: None,
+        hold_before_summary: None,
     });
     let context = format!(
         "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
@@ -894,6 +921,7 @@ fn a_cancellation_during_a_judgment_asks_the_writer_nothing_and_keeps_the_call_o
         answer_delay: Duration::from_secs(1),
         stdout_cap: 1_048_576,
         cancel_after: Some(Duration::from_millis(400)),
+        hold_before_summary: None,
     });
     let context = format!(
         "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
@@ -924,5 +952,205 @@ fn a_cancellation_during_a_judgment_asks_the_writer_nothing_and_keeps_the_call_o
             .contains("cancelled"),
         "{context}"
     );
+    fs::remove_dir_all(&run.dir).unwrap();
+}
+
+/// One assistant line, then lines without end: enough to fill the event
+/// queue many times over once nobody reads it.
+const FLOODING_ACTOR: &str = r#"
+( sleep 30; kill -KILL $$ ) >/dev/null 2>&1 </dev/null &
+read -r prompt || exit 90
+printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"ONE"}]}}'
+while :; do printf '%s\n' '{"type":"system","subtype":"tick"}'; done
+"#;
+
+/// A cancellation while the actor floods its stdout and a judge is in
+/// flight: the loop has stopped taking events, the queue is full, and the
+/// judge's word must not wait behind it — the run ends, the actor's tree
+/// with it, the judge's call on record. Against the shared queue this was
+/// the deadlock: the judge blocked on its send, the join on the judge, and
+/// the wrapper never reached the actor's teardown (the harness's watchdog
+/// kills it after a minute, exit 137).
+#[test]
+fn a_cancellation_under_a_full_event_queue_still_ends_the_run() {
+    let run = supervise_scenario(&Scenario {
+        name: "cancelled-flood",
+        blocking: "off",
+        actor: FLOODING_ACTOR,
+        judge_every_n_assistant_messages: 1,
+        answers: vec![SILENT.to_string()],
+        answer_delay: Duration::from_secs(1),
+        stdout_cap: 64 << 20,
+        cancel_after: Some(Duration::from_millis(400)),
+        hold_before_summary: None,
+    });
+    let context = format!(
+        "wrapper stderr:\n{}\nsummary:\n{}",
+        run.wrapper_stderr, run.summary
+    );
+    assert_eq!(run.status, Some(143), "{context}");
+    let summary: Value = serde_json::from_str(&run.summary).unwrap();
+    assert_eq!(summary["supervisor_exit"], "terminated", "{context}");
+    let rows = rows_of(&run.supervisor_log);
+    assert!(
+        rows.iter().filter(|r| r["kind"] == "observed").count() > 16,
+        "{context}"
+    );
+    let judged = rows.iter().find(|r| r.get("boundary").is_some()).unwrap();
+    assert_eq!(judged["kind"], "unjudged", "{context}");
+    assert_eq!(judged["calls"][0]["purpose"], "judge", "{context}");
+    assert!(
+        judged["calls"][0]["error"]
+            .as_str()
+            .unwrap()
+            .contains("cancelled"),
+        "{context}"
+    );
+    assert!(
+        actor_states(&run.dir.join("actor.sh")).is_empty(),
+        "{context}"
+    );
+    fs::remove_dir_all(&run.dir).unwrap();
+}
+
+/// A stop raised after the run's fate was decided — the actor ended on
+/// its own, and the signal lands while the wrapper is between the actor's
+/// teardown and the summary — changes neither: the summary says `clean`
+/// and the exit status is 0. Before the decision was latched the summary
+/// said `clean` and the wrapper exited 143, and a reader trusting the
+/// summary took a cancelled invocation for a clean one.
+#[test]
+fn a_stop_after_the_run_ended_changes_neither_the_summary_nor_the_exit_status() {
+    let run = supervise_scenario(&Scenario {
+        name: "late-stop",
+        blocking: "off",
+        actor: ONE_LINE_ACTOR,
+        judge_every_n_assistant_messages: 1,
+        answers: vec![SILENT.to_string()],
+        answer_delay: Duration::ZERO,
+        stdout_cap: 1_048_576,
+        cancel_after: Some(Duration::from_millis(1500)),
+        hold_before_summary: Some(Duration::from_secs(3)),
+    });
+    let context = format!(
+        "wrapper stderr:\n{}\nsummary:\n{}",
+        run.wrapper_stderr, run.summary
+    );
+    let summary: Value = serde_json::from_str(&run.summary).unwrap();
+    assert_eq!(summary["supervisor_exit"], "clean", "{context}");
+    assert_eq!(summary["accounted_for"], true, "{context}");
+    assert_eq!(run.status, Some(0), "{context}");
+    fs::remove_dir_all(&run.dir).unwrap();
+}
+
+/// One assistant line, the correction read back and echoed, a result.
+const CORRECTED_ACTOR: &str = r#"
+( sleep 30; kill -TERM $$ ) >/dev/null 2>&1 </dev/null &
+read -r prompt || exit 90
+printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Done; I will not run the tests."}]}}'
+read -r note || exit 91
+printf '%s\n' "$note"
+printf '%s\n' '{"type":"result","subtype":"success","is_error":false}'
+cat >/dev/null
+exit 0
+"#;
+
+/// A judge's reason too long for the log's room, with a correction to
+/// deliver: the row is cut to fit — the reason bounded, the raw answers
+/// gone — before the correction is written, and the run is accounted for.
+/// Before the row was committed to first, the correction was written, the
+/// cut row still carried the whole reason, and it was dropped: an
+/// intervention with no record, and a fault.
+#[test]
+fn a_correction_is_delivered_only_once_its_row_is_committed_to() {
+    let run = supervise_scenario(&Scenario {
+        name: "long-marker",
+        blocking: "off",
+        actor: CORRECTED_ACTOR,
+        judge_every_n_assistant_messages: 1,
+        answers: vec![
+            json!({"off_track": true, "self_correcting": false, "reason": "m".repeat(20_000)})
+                .to_string(),
+            CORRECTION.to_string(),
+        ],
+        answer_delay: Duration::ZERO,
+        stdout_cap: 17_408,
+        cancel_after: None,
+        hold_before_summary: None,
+    });
+    let context = format!(
+        "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
+        run.wrapper_stderr, run.supervisor_log, run.summary
+    );
+    assert_eq!(run.status, Some(0), "{context}");
+    let rows = rows_of(&run.supervisor_log);
+    let spoke = rows.iter().find(|r| r["kind"] == "spoke").expect(&context);
+    assert_eq!(spoke["text"], CORRECTION, "{context}");
+    let marker = spoke["marker"].as_str().unwrap();
+    assert!(
+        marker.chars().count() < 300 && marker.ends_with('…'),
+        "{context}"
+    );
+    assert_eq!(spoke["calls"].as_array().unwrap().len(), 2, "{context}");
+    assert!(spoke["calls"][0]["raw"].is_null(), "{context}");
+    assert!(spoke["calls"][0]["raw_omitted"].is_string(), "{context}");
+    assert!(run.event_log.contains(CORRECTION), "{context}");
+    let summary: Value = serde_json::from_str(&run.summary).unwrap();
+    assert_eq!(summary["corrections"], 1, "{context}");
+    assert_eq!(summary["accounted_for"], true, "{context}");
+    fs::remove_dir_all(&run.dir).unwrap();
+}
+
+/// One assistant line, then sixty system lines while the judge is out.
+const CHATTY_DURING_JUDGMENT_ACTOR: &str = r#"
+( sleep 30; kill -TERM $$ ) >/dev/null 2>&1 </dev/null &
+read -r prompt || exit 90
+printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"ONE"}]}}'
+i=0; while [ $i -lt 60 ]; do printf '%s\n' '{"type":"system","subtype":"tick"}'; i=$((i+1)); done
+cat >/dev/null
+exit 0
+"#;
+
+/// Events that arrive while a judge is out cannot take the room held for
+/// its row: at a cap with room for little else, the run faults on the
+/// events, and the judgment's row — its call with it — is still written.
+/// Before the room was held, the events took it, and the row was dropped:
+/// a call with no record.
+#[test]
+fn events_during_a_judgment_cannot_take_the_room_held_for_its_record() {
+    let run = supervise_scenario(&Scenario {
+        name: "reserved-room",
+        blocking: "off",
+        actor: CHATTY_DURING_JUDGMENT_ACTOR,
+        judge_every_n_assistant_messages: 1,
+        answers: vec![
+            json!({"off_track": true, "self_correcting": false, "reason": "m".repeat(13_000)})
+                .to_string(),
+            CORRECTION.to_string(),
+        ],
+        answer_delay: Duration::from_secs(1),
+        stdout_cap: 17_408,
+        cancel_after: None,
+        hold_before_summary: None,
+    });
+    let context = format!(
+        "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
+        run.wrapper_stderr, run.supervisor_log, run.summary
+    );
+    assert_eq!(run.status, Some(1), "{context}");
+    let summary: Value = serde_json::from_str(&run.summary).unwrap();
+    assert!(
+        summary["unclean_reason"]
+            .as_str()
+            .unwrap()
+            .contains("held for the judgment"),
+        "{context}"
+    );
+    let rows = rows_of(&run.supervisor_log);
+    let judged = rows
+        .iter()
+        .find(|r| r.get("boundary").is_some())
+        .expect(&context);
+    assert_eq!(judged["calls"][0]["purpose"], "judge", "{context}");
     fs::remove_dir_all(&run.dir).unwrap();
 }

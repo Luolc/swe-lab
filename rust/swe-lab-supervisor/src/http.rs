@@ -53,10 +53,20 @@ pub fn post_json(
     stop: &Stop,
 ) -> Result<Response, String> {
     // Nothing to resolve: the endpoint is a numeric loopback address by
-    // construction (`Endpoint::parse`), so the connection is the first and
-    // only thing that can wait, and it waits under the deadline.
-    let mut stream = TcpStream::connect_timeout(&endpoint.address, remaining(deadline)?)
-        .map_err(|e| format!("connecting to the endpoint: {e}"))?;
+    // construction (`Endpoint::parse`), so the connection is the first
+    // thing that can wait, and it waits like every other: a slice at a
+    // time, the stop looked at between slices. An attempt a slice did not
+    // complete is abandoned and made again — a listener whose queue is
+    // full drops the attempt anyway, and the next one is what finds room.
+    let mut stream = loop {
+        match TcpStream::connect_timeout(&endpoint.address, slice(deadline, stop)?) {
+            Ok(stream) => break stream,
+            Err(e)
+                if e.kind() == io::ErrorKind::TimedOut || e.kind() == io::ErrorKind::WouldBlock => {
+            }
+            Err(e) => return Err(format!("connecting to the endpoint: {e}")),
+        }
+    };
     let mut head = format!(
         "POST {} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nAccept: application/json\r\nContent-Length: {}\r\nConnection: close\r\n",
         endpoint.path,
@@ -220,6 +230,64 @@ pub(crate) mod tests {
         deadline: Instant,
     ) -> Result<Response, String> {
         super::post_json(endpoint, bearer, body, deadline, &NEVER)
+    }
+
+    /// A connect that cannot complete — the listener's accept queue is
+    /// full, so the kernel drops the attempt and the client would wait,
+    /// retransmitting, for as long as it is given — returns as cancelled
+    /// within a poll interval of the stop, however far the deadline is;
+    /// the control is the same connect with no stop, which waits for its
+    /// deadline.
+    #[test]
+    fn a_cancellation_reaches_a_connect_that_cannot_complete() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let mut fillers = Vec::new();
+        loop {
+            match TcpStream::connect_timeout(&address, Duration::from_millis(300)) {
+                Ok(stream) => fillers.push(stream),
+                Err(e) if e.kind() == io::ErrorKind::TimedOut => break,
+                Err(e) => panic!("filling the accept queue: {e}"),
+            }
+            assert!(fillers.len() < 4096, "the accept queue never filled");
+        }
+        let endpoint = Endpoint {
+            address,
+            path: "/".to_string(),
+        };
+        let stop = std::sync::Arc::new(AtomicUsize::new(0));
+        let raised = std::sync::Arc::clone(&stop);
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(150));
+            raised.store(15, Ordering::Relaxed);
+        });
+        let started = Instant::now();
+        let error = super::post_json(
+            &endpoint,
+            None,
+            b"{}",
+            started + Duration::from_secs(10),
+            &stop,
+        )
+        .unwrap_err();
+        assert!(error.contains("cancelled"), "{error}");
+        assert!(
+            started.elapsed() < Duration::from_secs(2),
+            "{:?}",
+            started.elapsed()
+        );
+
+        let started = Instant::now();
+        let error =
+            post_json(&endpoint, None, b"{}", started + Duration::from_millis(400)).unwrap_err();
+        assert!(error.contains("deadline"), "{error}");
+        assert!(
+            started.elapsed() >= Duration::from_millis(400),
+            "{:?}",
+            started.elapsed()
+        );
+        drop(fillers);
+        drop(listener);
     }
 
     /// A call in progress returns as cancelled within a poll interval of

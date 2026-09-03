@@ -2,10 +2,12 @@
 //! is still fresh, end the run deliberately, and account for all of it.
 //!
 //! One thread owns everything here — the evidence, the policy state, the
-//! actor's stdin, the log. Two things happen elsewhere and report back
-//! through one bounded queue: the actor's readers (`actor.rs`), and at most
+//! actor's stdin, the log. Two things happen elsewhere and report back: the
+//! actor's readers (`actor.rs`), through one bounded queue, and at most
 //! **one** judgment at a time, run on its own thread so that draining never
-//! waits on a model call. While a judgment is in flight the loop keeps
+//! waits on a model call, through a channel of its own — its word never
+//! waits behind the actor's events, so a judge that has ended is always
+//! joined, a full queue or not. While a judgment is in flight the loop keeps
 //! consuming; when the judgment returns, its evidence revision is compared
 //! with the current one and a correction newer admitted evidence overtook is
 //! recorded as stale and never delivered. A boundary that falls while one is
@@ -33,7 +35,9 @@
 //! does not hold the wrapper — and no judgment is in flight; or when a log
 //! stops taking output; or when the wrapper is told to stop. Then the
 //! actor's process group is ended, stragglers swept, the drains finished,
-//! and the summary written.
+//! and the summary written. The run's fate is decided once, when the loop
+//! ends: a stop raised after that changes neither the summary nor the exit
+//! status — the two are one decision, not two readings of a flag.
 //!
 //! **Failure semantics.** A failed judge or writer call is one lapse; the
 //! next boundary is judged normally. A failed stdin write is a gap: the loop
@@ -47,7 +51,7 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::process::ExitStatus;
 use std::sync::Arc;
-use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender};
+use std::sync::mpsc::{self, Receiver, RecvTimeoutError, SyncSender};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -64,16 +68,29 @@ use crate::signals::{self, Stop};
 use crate::stream::user_event_line;
 use crate::summary::{self, Summary, SupervisorExit};
 
-/// What the supervisor log must have left before a judge is started: room
-/// for the boundary's row without the model's raw answers, which is what
-/// the row is reduced to when the full one would not fit. A judge is not
-/// asked when even that could not be kept — a request without a record is
-/// what the account exists to rule out.
-const JUDGMENT_ROW_RESERVE: u64 = 8 * 1024;
+/// The room held in the supervisor log for a judgment's row from the moment
+/// its judge starts until the row is written: no ordinary row may take it,
+/// and a judge is not started unless it is there — a request without a
+/// record is what the account exists to rule out. It is enough for the row
+/// with every string that came from outside at its ceiling
+/// ([`MAX_ROW_STRING_CHARS`]) and the raw answers gone ([`reduce`]), which
+/// is what the row is cut to when the whole would not fit; the named test
+/// is `a_boundary_row_at_every_ceiling_fits_the_room_held_for_it`.
+const JUDGMENT_ROW_RESERVE: u64 = 16 * 1024;
 
-/// How long the loop sleeps between checks of the stop flag and the leader
-/// when no event arrives.
-const TICK: Duration = Duration::from_millis(100);
+/// The ceiling on a string of a boundary's row that came from outside — the
+/// judge's reason, a call's error, what a response said its model or finish
+/// reason was — in characters, control characters replaced. The delivered
+/// text has a ceiling of its own (`prompt::MAX_INTERVENTION_CHARS`).
+const MAX_ROW_STRING_CHARS: usize = 256;
+
+/// What a delivery may add to a boundary's row after it was fitted: its
+/// kind, and a bounded reason it was not delivered.
+const DELIVERY_MARGIN: u64 = 2 * 1024;
+
+/// How long the loop sleeps between checks of the stop flag, the leader and
+/// the judge's word when no event arrives.
+const TICK: Duration = Duration::from_millis(20);
 
 /// The word every row carries; the one policy this binary implements.
 const POLICY_NAME: &str = "speak-when-off-track";
@@ -108,15 +125,15 @@ pub struct Ended {
     pub status: Option<ExitStatus>,
     /// The account of the run.
     pub summary: Summary,
+    /// The signal the run was cancelled by, decided when the loop ended:
+    /// the summary says `terminated` exactly when this is set, and the exit
+    /// status follows it, whatever a later signal did to the flag.
+    pub cancelled: Option<i32>,
 }
 
-/// What the loop receives.
-enum Msg {
-    Actor(Event),
-    /// A judgment's outcome: the policy's, or why the judge gave none —
-    /// its thread panicked.
-    Judged(u64, Result<Judged, String>),
-}
+/// A judgment's outcome for a boundary: the policy's, or why the judge gave
+/// none — its thread panicked.
+type Word = (u64, Result<Judged, String>);
 
 /// One boundary underway.
 struct InFlight {
@@ -139,7 +156,7 @@ struct InFlight {
 /// The judge thread's word to the loop, sent on the way out whatever
 /// happens: a panic below it sends the word as well, saying so.
 struct Report {
-    outbox: SyncSender<Msg>,
+    outbox: SyncSender<Word>,
     ordinal: u64,
     sent: bool,
 }
@@ -147,17 +164,16 @@ struct Report {
 impl Report {
     fn judged(mut self, judged: Judged) {
         self.sent = true;
-        let _ = self.outbox.send(Msg::Judged(self.ordinal, Ok(judged)));
+        let _ = self.outbox.send((self.ordinal, Ok(judged)));
     }
 }
 
 impl Drop for Report {
     fn drop(&mut self) {
         if !self.sent {
-            let _ = self.outbox.send(Msg::Judged(
-                self.ordinal,
-                Err("the judge thread panicked".to_string()),
-            ));
+            let _ = self
+                .outbox
+                .send((self.ordinal, Err("the judge thread panicked".to_string())));
         }
     }
 }
@@ -206,8 +222,13 @@ struct Loop {
     model: Arc<Model>,
     actor: Actor,
     gate: Arc<Gate>,
-    outbox: SyncSender<Msg>,
-    inbox: Receiver<Msg>,
+    inbox: Receiver<Event>,
+    /// The judge's word comes by a channel of its own, one deep: at most
+    /// one judgment is in flight, and its word is taken before the next
+    /// starts, so the send never waits — on the actor's events least of
+    /// all.
+    judge_outbox: SyncSender<Word>,
+    judge_inbox: Receiver<Word>,
     log: BufWriter<File>,
     /// The event log, for its digest once the reader is done with it.
     event_log: File,
@@ -264,14 +285,16 @@ pub fn run(
     // or, when a stop arrived meanwhile, its cancellation — not a refusal.
     let grace = Duration::from_millis(run.config.timeouts.term_grace_ms);
     let stop = Arc::clone(&run.stop);
-    let terminated = match run.actor.write_stdin(launch.prompt, &stop, grace) {
+    // The run's fate is decided here, once: a stop raised after this point
+    // changes neither the summary nor the exit status.
+    let cancelled = match run.actor.write_stdin(launch.prompt, &stop, grace) {
         Ok(()) => run.serve(),
         Err(error) => {
             run.fault(format!("the actor did not take its prompt: {error}"));
-            signals::requested(&stop).is_some()
+            signals::requested(&stop)
         }
     };
-    Ok(run.finish(terminated, criterion_sha256))
+    Ok(run.finish(cancelled, criterion_sha256))
 }
 
 impl Loop {
@@ -298,6 +321,7 @@ impl Loop {
             .map_err(|e| format!("keeping a handle on the event log: {e}"))?;
         let log = supervisor_log.file;
         let (outbox, inbox) = actor::event_queue();
+        let (judge_outbox, judge_inbox) = mpsc::sync_channel(1);
         let command = actor::command(argv, &[config::BASE_URL_ENV, config::API_KEY_ENV])
             .map_err(|e| format!("actor command: {e}"))?;
         let limits = actor::Limits {
@@ -315,7 +339,7 @@ impl Loop {
             move |event| {
                 // The loop being gone means the wrapper is already on its
                 // way out.
-                let _ = relay.send(Msg::Actor(event));
+                let _ = relay.send(event);
             },
         )
         .map_err(|e| format!("launching the actor: {e}"))?;
@@ -327,8 +351,9 @@ impl Loop {
             model: Arc::new(model),
             actor,
             gate,
-            outbox,
             inbox,
+            judge_outbox,
+            judge_inbox,
             log: BufWriter::new(log),
             event_log,
             log_written: 0,
@@ -354,18 +379,18 @@ impl Loop {
     }
 
     /// Consume until the run is over and no judgment is in flight, or until
-    /// the wrapper is told to stop. Returns whether it was stopped.
-    fn serve(&mut self) -> bool {
+    /// the wrapper is told to stop. Returns the signal it was stopped by.
+    fn serve(&mut self) -> Option<i32> {
         let grace = Duration::from_millis(self.config.timeouts.term_grace_ms);
         loop {
-            if signals::requested(&self.stop).is_some() {
-                return true;
+            if let Some(signal) = signals::requested(&self.stop) {
+                return Some(signal);
             }
             match self.inbox.recv_timeout(TICK) {
-                Ok(Msg::Actor(Event::Line(line))) => self.consume_line(&line),
-                Ok(Msg::Actor(Event::Oversized)) => self.counts.oversized += 1,
-                Ok(Msg::Actor(Event::Barrier(id))) => self.barrier_reached(id),
-                Ok(Msg::Actor(Event::StdoutClosed(result))) => {
+                Ok(Event::Line(line)) => self.consume_line(&line),
+                Ok(Event::Oversized) => self.counts.oversized += 1,
+                Ok(Event::Barrier(id)) => self.barrier_reached(id),
+                Ok(Event::StdoutClosed(result)) => {
                     self.stdout_closed = true;
                     if let Err(error) = result {
                         self.fault(format!("the actor's stdout: {error}"));
@@ -382,16 +407,27 @@ impl Loop {
                         );
                     }
                 }
-                Ok(Msg::Actor(Event::StderrClosed(result))) => {
+                Ok(Event::StderrClosed(result)) => {
                     if let Err(error) = result {
                         self.fault(format!("the actor's stderr: {error}"));
                     }
                 }
-                Ok(Msg::Judged(ordinal, outcome)) => self.complete(ordinal, outcome),
                 Err(RecvTimeoutError::Timeout) => {}
                 Err(RecvTimeoutError::Disconnected) => {
-                    self.fault("the event queue closed".to_string());
+                    // Both readers have ended, each having reported its
+                    // close first; a queue closed before stdout's close
+                    // was reported is a reader gone without a word.
+                    if self.stdout_closed {
+                        thread::sleep(TICK);
+                    } else {
+                        self.fault(
+                            "the event queue closed before the actor's stdout did".to_string(),
+                        );
+                    }
                 }
+            }
+            while let Ok((ordinal, outcome)) = self.judge_inbox.try_recv() {
+                self.complete(ordinal, outcome);
             }
             if self.leader_exited_at.is_none() {
                 match self.actor.exited() {
@@ -409,7 +445,7 @@ impl Loop {
                     .over_since
                     .is_some_and(|since| since.elapsed() >= grace);
             if over && self.in_flight.is_none() {
-                return false;
+                return None;
             }
         }
     }
@@ -626,7 +662,7 @@ impl Loop {
         };
         let model = Arc::clone(&self.model);
         let criterion = self.criterion_text;
-        let outbox = self.outbox.clone();
+        let outbox = self.judge_outbox.clone();
         #[cfg(test)]
         if FAIL_JUDGE_SPAWN.with(std::cell::Cell::get) {
             self.judge_not_started(&boundary, &std::io::Error::other("injected"));
@@ -702,7 +738,12 @@ impl Loop {
     }
 
     /// Put a judgment's outcome on record, deliver what it says to deliver,
-    /// let the actor go, and start what waited behind it.
+    /// let the actor go, and start what waited behind it. The row is
+    /// committed to before any correction is written: every string of it
+    /// that came from outside is bounded, and the raw answers go when it
+    /// would not fit with the delivery's word still to come — a row so cut
+    /// is under [`JUDGMENT_ROW_RESERVE`], the room its judge was started
+    /// with, so no intervention goes unrecorded.
     fn settle(&mut self, boundary: &InFlight, outcome: Result<Judged, String>) {
         let ordinal = boundary.ordinal;
         let lag = boundary.started.elapsed();
@@ -712,14 +753,14 @@ impl Loop {
         row.insert("snapshot_cursor".into(), json!(boundary.cursor));
         row.insert("boundary".into(), json!(boundary.ordinal));
         row.insert("decision_lag_ms".into(), json!(millis(lag)));
-        let mut delivered = false;
-        let kind = match outcome {
+        // `Ok` is the kind decided; `Err` is a correction still to deliver.
+        let decided: Result<&'static str, String> = match outcome {
             Err(reason) => {
                 self.unclean
                     .get_or_insert_with(|| format!("boundary {ordinal}: {reason}"));
                 self.counts.unjudged += 1;
                 row.insert("reason".into(), json!(reason));
-                "unjudged"
+                Ok("unjudged")
             }
             Ok(judged) => {
                 if let Some(marker) = &judged.marker {
@@ -733,33 +774,41 @@ impl Loop {
                     Decision::Unjudged(reason) => {
                         self.counts.unjudged += 1;
                         row.insert("reason".into(), json!(reason));
-                        "unjudged"
+                        Ok("unjudged")
                     }
                     Decision::Silent => {
                         self.counts.silent += 1;
-                        "silent"
+                        Ok("silent")
                     }
                     Decision::Lapse(reason) => {
                         self.counts.lapses += 1;
                         row.insert("reason".into(), json!(reason));
-                        "lapse"
+                        Ok("lapse")
                     }
                     Decision::Speak(text) => {
                         row.insert("text".into(), json!(text));
-                        let (kind, reason) = self.deliver(boundary, text);
-                        delivered = kind == "spoke";
-                        if let Some(reason) = reason {
-                            row.insert("reason".into(), json!(reason));
-                        }
-                        kind
+                        Err(text)
                     }
                 }
             }
         };
-        row.insert("kind".into(), json!(kind));
-        if !self.fits(&row) {
+        bound_row(&mut row);
+        if !self.fits(&row, DELIVERY_MARGIN) {
             reduce(&mut row);
         }
+        let mut delivered = false;
+        let kind = match decided {
+            Ok(kind) => kind,
+            Err(text) => {
+                let (kind, reason) = self.deliver(boundary, text);
+                delivered = kind == "spoke";
+                if let Some(reason) = reason {
+                    row.insert("reason".into(), json!(bounded(&reason)));
+                }
+                kind
+            }
+        };
+        row.insert("kind".into(), json!(kind));
         self.write_row(row);
         // The actor was held — stopped, or gated — through the freshness
         // check and the stdin write above; only now is it let go.
@@ -822,15 +871,27 @@ impl Loop {
         self.write_row(row);
     }
 
-    /// Whether `row` can still be written under the log's cap.
-    fn fits(&self, row: &Map<String, Value>) -> bool {
-        let cap = self.config.limits.max_actor_stdout_bytes.get();
+    /// Whether `row`, and `margin` bytes after it, can still be written in
+    /// the log's room.
+    fn fits(&self, row: &Map<String, Value>, margin: u64) -> bool {
         serde_json::to_vec(&Value::Object(row.clone())).is_ok_and(|line| {
             u64::try_from(line.len() + 1)
                 .ok()
+                .and_then(|bytes| bytes.checked_add(margin))
                 .and_then(|bytes| self.log_written.checked_add(bytes))
-                .is_some_and(|after| after <= cap)
+                .is_some_and(|after| after <= self.room())
         })
+    }
+
+    /// What the log may grow to now: its cap, less the room held for the
+    /// record of a judgment in flight — no ordinary row may take that.
+    fn room(&self) -> u64 {
+        let cap = self.config.limits.max_actor_stdout_bytes.get();
+        if self.in_flight.as_ref().is_some_and(|b| b.judge.is_some()) {
+            cap.saturating_sub(JUDGMENT_ROW_RESERVE)
+        } else {
+            cap
+        }
     }
 
     /// Whether there is a run left to supervise: none once the wrapper was
@@ -928,13 +989,21 @@ impl Loop {
             }
         };
         line.push(b'\n');
-        let cap = self.config.limits.max_actor_stdout_bytes.get();
+        let room = self.room();
         let Some(after) = u64::try_from(line.len())
             .ok()
             .and_then(|bytes| self.log_written.checked_add(bytes))
-            .filter(|&after| after <= cap)
+            .filter(|&after| after <= room)
         else {
-            self.fault(format!("the supervisor log reached its cap of {cap} bytes"));
+            let cap = self.config.limits.max_actor_stdout_bytes.get();
+            let held = if room < cap {
+                format!(", {JUDGMENT_ROW_RESERVE} of them held for the judgment in flight")
+            } else {
+                String::new()
+            };
+            self.fault(format!(
+                "the supervisor log reached its cap of {cap} bytes{held}"
+            ));
             return;
         };
         let written = self.log.write_all(&line).and_then(|()| self.log.flush());
@@ -954,14 +1023,9 @@ impl Loop {
         if let Some(mut boundary) = self.in_flight.take() {
             if let Some(handle) = boundary.judge.take() {
                 let _ = handle.join();
-                let word = loop {
-                    match self.inbox.try_recv() {
-                        Ok(Msg::Judged(ordinal, outcome)) if ordinal == boundary.ordinal => {
-                            break Some(outcome);
-                        }
-                        Ok(_) => {}
-                        Err(_) => break None,
-                    }
+                let word = match self.judge_inbox.try_recv() {
+                    Ok((ordinal, outcome)) if ordinal == boundary.ordinal => Some(outcome),
+                    _ => None,
                 };
                 match word {
                     Some(outcome) => self.settle(&boundary, outcome),
@@ -991,7 +1055,7 @@ impl Loop {
         }
     }
 
-    fn finish(mut self, terminated: bool, criterion_sha256: &str) -> Ended {
+    fn finish(mut self, cancelled: Option<i32>, criterion_sha256: &str) -> Ended {
         self.close_boundaries();
         let Loop {
             config,
@@ -1030,6 +1094,9 @@ impl Loop {
                 (None, 0)
             }
         };
+        // Debug builds only: a hold here, for the test that a stop raised
+        // after the run's fate was decided changes nothing.
+        hold_before_summary();
         if let Err(error) = log.flush() {
             unclean.get_or_insert_with(|| format!("flushing the supervisor log: {error}"));
         }
@@ -1044,7 +1111,7 @@ impl Loop {
         };
         let actor_event_log_sha256 = digest("event log", &mut event_log);
         let supervisor_log_sha256 = digest("supervisor log", log.get_mut());
-        let supervisor_exit = if terminated {
+        let supervisor_exit = if cancelled.is_some() {
             SupervisorExit::Terminated
         } else if unclean.is_some() {
             SupervisorExit::Unclean
@@ -1087,8 +1154,74 @@ impl Loop {
             actor_event_log_sha256,
             supervisor_log_sha256,
         };
-        Ended { status, summary }
+        Ended {
+            status,
+            summary,
+            cancelled,
+        }
     }
+}
+
+/// The environment variable that holds `finish` between the actor's end and
+/// the summary, in milliseconds. Read in debug builds only: it exists for
+/// the test of the ending's one decision, and a release binary has no
+/// such hook.
+#[cfg(debug_assertions)]
+pub const HOLD_BEFORE_SUMMARY_ENV: &str = "SWE_LAB_SUPERVISOR_DEBUG_HOLD_BEFORE_SUMMARY_MS";
+
+#[cfg(debug_assertions)]
+fn hold_before_summary() {
+    if let Some(millis) = std::env::var_os(HOLD_BEFORE_SUMMARY_ENV)
+        .and_then(|value| value.to_str()?.parse::<u64>().ok())
+    {
+        thread::sleep(Duration::from_millis(millis));
+    }
+}
+
+#[cfg(not(debug_assertions))]
+fn hold_before_summary() {}
+
+/// Every string of a boundary's row that came from outside, cut to
+/// [`MAX_ROW_STRING_CHARS`]: the judge's reason and the decision's, and each
+/// call's models, finish reason and error. The raw answers are [`reduce`]'s
+/// to drop whole, and the delivered text has its own ceiling.
+fn bound_row(row: &mut Map<String, Value>) {
+    for key in ["marker", "reason"] {
+        bound_in(row, key);
+    }
+    if let Some(Value::Array(calls)) = row.get_mut("calls") {
+        for call in calls.iter_mut().filter_map(Value::as_object_mut) {
+            for key in [
+                "requested_model",
+                "response_model",
+                "finish_reason",
+                "error",
+            ] {
+                bound_in(call, key);
+            }
+        }
+    }
+}
+
+fn bound_in(object: &mut Map<String, Value>, key: &str) {
+    if let Some(Value::String(text)) = object.get_mut(key) {
+        *text = bounded(text);
+    }
+}
+
+/// `text` cut to [`MAX_ROW_STRING_CHARS`] characters, control characters
+/// replaced, an ellipsis marking a cut — so that no character of it takes
+/// more than four bytes once encoded.
+fn bounded(text: &str) -> String {
+    let mut cut: String = text
+        .chars()
+        .take(MAX_ROW_STRING_CHARS)
+        .map(|c| if c.is_control() { '\u{FFFD}' } else { c })
+        .collect();
+    if text.chars().nth(MAX_ROW_STRING_CHARS).is_some() {
+        cut.push('…');
+    }
+    cut
 }
 
 /// A boundary's row without the model's raw answers: what is written when
@@ -1284,10 +1417,10 @@ mod tests {
             } else {
                 "cancel-control"
             });
-            let outbox = run.outbox.clone();
+            let outbox = run.judge_outbox.clone();
             let judge = thread::spawn(move || {
                 thread::sleep(Duration::from_millis(100));
-                let _ = outbox.send(Msg::Judged(
+                let _ = outbox.send((
                     1,
                     Ok(Judged {
                         decision: Decision::Speak("stop".to_string()),
@@ -1301,9 +1434,7 @@ mod tests {
                 run.stop.store(15, Ordering::SeqCst);
                 run.close_boundaries();
             } else {
-                let Msg::Judged(ordinal, outcome) = run.inbox.recv().unwrap() else {
-                    panic!("not the judge's word");
-                };
+                let (ordinal, outcome) = run.judge_inbox.recv().unwrap();
                 run.complete(ordinal, outcome);
             }
             let row = last_row(&dir);
@@ -1321,6 +1452,80 @@ mod tests {
             }
             std::fs::remove_dir_all(dir).unwrap();
         }
+    }
+
+    /// The room held for a judgment's row is enough for the row with every
+    /// string that came from outside at its ceiling and the raw answers
+    /// gone — before the delivery's word, with the margin the delivery
+    /// gets, and after it.
+    #[test]
+    fn a_boundary_row_at_every_ceiling_fits_the_room_held_for_it() {
+        // Four bytes a character: the widest a bounded string encodes to.
+        let widest = "𝕏".repeat(MAX_ROW_STRING_CHARS + 1);
+        let bounded_widest = bounded(&widest);
+        assert_eq!(bounded_widest.chars().count(), MAX_ROW_STRING_CHARS + 1);
+        let call = |purpose: &str| {
+            json!({
+                "purpose": purpose,
+                "requested_model": widest,
+                "response_model": widest,
+                "max_tokens_sent": u32::MAX,
+                "finish_reason": widest,
+                "raw": widest.repeat(64),
+                "took_ms": u64::MAX,
+                "error": widest,
+            })
+        };
+        let mut row = Map::new();
+        row.insert("cursor".into(), json!(u64::MAX));
+        row.insert("at".into(), json!(utc_now_iso8601()));
+        row.insert("policy".into(), json!(POLICY_NAME));
+        row.insert("kind".into(), json!(""));
+        row.insert(
+            "evidence".into(),
+            json!(Disposition::ExcludedOwnIntervention.as_str()),
+        );
+        row.insert("snapshot_cursor".into(), json!(u64::MAX));
+        row.insert("boundary".into(), json!(u64::MAX));
+        row.insert("decision_lag_ms".into(), json!(u64::MAX));
+        row.insert("marker".into(), json!(widest));
+        row.insert(
+            "text".into(),
+            json!("𝕏".repeat(crate::prompt::MAX_INTERVENTION_CHARS)),
+        );
+        row.insert("calls".into(), json!([call("judge"), call("writer")]));
+        bound_row(&mut row);
+        reduce(&mut row);
+        assert_eq!(row["marker"], json!(bounded_widest));
+        assert_eq!(row["calls"][1]["error"], json!(bounded_widest));
+        let bytes = |row: &Map<String, Value>| {
+            u64::try_from(
+                serde_json::to_vec(&Value::Object(row.clone()))
+                    .unwrap()
+                    .len()
+                    + 1,
+            )
+            .unwrap()
+        };
+        assert!(
+            bytes(&row) + DELIVERY_MARGIN <= JUDGMENT_ROW_RESERVE,
+            "{} + {DELIVERY_MARGIN} > {JUDGMENT_ROW_RESERVE}",
+            bytes(&row)
+        );
+        row.insert("kind".into(), json!("unjudged"));
+        row.insert("reason".into(), json!(bounded_widest));
+        assert!(bytes(&row) <= JUDGMENT_ROW_RESERVE, "{}", bytes(&row));
+    }
+
+    /// Control characters do not survive bounding, and a cut is marked.
+    #[test]
+    fn a_bounded_string_has_no_control_character_and_marks_its_cut() {
+        assert_eq!(bounded("a\nb\u{7}c"), "a\u{FFFD}b\u{FFFD}c");
+        let long = "x".repeat(MAX_ROW_STRING_CHARS * 2);
+        let cut = bounded(&long);
+        assert_eq!(cut.chars().count(), MAX_ROW_STRING_CHARS + 1);
+        assert!(cut.ends_with('…'));
+        assert_eq!(bounded("short"), "short");
     }
 
     #[test]

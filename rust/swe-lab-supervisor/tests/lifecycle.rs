@@ -404,7 +404,7 @@ fn a_supervisor_log_that_reaches_its_cap_ends_the_run_as_a_fault() {
     let probe = "log-cap-probe";
     // Eighteen bytes of stdout, well under a 64-byte cap; the row that
     // accounts for it — cursor, time, policy, kind, evidence — is not.
-    let script = "printf '{\"type\":\"system\"}\n'; sleep 1";
+    let script = "read -r _; printf '{\"type\":\"system\"}\n'; sleep 1";
     let capped = wrapper(
         &dir,
         config_json(&dir, 500, "t", 64),
@@ -450,7 +450,7 @@ fn the_event_log_digest_is_of_the_file_the_wrapper_wrote_not_of_its_name() {
     let dir = scratch("digest");
     let event_log = dir.join("actor.events.jsonl");
     let written = "{\"type\":\"system\"}\n";
-    let script = "printf '%s\\n' '{\"type\":\"system\"}'; rm -f \"$EVENT_LOG\"; printf 'not the log\\n' > \"$EVENT_LOG\"";
+    let script = "read -r _; printf '%s\\n' '{\"type\":\"system\"}'; rm -f \"$EVENT_LOG\"; printf 'not the log\\n' > \"$EVENT_LOG\"";
     let output = wrapper(&dir, config(&dir, 500), script, &event_log, "digest-probe")
         .env("EVENT_LOG", &event_log)
         .output()
@@ -480,7 +480,8 @@ fn a_staging_name_the_actor_took_is_not_written_through() {
     let event_log = dir.join("actor.events.jsonl");
     let staging = dir.join("summary.json.partial");
     let line = "{\"type\":\"system\"}\n";
-    let script = "printf '%s\\n' '{\"type\":\"system\"}'; ln \"$EVENT_LOG\" \"$STAGING\"";
+    let script =
+        "read -r _; printf '%s\\n' '{\"type\":\"system\"}'; ln \"$EVENT_LOG\" \"$STAGING\"";
     let output = wrapper(&dir, config(&dir, 500), script, &event_log, "staging-probe")
         .env("EVENT_LOG", &event_log)
         .env("STAGING", &staging)
@@ -498,7 +499,7 @@ fn a_staging_name_the_actor_took_is_not_written_through() {
     let output = wrapper(
         &dir,
         config(&dir, 500),
-        "printf '%s\\n' '{\"type\":\"system\"}'",
+        "read -r _; printf '%s\\n' '{\"type\":\"system\"}'",
         &event_log,
         "staging-probe",
     )

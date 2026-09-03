@@ -199,7 +199,9 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
         .summary
         .write(&outputs, &args.summary)
         .map_err(|e| Failed::Unhealthy(format!("writing the summary: {e}")))?;
-    if let Some(signal) = signals::requested(&stop) {
+    // The run's one decision, taken when its loop ended: not the flag,
+    // which a signal after that may have raised.
+    if let Some(signal) = ended.cancelled {
         return Err(Failed::Cancelled {
             signal,
             actor: ended
