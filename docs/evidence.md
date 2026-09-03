@@ -98,7 +98,14 @@ invariant is an example above, not a rule here.
    would anyone be unaware?* A known-red check destroys the discriminating power
    of "the suite is red" for everyone, and is how a correct check gets deleted as
    flaky.
-9. **Make the machine poorer rather than finding a stricter one.** Scarcity can
+9. **Force-push only while no reviewer has recorded a head; once one is
+   recorded, append commits instead of rewriting.** A re-review reads the
+   `old..new` delta, and rewriting history erases that starting point — turning
+   an incremental re-review into a full re-read, on a round where the reviewer's
+   attention has already been spent once. Squashing two of your own commits
+   *before* anyone has cited a head is fine, and saves them reading one change
+   twice (2026-09-03, #410).
+10. **Make the machine poorer rather than finding a stricter one.** Scarcity can
    be manufactured locally; abundance cannot. Reproducing a CI failure by
    removing what the local box has is faster and more faithful than reasoning
    about what CI lacks.
