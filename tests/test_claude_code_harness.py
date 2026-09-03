@@ -3,6 +3,7 @@
 from collections.abc import Callable, Mapping
 import contextlib
 import dataclasses
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -1515,6 +1516,18 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
         done = len([s for s in self.scripts if s == AGENT_SCRIPT_NAME]) > 1
         events: list[dict[str, object]] = [
             {
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": self.read(PROMPT_FILENAME).decode(),
+                        }
+                    ],
+                },
+            },
+            {
                 "type": "assistant",
                 "uuid": f"message-{len(self.scripts)}-uuid",
                 "message": {
@@ -1570,14 +1583,96 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
       ),
   )
   harness = dataclasses.replace(registered, segmented=supervision)
-  sentinel = "GUIDEBOOK-HANDOFF-SENTINEL-94ad"
+  task = (
+      "Please inspect the failing parser boundary before changing any code in "
+      "this repository today"
+  )
+  guidebook_only = (
+      "amber cobalt delta ember fable garnet harbor ivory juniper kelp lunar "
+      "marble nectar"
+  )
+  sentinel = f"""\
+# Guidebook
+
+## Stage 1
+
+**Goal.** Locate the regression.
+
+**Actions.** Read the failing path.
+
+**Expected observations.** The branch differs from its caller.
+
+**Justification.** {task}. {guidebook_only}.
+
+**Exit criteria.** The mismatch is explained.
+"""
   sb = AppendingSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
   sb.write(GUIDEBOOK_NAME, sentinel.encode())
 
-  _ = harness.run(sb, prompt="solve it", timeout=100.0)
+  _ = harness.run(sb, prompt=task, timeout=100.0)
 
   assert len(payloads) == 2
   for payload in payloads:
     messages = payload["messages"]
     assert isinstance(messages, list)
     assert sentinel in messages[0]["content"]
+
+  rows = [
+      json.loads(line)
+      for line in sb.read(SUPERVISOR_LOG_NAME).decode().splitlines()
+  ]
+  spoke = next(row for row in rows if row["kind"] == "spoke")
+  assert (
+      spoke["guidebook_sha256"] == hashlib.sha256(sentinel.encode()).hexdigest()
+  )
+  assert spoke["judge_reason"] == "drift"
+  assert spoke["judge_input"] == payloads[0]
+  assert spoke["text"] == "look again"
+  assert any(
+      command.startswith("rm -f") and GUIDEBOOK_NAME in command
+      for command in sb.commands
+  )
+
+  def shingles(text: str) -> set[tuple[str, ...]]:
+    words = text.lower().split()
+    return {
+        tuple(words[index : index + 12]) for index in range(len(words) - 11)
+    }
+
+  conversation_text = harness.to_conversation(sb).model_dump_json()
+  shared = shingles(sentinel) & shingles(conversation_text)
+  leaked = shared - shingles(task)
+  assert shared  # the task-derived text is the false-positive control
+  assert leaked == set()
+  assert (
+      shingles(sentinel) & shingles(conversation_text + " " + guidebook_only)
+  ) - shingles(task)
+
+
+@pytest.mark.parametrize(
+    "guidebook",
+    [None, "# Guidebook\n\n## Stage 1\n\n**Goal.** Missing fields.\n"],
+)
+def test_a_guided_run_rejects_an_unusable_guidebook_before_actor_start(
+    tmp_path: Path, guidebook: str | None
+) -> None:
+  """Missing and malformed phase-B outputs never degrade to unguided runs."""
+  from swe_lab.trace_synthesis.guidebook import (
+      GUIDEBOOK_NAME,
+      GuidebookRejectedError,
+  )
+
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+  if guidebook is not None:
+    sb.write(GUIDEBOOK_NAME, guidebook.encode())
+  harness = ClaudeCodeHarness(
+      capture="proxy",
+      segmented=dataclasses.replace(
+          _segmented(), guidebook_name=GUIDEBOOK_NAME
+      ),
+  )
+
+  with pytest.raises(GuidebookRejectedError, match="before actor start"):
+    _ = harness.run(sb, prompt="solve it", timeout=100.0)
+
+  assert AGENT_SCRIPT_NAME not in sb.scripts

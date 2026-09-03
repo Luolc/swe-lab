@@ -181,11 +181,10 @@ Two rules on the guidebook:
    judgement, not a test.
 
 The guidebook is **private from the actor, not from the Supervisor**: phase C's
-Supervisor receives it in full, while it is intended never to enter the actor's
-context or the training trace. Nothing enforces that yet — see
-[§12](#12-invariants-intended-enforced-where-marked) for the test that must land
-with the code. The remaining guidebook/supervision passages await later
-alignment.
+Supervisor receives the complete schema-validated artifact, while it never
+enters the actor's context or the training trace. The handoff and the
+source-aware conversation check are pinned in
+[§12](#12-invariants-intended-enforced-where-marked).
 
 ### Phase C — the guided rollout
 
@@ -206,6 +205,14 @@ it considers, the Supervisor takes one of two branches:
   don't think that's the right direction — have you considered how this
   interacts with X?"), giving **a direction and never a specific**, and wrapped
   in a marker that says it came from outside ([§11](#11-open-questions)).
+
+The complete guidebook is visible to both the judge and writer, beside the
+general-practice criterion. Raw gold patches, test patches, hidden tests and
+equivalent privileged artifacts have no independent input field. The remaining
+boundary is on speech: the writer is intended to point, question and suggest a
+way to reason without reciting an implementation. The shallow checks in §5
+enforce only named surface forms; human review decides whether a paraphrase has
+crossed the teaching boundary.
 
 **When** it speaks is the open variable, not a settled part of this design: in
 the one graded batch, **8 of 8 non-compliances arrived too late**
@@ -270,7 +277,7 @@ the three reasons are structural rather than convenient:
 
 Owner-decided (2026-08-31 / 2026-09-01). These are the design of record.
 
-> **Injection is no longer the default, and is no longer an open option.** The
+> **Injection is not the production default.** The
 > production default is an **uninterfered rollout** with the guidebook used
 > **post-hoc as a grader / filter** — rejection sampling — decided by the
 > hint-legitimacy debate (2026-09-01). Injection survived that decision only as
@@ -278,12 +285,11 @@ Owner-decided (2026-08-31 / 2026-09-01). These are the design of record.
 > micro-test **failed 0 of 3**
 > ([report](../../experiments/trace_synthesis/hint_legitimacy/REPORT.md),
 > adjudicated by a third party against criteria registered before the runs). The
-> arm is **terminated**, by its own registered kill condition rather than by a
-> change of mind: no tag swap, no channel swap, no model swap, no additional
-> replicate. **The rows below are retained as the design of record for what an
-> injecting run must do *if* one is ever run again** — every one of them was
-> measured and none was refuted — but nothing in this section authorizes a
-> production run that injects.
+> arm met its registered kill condition. ADR-0018 later restored a distinct,
+> guidebook-guided workflow without making it the production default. **The
+> rows below are the design of record for that workflow**; shipping the
+> mechanism does not establish that its hints improve outcomes or teaching
+> value.
 
 | Decision | Rationale |
 |---|---|
@@ -291,8 +297,8 @@ Owner-decided (2026-08-31 / 2026-09-01). These are the design of record.
 | **Never rewrite the tool call** — now **structural** | Measured: a rewritten call is *not* reflected back in the assistant turn, so the actor finishes the turn believing it did something it did not do, and every later step reasons from a false premise ([§10](#10-what-is-measured-about-hooks)). On the stdin channel this stops being a rule we keep and becomes one we cannot break: a message on stdin has no field that reaches a tool call. |
 | **The tool's own bytes are never touched** — was *appending is our invariant* | Under the hook path this was the hardest row to hold: `updatedToolOutput`'s schema **replaces** the tool output ([§10](#10-what-is-measured-about-hooks)), there is no append mode, and "the tool's real bytes survive verbatim" held only because our hook copied them into every rewrite it emitted. The stdin channel removes the hazard rather than managing it — the supervisor emits its own message and never writes a tool result — so what was a property of our code that a test had to hold up is now a property of the channel. The retired form is kept visible because it is the shape the risk takes if steering ever returns to a hook. |
 | **Never deny** — now **structural** | Let the call execute and take its result; see [§4](#4-why-judging-after-the-fact-and-not-before). The stdin channel carries no decision field, so denial is unreachable rather than declined. |
-| **Inject as an identifiable external hint** *(terminated arm; see the note above)* | The intervention has to be honest *conditioning* — text the actor visibly received from outside, not a fabricated observation and not something it produced itself. What makes it honest is that the actor can **tell it apart**: an explicit marker (`<oracle_hint>` …) saying so. The wire-level `role` field is **not** the criterion (owner, 2026-09-01) — a tagged segment appended to a tool result qualifies, and so does the message this channel delivers, which is what a real user's mid-turn correction produces on the wire. What a trace may contain is decided by (a)/(b) in [§6](#what-disqualifies-a-trace--the-two-criteria-of-record); [§11](#11-open-questions) states the three tests a *delivery channel* has to pass. |
-| **Direction only, never specifics** | The leakage / teaching dial; see [§8](#8-what-hint-specificity-now-trades). |
+| **Inject as an identifiable external hint** | The intervention has to be honest *conditioning* — text the actor visibly received from outside, not a fabricated observation and not something it produced itself. What makes it honest is that the actor can **tell it apart**: the current marker is `<supervisor_note>`; the earlier channel experiments below used `<oracle_hint>`. The wire-level `role` field is **not** the criterion (owner, 2026-09-01) — a tagged segment appended to a tool result qualifies, and so does the message this channel delivers, which is what a real user's mid-turn correction produces on the wire. What a trace may contain is decided by (a)/(b) in [§6](#what-disqualifies-a-trace--the-two-criteria-of-record); [§11](#11-open-questions) states the three tests a *delivery channel* has to pass. |
+| **Direction only, never specifics** | The intended speech boundary in [ADR-0018](../decisions/ADR-0018-the-supervisor-reads-the-guidebook-but-must-not-recite-the-answer.md). The writer may use the whole guidebook privately, taking its reason primarily from `Justification`. Mechanical checks reject empty or over-400-character output, fenced code, diff hunks and any eight-word guidebook copy. They do **not** detect short constants, decisive identifiers or semantic paraphrases; sampled human review owns that judgement. See [§8](#8-what-hint-specificity-now-trades). |
 | **Not a *fabricated* system-reminder** — rewritten by [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md) against criterion **(b)** | The original ban was aimed at a channel Claude Code uses heavily, where ours would be indistinguishable from machine noise. The mid-turn stdin message is folded into a `role: system` `<system-reminder>` on the wire, and that does **not** revive the ban: what disqualified `additionalContext` was being a **supervision-only artifact**, and this fold is the opposite — measured byte-identical to what an ordinary user's correction produces in the production TUI ([§10](#the-stdin-channel--measured-and-not-a-hook)), so it is a shape that occurs at inference time. The ban that survives is on *manufacturing* a reminder the front end would never produce; see the note in [§6](#what-disqualifies-a-trace--the-two-criteria-of-record) on why the wire-level role is not the criterion. |
 
 > **The attribution row moved on 2026-09-01, and it moved across a gate that
@@ -342,6 +348,11 @@ like:
 - **(a)** we would take SFT loss on tokens **the actor did not generate**;
 - **(b)** the **context shape does not occur at inference time**.
 
+ADR-0018 does not change either criterion. They decide whether the trace shape
+is admissible, not whether a guidebook-informed hint teaches reasoning rather
+than supplies the answer. A correction may satisfy both and still be too
+specific for a useful training example.
+
 **The wire-level `role` field is not one of them**, and neither is "is this a
 clean `user` turn". A message the actor genuinely received is conditioning, not
 a target, so it cannot violate (a) whatever role the wire gives it; whether it
@@ -389,7 +400,9 @@ build tractable.
 
 ## 8. What hint specificity now trades
 
-Not leakage any more — **how much the trace teaches**.
+The writer's access to the guidebook makes this a speech boundary, not an input
+projection: **how much the trace teaches** depends on what crosses from that
+private input into the correction.
 
 - **Too specific** ("the bug is in `config.py`") and the assistant is merely
   executing an instruction. The trace carries little skill, because the hard
@@ -398,7 +411,9 @@ Not leakage any more — **how much the trace teaches**.
   actually holds. That derivation is the part worth learning.
 
 So specificity trades steering power against teaching value, and it is the main
-thing to tune. Prompt-level detail is deliberately deferred to the experiments.
+thing to tune. The shallow writer checks reject length, fenced code, diff hunks
+and eight-word copying, but cannot recognize a semantic paraphrase. Prompt-level
+detail and sampled human review therefore remain experimental work.
 
 ## 9. Data mixture — to be validated, not solved
 
@@ -895,7 +910,7 @@ is tuned by reading traces, not asserted by a test.
 
 | Intended invariant | Test that must pin it |
 |---|---|
-| The guidebook never enters the actor's context or the training trace | a test asserting the guidebook path is absent from phase C's mounts and from the serialized `Conversation` |
+| The guidebook never enters the actor's context or the training trace | ✅ `test_the_registered_guided_harness_hands_the_guidebook_to_both_calls`: the harness removes the workspace input before launch; in the serialized `Conversation`, guidebook 12-word shingles are counted only after subtracting shingles also present in the task prompt, with both a shared-source control and a guidebook-only contamination control |
 | The belief state is host-side only — never written into the sandbox | a test asserting no phase-C mount or write target resolves to the belief-state file |
 | Every phase B / C record carries the oracle-guided policy stamp | a test asserting the stamp is present on the record and that aggregation across differing stamps still errors |
 | A dropped or timed-out Supervisor decision is recorded, never silently ignored | a test asserting the run record shows the drop |
@@ -905,7 +920,7 @@ is tuned by reading traces, not asserted by a test.
 | Conversion neither drops nor synthesizes turns: the training trace is exactly the actor's turns plus the interventions the actor received | a test comparing the converted `Conversation` against the capture and the hint log, asserting equality of the turn sequence — no extra turn, no missing one |
 | Phase D never collects an exchange the actor was not part of: a request whose body carries a `[SUGGESTION MODE: …]` message, or any other side call the front end makes, is excluded from the conversation | a test over a captured TUI session asserting the collected `Conversation` is built from the agent-loop request and that a trailing prompt-suggestion request is not selected |
 | A hint never alters what the actor observed: the Supervisor emits its own message and never a tool result, an assistant turn, or an edit of either | a test over the Supervisor's emitter asserting every value it can produce is its own tagged message, and that no code path writes into a captured record |
-| The Supervisor's input carries no privileged material: no field of it can hold the gold patch, the reference or test patch, or the hidden tests — the guidebook is the only thing it learns about the intended solution | a test asserting the input type's fields against an **exact allowlist**, so that adding a field fails rather than only adding one of today's forbidden names |
+| The Supervisor's input has exactly `task`, `evidence`, `cursor`, `said` and the validated `guidebook`; raw gold/reference/test patches, hidden tests and their named equivalents have no separate constructor channel | ✅ `test_supervisor_input_carries_the_guidebook` asserts the exact five-field allowlist and the artifact's positive handoff; `test_supervisor_input_rejects_separate_privileged_material` supplies every named negative control and requires constructor rejection |
 | Phase B runs with the git-history purge **off** and composes no result verifier — the Oracle sees the history it is meant to see, and a run contaminated by declaration is not put through the detector — while the solving definitions keep purging | ✅ `test_the_oracle_task_composes_no_purge_no_extractor_and_no_verifier` and its converse `test_the_rollout_definitions_still_purge` (`tests/test_oracle_analysis.py`) |
 
 ## 13. Where this plugs into swe-lab
@@ -918,7 +933,7 @@ from the store — so this is a workflow, not a new subsystem.
 |---|---|---|
 | A | `rollout_and_unit_test`, unchanged — or **skipped**: a cached failure enters as an `oracle_failures` record | the `oracle_failures` dataset and its builder ([task 11](plans/task-11-oracle-failures-dataset.md)) |
 | B | the `Task` layer; the record's mounts carry the failure | `OracleAnalysisTask` + the one-entry `oracle_analysis` workflow ([task 04](plans/task-04-oracle-analysis-task.md)): grading procedure staged, and the golden patch when the dataset records one; git-history purge **off**, declared output `guidebook.md` |
-| C | the rollout composition | a live correction channel on the actor's stdin ([ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)); a host-side Supervisor beside the blocking run; declared intervention records |
+| C | the rollout composition; `guidebook.md` arrives over the workflow's declared artifact edge | a host-side Supervisor whose judge and writer receive the complete validated guidebook beside the general-practice criterion; a live correction channel on the actor's stdin ([ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)); `supervisor.jsonl` records guidebook identity, judge request/reason and emitted text for audit |
 | D | the `Conversation` converter + `Store` | — |
 | all | `register_workflow(...)` | the A→B→C→D edges |
 
@@ -957,16 +972,12 @@ for it. Two consequences, and neither is negotiable:
    — "an explicit owner decision on the alternative" — was taken: the default is
    an uninterfered rollout with the guidebook as a **post-hoc grader / filter**
    ([§5](#5-the-mechanism-decisions)).
-2. ~~On at least one instance, a supervisor holding a good guidebook steers a
-   blind actor from a known failure to a passing verdict. Until this is shown,
-   nothing else in the pipeline is worth building.~~ **Withdrawn as a
-   precondition.** It gated the whole pipeline on steer-to-pass, and
-   steer-to-pass is no longer what the pipeline does: with injection terminated,
-   nothing downstream waits on it. The open question it should have been asking
-   is now the **default arm's**: can a guidebook separate "solved it, and the
-   reasoning holds" from "solved it, but the process does not survive
-   inspection"? Until *that* is answered, the value of the collected traces is
-   unmeasured.
+2. A guidebook-guided workflow is runnable, but steer-to-pass remains an
+   **empirical question, not an implementation precondition**. No current
+   comparison establishes whether adding the guidebook is the main cause of
+   more frequent or better-timed judgements, or whether guided speech improves
+   the actor's verdict. The production default therefore remains undecided by
+   ADR-0018.
 3. Sampled traces read as honest: each assistant turn is explicable from the
    turns before it, judged by a human reader.
 4. Every oracle-guided record carries the policy stamp, and no aggregation
@@ -975,6 +986,11 @@ for it. Two consequences, and neither is negotiable:
    pipeline beats rejection sampling on the same instances.
 
 ## 16. Out of scope
+
+ADR-0018 was re-checked against this boundary. Making the declared phase-B
+artifact available to the phase-C Supervisor and constraining writer output
+does not add another harness, authorize trace training, decide the data mixture
+or permit rewriting actor records; the scope below is unchanged.
 
 - **Harnesses other than `claude_code`.** The measured correction channel is
   Claude Code's — its stdin under `--input-format stream-json`

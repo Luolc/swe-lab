@@ -49,6 +49,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 import dataclasses
 import datetime
+import hashlib
 import json
 from typing import Any
 
@@ -626,6 +627,7 @@ class SegmentedRun:
           turns=turns,
           reason=f"policy lapsed: {error!r}",
           finish_reason=error.finish_reason,
+          **self._marker_audit_after(before),
       )
       return self.supervision.neutral_continue
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
@@ -634,6 +636,7 @@ class SegmentedRun:
           index=index,
           turns=turns,
           reason=f"policy raised: {error!r}",
+          **self._marker_audit_after(before),
       )
       return self.supervision.neutral_continue
 
@@ -649,6 +652,7 @@ class SegmentedRun:
         # The denominator for reading the number above: it counts rendered
         # steps and this counts turns, and one turn renders as several steps.
         "evidence_records": len(observation.evidence),
+        **self._marker_audit_after(before),
     }
 
     if isinstance(decision, Unjudged):
@@ -665,6 +669,17 @@ class SegmentedRun:
         LOG_KIND_SPOKE, index=index, turns=turns, text=decision.text, **located
     )
     return decision.rendered()
+
+  def _marker_audit_after(self, count: int) -> dict[str, object]:
+    """Return human-audit fields for this decision's marker, if any."""
+    markers = _markers_of(self.policy)
+    if len(markers) <= count:
+      return {}
+    marker = markers[-1]
+    return {
+        "judge_input": marker.judge_input,
+        "judge_reason": marker.reason,
+    }
 
   def _segment_row(
       self,
@@ -698,6 +713,7 @@ class SegmentedRun:
             "kind": LOG_KIND_SEGMENT,
             "at": self.now().isoformat(),
             "policy": self.policy.name,
+            "guidebook_sha256": self._guidebook_sha256(),
             "segment": request.index,
             "turns_requested": request.turns,
             "turns_total": turns,
@@ -736,8 +752,15 @@ class SegmentedRun:
             "kind": kind,
             "at": self.now().isoformat(),
             "policy": self.policy.name,
+            "guidebook_sha256": self._guidebook_sha256(),
             "segment": index,
             "cut_at_turn": turns,
             **extra,
         }
     )
+
+  def _guidebook_sha256(self) -> str | None:
+    """Return the identity recorded for the guidebook, when this run has one."""
+    if self.guidebook is None:
+      return None
+    return hashlib.sha256(self.guidebook.encode()).hexdigest()

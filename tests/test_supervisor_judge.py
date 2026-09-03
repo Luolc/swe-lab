@@ -37,12 +37,14 @@ from swe_lab.trace_synthesis.judge import (
     supervising_policy,
 )
 from swe_lab.trace_synthesis.supervisor import (
+    Intervention,
     InterventionTooLongError,
     MAX_INTERVENTION_CHARS,
     Observation,
     PolicyLapseError,
     Supervisor,
     Verdict,
+    WriterOutputRejectedError,
 )
 
 OFF_TRACK_JSON = (
@@ -138,8 +140,8 @@ def test_a_forged_criterion_is_refused_by_the_construction_helper(
 ) -> None:
   """Attack: point the construction helper at an edited criterion.
 
-  It raises before a policy object exists. This is a **helper-level** refusal,
-  not a run-level one: nothing in a rollout path calls this yet.
+  It raises before a policy object exists. The run-level construction path uses
+  this helper; this unit isolates the artifact refusal itself.
   """
   forged = tmp_path / "criterion.md"
   forged.write_text(
@@ -354,6 +356,88 @@ def test_an_over_long_line_from_the_writer_is_rejected_not_truncated() -> None:
   with pytest.raises(PolicyLapseError) as raised:
     policy.consider(observation())
   assert isinstance(raised.value.__cause__, InterventionTooLongError)
+  assert _accepted_writer_line("x" * MAX_INTERVENTION_CHARS)
+
+
+def _writer_lapse(text: str, *, guidebook: str | None = None) -> Exception:
+  """Return the bounded cause produced by one off-track writer answer."""
+  policy = supervising_policy(
+      model="model",
+      transport=RecordingTransport(answers=[OFF_TRACK_JSON, text]),
+      budget=1,
+      cooldown=0,
+  )
+  with pytest.raises(PolicyLapseError) as raised:
+    policy.consider(observation(guidebook=guidebook))
+  assert isinstance(raised.value.__cause__, Exception)
+  return raised.value.__cause__
+
+
+def test_a_fenced_code_block_from_the_writer_is_rejected() -> None:
+  """A code fence is independently rejected after a usable judge answer."""
+  cause = _writer_lapse("Maybe compare this:\n```python\nreturn 1\n```")
+  assert isinstance(cause, WriterOutputRejectedError)
+  assert "fenced code" in str(cause)
+  assert _accepted_writer_line("Maybe inspect `value = parse(raw)` again.")
+
+
+def test_a_diff_hunk_from_the_writer_is_rejected() -> None:
+  """A diff hunk is independently rejected without relying on a code fence."""
+  cause = _writer_lapse("Look here:\n@@ -12,2 +12,2 @@\n reconsider it")
+  assert isinstance(cause, WriterOutputRejectedError)
+  assert "diff hunk" in str(cause)
+  assert _accepted_writer_line("Could the diff point to an earlier assumption?")
+
+
+def test_an_eight_word_guidebook_copy_from_the_writer_is_rejected() -> None:
+  """Verbatim guidebook copying is rejected without parsing its sections."""
+  copied = "compare the parsed value against the original request boundary"
+  cause = _writer_lapse(
+      f"Perhaps {copied} before continuing.",
+      guidebook=f"**Justification.** You can {copied} to explain the failure.",
+  )
+  assert isinstance(cause, WriterOutputRejectedError)
+  assert "eight-word guidebook shingle" in str(cause)
+  assert _accepted_writer_line(
+      "compare the parsed value against the original",
+      guidebook=f"You can {copied} to explain the failure.",
+  )
+
+
+def _accepted_writer_line(text: str, *, guidebook: str | None = None) -> bool:
+  """Return whether a single off-track call emits the candidate line."""
+  policy = supervising_policy(
+      model="model",
+      transport=RecordingTransport(answers=[OFF_TRACK_JSON, text]),
+      budget=1,
+      cooldown=0,
+  )
+  intervention = policy.consider(observation(guidebook=guidebook))
+  return isinstance(intervention, Intervention) and intervention.text == text
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Could the observed branch mean the assumption deserves another look?",
+        "Maybe compare the caller with `src/parser/request.py` once more.",
+    ],
+)
+def test_shallow_writer_gates_allow_directional_prose_and_inline_paths(
+    line: str,
+) -> None:
+  """The controls: useful short prose is not rejected wholesale."""
+  transport = RecordingTransport(answers=[OFF_TRACK_JSON, line])
+  policy = supervising_policy(
+      model="model", transport=transport, budget=1, cooldown=0
+  )
+
+  intervention = policy.consider(
+      observation(guidebook="A different guidebook phrase is present here.")
+  )
+
+  assert isinstance(intervention, Intervention)
+  assert intervention.text == line
 
 
 def test_a_non_boolean_verdict_field_is_unusable_not_coerced() -> None:
@@ -511,12 +595,12 @@ Answer with one JSON object and nothing else:
 off_track: the work shown is off the criterion's path.
 self_correcting: left alone, the engineer is already returning to it.
 """
-  expected_writer = f"""\
+  expected_writer = """\
 Write one short line to the engineer, as someone watching over their shoulder.
 
 Hedged and offhand, pointing at what to look at — never what to do. Do not
 name a fix, a function, a file to edit, or a solution. No code, no diff.
-At most {MAX_INTERVENTION_CHARS} characters. Answer with the line and nothing
+At most 400 characters. Answer with the line and nothing
 else.
 """
   transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])

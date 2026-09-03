@@ -2,14 +2,14 @@
 
 ## Status
 
-Proposed. The owner decided the direction on 2026-09-03. This record remains
-proposed until the trace-synthesis spec is reconciled in the same change that
-accepts it; the required edits are listed under Consequences.
+Accepted. The owner decided the direction on 2026-09-03; the implementation
+and the trace-synthesis spec reconciliation landed together.
 
 This decision supersedes the information-barrier argument in the module
 docstring of `src/swe_lab/trace_synthesis/supervisor.py` and in the
-`Observation` docstring. Those docstrings remain the description of the shipped
-code until this decision is implemented.
+`Observation` docstring. Their useful warning survives as the speech boundary
+below: privileged knowledge is a real leakage risk, but excluding the guidebook
+also removes the instance-specific basis for teaching.
 
 ## Date
 
@@ -46,15 +46,16 @@ task statement, the base repository, and preceding stages
 ([`oracle.py` lines 1–18](../../src/swe_lab/trace_synthesis/oracle.py#L1-L18),
 [`oracle.py` lines 246–259](../../src/swe_lab/trace_synthesis/oracle.py#L246-L259)).
 
-The shipped supervisor deliberately severs that connection. `Observation`
-contains only `task`, `evidence`, `cursor`, and `said`; its docstring says the
+At the time of this decision, the shipped supervisor deliberately severed that
+connection. `Observation` contained only `task`, `evidence`, `cursor`, and
+`said`; its docstring said the
 absence of a phase-B guidebook prevents the supervisor from steering by an
 answer it never quotes
 ([`supervisor.py` lines 191–223](../../src/swe_lab/trace_synthesis/supervisor.py#L191-L223)).
-The module docstring gives the same rationale and substitutes one pinned,
+The module docstring gave the same rationale and substituted one pinned,
 instance-independent general-practice criterion
 ([`supervisor.py` lines 8–21](../../src/swe_lab/trace_synthesis/supervisor.py#L8-L21)).
-`test_supervisor_input_carries_no_privileged_field` pins the four-field shape
+`test_supervisor_input_carries_no_privileged_field` pinned the four-field shape
 with an exact allowlist
 ([`test_supervisor_component.py` lines 29–42](../../tests/test_supervisor_component.py#L29-L42),
 [`test_supervisor_component.py` lines 150–159](../../tests/test_supervisor_component.py#L150-L159)).
@@ -284,33 +285,33 @@ solution. An overly specific hint can pass both criteria and still make a poor
 training example. This ADR adds no third mechanical admissibility criterion;
 specificity remains a sampled human judgement.
 
-### Implementation plan — deferred, not started by this ADR
+### Implementation
 
-1. Extend the supervisor input with the validated guidebook and revise the
+1. The supervisor input carries the validated guidebook, and the
    exact allowlist test with the positive and negative-control arms above.
-2. Carry the phase-B artifact into construction of a guidebook-guided phase-C
-   supervisor. Refuse a missing or structurally invalid guidebook before the
-   actor starts; do not silently fall back to the general criterion.
-3. Include the complete guidebook in the shared judge/writer prompt while
-   retaining the general-practice criterion as the generic standard. Add
-   behavioural tests that both calls receive the exact artifact.
-4. Add the shallow writer-output checks and tests that independently turn each
-   one red: too long, fenced code, diff hunk, and an eight-word guidebook copy.
-   Add controls showing a short directional hint and an inline file reference
-   remain allowed.
-5. Record enough of the guidebook identity, judge input, judge reason, and
-   emitted text for a human leak audit without placing the guidebook in the
-   actor conversation. The persistence shape must be decided with the existing
-   report contract rather than changed implicitly.
-6. Run the ordinary quality bar. Any rollout or paid comparison is separate
-   experimental work and requires its own pre-registration.
+2. The phase-B artifact flows into construction of a guidebook-guided phase-C
+   supervisor. A missing or structurally invalid guidebook is refused before the
+   actor starts and does not silently fall back to the general criterion.
+3. The complete guidebook is included in the shared judge/writer prompt beside
+   the general-practice criterion. Behavioural tests drive both calls with the
+   exact artifact.
+4. Writer output is rejected when it is empty, over 400 characters, contains a
+   fenced code block or diff hunk header, or shares an eight-word shingle with
+   the complete guidebook. Independent rejection arms and acceptance controls
+   cover each shallow check, including a short directional hint and an inline
+   file reference.
+5. Existing `supervisor.jsonl` decision rows carry the guidebook SHA-256, exact
+   credential-free judge request, judge reason, and emitted text. This extends
+   an existing declared native artifact rather than changing the persisted
+   report contract. A source-aware 12-word-shingle test subtracts text also
+   present in the task prompt before identifying guidebook-only text in the
+   actor conversation.
+6. The ordinary non-Docker quality bar covers the implementation. Rollouts and
+   paid comparisons remain separate experimental work.
 
-No implementation step above is part of this ADR-only change.
+### Spec reconciliation in the accepting PR
 
-### Spec reconciliation required in the accepting PR
-
-The accepting PR must update these exact locations; this proposal intentionally
-does not edit them:
+The accepting PR updates these exact locations:
 
 - **§3, pipeline diagram and Phase B:** retain that the guidebook is private
   from the actor and trace, and make explicit that it is visible in full to the
