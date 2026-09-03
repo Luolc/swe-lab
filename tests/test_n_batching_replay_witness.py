@@ -5,11 +5,6 @@ These properties of
 inside the experiment, because each failure is silent and the artifacts are
 committed:
 
-- **No committed artifact carries an operator home path.** The corpus is read
-  from under `$HOME`, so a manifest is the natural place for one to appear, and
-  `docs/conventions.md` forbids operator PII in any committed record. This ran
-  red on the first version of that experiment: all 16 manifests recorded the
-  absolute path.
 - **The experiment's driver reproduces the shipped `Supervisor`.** The report's
   numbers come from the driver, not from `Supervisor`, so the equivalence is
   what makes them evidence about the shipped component. The experiment's own
@@ -28,6 +23,16 @@ committed:
 
 The driver lives under `experiments/`, which is exempt from the code-quality
 hooks and is not an importable package, so it is loaded by path.
+
+**"No committed artifact carries an operator home path" used to be asserted
+here too, and is not any more** (#399). It scanned one experiment's `runs/`
+under a name — `test_committed_witnesses_carry_no_operator_home_path` — that
+read as a repo-wide guarantee, and #384 was filed because that name misled a
+reader. `tests/test_operator_home_paths.py` now checks every tracked file, so
+this file's domain is strictly inside it. `replay.py`'s own
+`committed_home_paths()` stays, and is not the same check: it walks the
+filesystem, so it also sees a *fresh, uncommitted* run, which no tracked-file
+scan can reach.
 """
 
 from __future__ import annotations
@@ -80,13 +85,6 @@ def driver() -> ModuleType:
     The loaded module.
   """
   return _load_driver()
-
-
-def test_committed_witnesses_carry_no_operator_home_path(
-    driver: ModuleType,
-) -> None:
-  """No file under the experiment's `runs/` names a home directory."""
-  assert driver.committed_home_paths() == []
 
 
 def test_the_driver_reproduces_the_shipped_supervisor(
