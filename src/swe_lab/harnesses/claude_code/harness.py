@@ -337,6 +337,10 @@ class ClaudeCodeHarness(Harness):
     capture: The output-capture strategy — ``STREAM`` (default) or ``PROXY``.
       ``PROXY`` needs no port and no URL: the proxy runs in the sandbox, on
       the fixed loopback port every run uses (see ``constants.PROXY_PORT``).
+      ``STREAM`` runs with ``--replay-user-messages``, so its trace carries the
+      user messages the agent received as well as what it produced; without it
+      the CLI echoes no stdin, and the run's own opening prompt is absent from
+      the trace it writes (ADR-0017).
     proxy_target: The upstream ``PROXY`` capture forwards to. The default is
       the Anthropic API; an OpenRouter run points it at
       ``https://openrouter.ai/api``, which is not cosmetic — the proxy mirrors
@@ -399,29 +403,6 @@ class ClaudeCodeHarness(Harness):
   max_budget_usd: float | None = None
   subagent_wait_ceiling_ms: int | None = None
   correction_channel: bool = False
-
-  def __post_init__(self) -> None:
-    """Refuse a channel whose trace could not be trusted.
-
-    The live channel **requires proxy capture** (task 16 §5): stream capture
-    drops the injected message unless `--replay-user-messages` is passed, and
-    with it renders as a ``user`` message what the wire carries as ``system``.
-    A stream-derived trace of a supervised run would therefore assert a turn
-    the model never saw — a false trace, produced by the *simplest* caller.
-
-    Refused at construction rather than documented, because the invalid
-    combination is otherwise reachable through the public field and produces
-    something that looks like a normal result.
-
-    Raises:
-      ValueError: If the correction channel is on without proxy capture.
-    """
-    if self.correction_channel and self.capture != "proxy":
-      raise ValueError(
-          "correction_channel=True requires capture='proxy': stream capture"
-          f" cannot represent an injected message truthfully (got"
-          f" capture={self.capture!r})"
-      )
 
   @property
   @override
@@ -590,9 +571,10 @@ class ClaudeCodeHarness(Harness):
     newline-delimited, one record per line — and ``.log``), so a consumer reads
     the artifact name and knows how to parse it.
 
-    A supervised run writes **both**: the proxy log is its trace, and the event
-    stream is what the supervisor read while it ran, which is the only record
-    of what the supervisor could see at each moment it decided.
+    A supervised **proxy** run writes both: the proxy log is its trace, and the
+    event stream is what the supervisor read while it ran, which is the only
+    record of what the supervisor could see at each moment it decided. On
+    ``STREAM`` the one file is both.
     """
     trace = (
         {
@@ -667,7 +649,9 @@ class ClaudeCodeHarness(Harness):
     - **Wall-clock is the caller's**, deliberately not here.
 
     In ``STREAM`` capture the agent's ``stream-json`` stdout *is* the trace
-    (redirected to the event-stream file). In ``PROXY`` capture the script also
+    (redirected to the event-stream file), and ``--replay-user-messages`` is
+    what makes it a whole one — the messages the agent received are echoed into
+    it alongside the ones it produced. In ``PROXY`` capture the script also
     owns the recorder: it starts the proxy on the sandbox's own loopback, waits
     for it, points the agent at it via ``ANTHROPIC_BASE_URL``, discards the
     agent's stdout, and reaps the proxy on exit.
@@ -739,6 +723,12 @@ class ClaudeCodeHarness(Harness):
         # bogus flag in the same position, which is rejected outright.
         f"--max-turns {int(self.max_turns)}",
     ]
+    if self.capture != "proxy":
+      # Without this the CLI echoes no stdin, so the trace it writes contains
+      # what the agent said and not what it was asked — the opening prompt and
+      # any mid-run injection are simply absent (ADR-0017). The proxy path
+      # needs nothing here: its trace is the wire, which carries both already.
+      flags.append("--replay-user-messages")
     if self.bare:
       flags.insert(1, "--bare")
     if self.max_budget_usd is not None:

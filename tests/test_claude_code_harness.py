@@ -851,22 +851,36 @@ def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
   assert not survivors, f"outlived the script: {', '.join(survivors)}"
 
 
-def test_the_channel_is_refused_without_the_capture_it_requires():
-  """A supervised run on stream capture would produce a false trace.
+def test_a_stream_run_replays_the_messages_the_agent_was_given():
+  """The trace should say what the agent was asked, not only what it answered.
 
-  Stream capture drops the injected message unless replay is asked for, and
-  with replay it renders as a ``user`` message what the wire carries as
-  ``system`` — so a stream-derived trace of a supervised run asserts a turn the
-  model never saw. Refused at construction rather than documented, because
-  otherwise the *simplest* caller reaches it through the public field and gets
-  something that looks like an ordinary result.
+  The CLI echoes no stdin, so a stream trace carries only the agent's own
+  output: the run's opening prompt is absent, and so is anything injected
+  mid-run. The flag is unconditional on this path rather than an option,
+  because a run that omits it produces a trace missing its own question
+  (ADR-0017).
   """
-  with pytest.raises(ValueError, match="requires capture='proxy'"):
-    _ = ClaudeCodeHarness(correction_channel=True)
-  # …and the combination the channel is designed for is accepted.
-  assert ClaudeCodeHarness(
-      capture="proxy", correction_channel=True
-  ).correction_channel
+  assert "--replay-user-messages" in _script("/app")
+  # The proxy path needs nothing: its trace is the wire, which carries both.
+  assert "--replay-user-messages" not in _script("/app", _proxy_harness())
+
+
+def test_the_channel_rides_stream_capture_without_a_proxy():
+  """A supervised stream run is a whole configuration, not a degraded one.
+
+  Its single event stream is both the trace and the supervisor's live view, so
+  it needs no recorder: no proxy asset to transfer, no proxy to start, and no
+  ``ANTHROPIC_BASE_URL`` pointing the agent at one.
+  """
+  supervised = ClaudeCodeHarness(correction_channel=True)
+  assert supervised.correction_channel
+
+  script = _script("/app", supervised)
+  assert "--replay-user-messages" in script
+  assert "ANTHROPIC_BASE_URL" not in script
+  assert PROXY_BINARY_AT not in script
+
+  assert [asset.path for asset in supervised.assets()] == [BINARY_AT]
 
 
 def test_a_supervised_run_streams_its_events_to_the_file_the_supervisor_reads():
