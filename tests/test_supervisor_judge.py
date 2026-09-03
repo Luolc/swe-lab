@@ -204,9 +204,14 @@ def test_every_call_records_what_answered_it_and_what_was_not_sent() -> None:
 
   Without the first, "the same model disagreed with itself" and "the alias
   moved" cannot be told apart; without the second, disagreement cannot be told
-  from ordinary sampling.
+  from ordinary sampling. `ModelWriter` shares this provenance with
+  `ModelJudge` — the same `Call` record, filled in the same way — so both are
+  exercised here: a test that only drove `ModelJudge` would stay green after
+  `ModelWriter` silently stopped recording its half.
   """
-  transport = RecordingTransport(answers=[ON_TRACK_JSON], model="served/actual")
+  transport = RecordingTransport(
+      answers=[ON_TRACK_JSON], model="served/actual", finish_reason="stop"
+  )
   judge = ModelJudge(model="requested/alias", transport=transport)
   judge(observation(), load_criterion())
 
@@ -217,6 +222,19 @@ def test_every_call_records_what_answered_it_and_what_was_not_sent() -> None:
   assert set(call.sampling_sent) == set(SAMPLING_KEYS)
   assert call.sampling_sent["temperature"] is None
   assert call.sampling_sent["max_tokens"] == judge.max_tokens
+  assert call.finish_reason == "stop"
+
+  writer_transport = RecordingTransport(
+      answers=["look at the error"],
+      model="served/actual",
+      finish_reason="stop",
+  )
+  writer = ModelWriter(model="requested/alias", transport=writer_transport)
+  writer(observation(), load_criterion())
+
+  writer_call = writer.calls[0]
+  assert isinstance(writer_call, Call)
+  assert writer_call.finish_reason == "stop"
 
 
 def test_an_unusable_judge_answer_is_never_retried() -> None:
