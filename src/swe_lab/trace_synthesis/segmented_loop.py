@@ -66,7 +66,9 @@ from .supervisor import (
     Observation,
     PolicyLapseError,
     SpeakPolicy,
+    SpeakWhenOffTrack,
     Unjudged,
+    WouldHaveSpoken,
 )
 
 #: The row recording one segment's ending: what it was cut by, where it was cut,
@@ -269,6 +271,24 @@ STOP_WALL_CLOCK = "wall-clock"
 STOP_MAX_COST = "max-cost"
 
 
+def _markers_of(policy: SpeakPolicy) -> tuple[WouldHaveSpoken, ...]:
+  """Return the deviation markers a policy keeps, or none if it keeps any.
+
+  Read off the policy rather than through the protocol: ``consider`` returns a
+  decision, not a verdict, so a runtime that wants to record *where a deviation
+  began* has to look at the judging policy's own bookkeeping. Widening
+  :class:`~swe_lab.trace_synthesis.supervisor.SpeakPolicy` for it would change
+  what every policy must implement, including the ones that never judge.
+
+  Args:
+    policy: The policy that was consulted.
+
+  Returns:
+    Its markers, or an empty tuple for a policy that keeps none.
+  """
+  return policy.markers if isinstance(policy, SpeakWhenOffTrack) else ()
+
+
 @dataclasses.dataclass
 class SegmentedRun:
   """Drives the segment loop and writes the account of it.
@@ -425,6 +445,13 @@ class SegmentedRun:
         cursor=len(events),
         said=tuple(self._said),
     )
+    # Requirement C's second quantity. A policy that judges records where it
+    # *found* a deviation; only the judge is asked where it *began*, and only
+    # when built with ``locate_deviation``. Read off the marker rather than
+    # through the protocol, because `SpeakPolicy` returns a decision and not a
+    # verdict, and widening it for one runtime's bookkeeping would change what
+    # every policy must implement.
+    before = len(_markers_of(self.supervision.policy))
     try:
       decision = self.supervision.policy.consider(observation)
     except PolicyLapseError as error:
@@ -445,18 +472,32 @@ class SegmentedRun:
       )
       return self.supervision.neutral_continue
 
+    # Only a marker this call produced. A seam the policy passed in silence
+    # adds none, and reading the tail regardless would attribute an earlier
+    # seam's finding to this one.
+    markers = _markers_of(self.supervision.policy)
+    found = markers[-1] if len(markers) > before else None
+    located = {
+        "deviation_started_steps_ago": (
+            found.deviation_started_steps_ago if found is not None else None
+        ),
+        # The denominator for reading the number above: it counts rendered
+        # steps and this counts turns, and one turn renders as several steps.
+        "evidence_records": len(observation.evidence),
+    }
+
     if isinstance(decision, Unjudged):
       self._decision_row(
           LOG_KIND_UNJUDGED, index=index, turns=turns, reason=decision.reason
       )
       return self.supervision.neutral_continue
     if decision is None:
-      self._decision_row(LOG_KIND_SILENT, index=index, turns=turns)
+      self._decision_row(LOG_KIND_SILENT, index=index, turns=turns, **located)
       return self.supervision.neutral_continue
 
     self._said.append(decision)
     self._decision_row(
-        LOG_KIND_SPOKE, index=index, turns=turns, text=decision.text
+        LOG_KIND_SPOKE, index=index, turns=turns, text=decision.text, **located
     )
     return decision.rendered()
 

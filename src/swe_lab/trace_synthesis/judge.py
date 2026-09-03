@@ -147,6 +147,16 @@ off_track: the work shown is off the criterion's path.
 self_correcting: left alone, the engineer is already returning to it.
 """
 
+#: Appended to :data:`JUDGE_INSTRUCTIONS` only when a judge is built with
+#: ``locate_deviation``. Kept as a separate constant so the default
+#: instructions are byte-identical to what every A′ run has sent —
+#: ``test_the_default_judge_prompt_is_unchanged`` is what makes that a check.
+LOCATE_DEVIATION_INSTRUCTION = """
+Also answer "deviation_started_steps_ago": if off_track, how many of the steps
+shown above the deviation began — 0 for the most recent step. Omit it or use
+null when you cannot tell.
+"""
+
 WRITER_INSTRUCTIONS = f"""\
 Write one short line to the engineer, as someone watching over their shoulder.
 
@@ -289,12 +299,21 @@ class ModelJudge:
       common case: the model stops once it has an answer, so a call needing
       the median's ~89 reasoning tokens spends the same either way. See issue
       #383 for the recompute.
+    locate_deviation: Ask, in addition, how far back the deviation started.
+      **Off by default, and the default prompt is byte-identical to the one
+      every A′ run has sent** — pinned by
+      ``test_the_default_judge_prompt_is_unchanged``, because a supervision arm
+      whose judge prompt quietly changed would move the thing it measures. On
+      only for the segmented loop, which records the answer so that how many
+      turns late its corrections were is a measured distribution rather than a
+      recollection.
     calls: What answered each request, in order.
   """
 
   model: str
   transport: Transport
   max_tokens: int = 4096
+  locate_deviation: bool = False
   calls: list[Call] = dataclasses.field(default_factory=list)
 
   def __call__(self, observation: Observation, criterion: Criterion) -> Verdict:
@@ -311,11 +330,14 @@ class ModelJudge:
       JudgeAnswerError: The answer was not one JSON object with the two
         booleans. Not retried.
     """
+    instructions = JUDGE_INSTRUCTIONS + (
+        LOCATE_DEVIATION_INSTRUCTION if self.locate_deviation else ""
+    )
     payload = {
         "model": self.model,
         "max_tokens": self.max_tokens,
         "messages": [
-            {"role": "system", "content": JUDGE_INSTRUCTIONS},
+            {"role": "system", "content": instructions},
             {"role": "user", "content": _prompt(observation, criterion)},
         ],
     }
@@ -353,10 +375,15 @@ class ModelJudge:
             finish_reason=finish_reason,
         )
 
+    # Read with `.get` and type-checked rather than coerced, like `reason`: an
+    # answer that omits it is not an error, and a string "3" is not an integer
+    # this record may claim was measured.
+    started = answer.get("deviation_started_steps_ago")
     return Verdict(
         off_track=off_track,
         self_correcting=self_correcting,
         reason=str(answer.get("reason", "")),
+        deviation_started_steps_ago=(started if type(started) is int else None),
     )
 
 
@@ -420,6 +447,7 @@ def supervising_policy(
     window: int = 8,
     gold_patch: str | None = None,
     criterion_path: pathlib.Path | None = None,
+    locate_deviation: bool = False,
 ) -> SpeakWhenOffTrack:
   """Build the judging policy, or reject the artifact.
 
@@ -438,6 +466,9 @@ def supervising_policy(
     gold_patch: This instance's gold patch, when recorded, so the redundant
       overlap half of the criterion check can run.
     criterion_path: The artifact to load; production leaves it unset.
+    locate_deviation: Ask the judge how far back the deviation started. Off by
+      default, which leaves the A′ arms' prompt byte-identical; see
+      :class:`ModelJudge`.
 
   Returns:
     The policy, holding a criterion whose digest is the pinned one.
@@ -448,7 +479,9 @@ def supervising_policy(
       else load_criterion(gold_patch=gold_patch)
   )
   return SpeakWhenOffTrack(
-      judge=ModelJudge(model=model, transport=transport),
+      judge=ModelJudge(
+          model=model, transport=transport, locate_deviation=locate_deviation
+      ),
       writer=ModelWriter(model=model, transport=transport),
       criterion=criterion,
       budget=budget,
