@@ -27,7 +27,9 @@ from swe_lab.trace_synthesis.criterion import (
 )
 from swe_lab.trace_synthesis.judge import (
     Call,
+    JUDGE_INSTRUCTIONS,
     JudgeAnswerError,
+    LOCATE_DEVIATION_INSTRUCTION,
     ModelJudge,
     ModelWriter,
     SAMPLING_KEYS,
@@ -419,3 +421,93 @@ def test_a_missing_provider_key_says_so_without_naming_a_value():
   ):
     _ = judge_module.openrouter_transport({"model": "m"})
   assert judge_module.OPENROUTER_KEYS_ENV in str(caught.value)
+
+
+# --- locating a deviation, opt-in and only opt-in (task 22 §5) --------------
+
+
+def test_the_default_judge_prompt_is_unchanged() -> None:
+  """The control arm on which the whole opt-in rests.
+
+  A supervision arm whose judge prompt quietly changed would move the very
+  thing it measures, and the two A′ arms are matched on the judging side. So
+  "the default is untouched" is asserted byte-for-byte rather than reasoned
+  about: the system message a default judge sends is ``JUDGE_INSTRUCTIONS``
+  exactly, with nothing appended.
+  """
+  transport = RecordingTransport(answers=[ON_TRACK_JSON])
+  judge = ModelJudge(model="m", transport=transport)
+
+  _ = judge(observation(), load_criterion())
+
+  system = transport.payloads[0]["messages"][0]
+  assert system["content"] == JUDGE_INSTRUCTIONS
+  assert LOCATE_DEVIATION_INSTRUCTION not in system["content"]
+
+
+def test_a_judge_asked_to_locate_a_deviation_says_so_in_its_prompt() -> None:
+  """The positive arm: without it, the control above would pass on a no-op."""
+  transport = RecordingTransport(answers=[ON_TRACK_JSON])
+  judge = ModelJudge(model="m", transport=transport, locate_deviation=True)
+
+  _ = judge(observation(), load_criterion())
+
+  system = transport.payloads[0]["messages"][0]
+  assert system["content"].startswith(JUDGE_INSTRUCTIONS)
+  assert LOCATE_DEVIATION_INSTRUCTION in system["content"]
+
+
+def test_the_located_deviation_is_read_but_never_coerced() -> None:
+  """An integer is carried; anything else is absence, not a number.
+
+  Same rule as the two booleans: a value this record would claim was measured
+  has to have been measured, so a string "3" reads as "the judge did not say".
+  """
+  answered = (
+      '{"off_track": true, "self_correcting": false, "reason": "guessing",'
+      ' "deviation_started_steps_ago": 3}'
+  )
+  as_text = (
+      '{"off_track": true, "self_correcting": false, "reason": "guessing",'
+      ' "deviation_started_steps_ago": "3"}'
+  )
+  criterion = load_criterion()
+
+  located = ModelJudge(
+      model="m",
+      transport=RecordingTransport(answers=[answered]),
+      locate_deviation=True,
+  )(observation(), criterion)
+  coerced = ModelJudge(
+      model="m",
+      transport=RecordingTransport(answers=[as_text]),
+      locate_deviation=True,
+  )(observation(), criterion)
+
+  assert located.deviation_started_steps_ago == 3
+  assert coerced.deviation_started_steps_ago is None
+  # The rest of the verdict is unaffected either way.
+  assert coerced.off_track is True
+
+  # And the case a plain `isinstance` would let through: `bool` subclasses
+  # `int`, so a judge answering `true` would otherwise be recorded as "1 step
+  # ago" — a boolean wearing a measurement's clothes.
+  as_bool = (
+      '{"off_track": true, "self_correcting": false, "reason": "guessing",'
+      ' "deviation_started_steps_ago": true}'
+  )
+  boolean = ModelJudge(
+      model="m",
+      transport=RecordingTransport(answers=[as_bool]),
+      locate_deviation=True,
+  )(observation(), criterion)
+  assert boolean.deviation_started_steps_ago is None
+
+
+def test_a_default_judges_verdict_carries_no_located_deviation() -> None:
+  """An A′ verdict reports absence, not a number nobody asked for."""
+  verdict = ModelJudge(
+      model="m", transport=RecordingTransport(answers=[OFF_TRACK_JSON])
+  )(observation(), load_criterion())
+
+  assert verdict.deviation_started_steps_ago is None

@@ -36,7 +36,6 @@ import json
 from typing import Any, Protocol
 
 from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
-from swe_lab.harnesses.claude_code.convert import event_to_message
 from swe_lab.trace_synthesis.criterion import (
     Criterion,
     CRITERION_SHA256,
@@ -303,11 +302,25 @@ class Verdict:
       work, let me reconsider" is already doing what an intervention would ask
       for.
     reason: The judge's own words, recorded but never acted on.
+    deviation_started_steps_ago: How many of the shown steps ago the judge
+      believes the deviation began, or ``None`` when it was not asked — which
+      is the default, and every A′ run. **Never acted on**, exactly like
+      ``reason``: it exists so a segmented run can record how many turns late
+      its correction was, which is the only evidence a choice of segment length
+      could ever rest on.
+
+      **The unit is a rendered step, not a turn**, and the two differ: one turn
+      emits several stream events (59 events for 32 turns on the first
+      end-to-end capture) and the judge sees one line per admitted record.
+      Converting here would manufacture a precise-looking number out of an
+      estimate, so the raw answer is carried and the reader is told what it
+      counts.
   """
 
   off_track: bool
   self_correcting: bool
   reason: str = ""
+  deviation_started_steps_ago: int | None = None
 
 
 class Judge(Protocol):
@@ -360,10 +373,16 @@ class WouldHaveSpoken:
   Attributes:
     cursor: Where the deviation was found.
     reason: The judge's stated reason.
+    deviation_started_steps_ago: Where the judge believes it *began*, in the
+      unit :class:`Verdict` defines — ``None`` unless the judge was asked. Two
+      different quantities: this record is written where a deviation was
+      noticed, and a supervisor that only knows that cannot say how late it
+      was.
   """
 
   cursor: int
   reason: str
+  deviation_started_steps_ago: int | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -557,7 +576,11 @@ class SpeakWhenOffTrack:
       return None
 
     self._markers.append(
-        WouldHaveSpoken(cursor=observation.cursor, reason=verdict.reason)
+        WouldHaveSpoken(
+            cursor=observation.cursor,
+            reason=verdict.reason,
+            deviation_started_steps_ago=verdict.deviation_started_steps_ago,
+        )
     )
 
     if len(self._spoken_at) >= self.budget:
@@ -674,6 +697,13 @@ class Supervisor:
     Returns:
       What was said at this event, or ``None``.
     """
+    # Imported here, not at module scope: the `claude_code` package's
+    # ``__init__`` imports its harness, and the harness takes a
+    # ``SegmentedSupervision`` from this package — so a module-level import
+    # closes a cycle whenever a trace-synthesis module is imported first. The
+    # same reasoning `vocabulary.py`'s docstring gives for existing at all.
+    from swe_lab.harnesses.claude_code.convert import event_to_message
+
     self._cursor += 1
     record, self._disposition = self._filter.admit(event_to_message(event))
     if record is not None:
@@ -781,6 +811,9 @@ def evidence_of(events: Sequence[Mapping[str, Any]]) -> tuple[Message, ...]:
   Returns:
     The messages a supervisor would have seen.
   """
+  # Function-local for the reason given in ``Supervisor.observe``.
+  from swe_lab.harnesses.claude_code.convert import event_to_message
+
   evidence_filter = EvidenceFilter()
   kept = [evidence_filter.admit(event_to_message(e))[0] for e in events]
   return tuple(m for m in kept if m is not None)

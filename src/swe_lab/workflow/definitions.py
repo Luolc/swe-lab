@@ -33,13 +33,17 @@ import swe_lab.harnesses.grok_build as _grok
 from swe_lab.rollout import CodingAgentTask, SupervisionFactory
 from swe_lab.sandbox import DockerHostSandboxConfig
 from swe_lab.trace_synthesis.channel import supervision
-from swe_lab.trace_synthesis.judge import openrouter_transport
+from swe_lab.trace_synthesis.judge import (
+    openrouter_transport,
+    supervising_policy,
+)
 from swe_lab.trace_synthesis.native_supervision import (
     Blocking,
     NativeSupervision,
     SUPERVISOR_PASS_ENV,
 )
 from swe_lab.trace_synthesis.oracle import OracleAnalysisTask
+from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
 
 from .registry import register_workflow, WorkflowDef
 from .workflow import WorkflowEntry
@@ -223,6 +227,72 @@ CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
     )
 )
 
+# The segment loop's shipped knobs (task 22). `SEGMENT_TURNS` is the owner's
+# number; it lives here rather than as a literal in the loop, which takes it as
+# a parameter. The three ceilings are all mandatory on
+# `SegmentedSupervision` — under segmentation `--max-turns` bounds one segment
+# rather than the run, so the runaway guard is `SEGMENT_CEILING *
+# SEGMENT_TURNS` and a default would be a loop nobody chose. The cost ceiling
+# is read on the host between segments, never passed as `--max-budget-usd`:
+# that flag writes a running balance into the actor's context, and a guard the
+# actor can see is a treatment rather than a guard.
+SEGMENT_TURNS = 5
+SEGMENT_CEILING = 12
+SEGMENT_WALL_CLOCK_S = 3000.0
+SEGMENT_COST_CEILING_USD = 5.0
+
+# Zero rather than `SUPERVISOR_COOLDOWN`, and stated so the inertness is
+# deliberate: cooldown is measured in consumed stream events, and consecutive
+# seams are many events apart, so the gate never closes on this path. Spacing
+# here is `SEGMENT_TURNS`.
+SEGMENT_COOLDOWN = 0
+
+
+# The second supervision carrier: the actor is stopped every `SEGMENT_TURNS`
+# turns, judged, and resumed, instead of being spoken to on a live stdin. Its
+# own definition rather than a flag on the two above, for the same reason the
+# native runtime has one: it takes no `supervision_factory` (the policy travels
+# on the harness, since the loop drives `run()` rather than bracketing it) and
+# it cannot use the correction channel, which owns the actor's stdin.
+#
+# `capture="stream"`, which is also what makes the run readable: with
+# `--replay-user-messages` the event stream echoes the messages the actor
+# received, so an injected correction is visible in the trace beside what the
+# actor did next.
+SEGMENTED_ROLLOUT: WorkflowDef = (
+    WorkflowEntry(
+        ROLLOUT_KEY,
+        CodingAgentTask(
+            harness=ClaudeCodeHarness(
+                model=DEFAULT_MODEL,
+                bare=False,
+                capture="stream",
+                segmented=SegmentedSupervision(
+                    policy_factory=lambda: supervising_policy(
+                        model=SUPERVISOR_MODEL,
+                        transport=openrouter_transport,
+                        budget=SUPERVISOR_BUDGET,
+                        cooldown=SEGMENT_COOLDOWN,
+                        window=SUPERVISOR_WINDOW,
+                        # The one thing only a live run can record: how many
+                        # turns late each correction was.
+                        locate_deviation=True,
+                    ),
+                    max_segments=SEGMENT_CEILING,
+                    wall_clock_seconds=SEGMENT_WALL_CLOCK_S,
+                    max_cost_usd=SEGMENT_COST_CEILING_USD,
+                    turns_per_segment=SEGMENT_TURNS,
+                ),
+            ),
+        ),
+        timeout=_AGENT_TIMEOUT_S,
+        sandbox=DockerHostSandboxConfig(
+            network=True, pass_env=(OAUTH_TOKEN_ENV,)
+        ),
+    ),
+)
+
+
 # How many of the actor's assistant messages pass between judgements on the
 # native runtime. One — the setting that judges the most — because whether
 # batching them is worth anything is the open question #382 is measuring, and a
@@ -347,6 +417,7 @@ register_workflow("rollout", ROLLOUT)
 register_workflow("unit_test", UNIT_TEST)
 register_workflow("rollout_and_unit_test", ROLLOUT_AND_UNIT_TEST)
 register_workflow("gold_unit_test", GOLD_UNIT_TEST)
+register_workflow("segmented_rollout", SEGMENTED_ROLLOUT)
 register_workflow(
     "supervised_rollout_and_unit_test", SUPERVISED_ROLLOUT_AND_UNIT_TEST
 )

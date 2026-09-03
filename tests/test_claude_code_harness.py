@@ -1,6 +1,6 @@
 """Tests for the claude_code harness: mounts, binary, invocation, conversion."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 import contextlib
 import json
 import os
@@ -9,7 +9,7 @@ import shlex
 import subprocess
 import threading
 import time
-from typing import get_args
+from typing import get_args, override
 
 from etils import epath
 import pytest
@@ -62,6 +62,13 @@ from swe_lab.sandbox import (
     SandboxSpec,
 )
 from swe_lab.sandbox.testing import FakeSandbox
+from swe_lab.trace_synthesis.native_supervision import (
+    Blocking,
+    NativeSupervision,
+)
+from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
+from swe_lab.trace_synthesis.supervisor import NeverSpeak
+from swe_lab.trace_synthesis.vocabulary import SUPERVISOR_LOG_NAME
 
 _SPEC = SandboxSpec("x", "img:tag", "/app", "abc")
 
@@ -1312,3 +1319,171 @@ def test_the_supervised_script_carries_a_correction_to_a_stub_agent(
     )
     _ = sandbox.run_script("chown.sh", timeout=30.0)
     sandbox.down()
+
+
+# --- the segmented supervision loop (task 22) -------------------------------
+
+
+def _segmented(*, turns_per_segment: int = 5) -> SegmentedSupervision:
+  """Build a segment plan with ceilings roomy enough not to be the subject.
+
+  Args:
+    turns_per_segment: The ``--max-turns`` value under test.
+
+  Returns:
+    The plan.
+  """
+  return SegmentedSupervision(
+      policy_factory=NeverSpeak,
+      max_segments=4,
+      wall_clock_seconds=1_000.0,
+      max_cost_usd=10.0,
+      turns_per_segment=turns_per_segment,
+  )
+
+
+def test_segmented_supervision_refuses_the_two_mechanisms_it_cannot_share():
+  """Three components deciding when the actor stops is not a configuration."""
+  with pytest.raises(ValueError, match="segmented supervision"):
+    _ = ClaudeCodeHarness(segmented=_segmented(), correction_channel=True)
+  with pytest.raises(ValueError, match="segmented supervision"):
+    _ = ClaudeCodeHarness(
+        segmented=_segmented(),
+        native_supervision=NativeSupervision(
+            model="m",
+            budget=1,
+            cooldown=1,
+            window=1,
+            judge_every_n_assistant_messages=1,
+            block_actor_while_judging=Blocking.STDOUT,
+        ),
+    )
+  # The control arm: on its own it is a valid configuration, so the refusal
+  # above is about the combination and not about the field existing.
+  assert ClaudeCodeHarness(segmented=_segmented()).segmented is not None
+
+
+def test_a_segment_carries_its_own_turn_budget_and_its_resume():
+  """`--max-turns` means one segment here, and `--resume` comes through argv.
+
+  Both halves matter: a second argv construction beside `actor_argv` is the
+  drift this harness keeps a single builder to avoid, so the resume flag is
+  asked of the same method rather than appended by the script.
+  """
+  plain = ClaudeCodeHarness()
+  segmented = ClaudeCodeHarness(segmented=_segmented(turns_per_segment=5))
+
+  # The control arm: unsegmented, the flag still bounds the whole run.
+  assert "--max-turns" in plain.actor_argv()
+  assert plain.actor_argv()[plain.actor_argv().index("--max-turns") + 1] == (
+      str(plain.max_turns)
+  )
+  assert "--resume" not in plain.actor_argv()
+
+  argv = segmented.actor_argv(resume_session_id="abc-123")
+  assert argv[argv.index("--max-turns") + 1] == "5"
+  assert argv[argv.index("--resume") + 1] == "abc-123"
+  # Segment 0 starts a session rather than resuming one.
+  assert "--resume" not in segmented.actor_argv()
+
+
+def test_the_segmented_script_appends_the_event_stream():
+  """One file holds every segment; truncating would lose the earlier ones."""
+  plain = _script("/app")
+  segmented = _script("/app", ClaudeCodeHarness(segmented=_segmented()))
+
+  assert f'> "$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}' in plain
+  assert f'>> "$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}' not in plain
+  assert f'>> "$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}' in segmented
+
+
+def test_a_segmented_run_runs_one_script_per_segment_and_records_its_seams(
+    tmp_path: Path,
+):
+  """End to end over a fake actor: cut, resume, stop, and account for it.
+
+  The account is the part with no other witness — a consumer cannot find what
+  a seam fabricated by inspecting the corpus, so these rows are how it is
+  located.
+  """
+
+  class AppendingSandbox(FakeSandbox):
+    """A sandbox whose `run_script` appends a canned segment to the stream."""
+
+    @override
+    def run_script(
+        self,
+        name: str,
+        *,
+        timeout: float,
+        env: Mapping[str, str] | None = None,
+    ) -> ExecResult:
+      result = super().run_script(name, timeout=timeout, env=env)
+      if name == AGENT_SCRIPT_NAME:
+        done = len([s for s in self.scripts if s == AGENT_SCRIPT_NAME]) > 1
+        events: list[dict[str, object]] = [
+            {
+                "type": "assistant",
+                # The anchor a resumed segment is given; without it this test
+                # would silently exercise the unanchored path.
+                "uuid": f"msg-{len(self.scripts)}-uuid",
+                "message": {
+                    "id": f"msg-{len(self.scripts)}",
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": "working"}],
+                },
+            },
+            {
+                "type": "result",
+                "subtype": "success" if done else "error_max_turns",
+                "session_id": "sess-1",
+                "uuid": f"result-{len(self.scripts)}",
+                "total_cost_usd": 0.02,
+            },
+        ]
+        existing = (
+            self.read(EVENT_STREAM_NAME).decode()
+            if self.exists(EVENT_STREAM_NAME)
+            else ""
+        )
+        self.write(
+            EVENT_STREAM_NAME,
+            (existing + _stream_text(events)).encode(),
+        )
+      return result
+
+  sb = AppendingSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+  # Proxy capture, because the seam guard reads the wire and nothing else —
+  # an anchored run that captured none is refused rather than trusted.
+  sb.write(
+      PROXY_LOG_NAME,
+      (
+          Path(__file__).resolve().parent / "data/proxy_seam_anchored.jsonl"
+      ).read_bytes(),
+  )
+  harness = ClaudeCodeHarness(capture="proxy", segmented=_segmented())
+
+  _ = harness.run(sb, prompt="PROMPT", timeout=100.0)
+
+  assert sb.scripts == [AGENT_SCRIPT_NAME, AGENT_SCRIPT_NAME]
+  rows = [
+      json.loads(line)
+      for line in sb.read(SUPERVISOR_LOG_NAME).decode().splitlines()
+  ]
+  segments = [row for row in rows if row["kind"] == "segment"]
+  assert [row["resumed"] for row in segments] == [False, True]
+  assert [row["stop_subtype"] for row in segments] == [
+      "error_max_turns",
+      "success",
+  ]
+  assert segments[0]["anchor_result_uuid"] == "result-1"
+  # The second segment's script carries the resume the first one's result
+  # reported — the whole point of re-staging per segment.
+  staged = (epath.Path(tmp_path) / AGENT_SCRIPT_NAME).read_text()
+  assert "--resume sess-1" in staged
+  # And anchored at the previous segment's last message record, which is what
+  # keeps the seam free of a fabricated assistant turn.
+  assert "--resume-session-at msg-1-uuid" in staged
+  # And the run's own account is registered as an artifact, so it leaves the
+  # sandbox with the trace rather than dying with the container.
+  assert "supervisor.jsonl" in harness.native_outputs()
