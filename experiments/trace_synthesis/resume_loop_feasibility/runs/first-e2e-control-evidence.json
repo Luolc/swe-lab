@@ -1,0 +1,27 @@
+{
+  "kind": "first-e2e-inference-control",
+  "source": "first-e2e-2026-09-02 r0/rollout/a0",
+  "source_sha256": "701808d7ee9941eaa9de11a87277ca9d5be49305fd59ab8981d0e57f347c9136",
+  "source_bytes": 3064215,
+  "credential_gate": {
+    "redaction_marker_occurrences": 165,
+    "credential_shapes": {
+      "anthropic_key_prefix": 0,
+      "bearer_jwt": 0,
+      "jwt_shaped": 0
+    }
+  },
+  "captured_requests": 33,
+  "main_loop_requests": 32,
+  "auxiliary_requests": 1,
+  "longest_request_messages": 71,
+  "longest_request_user_messages": 32,
+  "longest_request_user_tool_result": 31,
+  "longest_request_user_tool_result_and_text": 0,
+  "union_user_message_instances": 528,
+  "union_user_tool_result": 496,
+  "union_user_tool_result_and_text": 0,
+  "distinct_user_tool_result_block_shapes": {
+    "tool_result": 496
+  }
+}

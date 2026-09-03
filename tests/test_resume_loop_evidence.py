@@ -208,3 +208,22 @@ def test_every_capture_witness_passed_the_credential_gate(name: str) -> None:
   gate = _witness(name)["credential_gate"]
   assert gate["redaction_marker_occurrences"] > 0
   assert set(gate["credential_shapes"].values()) == {0}
+
+
+def test_the_real_rollout_control_carries_its_denominator() -> None:
+  """The inference-time control is 0 in 496, and says so with its divisor.
+
+  A bare zero is not evidence. This pins both the numerator and the
+  denominator, so a later edit cannot quietly turn the count into "never".
+  """
+  witness = _witness("first-e2e-control-evidence.json")
+  assert witness["union_user_tool_result_and_text"] == 0
+  assert witness["union_user_tool_result"] == 496
+  assert witness["main_loop_requests"] == 32
+  # The only block shape observed on a user message carrying a tool result.
+  assert witness["distinct_user_tool_result_block_shapes"] == {
+      "tool_result": 496
+  }
+  gate = witness["credential_gate"]
+  assert gate["redaction_marker_occurrences"] > 0
+  assert set(gate["credential_shapes"].values()) == {0}

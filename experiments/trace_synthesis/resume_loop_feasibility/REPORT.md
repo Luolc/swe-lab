@@ -78,7 +78,11 @@ reversal is the finding.
       different**. A trace produced by this loop therefore contains a layout
       that **occurs under supervision and did not occur in either control** —
       which is exactly what owner criterion **(b)** forbids: *a context shape
-      that does not occur at inference time.*
+      that does not occur at inference time.* **Corroborated against a real
+      rollout** (§9.3): on the first end-to-end run's wire — a real SWE-bench
+      instance, no `--safe-mode` — `[tool_result, text]` occurs **0 times in 496
+      tool-result-carrying user messages**, and all 496 are `[tool_result]`
+      alone. Not "never"; 0 in 496, one rollout.
 
    So the segmented loop trades one criterion violation for a different one. It
    fixes **(a)** — no assistant tokens the model never wrote — and on this
@@ -558,6 +562,73 @@ there are no seam records to cache:
 | 3 | yes | 39 992 | **127** | $0.00959 |
 | 4 | yes | 40 119 | **163** | $0.00953 |
 
+### 9.3 The inference-time control, on a real rollout ★
+
+The previous revision left an open question that could have overturned §9.1's
+reading: the unsegmented control was `N=1`, one toy task, `--safe-mode`, and in
+it the `<system-reminder>` blocks happened to attach to the opening messages. If
+a production session attaches one to a **tool result**, `[tool_result, text]`
+occurs with no supervision involved and it is not a supervision-only shape at
+all.
+
+That question is answerable from data already on this machine, at **zero API
+cost**: the first end-to-end run's wire capture — a real SWE-bench instance, a
+real task, no `--safe-mode`, 3 064 215 bytes — pinned by
+`pipeline_end_to_end/WITNESS.md` at
+`sha256 701808d7ee9941eaa9de11a87277ca9d5be49305fd59ab8981d0e57f347c9136`,
+which this reading verified before use. (The two paths named for it are
+**byte-identical**; it is one capture, copied.)
+
+**Why it can answer.** That run was supervised, but A′'s correction lands as a
+*separate trailing `system` message* — confirmed here: the fullest request ends
+`…, user, assistant, user, system`, with `system [text]`. So **any
+`[tool_result, text]` in this capture could not be A′'s correction**; it could
+only come from a reminder or another harness attachment. Both outcomes are
+results, and the reading was done without a preference between them.
+
+Read with **the same `evidence.reduce_capture()`** the rest of this report uses
+— the record shape turned out to be identical, so **no adapter and no second
+analyzer** were introduced. That matters here specifically: a second detector is
+what produced this report's P0.
+
+| quantity | count |
+| --- | --- |
+| captured requests | **33** |
+| main-loop (carries `tools`) | **32** |
+| auxiliary (no `tools`) | 1 |
+| messages in the fullest conversation | **71** |
+| user messages there | 32 |
+| — of those, carrying a `tool_result` | **31** |
+| — of those, `[tool_result, text]` | **0** |
+| user message *instances* across all 32 main-loop requests | 528 |
+| — carrying a `tool_result` | **496** |
+| — `[tool_result, text]` | **0** |
+
+**Every one of the 496 is `[tool_result]` alone** — that is the only distinct
+block shape observed on a user message carrying a tool result.
+
+**The mechanism, which is why the earlier worry was misplaced.** In the real
+run, `<system-reminder>` blocks sit on the **opening user message** and on
+`role: system` messages. Claude Code delivers them as separate `system`
+messages; it does not append them to a tool-result message. The specific way
+`[tool_result, text]` might have arisen naturally does not arise.
+
+**How this must be worded, and how it must not.** The result is **0 in 496
+tool-result-carrying user messages, across one rollout on one instance** — it is
+**not** "never". One run cannot support that, and the count is quoted with its
+denominator precisely because a bare zero is not evidence.
+
+**What it does to §9.1's conclusion.** It **strengthens** statement ③ rather
+than weakening it: on the strongest inference-time evidence available to us, the
+supervised layout does not occur naturally. The open question is narrowed, not
+closed — and it moved in the direction that is *worse* for the design this
+experiment was commissioned to explore.
+
+One detail worth keeping straight: this run's trailing correction is
+`system [text]` at **`len 458`**, not the `len 440` of `streamjson_input`'s
+control. Those are different correction texts. **The match being claimed is the
+structural position — a separate trailing `system` message — not the digest.**
+
 ### 9.2 What is not established
 
 - **`--resume-drops-turn` was not exercised.** Its dependency on
@@ -632,11 +703,12 @@ launch rather than by anyone remembering it. Per-run figures are in
 - **`--resume-session-at` under compaction, parallel tool calls and sub-agents**
   is untested, and those are exactly where a turn's boundary is least like the
   simple case measured here.
-- **Whether `[tool_result, text]` ever occurs at inference time.** The control
-  says it did not in one toy task under `--safe-mode`; that is not the same
-  sentence. A production session attaching a `<system-reminder>` to a tool
-  result would produce this layout without any supervision, and settling that
-  would settle whether the seam is a defect at all.
+- **Whether `[tool_result, text]` ever occurs at inference time.** Narrowed by
+  §9.3 and not closed: 0 in 496 on one real rollout, and the mechanism that
+  would have produced it — a reminder appended to a tool result — is not how
+  this harness delivers reminders. What remains open is other instances, other
+  harness versions, and paths this capture does not exercise (compaction,
+  parallel tool calls, sub-agents).
 - **What `--resume-drops-turn` does**, which is the one flag that might make the
   seam A′-shaped rather than merely artifact-free.
 - **The `ls` incident in §10 has no committed trace.** It is disclosed
