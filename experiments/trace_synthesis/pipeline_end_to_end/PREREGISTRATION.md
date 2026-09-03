@@ -10,6 +10,12 @@
 > `"OPEN"`). This document assumes #349 or its merged successor is on `main`
 > by the time this run executes; §3 names what it must have landed, read from
 > that PR's own diff rather than from a description of it.
+>
+> **Frozen means the text is frozen, not that the file is closed.** Nothing
+> above or below this line is ever edited after the run; §10 appends what was
+> later learned about one of these criteria, dated and attributed. **Read §10
+> before relying on §4** — one criterion there is narrower than the claim it is
+> labelled with, and this document is where that claim is at its widest.
 
 ## 1. What this run can and cannot establish
 
@@ -336,3 +342,57 @@ reason. A run that starts the actor and reaches any of the seven points'
 evidence is not re-run regardless of what it shows, including
 `SUPERVISION_FAILED`, which is itself one of the possible closures of point 7,
 not a reason to discard the run.
+
+## 10. Addenda — appended after the run, nothing above edited
+
+An addendum is not an amendment. **The registered text is left exactly as it
+was written**, because a frozen document's entire value is that it cannot be
+edited afterwards: the moment it may be edited *when the edit is obviously an
+improvement*, it is no longer frozen — "obviously an improvement" is judged by
+someone who has seen the results, and that is precisely the input a
+pre-registration exists to exclude. A narrowing feels safe, but the safety
+comes from our present judgment, not from anything that was true at
+registration.
+
+The symmetric failure is leaving a reader of this file alone with a claim we
+now know to be wider than its test. Editing without saying so destroys the
+record; saying nothing sets a trap. Appending says it and keeps the record.
+
+### 10.1 Point 3's registered claim is wider than its registered criterion
+
+*Appended 2026-09-03 by `swelab-integ-impl` in
+[PR #406](https://github.com/Luolc/swe-lab/pull/406), following
+[#376](https://github.com/Luolc/swe-lab/pull/376) and
+[#378](https://github.com/Luolc/swe-lab/issues/378). §4's row 3 is unchanged
+and stays unchanged.*
+
+**As registered**, point 3's claim reads *"Policy speaks at least once **because
+of a real deviation**"*.
+
+**What §4 registers as its closure test** is a `supervisor.jsonl` row with
+`kind: "spoke"` whose `policy` is not `"speak-at"`, plus §5's Assertion A for
+delivery. That separates a **judged** utterance from a **scheduled** one. It
+does not reach **real**: no outcome of this test can differ according to
+whether the deviation was real, so the clause was never something the run could
+have failed.
+
+**This was true before the run, in this file and in task 01's acceptance
+table** — it is not a misreading of the evidence afterwards. The run then
+produced evidence pointing the other way on the untested half: all three
+corrections were false of the actor by the time they arrived, and the first was
+decided on an **empty** evidence window.
+
+**Point 3 is still closed**, on the test §4 registered. It is recorded as closed
+on the narrower thing, which is what a closure on this row ever meant.
+
+Where the narrowed statement is read, none of it editing anything here:
+
+- [`REPORT.md` §1b](REPORT.md#1b-was-it-a-real-deviation-three-checks-three-noes)
+  — the correction-by-correction readings, with `witness.py` printing each.
+- [`REPORT.md` §1](REPORT.md#1-the-seven-points) — row 3's verdict cell, which
+  states what the closure does and does not reach.
+- [`docs/trace-synthesis/plans/README.md`](../../../docs/trace-synthesis/plans/README.md#task-01-one-instance-end-to-end)
+  — task 01's acceptance table, same narrowing.
+- [`docs/trace-synthesis/downstream-scale-note.md`](../../../docs/trace-synthesis/downstream-scale-note.md)
+  §5 — the copy written for a reader outside this repo, carrying its own
+  revision notice because v0.3.0 shipped pointing at it.
