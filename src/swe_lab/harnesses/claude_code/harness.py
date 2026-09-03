@@ -60,6 +60,7 @@ from swe_lab.trace_synthesis.native_supervision import (
 )
 from swe_lab.trace_synthesis.native_supervision import (
     NativeSupervision,
+    NativeSupervisionObserver,
     SUPERVISOR_BINARY_AT,
     SUPERVISOR_CONFIG_NAME,
     SUPERVISOR_SUMMARY_NAME,
@@ -644,12 +645,20 @@ class ClaudeCodeHarness(Harness):
     container's writable layer, so a hook that runs after this one is a hook
     that runs after the record is gone.
     """
+    supervision = (
+        (NativeSupervisionObserver(),)
+        if self.native_supervision is not None
+        else ()
+    )
     return (
         # First: record which build the sandbox actually got, before anything
         # can go wrong with the run it describes.
         AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT),
         ConversationObserver(producer=self),
         HarnessOutcomeObserver(harness=self),
+        # Before the transcript, so a run whose wrapper lost the actor is
+        # already marked as such by the time anything reads the trace it left.
+        *supervision,
         NativeTranscriptObserver(),
     )
 

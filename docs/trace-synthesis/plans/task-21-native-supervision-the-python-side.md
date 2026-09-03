@@ -18,12 +18,15 @@ them, and each is a place the two can drift silently:
 | What | Direction | Where it lives |
 | --- | --- | --- |
 | the config document | Python writes, the binary reads | `native_supervision.py` |
-| `SWE_LAB_SUPERVISOR_BASE_URL`, `SWE_LAB_SUPERVISOR_API_KEY` | Python passes by reference, the binary reads in-process | the sandbox's `pass_env` |
+| `SWE_LAB_SUPERVISOR_API_KEY` | Python passes by reference, the binary reads in-process | the sandbox's `pass_env` |
+| `SWE_LAB_SUPERVISOR_BASE_URL` | the harness exports it, the binary reads in-process | the invocation script (§2) |
 | the terminal summary | the binary writes, Python classifies from | `native_supervision.py` |
 | the actor's argv | Python hands over, the binary execs | the harness's `actor_argv` (§4) |
 
-The first three are the run's values and live in one module; the fourth is the
-harness's, because it is the harness that knows how to invoke the actor. The
+All but the last are the run's values; the config, the credential's name and
+the summary live in one module, while the endpoint and the argv are the
+harness's, because it is the harness that starts the forwarder and knows how to
+invoke the actor. The
 supervisor's own log is an artifact the run persists, not a channel between the
 two programs.
 
@@ -44,8 +47,18 @@ summary is `supervision.unhealthy`, which `rollout_outcome` already turns into
 The endpoint and the credential are the environment's, not the document's, and
 the binary refuses a document naming either. On this side that means:
 
-- they reach the sandbox through the backend's `pass_env` — names only, so the
-  value never appears on a command line or in a staged file;
+- **the credential** reaches the sandbox through the backend's `pass_env` —
+  names only, so the value never appears on a command line or in a staged file;
+- **the endpoint does not, and must not.** It is `127.0.0.1:9528/v1`: the
+  loopback address of a forwarder the harness itself starts inside the sandbox,
+  so no such value exists on the host to forward. The harness exports it
+  directly, exactly as it already pins `ANTHROPIC_BASE_URL` for the actor's
+  proxy. This is a **credential boundary, not environment hygiene** — the
+  supervisor sends its requests with the credential attached, so an endpoint
+  the host environment could rewrite is one a stray same-named variable could
+  aim at any host, sending a request carrying `Authorization` somewhere we did
+  not choose. Pinning it in the harness makes "the credential only ever reaches
+  the forwarder we started" true by construction;
 - the binary splits a comma-separated list of keys **in-process**. No shell
   takes it apart, which is the failure mode the cross-repo rules name
   explicitly;
@@ -117,9 +130,14 @@ The binary is being written in parallel, and most of this does not wait on it:
    which is written.
 2. **The argv handoff** — the harness's flags as tokens, with the invocation
    script as one consumer of them. Needs nothing.
-3. **The wiring** — the `AgentAsset` for the binary, the second proxy
-   instance, the `pass_env` pair, the wrapper launch, and the summary consumed
-   onto the run's record. Needs the binary to exist as an artifact.
+3. **The wiring** — the second proxy instance, the credential's `pass_env`
+   name and the script's fail-closed probe for it, the wrapper launch, the
+   config written into the workspace, the artifacts registered, and the summary
+   consumed onto the run's record through `NativeSupervisionObserver`. Landed
+   without the binary: `SWE_LAB_SUPERVISOR_BINARY` points at a local build, and
+   the script's `--version` probe refuses a run that has none.
+3a. **The `AgentAsset`** for the binary, split out of the wiring because it is
+   the one part that genuinely needs a release to pin a checksum against.
 4. **The round-trip schema check** (§7a). Needs the binary to be runnable, and
    should follow the wiring closely: every slice after it adds config fields.
 

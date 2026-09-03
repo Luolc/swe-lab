@@ -40,11 +40,13 @@ assert the deliberately broken ones refused — needs the binary as a runnable
 artifact and is a follow-up (task 21 §7a). Until it exists, adding a field here
 means reading ``config.rs`` again.
 
-**Nothing here is wired.** This module renders a document, names two
-variables, and reads a summary; declaring the binary as an asset, starting the
-second capture-proxy instance that terminates TLS for it, handing over the
-actor's argv and reporting the metrics below onto a record are the wiring's,
-and land with it.
+**The binary is not yet an asset.** ``ClaudeCodeHarness`` renders this
+document, starts the second capture-proxy instance that terminates TLS for the
+wrapper, hands over the actor's argv, and installs
+:class:`NativeSupervisionObserver` to classify the run from the summary. What
+remains is placing the binary itself: until it is a released artifact with a
+pinned checksum, ``SWE_LAB_SUPERVISOR_BINARY`` points at a local build and the
+script's ``--version`` probe is what refuses a run without one.
 
 **This runtime is deliberately not the Python one's twin.** The owner's ruling
 on [#375] is that the native runtime fixes the three defects the replay
@@ -65,9 +67,10 @@ import dataclasses
 import enum
 import json
 import pathlib
-from typing import Any
+from typing import Any, override
 
 from swe_lab.rollout import SUPERVISION_LAPSE_METRIC, SUPERVISION_METRIC
+from swe_lab.sandbox import Contribution, SandboxFs, SandboxObserver
 
 from .channel import BOUNDARIES_METRIC, CORRECTIONS_METRIC
 from .criterion import CRITERION_PATH, load_criterion
@@ -637,3 +640,52 @@ def supervision_metrics(
   if summary.stale_verdicts_discarded:
     metrics[SUPERVISION_STALE_METRIC] = float(summary.stale_verdicts_discarded)
   return metrics
+
+
+@dataclasses.dataclass
+class NativeSupervisionObserver(SandboxObserver):
+  """Turn the wrapper's terminal summary into the run's supervision metrics.
+
+  The summary is the **only** input. The wrapper exits with the actor's own
+  status when it ran cleanly, so a supervised run that supervised nothing can
+  exit ``0``; classifying from the exit status would let exactly the run this
+  metric exists to catch through as an ordinary result.
+
+  Fail-closed in the absent case too, and that is the case that matters most:
+  no summary, unreadable summary, or one written against a schema this reader
+  does not know all report :data:`~swe_lab.rollout.SUPERVISION_METRIC`. A
+  wrapper that died before writing one supervised an unknown amount of the
+  run, and "we cannot say" has to reach the outside as a failure rather than
+  as silence — an unsupervised success is kept as data, while a failure is
+  discarded.
+
+  Single-run, like every stateful observer: construct a fresh one per run.
+
+  Attributes:
+    summary: What the wrapper reported, once ``before_destroy`` has read it;
+      ``None`` while it has not run. An :class:`UnusableSummary` here names why
+      the run could not be accounted for, which the metric alone does not say.
+  """
+
+  summary: TerminalSummary | UnusableSummary | None = None
+
+  @override
+  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
+    """Read the summary back and report what it says about the run.
+
+    Args:
+      sb: The live sandbox, read for the summary file before it is destroyed
+        with the container.
+
+    Returns:
+      The run's supervision metrics. Never ``None``: a supervised run always
+      says something about its own supervision, and the case with nothing to
+      report is the one that must report the most.
+    """
+    raw = None
+    if sb.exists(SUPERVISOR_SUMMARY_NAME):
+      # `replace` rather than a raise: bytes that are not UTF-8 are not a
+      # summary, and the reader below already has a word for that.
+      raw = sb.read(SUPERVISOR_SUMMARY_NAME).decode("utf-8", errors="replace")
+    self.summary = read_terminal_summary(raw)
+    return Contribution(metrics=supervision_metrics(self.summary))

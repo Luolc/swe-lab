@@ -35,14 +35,20 @@ from swe_lab.harnesses.claude_code.constants import (
     SUPERVISOR_PROXY_STDERR_NAME,
     SUPERVISOR_STDERR_NAME,
 )
+from swe_lab.rollout import SUPERVISION_METRIC
 from swe_lab.sandbox import SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
-from swe_lab.trace_synthesis.channel import SUPERVISOR_LOG_NAME
+from swe_lab.trace_synthesis.channel import (
+    BOUNDARIES_METRIC,
+    CORRECTIONS_METRIC,
+    SUPERVISOR_LOG_NAME,
+)
 from swe_lab.trace_synthesis.native_supervision import (
     API_KEY_ENV,
     BASE_URL_ENV,
     Blocking,
     NativeSupervision,
+    NativeSupervisionObserver,
     SUPERVISOR_BINARY_AT,
     SUPERVISOR_CONFIG_NAME,
     SUPERVISOR_PASS_ENV,
@@ -286,3 +292,131 @@ def test_the_wrapper_and_the_correction_channel_cannot_both_own_stdin():
         correction_channel=True,
         native_supervision=_SUPERVISION,
     )
+
+
+# ─── the summary is the only thing a supervised run is classified from ──────
+
+
+def _summary(**overrides: object) -> dict[str, object]:
+  """Return a complete terminal summary, with fields overridden.
+
+  Args:
+    **overrides: Fields to replace in the accounted-for baseline.
+
+  Returns:
+    A summary document the reader accepts.
+  """
+  return {
+      "schema_version": 1,
+      "accounted_for": True,
+      "actor_exit_code": 0,
+      "supervisor_exit": "clean",
+      "boundaries": 4,
+      "corrections": 1,
+      "lapses": 0,
+      "gaps": 0,
+      "stale_verdicts_discarded": 0,
+      "max_decision_lag_ms": 120,
+      "criterion_sha256": "a" * 64,
+      "actor_event_log_sha256": "b" * 64,
+      "supervisor_log_sha256": "c" * 64,
+  } | overrides
+
+
+def _metrics_from(summary: object | None, tmp_path: Path) -> dict[str, float]:
+  """Run the observer over a workspace holding ``summary``.
+
+  Args:
+    summary: The document to write, or ``None`` to write no file at all.
+    tmp_path: The workspace root.
+
+  Returns:
+    The metrics the observer contributed.
+  """
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+  if summary is not None:
+    sb.write(SUPERVISOR_SUMMARY_NAME, json.dumps(summary).encode())
+  contribution = NativeSupervisionObserver().before_destroy(sb)
+  assert contribution is not None
+  return dict(contribution.metrics)
+
+
+def test_an_accounted_for_run_reports_its_counts_and_no_failure(
+    tmp_path: Path,
+):
+  """The healthy arm. Without it, a metric that fires always looks correct."""
+  metrics = _metrics_from(_summary(), tmp_path)
+
+  assert SUPERVISION_METRIC not in metrics
+  assert metrics[BOUNDARIES_METRIC] == 4.0
+  assert metrics[CORRECTIONS_METRIC] == 1.0
+
+
+def test_a_run_the_wrapper_could_not_account_for_is_reported_unhealthy(
+    tmp_path: Path,
+):
+  """`accounted_for: false` with `actor_exit_code: 0` is the whole point.
+
+  A wrapper that ran cleanly exits with the actor's own status, so this run
+  exits 0. Classified from the exit code it is an ordinary success; classified
+  from the summary it is a run whose supervision cannot be vouched for.
+  """
+  metrics = _metrics_from(
+      _summary(accounted_for=False, gaps=2, actor_exit_code=0), tmp_path
+  )
+
+  assert metrics[SUPERVISION_METRIC] == 1.0
+
+
+def test_a_run_whose_wrapper_wrote_no_summary_is_reported_unhealthy(
+    tmp_path: Path,
+):
+  """Absence is the case that must fail loudest, not the one that is silent.
+
+  A wrapper that died before writing supervised an unknown amount of the run.
+  Reporting nothing here would let it reach a reader as an ordinary result,
+  and a result is kept as data where a failure is discarded.
+  """
+  metrics = _metrics_from(None, tmp_path)
+
+  assert metrics[SUPERVISION_METRIC] == 1.0
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [b"not json at all", b"[]", b'{"schema_version": 99}', b"\xff\xfe"],
+    ids=["not-json", "not-an-object", "unknown-schema", "not-utf8"],
+)
+def test_a_summary_that_cannot_be_read_is_reported_unhealthy(
+    raw: bytes, tmp_path: Path
+):
+  """Unreadable and absent are the same finding: the run has no account.
+
+  Args:
+    raw: The bytes found where the summary should be.
+    tmp_path: The workspace root.
+  """
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+  sb.write(SUPERVISOR_SUMMARY_NAME, raw)
+
+  contribution = NativeSupervisionObserver().before_destroy(sb)
+
+  assert contribution is not None
+  assert contribution.metrics[SUPERVISION_METRIC] == 1.0
+
+
+def test_the_supervised_run_registers_the_observer_that_classifies_it():
+  """A consumer nobody installs classifies nothing.
+
+  The metric only reaches `rollout_outcome` if the observer is in the run's
+  observer list, so the wiring is asserted, not just the observer's behavior.
+  """
+  supervised = [type(o).__name__ for o in _supervised().observers()]
+  plain = [
+      type(o).__name__ for o in ClaudeCodeHarness(capture="proxy").observers()
+  ]
+
+  assert "NativeSupervisionObserver" in supervised
+  # The control arm: the unsupervised path installs no such consumer, so its
+  # presence above is this configuration's doing.
+  assert "NativeSupervisionObserver" not in plain
