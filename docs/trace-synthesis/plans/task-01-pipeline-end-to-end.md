@@ -35,7 +35,7 @@ one thing added to its first entry. Nothing about the second entry changes.
 | 2 | Actor runs under `CodingAgentTask` | [`rollout.py`](../../../src/swe_lab/rollout.py) | exists |
 | 3 | **Actor's live events reach a supervisor** | `SupervisedRun` in [`trace_synthesis/channel.py`](../../../src/swe_lab/trace_synthesis/channel.py), composed by `CodingAgentTask.supervision_factory` | exists |
 | 4a | The **seam** a policy plugs into | the `SpeakPolicy` protocol in [`trace_synthesis/supervisor.py`](../../../src/swe_lab/trace_synthesis/supervisor.py) | exists |
-| 4b | A policy that speaks **because of a real deviation** | `SpeakWhenOffTrack`, built by `supervising_policy` over `ModelJudge` / `ModelWriter` | exists; composed by the `supervised_rollout_and_unit_test` definition |
+| 4b | A policy that speaks when a **judge** finds the actor off-track | `SpeakWhenOffTrack`, built by `supervising_policy` over `ModelJudge` / `ModelWriter` | exists; composed by the `supervised_rollout_and_unit_test` definition |
 | 5 | **Intervention reaches the actor's stdin** | the FIFO and in-sandbox relay behind `ClaudeCodeHarness(correction_channel=True)` | exists |
 | 6 | Patch extracted vs the pre-agent baseline | `DiffExtractObserver(baseline=True)`, [ADR-0014](../../decisions/ADR-0014-the-pre-agent-baseline-is-the-default.md) | exists, default on |
 | 7 | Grading on that patch and that base ref | `UnitTestTask`, same base-ref contract | exists |

@@ -8,8 +8,11 @@ holds the criteria,
 [`REPORT.md`](../../experiments/trace_synthesis/pipeline_end_to_end/REPORT.md)
 the readings. Point by point, and moving as PRs land:
 [task 01](plans/README.md#task-01-one-instance-end-to-end) — check it before
-scheduling anything against this note. What that run does and does not buy
-you, because the difference is the whole of what you are inheriting:
+scheduling anything against this note. **One point's wording here has been
+narrowed since v0.3.0 shipped pointing at this note** — point 3, in
+[§5](#5-what-the-pipeline-works-means-and-where-to-check-it); nothing else in
+this note changed with it. What that run does and does not buy you, because
+the difference is the whole of what you are inheriting:
 
 - **The mechanism is verified.** A correction the supervisor wrote reached the
   actor's context mid-run. The evidence is the actor's **own** native session
@@ -222,11 +225,27 @@ pipeline.
 The seven points, reproduced only so you know what each one proves, not as a
 record of having passed them: the supervisor is on the actor's **live**
 stream; the **barrier holds** (the fields are absent, and a criterion-artifact
-sha mismatch refuses the run); the policy speaks at least once **because of a
-real deviation** and not on a schedule; the correction lands **mid-turn** in
+sha mismatch refuses the run); the policy speaks at least once **on a judge's
+finding** rather than on a schedule; the correction lands **mid-turn** in
 the measured wire shape; the patch is taken **against the pre-agent baseline**
 and grading runs; the trace is persisted **with the interjection still in it
 after conversion**; and the **outcome word** is the right one.
+
+**Revised since the v0.3.0 handoff, and this is the one point whose wording
+changed.** Point 3 is registered as *"the policy speaks at least once **because
+of a real deviation**"*, and it is narrowed above because **its criterion does
+not reach that clause**: what the criterion tests is a `spoke` row whose policy
+is not `speak-at`, which separates *judged* from *scheduled* and cannot fail
+when the deviation is not real. On the half it leaves untested, the first run's
+record runs the other way — three corrections, none of them true of the actor by
+the time it arrived, and the first decided on an **empty** evidence window
+([REPORT §1b](../../experiments/trace_synthesis/pipeline_end_to_end/REPORT.md#1b-was-it-a-real-deviation-three-checks-three-noes)).
+The registered wording still stands in
+[`PREREGISTRATION.md`](../../experiments/trace_synthesis/pipeline_end_to_end/PREREGISTRATION.md)
+§4 and is not edited there: a criterion rewritten after seeing the result is the
+thing a pre-registration exists to prevent, in whichever direction it is
+rewritten. So **the point is still closed** — on the narrower thing its criterion
+tests, which is what a closure ever meant.
 
 Each of those names a test, a persisted field or a record — an acceptance
 nobody can check is worth as little as a metric nobody reads. Two are worth
