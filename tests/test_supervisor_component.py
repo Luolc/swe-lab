@@ -479,6 +479,10 @@ def test_a_bounded_failure_is_a_lapse_and_the_next_boundary_is_judged() -> None:
   # Which boundary, and why: without both, "a lapse happened" is not a bound.
   assert rows[0]["cursor"] == 1
   assert "upstream 503" in str(rows[0]["reason"])
+  # An explicit None (a lapse the judge never answered) must appear as the
+  # field, not as the field's absence — a consumer reading the row cannot
+  # tell "recorded as unattributed" from "never recorded" otherwise.
+  assert rows[0]["finish_reason"] is None
   assert written == [
       Intervention(text="check the failing test first").rendered()
   ]
