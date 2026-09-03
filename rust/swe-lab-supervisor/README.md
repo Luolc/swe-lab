@@ -19,11 +19,16 @@ build towards.
   validation ([Config](#config)); the criterion digest check; the endpoint
   and credential variables ([Environment](#environment)); and the process
   wrapper — `run` launches the actor in its own process group with the two
-  environment variables scrubbed, writes the task on its stdin as one
-  `stream-json` user event, drains its stdout to `--actor-event-log` and its
-  stderr to `--actor-stderr`, ends it deliberately (`SIGTERM`, `term_grace_ms`,
-  `SIGKILL`; also on `SIGTERM` / `SIGINT` to the wrapper), and exits as the
-  actor did.
+  environment variables scrubbed and a mark added, writes the task on its
+  stdin as one `stream-json` user event, drains its stdout to
+  `--actor-event-log` and its stderr to `--actor-stderr` — each capped, the
+  reader never more than a bounded queue ahead of the loop — ends it
+  deliberately (`SIGTERM`, `term_grace_ms`, `SIGKILL` to the group, then
+  every marked descendant that left the group; also on `SIGTERM` / `SIGINT`
+  to the wrapper, when a log stops taking output, or when the leader exited
+  and a descendant still holds its stdout), and exits as the actor did — or
+  with `1` when a drain stopped with an error or did not finish, because
+  then the record is not whole and the actor's success cannot be read off it.
 - **Not yet:** no judgment is made and no correction is written, so every
   run is the actor alone, with its stdin closed right after the prompt.
   `--supervisor-log` and `--summary` are accepted and **not written**. The
@@ -86,7 +91,11 @@ to authenticate to it are not in the file at all — see
   },
   "model": { "name": "anthropic/claude-sonnet-5" },
   "timeouts": { "model_call_ms": 180000, "term_grace_ms": 10000 },
-  "limits": { "max_event_line_bytes": 16777216 }
+  "limits": {
+    "max_event_line_bytes": 16777216,
+    "max_actor_stdout_bytes": 1073741824,
+    "max_actor_stderr_bytes": 268435456
+  }
 }
 ```
 
@@ -114,7 +123,13 @@ to authenticate to it are not in the file at all — see
 - `limits` — `max_event_line_bytes` is the ceiling on one line of actor
   stdout. Framing uses a growable buffer up to it; a longer line is still
   written to the event log verbatim but reaches no judgment, and the summary
-  counts it.
+  counts it. `max_actor_stdout_bytes` and `max_actor_stderr_bytes` cap the
+  two logs, exact to the byte: a line that would cross the cap is not
+  written, the stream is not read further, and the run is ended and reported
+  as not accounted for. Without them an actor that never stops writing fills
+  the sandbox before the summary can be written. The wrapper's own memory is
+  bounded independently: one line up to the ceiling, plus at most 16 lines
+  queued ahead of the loop.
 
 ## Environment
 
