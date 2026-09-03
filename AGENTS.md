@@ -21,8 +21,10 @@ Two modes, and the mode picks the method:
   with test-driven development and small atomic commits as the default.
   **Review** = user-level `pr-review` (`~/.agents/skills/pr-review`) + this
   repo's `swelab-pr-review`; Python changes additionally load user-level
-  `python-review` + `swelab-python-review`. **An active component owns its
-  planning docs in its own folder** — a workstream (`docs/workstreams/<w>/`) or
+  `python-review` + `swelab-python-review`, and Rust changes user-level
+  `rust-review` — which has no repo-level increment today, so load it alone
+  rather than a `swelab-rust-review` that does not exist. **An active
+  component owns its planning docs in its own folder** — a workstream (`docs/workstreams/<w>/`) or
   the horizontal `docs/horizontal/` for cross-cutting / foundational work:
   - `spec.md` — the target design (what we're building and why).
   - `plans/` — one **deep, source-grounded design per task**; `plans/README.md`
@@ -148,8 +150,14 @@ test for is a wish, and it silently decays into a lie.
 
 - **Always:** run the quality bar before merge; keep the docs map
   ([`docs/README.md`](docs/README.md)) thin (detail lives in each workstream
-  folder); redact operator PII in any trace record; treat the **code** as
-  source of truth over a doc flagged *provisional*; keep every fact in **one
+  folder); redact operator PII in any trace record; **say why a new dependency
+  exists, in a comment on the line above its declaration** (`pyproject.toml`,
+  `Cargo.toml`) — whether to add one is your judgement (can it not exist? does
+  the standard library already do it? does something already here?), nothing
+  approves that reasoning, and that comment is the entire record it happened,
+  so one arriving without it is indistinguishable from one nobody thought
+  about; treat the **code** as source of truth over a doc flagged
+  *provisional*; keep every fact in **one
   home** (route via [`docs/doc-map.md`](docs/doc-map.md); status lives only in a
   component's `plans/README.md` / the workstream snapshot, never in a plan
   header); **reconcile a component's `spec.md` in the PR that outdates it** — a
@@ -161,14 +169,13 @@ test for is a wish, and it silently decays into a lie.
   - **A task flipping to ✅ re-checks that spec's Success Criteria and
     out-of-scope list in the same PR** — shipping the thing the spec calls out
     of scope is exactly how a spec starts lying.
-- **Ask first:** adding a runtime dependency; changing the annotation schema,
-  the engine's compile contract (`SandboxSpec` / `UnitTestSpec` — what a dataset
-  compiles its record into), or the report contract; re-hosting or renaming the
-  HF dataset repos; the deferred `outputs/` restructure; deleting anything under
-  `outputs/` (it is a committed deliverable); **any experiment touching more
-  than 10 SWE-bench Pro instances, or more than 2 rollouts per instance** —
-  running the full set at scale belongs to the downstream consumer, whose quota
-  and sandboxes are sized for it.
+- **Ask first:** changing the annotation schema, the engine's compile contract
+  (`SandboxSpec` / `UnitTestSpec` — what a dataset compiles its record into), or
+  the report contract; re-hosting or renaming the HF dataset repos; the deferred
+  `outputs/` restructure; deleting anything under `outputs/` (it is a committed
+  deliverable); **any experiment touching more than 10 SWE-bench Pro instances,
+  or more than 2 rollouts per instance** — running the full set at scale belongs
+  to the downstream consumer, whose quota and sandboxes are sized for it.
 - **Never:** commit secrets / OAuth tokens / `.envrc.local` (enforced by the
   gitleaks hook + the CI history scan — see [Quality bar](#quality-bar));
   commit dataset data files or large trace records (gitignored / off-repo on HF
