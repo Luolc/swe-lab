@@ -25,6 +25,7 @@ vertical). An active component owns a
 | `docs/README.md` | Where is everything, and where are we? (map + **workstream-level status**) | task-level status; design detail |
 | `docs/conventions.md` | How is the code laid out and run? (dir map, commands, hazards, source-of-truth, naming, interface style) | status; an ADR's rejected alternatives |
 | `docs/doc-map.md` | Which doc answers which question; where a learning lands (this file) | anything with its own home below |
+| `docs/evidence.md` | Why do we believe a result? (the undiscriminating-observation family, its media here, evidence & review rules) | the codebase map; a rule already in `~/.agents/AGENTS.md` |
 | `docs/decisions/ADR-NNNN-*.md` | Why did we decide X, and what did we reject? | status; how-to; a second copy of the code |
 | `docs/decisions/README.md` | The ADR index + ADR conventions | the ADR bodies |
 | `<component>/spec.md` | What are we building and why? (target design) | status; task breakdown; strategy |
