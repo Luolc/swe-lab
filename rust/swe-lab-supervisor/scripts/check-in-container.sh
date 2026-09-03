@@ -34,7 +34,10 @@ mkdir -p "$cache/cargo" "$cache/target"
 if [ $# -eq 0 ]; then
   set -- scripts/gates.sh
 fi
-exec docker run --rm \
+# --init: an init as PID 1 reaps the orphans the tests make on purpose;
+# `cargo` as PID 1 would not, and a killed grandchild would stay a zombie
+# that still counts as a member of its process group.
+exec docker run --rm --init \
   --user "$(id -u):$(id -g)" \
   --env HOME=/tmp \
   --env CARGO_HOME=/cargo \
