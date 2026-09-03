@@ -15,9 +15,11 @@ publish = false
 # binary. Check `cargo tree` before adding anything: no `*-sys`, no `cc`.
 [dependencies]
 # Safe wrappers for `killpg`, `SIGSTOP`/`SIGCONT` and the non-reaping
-# `waitid`, so the process-group ownership needs no `unsafe` of its own (the
-# `unsafe` stays inside `nix`, which `forbid(unsafe_code)` does not police).
-nix = { version = "0.30", features = ["process", "signal"] }
+# `waitid`; `fcntl` and `poll`, so a write on the actor's stdin can be
+# interrupted by cancellation instead of blocking for good. Nothing here needs
+# `unsafe` of its own (the `unsafe` stays inside `nix`, which
+# `forbid(unsafe_code)` does not police).
+nix = { version = "0.30", features = ["process", "signal", "fs", "poll"] }
 # The config file and every JSON line the wrapper reads or writes.
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

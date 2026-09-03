@@ -31,7 +31,6 @@ mod stream;
 
 use std::os::unix::process::ExitStatusExt;
 use std::process::{ExitCode, ExitStatus};
-use std::sync::atomic::Ordering;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
@@ -81,6 +80,12 @@ fn main() -> ExitCode {
                 eprintln!("swe-lab-supervisor: the run is not accounted for: {reason}");
                 ExitCode::from(EXIT_UNHEALTHY)
             }
+            Err(Failed::Cancelled { signal, actor }) => {
+                eprintln!(
+                    "swe-lab-supervisor: cancelled by signal {signal}; the actor ended with {actor}"
+                );
+                ExitCode::from(exit_code_for_signal(signal))
+            }
         },
     }
 }
@@ -91,6 +96,10 @@ enum Failed {
     Refused(String),
     /// The actor ran, and its record is not whole.
     Unhealthy(String),
+    /// The wrapper was asked to stop by a signal, and did, whatever the actor
+    /// then made of its own ending: a cancelled run is not a result. `actor`
+    /// is how the actor ended, for the diagnostic.
+    Cancelled { signal: i32, actor: String },
 }
 
 impl From<String> for Failed {
@@ -107,9 +116,12 @@ impl From<String> for Failed {
 /// Until the policy lands, the wrapper is transparent: the task prompt is
 /// the first message on the actor's stdin, stdin is then closed so the actor
 /// runs one turn, and every line of its output is drained to the event log.
-/// The run ends when stdout reaches end of file, when a drain stops with an
-/// error, when the wrapper is told to stop, or when the leader has exited
-/// and — a descendant still holding its stdout — the grace has passed.
+/// The run is over when the actor's stdout has closed **and** its leader has
+/// exited — either alone starts the grace, after which the other is not
+/// waited for: an actor that closes stdout and then exits in its own time
+/// gets that time, and a leader gone while a descendant holds its stdout
+/// does not hold the wrapper. A drain stopping with an error ends the run
+/// at once; so does a stop signal, which is then the run's outcome.
 fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
     let config = config::load(&args.config)?;
     let _criterion = criterion::select(&config.criterion.name, &config.criterion.sha256)?;
@@ -141,10 +153,18 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
     .map_err(|e| format!("launching the actor: {e}"))?;
     let grace = Duration::from_millis(config.timeouts.term_grace_ms);
 
-    if let Err(error) = actor.write_stdin(stream::user_event_line(&config.task).as_bytes()) {
+    let prompt = stream::user_event_line(&config.task);
+    if let Err(error) = actor.write_stdin(prompt.as_bytes(), &stop, grace) {
+        drop(inbox);
         let ended = actor
             .end(grace)
             .map_err(|e| format!("ending the actor: {e}"))?;
+        if let Some(signal) = signals::requested(&stop) {
+            return Err(Failed::Cancelled {
+                signal,
+                actor: ended.status.to_string(),
+            });
+        }
         return Err(Failed::Refused(format!(
             "the actor did not take its prompt ({error}); it ended with {}",
             ended.status
@@ -152,49 +172,83 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
     }
     actor.close_stdin();
 
-    let mut fault: Option<String> = None;
-    let mut leader_exited_at: Option<Instant> = None;
-    loop {
-        if stop.load(Ordering::Relaxed) {
-            break;
-        }
-        match inbox.recv_timeout(Duration::from_millis(100)) {
-            Ok(Event::StdoutClosed(Ok(()))) | Err(mpsc::RecvTimeoutError::Disconnected) => break,
-            Ok(Event::StdoutClosed(Err(error))) => {
-                fault = Some(format!("actor stdout: {error}"));
-                break;
-            }
-            Ok(Event::StderrClosed(Err(error))) => {
-                fault = Some(format!("actor stderr: {error}"));
-                break;
-            }
-            Ok(Event::Line(_) | Event::Oversized | Event::StderrClosed(Ok(())))
-            | Err(mpsc::RecvTimeoutError::Timeout) => {}
-        }
-        if leader_exited_at.is_none()
-            && actor
-                .exited()
-                .map_err(|e| Failed::Unhealthy(format!("observing the actor: {e}")))?
-        {
-            leader_exited_at = Some(Instant::now());
-        }
-        if leader_exited_at.is_some_and(|at| at.elapsed() >= grace) {
-            break;
-        }
-    }
+    let mut fault = serve(&mut actor, &inbox, &stop, grace)?;
     // A reader blocked on the full queue can only finish once nobody holds
     // the receiver.
     drop(inbox);
     let ended = actor
         .end(grace)
         .map_err(|e| Failed::Unhealthy(format!("ending the actor: {e}")))?;
+    if let Some(signal) = signals::requested(&stop) {
+        return Err(Failed::Cancelled {
+            signal,
+            actor: ended.status.to_string(),
+        });
+    }
     if fault.is_none() {
-        fault = drain_fault("stdout", ended.stdout).or(drain_fault("stderr", ended.stderr));
+        fault = drain_fault("stdout", ended.stdout)
+            .or(drain_fault("stderr", ended.stderr))
+            .or(ended
+                .stragglers
+                .err()
+                .map(|e| format!("no proof that no descendant survived: {e}")));
     }
     match fault {
         Some(reason) => Err(Failed::Unhealthy(reason)),
         None => Ok(exit_code_of(ended.status)),
     }
+}
+
+/// Consume the actor's events until the run is over: stdout closed and the
+/// leader exited, or one of them and the grace passed, or a drain faulted,
+/// or a stop was asked. Returns the fault, if a drain reported one.
+fn serve(
+    actor: &mut Actor,
+    inbox: &mpsc::Receiver<Event>,
+    stop: &signals::Stop,
+    grace: Duration,
+) -> Result<Option<String>, Failed> {
+    let mut stdout_closed = false;
+    let mut leader_exited = false;
+    let mut over_since: Option<Instant> = None;
+    while signals::requested(stop).is_none() {
+        match inbox.recv_timeout(Duration::from_millis(100)) {
+            Ok(Event::StdoutClosed(Ok(()))) | Err(mpsc::RecvTimeoutError::Disconnected) => {
+                stdout_closed = true;
+            }
+            Ok(Event::StdoutClosed(Err(error))) => {
+                return Ok(Some(format!("actor stdout: {error}")));
+            }
+            Ok(Event::StderrClosed(Err(error))) => {
+                return Ok(Some(format!("actor stderr: {error}")));
+            }
+            Ok(Event::Line(_) | Event::Oversized | Event::StderrClosed(Ok(())))
+            | Err(mpsc::RecvTimeoutError::Timeout) => {}
+        }
+        if !leader_exited
+            && actor
+                .exited()
+                .map_err(|e| Failed::Unhealthy(format!("observing the actor: {e}")))?
+        {
+            leader_exited = true;
+        }
+        if stdout_closed && leader_exited {
+            break;
+        }
+        if stdout_closed || leader_exited {
+            over_since.get_or_insert_with(Instant::now);
+        }
+        if over_since.is_some_and(|since| since.elapsed() >= grace) {
+            break;
+        }
+    }
+    Ok(None)
+}
+
+/// A cancelled wrapper exits as a process killed by that signal would, so
+/// a harness reads the cancellation and not the actor's own status.
+fn exit_code_for_signal(signal: i32) -> u8 {
+    u8::try_from(128 + signal).unwrap_or(1)
 }
 
 /// What a drain's ending says against the run, if anything.

@@ -66,8 +66,23 @@ the Python side.
 (`128 + signal` when the actor died of a signal), so a script that records
 `$?` sees what it would have seen without the wrapper. `2` is a usage error and
 `3` a refused run (unusable config, a criterion whose digest is not the pinned
-one) — both before any actor process exists. Never classify a run from the exit status alone:
-the terminal summary is written for that.
+one) — both before any actor process exists. `1` is a run that is **not
+accounted for**: a drain stopped with an error or did not finish, or the
+sweep for the actor's descendants could not prove none survived. And a
+wrapper told to stop by `SIGTERM` / `SIGINT` exits `128 + that signal`
+whatever the actor made of its own ending — a cancelled run is reported as
+cancelled, never as the actor's success. Never classify a run from the exit
+status alone: the terminal summary is written for that.
+
+**What the wrapper accepts rather than guarantees.** Its containment of the
+actor's descendants is a mark in their environment, inherited from launch and
+swept for at the end: a descendant that clears its own environment before
+`setsid` is invisible to that sweep, and between the sweep's identity check
+(pid plus start time) and its `kill` a pid could in principle be reused. Both
+are accepted, on the record here: the actor is Claude Code, not an adversary,
+and the wrapper runs inside a container that is discarded after the run —
+the container is the boundary, the sweep is diligence within it. What the
+sweep cannot prove, it reports, and the run is not accounted for.
 
 ## Config
 
@@ -117,16 +132,20 @@ to authenticate to it are not in the file at all — see
   with `SIGCONT` — always, on every path out, before the wrapper exits.
 - `model` — the model name sent on every request, recorded in the summary.
 - `timeouts` — `model_call_ms` bounds one judge or writer call; a call past it
-  is one recorded lapse. `term_grace_ms` bounds shutdown: how long the actor's
-  process group gets to honour `SIGTERM` before `SIGKILL`, and how long the
-  actor gets to exit on its own after its stdin is closed deliberately.
+  is one recorded lapse. `term_grace_ms` bounds every wait on the actor: how
+  long it gets to exit on its own once its stdout has closed (or to close
+  its stdout once its leader has exited), how long its process group gets to
+  honour `SIGTERM` before `SIGKILL`, and how long a write on its stdin may
+  make no progress before the wrapper gives up on it.
 - `limits` — `max_event_line_bytes` is the ceiling on one line of actor
   stdout. Framing uses a growable buffer up to it; a longer line is still
   written to the event log verbatim but reaches no judgment, and the summary
   counts it. `max_actor_stdout_bytes` and `max_actor_stderr_bytes` cap the
-  two logs, exact to the byte: a line that would cross the cap is not
-  written, the stream is not read further, and the run is ended and reported
-  as not accounted for. Without them an actor that never stops writing fills
+  two logs, exact to the byte: a record that would cross the cap is not
+  written (an oversized one already begun is rolled back whole), the stream
+  is not read further, and the run is ended and reported as not accounted
+  for. The event log is the actor's stdout byte for byte, a last line left
+  unterminated included. Without them an actor that never stops writing fills
   the sandbox before the summary can be written. The wrapper's own memory is
   bounded independently: one line up to the ceiling, plus at most 16 lines
   queued ahead of the loop.
