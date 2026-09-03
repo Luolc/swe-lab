@@ -41,12 +41,9 @@ from swe_lab.rollout import (
 from swe_lab.sandbox import RunResult, RunStatus, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
 from swe_lab.trace_synthesis.channel import (
-    BOUNDARIES_METRIC,
     CorrectionChannel,
-    CORRECTIONS_METRIC,
     stream_events,
     SupervisedRun,
-    SUPERVISOR_LOG_NAME,
     SupervisorPump,
 )
 from swe_lab.trace_synthesis.supervisor import (
@@ -57,6 +54,11 @@ from swe_lab.trace_synthesis.supervisor import (
     Observation,
     PolicyLapseError,
     Supervisor,
+)
+from swe_lab.trace_synthesis.vocabulary import (
+    BOUNDARIES_METRIC,
+    CORRECTIONS_METRIC,
+    SUPERVISOR_LOG_NAME,
 )
 from swe_lab.workflow import AttemptResult
 

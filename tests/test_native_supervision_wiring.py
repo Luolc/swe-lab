@@ -16,6 +16,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import shlex
+import subprocess
+import sys
 
 from etils import epath
 import pytest
@@ -38,11 +40,6 @@ from swe_lab.harnesses.claude_code.constants import (
 from swe_lab.rollout import SUPERVISION_METRIC
 from swe_lab.sandbox import SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
-from swe_lab.trace_synthesis.channel import (
-    BOUNDARIES_METRIC,
-    CORRECTIONS_METRIC,
-    SUPERVISOR_LOG_NAME,
-)
 from swe_lab.trace_synthesis.native_supervision import (
     API_KEY_ENV,
     BASE_URL_ENV,
@@ -53,6 +50,11 @@ from swe_lab.trace_synthesis.native_supervision import (
     SUPERVISOR_CONFIG_NAME,
     SUPERVISOR_PASS_ENV,
     SUPERVISOR_SUMMARY_NAME,
+)
+from swe_lab.trace_synthesis.vocabulary import (
+    BOUNDARIES_METRIC,
+    CORRECTIONS_METRIC,
+    SUPERVISOR_LOG_NAME,
 )
 
 _SPEC = SandboxSpec("x", "img:tag", "/app", "abc")
@@ -384,8 +386,27 @@ def test_a_run_whose_wrapper_wrote_no_summary_is_reported_unhealthy(
 
 @pytest.mark.parametrize(
     "raw",
-    [b"not json at all", b"[]", b'{"schema_version": 99}', b"\xff\xfe"],
-    ids=["not-json", "not-an-object", "unknown-schema", "not-utf8"],
+    [
+        b"not json at all",
+        b"[]",
+        b'{"schema_version": 99}',
+        rb"\xff\xfe",
+        # The one a replacing decoder lets through: a **complete, valid**
+        # summary whose single bad byte sits in a field this reader
+        # ignores. Replacement turns it into U+FFFD, the parser never
+        # looks there, and the run reports healthy. Decoding strictly is
+        # what makes the damage matter wherever in the file it fell.
+        json.dumps(_summary() | {"extra": "x"})
+        .encode()
+        .replace(b'x"}', b'\xff"}'),
+    ],
+    ids=[
+        "not-json",
+        "not-an-object",
+        "unknown-schema",
+        "not-utf8",
+        "valid-but-one-bad-byte-in-an-ignored-field",
+    ],
 )
 def test_a_summary_that_cannot_be_read_is_reported_unhealthy(
     raw: bytes, tmp_path: Path
@@ -420,3 +441,40 @@ def test_the_supervised_run_registers_the_observer_that_classifies_it():
   # The control arm: the unsupervised path installs no such consumer, so its
   # presence above is this configuration's doing.
   assert "NativeSupervisionObserver" not in plain
+
+
+# ─── the import graph, checked the only way it can be ───────────────────────
+
+
+@pytest.mark.parametrize(
+    "module",
+    [
+        "swe_lab.trace_synthesis.native_supervision",
+        "swe_lab.trace_synthesis.channel",
+        "swe_lab.trace_synthesis.vocabulary",
+        "swe_lab.harnesses.claude_code.harness",
+    ],
+)
+def test_each_module_imports_first_in_a_fresh_interpreter(module: str):
+  """A cycle only shows itself to whoever imports the wrong module first.
+
+  In this process the harness is imported long before anything asks for the
+  supervision module, and that order hides a cycle completely: the suite goes
+  green while `python -c 'import swe_lab.trace_synthesis.native_supervision'`
+  raises `ImportError: cannot import name ... from partially initialized
+  module`. So the check has to be a **fresh interpreter per entry point**, and
+  every module on the cycle has to be an entry point — testing one of them
+  proves nothing about the order someone else picks.
+
+  Args:
+    module: The module to import first, alone.
+  """
+  result = subprocess.run(
+      [sys.executable, "-c", f"import {module}"],
+      capture_output=True,
+      text=True,
+      check=False,
+      cwd=Path(__file__).parent.parent,
+  )
+
+  assert result.returncode == 0, result.stderr

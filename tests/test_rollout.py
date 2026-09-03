@@ -47,10 +47,12 @@ from swe_lab.sandbox.testing import FakeSandbox
 from swe_lab.trace_synthesis.channel import (
     SupervisedRun,
     supervision,
-    SUPERVISOR_LOG_NAME,
 )
 from swe_lab.trace_synthesis.criterion import CriterionRejectedError
 from swe_lab.trace_synthesis.supervisor import NeverSpeak
+from swe_lab.trace_synthesis.vocabulary import (
+    SUPERVISOR_LOG_NAME,
+)
 from swe_lab.workflow import AttemptResult
 
 _SPEC = SandboxSpec("acme__widget-1", "img:tag", "/app", "base")

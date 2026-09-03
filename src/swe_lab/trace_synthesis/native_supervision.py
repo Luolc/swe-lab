@@ -72,8 +72,8 @@ from typing import Any, override
 from swe_lab.rollout import SUPERVISION_LAPSE_METRIC, SUPERVISION_METRIC
 from swe_lab.sandbox import Contribution, SandboxFs, SandboxObserver
 
-from .channel import BOUNDARIES_METRIC, CORRECTIONS_METRIC
 from .criterion import CRITERION_PATH, load_criterion
+from .vocabulary import BOUNDARIES_METRIC, CORRECTIONS_METRIC
 
 #: The one config schema the pinned binary reads. It refuses any other version
 #: rather than reading what it recognizes, so this moves only together with the
@@ -682,10 +682,23 @@ class NativeSupervisionObserver(SandboxObserver):
       says something about its own supervision, and the case with nothing to
       report is the one that must report the most.
     """
-    raw = None
-    if sb.exists(SUPERVISOR_SUMMARY_NAME):
-      # `replace` rather than a raise: bytes that are not UTF-8 are not a
-      # summary, and the reader below already has a word for that.
-      raw = sb.read(SUPERVISOR_SUMMARY_NAME).decode("utf-8", errors="replace")
-    self.summary = read_terminal_summary(raw)
-    return Contribution(metrics=supervision_metrics(self.summary))
+    summary: TerminalSummary | UnusableSummary
+    if not sb.exists(SUPERVISOR_SUMMARY_NAME):
+      summary = read_terminal_summary(None)
+    else:
+      try:
+        # **Strict**, and that is the point. Replacing bad bytes with U+FFFD
+        # only guarantees an unusable summary when the damage lands somewhere
+        # the parser looks: a complete, valid summary carrying one bad byte in
+        # a field this reader ignores decodes cleanly and reports healthy. A
+        # file we cannot decode is a file we cannot vouch for, wherever in it
+        # the damage fell.
+        raw = sb.read(SUPERVISOR_SUMMARY_NAME).decode("utf-8")
+      except UnicodeDecodeError as error:
+        summary = UnusableSummary(
+            reason=f"the terminal summary is not UTF-8: {error!r}"
+        )
+      else:
+        summary = read_terminal_summary(raw)
+    self.summary = summary
+    return Contribution(metrics=supervision_metrics(summary))

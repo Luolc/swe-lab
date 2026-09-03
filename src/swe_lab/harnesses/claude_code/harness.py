@@ -47,11 +47,6 @@ from swe_lab.sandbox import (
     SandboxFs,
     SandboxObserver,
 )
-
-# Aliased because this module already has an `API_KEY_ENV` of the actor's, and
-# two credentials' variables under one name is the confusion a credential
-# boundary can least afford.
-from swe_lab.trace_synthesis.channel import SUPERVISOR_LOG_NAME
 from swe_lab.trace_synthesis.native_supervision import (
     API_KEY_ENV as SUPERVISOR_API_KEY_ENV,
 )
@@ -65,6 +60,11 @@ from swe_lab.trace_synthesis.native_supervision import (
     SUPERVISOR_CONFIG_NAME,
     SUPERVISOR_SUMMARY_NAME,
 )
+
+# Aliased because this module already has an `API_KEY_ENV` of the actor's, and
+# two credentials' variables under one name is the confusion a credential
+# boundary can least afford.
+from swe_lab.trace_synthesis.vocabulary import SUPERVISOR_LOG_NAME
 
 from .binary import PINNED_CLAUDE_CODE_VERSION
 from .capture import Capture, Effort

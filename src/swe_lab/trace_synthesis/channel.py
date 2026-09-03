@@ -61,30 +61,14 @@ from .supervisor import (
     Supervisor,
 )
 
-#: How many actor events the supervisor was consulted about — one per row of
-#: the account, which is what makes ``boundaries == 0`` read as "never
-#: supervised" rather than "supervised and quiet".
-#:
-#: **Not the judge-call count.** A boundary whose evidence window is empty
-#: consults no judge and is recorded as
-#: :data:`~swe_lab.trace_synthesis.supervisor.LOG_KIND_UNJUDGED`, so for the
-#: shipped policy this count is an *upper bound* on the calls a supervised run
-#: pays for beyond the actor. The gap is those rows and is read off the
-#: account, which is also the only place a `boundaries > 0, corrections == 0`
-#: run says which of "judged and stayed silent" and "never judged" it was.
-#: Counted separately from the actor because the repo's per-rollout cost figure
-#: is the actor's alone.
-BOUNDARIES_METRIC = "supervision.boundaries"
-
-#: How many corrections were delivered. Never absent on a supervised run, so
-#: "spoke zero times" is distinguishable from "was not supervised" — the
-#: artifact below says which.
-CORRECTIONS_METRIC = "supervision.corrections"
-
-#: The supervisor's own account of a run, one JSON object per event consumed.
-#: Named here because this is what persists it; a reader checking that a run
-#: was supervised at all reads this artifact.
-SUPERVISOR_LOG_NAME = "supervisor.jsonl"
+# These name the run, not this runtime: they live in a leaf module so the
+# harness and the native runtime can use them without importing this one,
+# which is a cycle through the claude_code package.
+from .vocabulary import (
+    BOUNDARIES_METRIC,
+    CORRECTIONS_METRIC,
+    SUPERVISOR_LOG_NAME,
+)
 
 # How long `before_destroy` waits for the supervising thread to notice it
 # should stop. A thread doing its job needs a poll interval plus one read; a
