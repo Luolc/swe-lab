@@ -190,14 +190,23 @@ mod tests {
     /// regenerated, and the Python test on the other side of them fails
     /// until its reader follows.
     #[test]
-    fn the_committed_fixtures_carry_exactly_the_summary_s_keys() {
-        let ours: BTreeSet<String> = serde_json::to_value(Summary::refused("r", "m", "c"))
-            .unwrap()
-            .as_object()
-            .unwrap()
-            .keys()
-            .cloned()
-            .collect();
+    fn the_committed_fixtures_carry_exactly_the_summary_s_keys_and_their_types() {
+        // Every optional field set, and every one unset: a fixture's value
+        // must have the JSON type the struct gives that key, null allowed
+        // only where the struct's field is an `Option`.
+        let full = to_map(&Summary {
+            unclean_reason: Some("u".to_string()),
+            actor_exit_code: Some(0),
+            actor_exit_signal: Some(15),
+            actor_event_log_sha256: Some("e".to_string()),
+            supervisor_log_sha256: Some("s".to_string()),
+            ..Summary::refused("r", "m", "c")
+        });
+        let bare = to_map(&Summary {
+            unclean_reason: None,
+            ..Summary::refused("r", "m", "c")
+        });
+        let ours: BTreeSet<String> = full.keys().cloned().collect();
         let fixtures =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/native_supervision");
         for (arm, exit) in [
@@ -208,11 +217,38 @@ mod tests {
             ("refused", "refused"),
         ] {
             let text = std::fs::read_to_string(fixtures.join(format!("{arm}.json"))).unwrap();
-            let fixture: serde_json::Value = serde_json::from_str(&text).unwrap();
-            let keys: BTreeSet<String> = fixture.as_object().unwrap().keys().cloned().collect();
+            let fixture: serde_json::Map<String, serde_json::Value> =
+                serde_json::from_str(&text).unwrap();
+            let keys: BTreeSet<String> = fixture.keys().cloned().collect();
             assert_eq!(keys, ours, "{arm}");
+            for (key, value) in &fixture {
+                let expected = json_type(&full[key]);
+                let found = json_type(value);
+                assert!(
+                    found == expected || (found == "null" && bare[key].is_null()),
+                    "{arm}: `{key}` is {found}, the summary writes {expected}"
+                );
+            }
             assert_eq!(fixture["schema_version"], SCHEMA_VERSION, "{arm}");
             assert_eq!(fixture["supervisor_exit"], exit, "{arm}");
+        }
+    }
+
+    fn to_map(summary: &Summary) -> serde_json::Map<String, serde_json::Value> {
+        match serde_json::to_value(summary).unwrap() {
+            serde_json::Value::Object(map) => map,
+            other => panic!("a summary is an object, not {other}"),
+        }
+    }
+
+    fn json_type(value: &serde_json::Value) -> &'static str {
+        match value {
+            serde_json::Value::Null => "null",
+            serde_json::Value::Bool(_) => "bool",
+            serde_json::Value::Number(_) => "number",
+            serde_json::Value::String(_) => "string",
+            serde_json::Value::Array(_) => "array",
+            serde_json::Value::Object(_) => "object",
         }
     }
 

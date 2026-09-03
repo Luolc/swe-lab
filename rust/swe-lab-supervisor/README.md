@@ -161,7 +161,10 @@ to authenticate to it are not in the file at all — see
   many of the actor's most recent admitted records the judge sees.
   `judge_every_n_assistant_messages` is the batch size `N` of #375 — a
   boundary falls every `N` admitted assistant messages and at every actor
-  `result` with new evidence behind it. `block_actor_while_judging` is what
+  `result` with new evidence behind it that no boundary has yet to judge
+  (the one definition, with that exception spelled out, is
+  [task 20 §3](../../docs/trace-synthesis/plans/task-20-native-supervisor-runtime.md#3-judgment-boundaries-under-batching)).
+  `block_actor_while_judging` is what
   the wrapper does to the actor while a judgment is in flight, and
   **`"sigstop"` is the mode a run should use**: the process group is stopped
   with `SIGSTOP` when a boundary falls, and the judge is not started until

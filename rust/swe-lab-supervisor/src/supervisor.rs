@@ -15,8 +15,13 @@
 //!
 //! **Boundaries.** One falls at every `N`-th admitted assistant message since
 //! the last boundary, and at every actor `result` event with admitted
-//! evidence newer than the last judgment: the turn's end is the last moment
-//! a correction can reach the actor before its stdin decides the run's fate.
+//! evidence newer than the last judgment — the turn's end is the last moment
+//! a correction can reach the actor before its stdin decides the run's fate
+//! — unless a boundary has yet to take its snapshot (one pending behind the
+//! judgment in flight, or one waiting for the reader's barrier): that one
+//! judges the evidence the `result` closes, so the `result` is covered by it
+//! and is no boundary of its own. What `summary.boundaries` counts is defined
+//! once, in task 20 §3 (`docs/trace-synthesis/plans/task-20-native-supervisor-runtime.md`).
 //!
 //! **Ending.** A quiet `result` — no judgment pending and nothing delivered —
 //! closes the actor's stdin, and a cooperative actor exits on the EOF. A

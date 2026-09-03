@@ -94,12 +94,23 @@ no `Authorization` header when the variable is unset.
 
 ## 3. Judgment boundaries under batching
 
+This section is the one definition of a boundary — of what
+`summary.boundaries` counts; the crate's module docs and README point here.
+
 - **A boundary falls at every `N`-th admitted assistant message**, counted
   from the last boundary, **and at every actor `result` event that has new
   admitted evidence behind it** — the turn's end is the last moment a
   correction can reach the actor before its stdin decides the run's fate, so
   the partial batch is judged rather than dropped. A `result` with nothing
   new since the last judgment is not judged again on an identical window.
+- **The one exception: a `result` is covered by a boundary that has yet to
+  take its snapshot.** A boundary pending behind the judgment in flight, or
+  one waiting for the `sigstop` barrier (§4), judges the current snapshot
+  when its turn comes — the evidence the `result` closes is in it — so the
+  `result` is no boundary of its own and is not counted. Counting it would
+  count a judgment point that does not exist: every boundary counted is a
+  point at which the policy was asked, or a point on record for why it was
+  not (§5 has the mechanics).
 - **`N = 1` is "every assistant message", not "every event".** Events that
   are not admitted assistant messages — the actor's echo of a user turn,
   system events, a `result` — count towards no boundary; every-event judging
@@ -202,18 +213,24 @@ depend on it.
   deliver; newer admitted evidence, record `stale` and neither deliver nor
   spend budget. Events the filter excluded do not bump the revision.
 - Under `sigstop` a boundary first waits for the reader's barrier (§4); a
-  line that arrives before it — including a `result` — is in its snapshot
-  and is no boundary of its own.
+  line that arrives before it — including a `result` — is in its snapshot,
+  and a `result` among them is covered by it (§3's exception).
 - A boundary that falls while a judgment is in flight keeps the ordinal it
   is given and waits; when the judgment completes, its judgment starts on
   the *current* snapshot — not one per skipped boundary, and not a fresh
   ordinal on completion. A further boundary before then supersedes it, on
-  record as `unjudged`; a `result` before then is covered by it and counts
-  as no boundary. A latest-value channel, as #375 says, not a queue of
+  record as `unjudged`; a `result` before then is covered by it (§3's
+  exception). A latest-value channel, as #375 says, not a queue of
   prefixes. The judge runs on a named thread whose outcome reaches the loop
   whatever happens — a panic reports as such and is unclean — and which is
-  joined once it has reported; a cancellation does not wait for one still
-  running (its call has a deadline of its own).
+  joined once it has reported.
+- **A cancellation reaches the judge.** The wrapper's stop flag travels with
+  the model: every wait on the socket is a slice of at most 100 ms, and a
+  call in progress returns as cancelled within that of the stop; the writer
+  is not asked after it. On the way out the loop joins the judge and
+  settles its word like any other — every call it made on record, a
+  correction it wrote recorded `stale` and not delivered, nothing started
+  behind it — before the actor is ended and the summary written.
 - **Parallel judgments are not built**: response completion order would
   become an unstated policy.
 
