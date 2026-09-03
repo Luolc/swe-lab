@@ -25,15 +25,14 @@ import pytest
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     AGENT_STDERR_NAME,
+    ANTHROPIC_API,
     BINARY_AT,
+    DEFAULT_SUPERVISOR_PROXY_PORT,
     EVENT_STREAM_NAME,
-    OPENROUTER_API,
     PROXY_PORT,
     STREAM_JSON_PROMPT_NAME,
     SUPERVISOR_INFO_NAME,
-    SUPERVISOR_PROXY_BASE_URL,
     SUPERVISOR_PROXY_LOG_NAME,
-    SUPERVISOR_PROXY_PORT,
     SUPERVISOR_PROXY_STDERR_NAME,
     SUPERVISOR_STDERR_NAME,
 )
@@ -42,6 +41,7 @@ from swe_lab.sandbox import SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
 from swe_lab.trace_synthesis.native_supervision import (
     API_KEY_ENV,
+    API_KEY_NAME_ENV,
     BASE_URL_ENV,
     Blocking,
     NativeSupervision,
@@ -105,29 +105,68 @@ def _actor_command(script: str) -> str:
   return candidates[0]
 
 
-def test_the_supervisor_gets_its_own_proxy_instance_to_its_own_upstream():
+def test_native_supervision_defaults_its_optional_proxy_to_anthropic():
   """The wrapper's model calls do not go to the actor's upstream.
 
   Two instances of the same proxy, differing only in `--target` and port: the
-  actor's traffic is Anthropic's and the supervisor's is OpenRouter's, and a
+  actor's and supervisor's traffic both use Anthropic Messages, and a
   reader of a finished run has to be able to tell whose call was whose.
   """
   script = _supervised()._invocation_script("/app")
 
-  assert OPENROUTER_API in script
-  assert f"--port {SUPERVISOR_PROXY_PORT}" in script
+  assert ANTHROPIC_API in script
+  assert f"--port {DEFAULT_SUPERVISOR_PROXY_PORT}" in script
   assert SUPERVISOR_PROXY_LOG_NAME in script
   assert SUPERVISOR_PROXY_STDERR_NAME in script
   # The ports have to differ, and both have to be there: one proxy serving
   # both would send the supervisor's calls to the actor's upstream.
-  assert SUPERVISOR_PROXY_PORT != PROXY_PORT
+  assert DEFAULT_SUPERVISOR_PROXY_PORT != PROXY_PORT
   assert f"--port {PROXY_PORT}" in script
 
   # The control arm: none of it appears without the wrapper, so the presences
   # above are the wrapper's doing and not the script's baseline.
   plain = ClaudeCodeHarness(capture="proxy")._invocation_script("/app")
-  assert OPENROUTER_API not in plain
-  assert str(SUPERVISOR_PROXY_PORT) not in plain
+  assert str(DEFAULT_SUPERVISOR_PROXY_PORT) not in plain
+
+
+def test_native_supervision_proxy_settings_are_constructor_inputs():
+  """The harness forwards caller-selected deployment values verbatim."""
+  harness = ClaudeCodeHarness(
+      capture="proxy",
+      native_supervision=_SUPERVISION,
+      supervisor_proxy_target="https://supervisor.example/api",
+      supervisor_proxy_port=8123,
+      supervisor_api_key_env="CUSTOM_SUPERVISOR_API_KEY",
+      supervisor_proxy_log_name="custom-supervisor.jsonl",
+      supervisor_proxy_stderr_name="custom-supervisor.log",
+  )
+
+  script = harness._invocation_script("/app")
+
+  assert "https://supervisor.example/api" in script
+  assert "--port 8123" in script
+  assert "custom-supervisor.jsonl" in script
+  assert "custom-supervisor.log" in script
+  assert "CUSTOM_SUPERVISOR_API_KEY" in script
+  assert harness.native_outputs()["supervisor_proxy_log.jsonl"] == (
+      "custom-supervisor.jsonl"
+  )
+  assert harness.native_outputs()["supervisor_proxy_stderr.log"] == (
+      "custom-supervisor.log"
+  )
+
+
+def test_a_misplaced_api_key_is_not_repeated_by_harness_validation():
+  """The selector's diagnostic cannot turn a mistaken key into output."""
+  misplaced = "MISPLACED-CREDENTIAL-SENTINEL-MUST-NOT-LEAK"
+
+  with pytest.raises(ValueError, match="environment variable name") as caught:
+    _ = ClaudeCodeHarness(
+        native_supervision=_SUPERVISION,
+        supervisor_api_key_env=misplaced,
+    )
+
+  assert misplaced not in str(caught.value)
 
 
 def test_the_actor_argv_reaches_the_wrapper_after_a_double_dash_unchanged():
@@ -228,7 +267,11 @@ def test_the_endpoint_is_exported_by_the_harness_and_not_passed_by_reference():
   """
   script = _supervised()._invocation_script("/app")
 
-  assert f"export {BASE_URL_ENV}={SUPERVISOR_PROXY_BASE_URL}" in script
+  assert (
+      f"export {BASE_URL_ENV}=http://127.0.0.1:"
+      f"{DEFAULT_SUPERVISOR_PROXY_PORT}" in script
+  )
+  assert f"export {API_KEY_NAME_ENV}={API_KEY_ENV}" in script
   assert SUPERVISOR_PASS_ENV == (API_KEY_ENV,)
   assert BASE_URL_ENV not in SUPERVISOR_PASS_ENV
   # …and the credential is never exported with a value beside it.

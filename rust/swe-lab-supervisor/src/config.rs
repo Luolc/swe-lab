@@ -4,9 +4,9 @@
 //! policy's numbers, the model's name — and nothing about where the model is
 //! or how to authenticate to it. Those two are deployment facts and travel the
 //! way the actor's own do (`ANTHROPIC_BASE_URL` plus a token): as environment
-//! variables, [`BASE_URL_ENV`] and [`API_KEY_ENV`], passed into the sandbox by
-//! reference and read in-process. A credential never appears in the file, on
-//! the command line, or in any artifact.
+//! variables: [`BASE_URL_ENV`], [`API_KEY_NAME_ENV`], and the API-key variable
+//! named by the latter. A credential never appears in the file, on the command
+//! line, or in any artifact.
 
 use std::net::{IpAddr, SocketAddr};
 use std::num::{NonZeroU32, NonZeroU64};
@@ -102,30 +102,59 @@ pub struct Model {
     pub name: String,
 }
 
-/// The environment variable holding the base URL of the OpenAI-shaped
-/// chat-completions API — `http://host[:port]/v1`; the binary appends
-/// `/chat/completions`. Required. Plain HTTP by design: TLS is terminated
+/// The environment variable holding the base URL of an Anthropic Messages
+/// endpoint — `http://host[:port][/base]`; the binary appends `/v1/messages`.
+/// Required. Plain HTTP by design: TLS is terminated
 /// outside the binary, which keeps the dependency tree pure Rust and the
 /// artifact static.
 pub const BASE_URL_ENV: &str = "SWE_LAB_SUPERVISOR_BASE_URL";
 
-/// The environment variable holding the bearer credential, if the endpoint
-/// needs one. Its value may hold several keys comma-separated; the first is
-/// used, split in-process so no key ever reaches a command line. Unset or
-/// empty, no `Authorization` header is sent. Both variables are removed from
-/// the actor's environment before it is launched.
-pub const API_KEY_ENV: &str = "SWE_LAB_SUPERVISOR_API_KEY";
+/// The default environment variable holding the supervisor's Anthropic API
+/// key. A harness may select another name through [`API_KEY_NAME_ENV`].
+pub const API_KEY_ENV: &str = "ANTHROPIC_API_KEY";
 
-/// The bearer credential from [`API_KEY_ENV`], or `None` when the variable
-/// is unset or holds no key. Split here, never in a shell.
-#[must_use]
-pub fn api_key_from_env() -> Option<String> {
-    std::env::var(API_KEY_ENV)
-        .ok()?
-        .split(',')
-        .map(str::trim)
-        .find(|key| !key.is_empty())
-        .map(str::to_string)
+/// The non-secret environment variable naming the credential variable.
+pub const API_KEY_NAME_ENV: &str = "SWE_LAB_SUPERVISOR_API_KEY_ENV";
+
+/// The configured API-key variable name, defaulting to [`API_KEY_ENV`].
+///
+/// # Errors
+///
+/// The selector is present but is not a portable environment-variable name.
+/// The error never includes its value because a caller may have put the API
+/// key itself there by mistake.
+pub fn api_key_env_name() -> Result<String, String> {
+    let Some(value) = std::env::var_os(API_KEY_NAME_ENV) else {
+        return Ok(API_KEY_ENV.to_string());
+    };
+    let name = value
+        .into_string()
+        .map_err(|_| "the supervisor API-key selector is not a variable name".to_string())?;
+    if !is_environment_name(&name) {
+        return Err("the supervisor API-key selector is not a variable name".to_string());
+    }
+    Ok(name)
+}
+
+fn is_environment_name(name: &str) -> bool {
+    let mut bytes = name.bytes();
+    bytes
+        .next()
+        .is_some_and(|first| first.is_ascii_alphabetic() || first == b'_')
+        && bytes.all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+}
+
+/// Read the configured API key.
+///
+/// # Errors
+///
+/// The named variable is unset or empty. The error does not repeat the name:
+/// a caller may have put the API key itself in the selector by mistake.
+pub fn api_key_from_env(name: &str) -> Result<String, String> {
+    std::env::var(name)
+        .ok()
+        .filter(|key| !key.is_empty())
+        .ok_or_else(|| "the configured supervisor API key is unset or empty".to_string())
 }
 
 /// How long the wrapper waits, in milliseconds.
@@ -220,14 +249,14 @@ fn is_sha256_hex(digest: &str) -> bool {
 }
 
 /// Where a model request goes: the base URL from [`BASE_URL_ENV`], taken
-/// apart, with the chat-completions path appended.
+/// apart, with the Anthropic Messages path appended.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Endpoint {
     /// Where to connect: a loopback address and a port, both given as
     /// numbers in the URL — nothing here is resolved, so nothing about it
     /// depends on the environment the binary runs in.
     pub address: SocketAddr,
-    /// The request target: the base URL's path plus `/chat/completions`.
+    /// The request target: the base URL's path plus `/v1/messages`.
     pub path: String,
 }
 
@@ -250,14 +279,14 @@ impl Endpoint {
     }
 
     /// Take an `http://<loopback ip>:<port>[/base]` URL apart and append
-    /// the chat-completions path.
+    /// the Anthropic Messages path.
     ///
-    /// Loopback only, by number: the supervisor sends a bearer token in
+    /// Loopback only, by number: the supervisor sends an API key in
     /// clear, and the design has a forwarder on this host terminate TLS.
     /// A hostname — `localhost` included — would be resolved, and what it
     /// resolves to depends on the box; a numeric loopback address is a
     /// fact the binary can check on the spot. So no stray environment
-    /// variable can point a request carrying `Authorization` off the box:
+    /// variable can point a request carrying `x-api-key` off the box:
     /// that is a property of the type, not of the deployment.
     ///
     /// # Errors
@@ -298,7 +327,7 @@ impl Endpoint {
         }
         Ok(Self {
             address: SocketAddr::new(ip, port),
-            path: format!("{base}/chat/completions"),
+            path: format!("{base}/v1/messages"),
         })
     }
 }
@@ -306,6 +335,16 @@ impl Endpoint {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+
+    #[test]
+    fn an_api_key_selector_has_the_portable_environment_name_shape() {
+        for accepted in ["A", "_", "ANTHROPIC_API_KEY", "key2"] {
+            assert!(is_environment_name(accepted), "{accepted}");
+        }
+        for refused in ["", "2KEY", "API-KEY", "API KEY", "clé"] {
+            assert!(!is_environment_name(refused), "{refused}");
+        }
+    }
 
     /// A config every field of which is usable; tests perturb one field.
     pub(crate) const VALID: &str = r#"{
@@ -422,27 +461,25 @@ pub(crate) mod tests {
     #[test]
     fn a_base_url_is_taken_apart_and_https_is_refused_with_the_reason() {
         assert_eq!(
-            Endpoint::parse("http://127.0.0.1:8080/v1").unwrap(),
+            Endpoint::parse("http://127.0.0.1:8080").unwrap(),
             Endpoint {
                 address: "127.0.0.1:8080".parse().unwrap(),
-                path: "/v1/chat/completions".to_string(),
+                path: "/v1/messages".to_string(),
             }
         );
         assert_eq!(
-            Endpoint::parse("http://127.0.0.1:8080/api/v1/")
-                .unwrap()
-                .path,
-            "/api/v1/chat/completions"
+            Endpoint::parse("http://127.0.0.1:8080/api/").unwrap().path,
+            "/api/v1/messages"
         );
         assert_eq!(
             Endpoint::parse("http://[::1]:8080").unwrap(),
             Endpoint {
                 address: "[::1]:8080".parse().unwrap(),
-                path: "/chat/completions".to_string(),
+                path: "/v1/messages".to_string(),
             }
         );
         assert!(
-            Endpoint::parse("https://openrouter.ai/api/v1")
+            Endpoint::parse("https://model.example/api")
                 .unwrap_err()
                 .contains("TLS")
         );

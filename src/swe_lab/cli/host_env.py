@@ -1,10 +1,9 @@
 """What this repo asks of a *developer's own shell*, and how a run recovers it.
 
-Two credentials reach a run under a name that is not the name the developer's
-shell exports, and this module is the one place that gap is closed. Both
-adoptions are the same mechanism — copy a whole value to another name, in this
-process only, never overwriting a name that is already set — and they **point
-in opposite directions**, which is the thing to know before reading either:
+One credential reaches a run under a name that is not the name the developer's
+shell exports, and this module is the one place that gap is closed: copy a
+whole value to another name, in this process only, never overwriting a name
+that is already set.
 
 - **Narrowing** (the OAuth token). The shell exports the repo-scoped
   ``SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN``; the run reads the canonical, unprefixed
@@ -12,15 +11,8 @@ in opposite directions**, which is the thing to know before reading either:
   started in this directory does **not** pick the token up — ours is an
   inference-only subscription token, and Remote Control then refuses to start
   (``docs/conventions.md`` → Hazards).
-- **Adopting** (the supervisor's provider key). The shell exports the
-  machine-wide ``OPENROUTER_API_KEYS``, shared with every other consumer on the
-  box; the run reads the repo-scoped ``SWE_LAB_SUPERVISOR_API_KEY``, which the
-  sandbox passes by reference to the wrapper.
-
-So the repo-scoped name is the *source* in one and the *target* in the other. A
-reader who assumes they run the same way infers a rule that does not exist
-("this repo's names are always the wider ones"), and an unmarked difference is
-indistinguishable from no difference at all.
+The supervisor uses its own API key under the configurable name selected by
+its caller. No provider-specific shell variable is adopted here.
 
 This is a **local convenience, not a contract**: the sandbox layer and the
 harness still know exactly one name for each variable, and CI sets those names
@@ -33,20 +25,9 @@ import os
 
 from swe_lab.credential_sources import forget_adoptions, record_adoption
 from swe_lab.harnesses.claude_code.constants import OAUTH_TOKEN_ENV
-from swe_lab.trace_synthesis.judge import OPENROUTER_KEYS_ENV
-from swe_lab.trace_synthesis.native_supervision import (
-    API_KEY_ENV as SUPERVISOR_API_KEY_ENV,
-)
 
 # The repo-scoped name `.envrc.local` exports (see `.envrc.local.example`).
 HOST_OAUTH_TOKEN_ENV = "SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN"
-
-# The machine-wide name `.envrc.local` exports, which the supervisor's key is
-# adopted *from*. Its value may hold several comma-separated keys; nothing here
-# looks at that, because splitting a credential is the consuming program's job
-# and a shell or a shim that splits it puts a key somewhere it can be seen —
-# the wrapper's `config::api_key_from_env` splits it in-process instead.
-HOST_SUPERVISOR_API_KEY_ENV = OPENROUTER_KEYS_ENV
 
 
 def _adopt(canonical: str, host_scoped: str) -> None:
@@ -82,4 +63,3 @@ def adopt_host_scoped_credentials() -> None:
   """
   forget_adoptions()
   _adopt(OAUTH_TOKEN_ENV, HOST_OAUTH_TOKEN_ENV)
-  _adopt(SUPERVISOR_API_KEY_ENV, HOST_SUPERVISOR_API_KEY_ENV)

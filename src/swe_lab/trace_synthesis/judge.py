@@ -79,31 +79,27 @@ SAMPLING_KEYS: tuple[str, ...] = (
 #: Where a request goes and what comes back. Injected so tests make no call.
 Transport = Callable[[Mapping[str, Any]], Mapping[str, Any]]
 
-#: The provider both calls go to, in its OpenAI-shaped chat form — which is the
-#: shape :class:`ModelJudge` and :class:`ModelWriter` read
-#: (``choices[0].message.content``).
-OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
-
-#: The environment variable holding the provider keys, comma-separated. Split
-#: **inside** this program: a shell that splits it puts a key in a command line.
-OPENROUTER_KEYS_ENV = "OPENROUTER_API_KEYS"
-
 #: How long one judge or writer call may take. A supervisor that blocks forever
 #: is a lost supervisor rather than a slow one — the run's own teardown treats
 #: it that way — so the call has a bound of its own rather than relying on it.
 CALL_TIMEOUT_SECONDS = 180.0
 
 
-def openrouter_transport(payload: Mapping[str, Any]) -> Mapping[str, Any]:
-  """Send one request to the provider and return the decoded answer.
+def messages_transport(
+    payload: Mapping[str, Any], *, base_url: str, api_key_env: str
+) -> Mapping[str, Any]:
+  """Send one Anthropic Messages request and return the decoded answer.
 
-  The concrete :data:`Transport` a run uses. Keys are read at call time and
-  split here, never in a shell, so a value never reaches a command line; the
-  first is used, and this deliberately does not rotate or retry — a retried
-  judgement would be a function of how many times we asked.
+  Deployment choices are arguments rather than provider-named constants: the
+  caller chooses the upstream and the environment variable holding its
+  credential. The credential is read at call time and never reaches a command
+  line. This deliberately does not retry — a retried judgement would be a
+  function of how many times we asked.
 
   Args:
     payload: The request body, already shaped by the caller.
+    base_url: Upstream base URL; ``/v1/messages`` is appended.
+    api_key_env: Environment variable containing the API key.
 
   Returns:
     The decoded response.
@@ -111,19 +107,20 @@ def openrouter_transport(payload: Mapping[str, Any]) -> Mapping[str, Any]:
   Raises:
     RuntimeError: No key is present in the environment.
   """
-  keys = [k for k in os.environ.get(OPENROUTER_KEYS_ENV, "").split(",") if k]
-  if not keys:
+  api_key = os.environ.get(api_key_env, "")
+  if not api_key:
     raise RuntimeError(
-        f"no provider key: {OPENROUTER_KEYS_ENV} is unset or empty in this"
+        f"no provider key: {api_key_env} is unset or empty in this"
         " shell, so the supervisor cannot reach a model. This is a missing"
         " credential, not a broken instance or image — see docs/conventions.md"
         " (Secrets) for the op:// reference that fills it."
     )
   request = urllib.request.Request(
-      OPENROUTER_ENDPOINT,
+      f"{base_url.rstrip('/')}/v1/messages",
       data=json.dumps(dict(payload)).encode(),
       headers={
-          "Authorization": f"Bearer {keys[0]}",
+          "x-api-key": api_key,
+          "anthropic-version": "2023-06-01",
           "Content-Type": "application/json",
       },
   )
@@ -200,8 +197,8 @@ class JudgeAnswerError(ValueError):
   times we asked.
 
   Attributes:
-    finish_reason: What the provider's ``choices[0].finish_reason`` said ended
-      the response, or ``None`` when the response carried none. ``"length"``
+    finish_reason: What the provider's ``stop_reason`` said ended the response,
+      or ``None`` when the response carried none. ``"max_tokens"``
       means the answer was never finished — the token budget ran out before
       the model could write it — which is a configuration problem, not a
       judgment-quality one; anything else (typically ``"stop"``) means the
@@ -235,8 +232,8 @@ class Call:
     sampling_sent: Every key in :data:`SAMPLING_KEYS` mapped to the value sent,
       or ``None`` where the request left it to the provider.
     raw: The answer's text, before parsing.
-    finish_reason: The provider's ``choices[0].finish_reason``, or ``None``
-      when absent. ``"length"`` means the answer was truncated by
+    finish_reason: The provider's ``stop_reason``, or ``None`` when absent.
+      ``"max_tokens"`` means the answer was truncated by
       ``max_tokens`` rather than completed.
   """
 
@@ -319,8 +316,8 @@ class ModelJudge:
     max_tokens: The reasoning-plus-answer budget for one call — the sampling
       parameter that decides whether the model gets to finish. Measured
       against 902 replayed calls (issue #383): every lapse (85/902, 9.4%) had
-      ``finish_reason == "length"`` with reasoning tokens at the previous cap
-      of 512 (median 511, max 512), while every call that produced a usable
+      ``finish_reason == "max_tokens"`` with reasoning tokens at the previous
+      cap of 512 (median 511, max 512), while every call that produced a usable
       answer needed at most 441 reasoning tokens for a distribution whose
       median was 89. The old 512 sat inside that distribution rather than past
       its tail, so a call needing an ordinary amount of reasoning could still
@@ -370,15 +367,14 @@ class ModelJudge:
     payload = {
         "model": self.model,
         "max_tokens": self.max_tokens,
+        "system": instructions,
         "messages": [
-            {"role": "system", "content": instructions},
-            {"role": "user", "content": _prompt(observation, criterion)},
+            {"role": "user", "content": _prompt(observation, criterion)}
         ],
     }
     response = self.transport(payload)
-    choice = response["choices"][0]
-    raw = choice["message"]["content"]
-    finish_reason = choice.get("finish_reason")
+    raw = response["content"][0]["text"]
+    finish_reason = response.get("stop_reason")
     self.calls.append(
         Call(
             requested_model=self.model,
@@ -457,28 +453,24 @@ class ModelWriter:
     payload = {
         "model": self.model,
         "max_tokens": self.max_tokens,
+        "system": (
+            GUIDED_WRITER_INSTRUCTIONS
+            if observation.guidebook is not None
+            else WRITER_INSTRUCTIONS
+        ),
         "messages": [
-            {
-                "role": "system",
-                "content": (
-                    GUIDED_WRITER_INSTRUCTIONS
-                    if observation.guidebook is not None
-                    else WRITER_INSTRUCTIONS
-                ),
-            },
             {"role": "user", "content": _prompt(observation, criterion)},
         ],
     }
     response = self.transport(payload)
-    choice = response["choices"][0]
-    raw = choice["message"]["content"]
+    raw = response["content"][0]["text"]
     self.calls.append(
         Call(
             requested_model=self.model,
             response_model=response.get("model"),
             sampling_sent=_sampling_sent(payload),
             raw=raw,
-            finish_reason=choice.get("finish_reason"),
+            finish_reason=response.get("stop_reason"),
         )
     )
     return raw

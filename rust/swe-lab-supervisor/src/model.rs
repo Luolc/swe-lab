@@ -1,9 +1,10 @@
 //! The two model calls: the judge, and the writer.
 //!
-//! Both go to the one configured endpoint in the OpenAI chat-completions
-//! shape, both record what answered them — the model the **response**
+//! Both go to the one configured endpoint in the Anthropic Messages shape,
+//! and both record what answered them — the model the **response**
 //! reports (an alias re-pointed upstream leaves the request looking correct),
-//! the sampling actually sent, the raw text, and the `finish_reason`, so a
+//! the sampling actually sent, the raw text, and the `stop_reason` (under the
+//! account's existing `finish_reason` key), so a
 //! token ceiling hit is distinguishable from an unparseable answer in the
 //! account — and neither is ever retried: a second ask would make the verdict
 //! a function of how many times we asked.
@@ -43,7 +44,7 @@ pub struct Call {
     /// The `max_tokens` sent — the one sampling parameter set; the provider's
     /// defaults apply to the rest.
     pub max_tokens_sent: u32,
-    /// The `finish_reason` of the first choice, when reported.
+    /// The response's `stop_reason`, when reported.
     pub finish_reason: Option<String>,
     /// The answer's text before parsing, or `None` when the choice carried no
     /// string content — or when no answer came.
@@ -103,8 +104,10 @@ pub struct Model {
     pub name: String,
     /// Where requests go.
     pub endpoint: Endpoint,
-    /// The bearer credential, or none.
-    pub bearer: Option<String>,
+    /// The API key, or none.
+    pub api_key: Option<String>,
+    /// The environment variable that supplied the key, scrubbed from actor.
+    pub api_key_env: String,
     /// The bound on one call, connection included.
     pub call_timeout: Duration,
     /// The wrapper's stop flag: a call in progress returns as cancelled
@@ -155,14 +158,14 @@ impl Model {
         }
     }
 
-    /// `text` with every exact occurrence of the bearer replaced. Nothing
+    /// `text` with every exact occurrence of the API key replaced. Nothing
     /// derived from a response — the answer's text, a model name, an error
     /// body — enters a record, a log row or the actor's stdin before it has
-    /// been through here: an endpoint that reflects `Authorization` would
+    /// been through here: an endpoint that reflects `x-api-key` would
     /// otherwise write the credential into the artifacts.
     fn redact(&self, text: &str) -> String {
-        match self.bearer.as_deref() {
-            Some(bearer) if !bearer.is_empty() => text.replace(bearer, "[REDACTED]"),
+        match self.api_key.as_deref() {
+            Some(api_key) if !api_key.is_empty() => text.replace(api_key, "[REDACTED]"),
             _ => text.to_string(),
         }
     }
@@ -177,10 +180,8 @@ impl Model {
         let payload = json!({
             "model": self.name,
             "max_tokens": max_tokens,
-            "messages": [
-                {"role": "system", "content": instructions},
-                {"role": "user", "content": prompt},
-            ],
+            "system": instructions,
+            "messages": [{"role": "user", "content": prompt}],
         });
         // The record exists before the request: an attempt that fails is
         // still an attempt, and the row shows it.
@@ -209,7 +210,7 @@ impl Model {
         // exact-match redaction of the excerpt could not see.
         let response = match http::post_json(
             &self.endpoint,
-            self.bearer.as_deref(),
+            self.api_key.as_deref(),
             payload.to_string().as_bytes(),
             started + self.call_timeout,
             &self.stop,
@@ -240,14 +241,13 @@ impl Model {
                 ));
             }
         };
-        let choice = body.get("choices").and_then(|c| c.get(0));
         let text = |value: Option<&Value>| value.and_then(Value::as_str).map(|t| self.redact(t));
         call.response_model = text(body.get("model"));
-        call.finish_reason = text(choice.and_then(|c| c.get("finish_reason")));
+        call.finish_reason = text(body.get("stop_reason"));
         call.raw = text(
-            choice
-                .and_then(|c| c.get("message"))
-                .and_then(|m| m.get("content")),
+            body.get("content")
+                .and_then(|c| c.get(0))
+                .and_then(|b| b.get("text")),
         );
         Ok(call)
     }
@@ -301,16 +301,18 @@ mod tests {
         Model {
             name: "test-model".to_string(),
             endpoint,
-            bearer: None,
+            api_key: None,
+            api_key_env: "TEST_API_KEY".to_string(),
             call_timeout: Duration::from_secs(5),
             stop: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
         }
     }
 
-    fn canned(content: &str, finish: &str) -> String {
+    fn canned(content: &str, stop_reason: &str) -> String {
         let body = json!({
             "model": "test-model-2026",
-            "choices": [{"finish_reason": finish, "message": {"role": "assistant", "content": content}}]
+            "content": [{"type": "text", "text": content}],
+            "stop_reason": stop_reason,
         })
         .to_string();
         format!(
@@ -342,9 +344,11 @@ mod tests {
         let body: Value = serde_json::from_str(request.split("\r\n\r\n").nth(1).unwrap()).unwrap();
         assert_eq!(body["model"], "test-model");
         assert_eq!(body["max_tokens"], JUDGE_MAX_TOKENS);
-        assert_eq!(body["messages"][0]["role"], "system");
-        assert_eq!(body["messages"][0]["content"], JUDGE_INSTRUCTIONS);
-        assert_eq!(body["messages"][1]["content"], "PROMPT");
+        assert_eq!(body["system"], JUDGE_INSTRUCTIONS);
+        assert_eq!(
+            body["messages"],
+            json!([{"role": "user", "content": "PROMPT"}])
+        );
     }
 
     #[test]
@@ -372,7 +376,8 @@ mod tests {
     fn a_ceiling_hit_with_no_content_is_a_failure_that_keeps_the_call_record() {
         let body = json!({
             "model": "m",
-            "choices": [{"finish_reason": "length", "message": {"role": "assistant", "content": null}}]
+            "content": [],
+            "stop_reason": "max_tokens"
         })
         .to_string();
         let reply = format!(
@@ -383,70 +388,70 @@ mod tests {
         let failed = model(endpoint).judge("PROMPT").unwrap_err();
         assert!(failed.reason.contains("no text"));
         let call = *failed.call;
-        assert_eq!(call.finish_reason.as_deref(), Some("length"));
+        assert_eq!(call.finish_reason.as_deref(), Some("max_tokens"));
         assert_eq!(call.raw, None);
     }
 
-    const BEARER: &str = "sk-REFLECTED-SECRET-MUST-NOT-BE-RECORDED";
+    const API_KEY: &str = "sk-REFLECTED-SECRET-MUST-NOT-BE-RECORDED";
 
-    fn with_bearer(endpoint: Endpoint) -> Model {
+    fn with_api_key(endpoint: Endpoint) -> Model {
         Model {
-            bearer: Some(BEARER.to_string()),
+            api_key: Some(API_KEY.to_string()),
             ..model(endpoint)
         }
     }
 
-    /// An endpoint that reflects the request's `Authorization` header in an
+    /// An endpoint that reflects the request's `x-api-key` header in an
     /// error body would write the credential into the lapse's reason and
     /// the call's record; both carry the redaction instead. And the attempt
     /// is on record — the row shows a request was made, and why it gave no
     /// answer.
     #[test]
-    fn a_non_2xx_answer_is_a_failure_with_the_attempt_on_record_and_the_bearer_redacted() {
-        let body = format!("denied: Bearer {BEARER} is not valid here");
+    fn a_non_2xx_answer_is_a_failure_with_the_attempt_on_record_and_the_api_key_redacted() {
+        let body = format!("denied: {API_KEY} is not valid here");
         let reply = format!(
             "HTTP/1.1 401 Unauthorized\r\nContent-Length: {}\r\n\r\n{body}",
             body.len()
         );
         let (endpoint, _requests) = serve_once(Box::leak(reply.into_boxed_str()));
-        let failed = with_bearer(endpoint).write("PROMPT").unwrap_err();
+        let failed = with_api_key(endpoint).write("PROMPT").unwrap_err();
         assert!(failed.reason.contains("HTTP 401"), "{}", failed.reason);
         assert!(failed.reason.contains("[REDACTED]"), "{}", failed.reason);
-        assert!(!failed.reason.contains(BEARER), "{}", failed.reason);
+        assert!(!failed.reason.contains(API_KEY), "{}", failed.reason);
         let call = *failed.call;
         assert_eq!(call.purpose, "writer");
         assert_eq!(call.raw, None);
         let error = call.error.as_deref().expect("the attempt's error");
         assert!(
-            error.contains("HTTP 401") && !error.contains(BEARER),
+            error.contains("HTTP 401") && !error.contains(API_KEY),
             "{error}"
         );
-        assert!(!call.to_json().to_string().contains(BEARER));
+        assert!(!call.to_json().to_string().contains(API_KEY));
     }
 
     /// A fragment of the credential is as much a leak as the whole of it,
     /// and an exact-match redaction applied after a cut cannot see one. So
-    /// the redaction comes before any cut: a bearer straddling the
+    /// the redaction comes before any cut: an API key straddling the
     /// excerpt's 300-character boundary, or placed where the response
     /// parser fails, leaves neither the token nor a fragment of it in the
     /// reason, the call's record, or its serialized row.
     #[test]
-    fn no_fragment_of_the_bearer_survives_a_cut_or_a_malformed_response() {
-        let fragment = &BEARER[..10];
-        let straddling = format!("{}{BEARER} more", "x".repeat(295));
+    fn no_fragment_of_the_api_key_survives_a_cut_or_a_malformed_response() {
+        let fragment = &API_KEY[..10];
+        let straddling = format!("{}{API_KEY} more", "x".repeat(295));
         let replies = [
             format!(
                 "HTTP/1.1 401 Unauthorized\r\nContent-Length: {}\r\n\r\n{straddling}",
                 straddling.len()
             ),
-            format!("HTTP/1.1 {BEARER} Unauthorized\r\n\r\n"),
+            format!("HTTP/1.1 {API_KEY} Unauthorized\r\n\r\n"),
             format!(
-                "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n{BEARER}\r\nbody\r\n0\r\n\r\n"
+                "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n{API_KEY}\r\nbody\r\n0\r\n\r\n"
             ),
         ];
         for reply in replies {
             let (endpoint, _requests) = serve_once(Box::leak(reply.into_boxed_str()));
-            let failed = with_bearer(endpoint).write("PROMPT").unwrap_err();
+            let failed = with_api_key(endpoint).write("PROMPT").unwrap_err();
             let call = *failed.call;
             for text in [
                 failed.reason.clone(),
@@ -456,16 +461,16 @@ mod tests {
                 assert!(!text.contains(fragment), "{text}");
             }
         }
-        // The body is redacted whole, then cut: a bearer inside the excerpt
+        // The body is redacted whole, then cut: an API key inside the excerpt
         // shows as the marker (one straddling the cut shows as what is left
         // of the marker, which is no fragment of the token either).
-        let inside = format!("{}{BEARER} more", "x".repeat(250));
+        let inside = format!("{}{API_KEY} more", "x".repeat(250));
         let reply = format!(
             "HTTP/1.1 401 Unauthorized\r\nContent-Length: {}\r\n\r\n{inside}",
             inside.len()
         );
         let (endpoint, _requests) = serve_once(Box::leak(reply.into_boxed_str()));
-        let failed = with_bearer(endpoint).write("PROMPT").unwrap_err();
+        let failed = with_api_key(endpoint).write("PROMPT").unwrap_err();
         assert!(failed.reason.contains("[REDACTED]"), "{}", failed.reason);
     }
 
@@ -473,10 +478,10 @@ mod tests {
     /// it becomes text anything downstream sees — the log row, the actor's
     /// stdin, the next prompt.
     #[test]
-    fn a_reflected_bearer_in_an_answer_never_reaches_the_text() {
-        let reply = canned(&format!("Use {BEARER} to log in."), "stop");
+    fn a_reflected_api_key_in_an_answer_never_reaches_the_text() {
+        let reply = canned(&format!("Use {API_KEY} to log in."), "stop");
         let (endpoint, _requests) = serve_once(Box::leak(reply.into_boxed_str()));
-        let (text, call) = with_bearer(endpoint).write("PROMPT").unwrap();
+        let (text, call) = with_api_key(endpoint).write("PROMPT").unwrap();
         assert_eq!(text, "Use [REDACTED] to log in.");
         assert_eq!(call.raw.as_deref(), Some("Use [REDACTED] to log in."));
     }
@@ -490,7 +495,7 @@ mod tests {
         drop(listener);
         let endpoint = Endpoint {
             address,
-            path: "/v1/chat/completions".to_string(),
+            path: "/v1/messages".to_string(),
         };
         let failed = model(endpoint).judge("PROMPT").unwrap_err();
         assert!(

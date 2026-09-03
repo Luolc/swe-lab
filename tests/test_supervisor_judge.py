@@ -30,6 +30,7 @@ from swe_lab.trace_synthesis.judge import (
     JUDGE_INSTRUCTIONS,
     JudgeAnswerError,
     LOCATE_DEVIATION_INSTRUCTION,
+    messages_transport,
     ModelJudge,
     ModelWriter,
     SAMPLING_KEYS,
@@ -88,8 +89,8 @@ class RecordingTransport:
   Attributes:
     answers: The contents to return, in order; the last repeats.
     model: The model the response reports, which need not be the one asked for.
-    finish_reason: ``choices[0].finish_reason`` to report, or ``None`` to omit
-      it — matching a provider response that carries none.
+    finish_reason: The Anthropic ``stop_reason`` to report, or ``None`` to
+      omit it — matching a provider response that carries none.
     payloads: Every request body sent.
   """
 
@@ -109,10 +110,13 @@ class RecordingTransport:
     """
     self.payloads.append(dict(payload))
     index = min(len(self.payloads) - 1, len(self.answers) - 1)
-    choice: dict[str, Any] = {"message": {"content": self.answers[index]}}
+    response: dict[str, Any] = {
+        "model": self.model,
+        "content": [{"type": "text", "text": self.answers[index]}],
+    }
     if self.finish_reason is not None:
-      choice["finish_reason"] = self.finish_reason
-    return {"model": self.model, "choices": [choice]}
+      response["stop_reason"] = self.finish_reason
+    return response
 
 
 def test_a_judge_without_a_named_model_cannot_be_built() -> None:
@@ -168,7 +172,7 @@ def test_the_judge_prompts_with_the_criterion_it_was_handed() -> None:
   judge = ModelJudge(model="anthropic/claude-sonnet-5", transport=transport)
   judge(observation(), handed)
 
-  sent = transport.payloads[0]["messages"][1]["content"]
+  sent = transport.payloads[0]["messages"][0]["content"]
   assert sentinel in sent
   assert "# The supervisor's criterion" not in sent
 
@@ -244,6 +248,27 @@ def test_every_call_records_what_answered_it_and_what_was_not_sent() -> None:
   assert writer_call.finish_reason == "stop"
 
 
+def test_model_calls_use_the_anthropic_messages_wire_shape() -> None:
+  """System is top-level and the messages list contains only conversation."""
+  transport = RecordingTransport(answers=[ON_TRACK_JSON])
+  judge = ModelJudge(model="claude-sonnet-5", transport=transport)
+
+  _ = judge(observation(), load_criterion())
+
+  payload = transport.payloads[0]
+  assert payload == {
+      "model": "claude-sonnet-5",
+      "max_tokens": judge.max_tokens,
+      "system": JUDGE_INSTRUCTIONS,
+      "messages": [
+          {
+              "role": "user",
+              "content": payload["messages"][0]["content"],
+          }
+      ],
+  }
+
+
 def test_an_unusable_judge_answer_is_never_retried() -> None:
   """A second ask would make the verdict a function of how often we asked."""
   transport = RecordingTransport(answers=["not json at all"])
@@ -260,7 +285,7 @@ def test_a_token_budget_lapse_is_recorded_differently_from_a_bad_answer() -> (
   """`supervisor.jsonl` must not fold these two failures into one lapse.
 
   Both are `JudgeAnswerError`s the policy bounds to a `PolicyLapseError`, but
-  they call for different fixes: `finish_reason == "length"` means our own
+  they call for different fixes: `finish_reason == "max_tokens"` means our own
   `max_tokens` ran out before the model could finish, while any other value
   means the model finished normally and still produced an answer this could
   not use. Before issue #383, `supervisor.jsonl` recorded both the same way —
@@ -292,7 +317,9 @@ def test_a_token_budget_lapse_is_recorded_differently_from_a_bad_answer() -> (
     return rows[0]
 
   budget_row = lapse_row(
-      RecordingTransport(answers=['{"off_track": tru'], finish_reason="length")
+      RecordingTransport(
+          answers=['{"off_track": tru'], finish_reason="max_tokens"
+      )
   )
   bad_answer_row = lapse_row(
       RecordingTransport(answers=["not json at all"], finish_reason="stop")
@@ -300,7 +327,7 @@ def test_a_token_budget_lapse_is_recorded_differently_from_a_bad_answer() -> (
 
   assert budget_row["kind"] == "lapse"
   assert bad_answer_row["kind"] == "lapse"
-  assert budget_row["finish_reason"] == "length"
+  assert budget_row["finish_reason"] == "max_tokens"
   assert bad_answer_row["finish_reason"] == "stop"
   assert budget_row["finish_reason"] != bad_answer_row["finish_reason"]
 
@@ -363,7 +390,7 @@ def test_the_built_policy_hands_its_criterion_to_both_model_calls() -> None:
   criterion_text = load_criterion().text
   assert len(transport.payloads) == 2
   for payload in transport.payloads:
-    assert criterion_text in payload["messages"][1]["content"]
+    assert criterion_text in payload["messages"][0]["content"]
 
 
 def test_the_guidebook_reaches_both_model_calls() -> None:
@@ -381,15 +408,15 @@ def test_the_guidebook_reaches_both_model_calls() -> None:
   assert len(transport.payloads) == 2
   for payload in transport.payloads:
     assert (
-        f"# Guidebook\n\n{guidebook}\n\n" in payload["messages"][1]["content"]
+        f"# Guidebook\n\n{guidebook}\n\n" in payload["messages"][0]["content"]
     )
 
 
-def test_the_provider_key_travels_only_in_the_header_it_belongs_in():
+def test_anthropic_transport_sends_the_native_endpoint_headers_and_body():
   """A credential must reach the wire and nothing else.
 
   The key has to be sent — that is its job — so the property is not "absent"
-  but "in exactly one place": the ``Authorization`` header. A URL or a body
+  but "in exactly one place": the ``x-api-key`` header. A URL or a body
   carrying it is what ends up in a proxy log, an exception message or a
   captured request, and this repo has already had to rotate a key because a
   line meant to report a *status* printed the value. Checked by capturing the
@@ -397,8 +424,6 @@ def test_the_provider_key_travels_only_in_the_header_it_belongs_in():
   """
   import io
   import urllib.request
-
-  from swe_lab.trace_synthesis import judge as judge_module
 
   sentinel = "not-a-real-key-0000000000000000"
   captured: dict[str, Any] = {}
@@ -408,22 +433,36 @@ def test_the_provider_key_travels_only_in_the_header_it_belongs_in():
     captured["url"] = request.full_url
     captured["headers"] = dict(request.header_items())
     captured["body"] = request.data.decode()
-    return io.BytesIO(
-        json.dumps({"choices": [{"message": {"content": "{}"}}]}).encode()
-    )
+    return io.BytesIO(json.dumps({"content": [{"text": "{}"}]}).encode())
 
   with (
-      mock.patch.dict(os.environ, {judge_module.OPENROUTER_KEYS_ENV: sentinel}),
+      mock.patch.dict(os.environ, {"CUSTOM_ANTHROPIC_KEY": sentinel}),
       mock.patch.object(urllib.request, "urlopen", fake_urlopen),
   ):
-    answer = judge_module.openrouter_transport({"model": "m", "messages": []})
+    answer = messages_transport(
+        {"model": "m", "system": "rules", "messages": []},
+        base_url="https://gateway.example/anthropic",
+        api_key_env="CUSTOM_ANTHROPIC_KEY",
+    )
 
   header_values = [
       value
       for name, value in captured["headers"].items()
-      if name.lower() == "authorization"
+      if name.lower() == "x-api-key"
   ]
-  assert header_values == [f"Bearer {sentinel}"]
+  assert header_values == [sentinel]
+  version_values = [
+      value
+      for name, value in captured["headers"].items()
+      if name.lower() == "anthropic-version"
+  ]
+  assert version_values == ["2023-06-01"]
+  assert captured["url"] == "https://gateway.example/anthropic/v1/messages"
+  assert json.loads(captured["body"]) == {
+      "model": "m",
+      "system": "rules",
+      "messages": [],
+  }
   assert sentinel not in captured["url"]
   assert sentinel not in captured["body"]
   assert sentinel not in json.dumps(answer)
@@ -437,14 +476,16 @@ def test_a_missing_provider_key_says_so_without_naming_a_value():
   variable's contents nor anything else in the environment, since "it is
   empty" is exactly the case where a helpful echo prints whatever was there.
   """
-  from swe_lab.trace_synthesis import judge as judge_module
-
   with (
-      mock.patch.dict(os.environ, {judge_module.OPENROUTER_KEYS_ENV: ""}),
+      mock.patch.dict(os.environ, {"CUSTOM_PROVIDER_KEY": ""}),
       pytest.raises(RuntimeError, match="missing credential") as caught,
   ):
-    _ = judge_module.openrouter_transport({"model": "m"})
-  assert judge_module.OPENROUTER_KEYS_ENV in str(caught.value)
+    _ = messages_transport(
+        {"model": "m"},
+        base_url="https://api.example",
+        api_key_env="CUSTOM_PROVIDER_KEY",
+    )
+  assert "CUSTOM_PROVIDER_KEY" in str(caught.value)
 
 
 # --- locating a deviation, opt-in and only opt-in (task 22 §5) --------------
@@ -486,8 +527,8 @@ else.
   _ = built.consider(observation())
 
   assert len(transport.payloads) == 2
-  assert transport.payloads[0]["messages"][0]["content"] == expected_judge
-  assert transport.payloads[1]["messages"][0]["content"] == expected_writer
+  assert transport.payloads[0]["system"] == expected_judge
+  assert transport.payloads[1]["system"] == expected_writer
 
 
 def test_a_judge_asked_to_locate_a_deviation_says_so_in_its_prompt() -> None:
@@ -497,9 +538,9 @@ def test_a_judge_asked_to_locate_a_deviation_says_so_in_its_prompt() -> None:
 
   _ = judge(observation(), load_criterion())
 
-  system = transport.payloads[0]["messages"][0]
-  assert system["content"].startswith(JUDGE_INSTRUCTIONS)
-  assert LOCATE_DEVIATION_INSTRUCTION in system["content"]
+  system = transport.payloads[0]["system"]
+  assert system.startswith(JUDGE_INSTRUCTIONS)
+  assert LOCATE_DEVIATION_INSTRUCTION in system
 
 
 def test_the_located_deviation_is_read_but_never_coerced() -> None:

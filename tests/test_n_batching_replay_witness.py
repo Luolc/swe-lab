@@ -95,6 +95,10 @@ def test_the_driver_reproduces_the_shipped_supervisor(
 
   found = driver.driver_matches_supervisor()
   assert found["driver_rows"] == found["shipped_rows"]
+  assert found["driver_calls"] > 0
+  assert found["shipped_calls"] > 0
+  assert found["driver_prompts"]
+  assert found["shipped_prompts"]
   # The prompts are the observable that carries the accumulation and the
   # window: a driver can produce the right row kinds off the wrong evidence.
   assert found["driver_prompts"] == found["shipped_prompts"]

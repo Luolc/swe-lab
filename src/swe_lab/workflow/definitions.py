@@ -14,10 +14,13 @@ imports their own.
 
 from __future__ import annotations
 
+import functools
+
 from swe_lab.evaluation.unit_test import gold_patch, UnitTestTask
 from swe_lab.git.audit import GitIntegrityAuditTask
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
+    ANTHROPIC_API,
     DEFAULT_MODEL,
     OAUTH_TOKEN_ENV,
 )
@@ -35,13 +38,15 @@ from swe_lab.sandbox import ArtifactSchema, DockerHostSandboxConfig
 from swe_lab.trace_synthesis.channel import supervision
 from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
 from swe_lab.trace_synthesis.judge import (
-    openrouter_transport,
+    messages_transport,
     supervising_policy,
+)
+from swe_lab.trace_synthesis.native_supervision import (
+    API_KEY_ENV as SUPERVISOR_API_KEY_ENV,
 )
 from swe_lab.trace_synthesis.native_supervision import (
     Blocking,
     NativeSupervision,
-    SUPERVISOR_PASS_ENV,
 )
 from swe_lab.trace_synthesis.oracle import OracleAnalysisTask
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
@@ -129,11 +134,18 @@ ROLLOUT_AND_UNIT_TEST: WorkflowDef = (*ROLLOUT, *UNIT_TEST)
 # The model both supervisor calls go to. Named here, and never defaulted, so
 # that every record says who was asked: a rate compared across batches is only
 # comparable if the judge is pinned, exactly as the actor is (`agent_model`).
-# This is the model the two prior supervision measurements used — the steered
-# re-run and the guidebook-as-criterion experiment — so the first supervised
-# rollouts are read against calls of the same shape rather than against a new
-# unknown.
-SUPERVISOR_MODEL = "anthropic/claude-sonnet-5"
+# The two prior supervision measurements — the steered re-run and the
+# guidebook-as-criterion experiment — used this model through OpenRouter. The
+# model stays pinned for continuity of the model choice, while this transport
+# now uses Anthropic's native Messages wire and therefore is not the same
+# measurement condition.
+SUPERVISOR_MODEL = "claude-sonnet-5"
+SUPERVISOR_BASE_URL = ANTHROPIC_API
+SUPERVISOR_TRANSPORT = functools.partial(
+    messages_transport,
+    base_url=SUPERVISOR_BASE_URL,
+    api_key_env=SUPERVISOR_API_KEY_ENV,
+)
 # How many corrections one run may carry. No measured value — task 05 owns that
 # question — so it is stated rather than derived, and stated once.
 SUPERVISOR_BUDGET = 3
@@ -206,7 +218,7 @@ def _supervised_rollout(supervision_factory: SupervisionFactory) -> WorkflowDef:
 SUPERVISED_ROLLOUT: WorkflowDef = _supervised_rollout(
     supervision(
         model=SUPERVISOR_MODEL,
-        transport=openrouter_transport,
+        transport=SUPERVISOR_TRANSPORT,
         budget=SUPERVISOR_BUDGET,
         cooldown=SUPERVISOR_COOLDOWN,
         window=SUPERVISOR_WINDOW,
@@ -221,7 +233,7 @@ SUPERVISED_ROLLOUT: WorkflowDef = _supervised_rollout(
 CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
     supervision(
         model=SUPERVISOR_MODEL,
-        transport=openrouter_transport,
+        transport=SUPERVISOR_TRANSPORT,
         budget=CONTROL_BUDGET,
         cooldown=SUPERVISOR_COOLDOWN,
         window=SUPERVISOR_WINDOW,
@@ -266,7 +278,7 @@ def _segmented_rollout(*, guidebook_name: str | None = None) -> WorkflowDef:
                   segmented=SegmentedSupervision(
                       policy_factory=lambda: supervising_policy(
                           model=SUPERVISOR_MODEL,
-                          transport=openrouter_transport,
+                          transport=SUPERVISOR_TRANSPORT,
                           budget=SUPERVISOR_BUDGET,
                           cooldown=SEGMENT_COOLDOWN,
                           window=SUPERVISOR_WINDOW,
@@ -359,7 +371,7 @@ NATIVE_SUPERVISED_ROLLOUT: WorkflowDef = (
             # starts inside this sandbox and a host variable of that name could
             # otherwise aim a credential-bearing request anywhere.
             network=True,
-            pass_env=(OAUTH_TOKEN_ENV, *SUPERVISOR_PASS_ENV),
+            pass_env=(OAUTH_TOKEN_ENV, SUPERVISOR_API_KEY_ENV),
         ),
     ),
 )

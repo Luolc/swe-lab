@@ -19,7 +19,7 @@ use crate::signals::{self, Stop};
 /// wrapper being told to stop, however far its deadline is.
 const CANCEL_POLL: Duration = Duration::from_millis(100);
 
-/// The most a response may be; a chat completion is kilobytes, and a
+/// The most a response may be; a model response is kilobytes, and a
 /// forwarder gone wrong should not fill memory.
 const MAX_RESPONSE_BYTES: usize = 16 * 1024 * 1024;
 
@@ -32,7 +32,8 @@ pub struct Response {
     pub body: Vec<u8>,
 }
 
-/// `POST` `body` as JSON to the endpoint, optionally with a bearer token, and
+/// `POST` `body` as Anthropic Messages JSON to the endpoint, optionally with
+/// an API key, and
 /// return the response before `deadline` — or as cancelled, once `stop` is
 /// raised.
 ///
@@ -47,7 +48,7 @@ pub struct Response {
 /// response is where a reflected credential would be.
 pub fn post_json(
     endpoint: &Endpoint,
-    bearer: Option<&str>,
+    api_key: Option<&str>,
     body: &[u8],
     deadline: Instant,
     stop: &Stop,
@@ -73,9 +74,10 @@ pub fn post_json(
         endpoint.address,
         body.len()
     );
-    if let Some(token) = bearer {
-        head.push_str("Authorization: Bearer ");
-        head.push_str(token);
+    head.push_str("anthropic-version: 2023-06-01\r\n");
+    if let Some(key) = api_key {
+        head.push_str("x-api-key: ");
+        head.push_str(key);
         head.push_str("\r\n");
     }
     head.push_str("\r\n");
@@ -225,11 +227,11 @@ pub(crate) mod tests {
     /// The call under test, with a stop that is never raised.
     fn post_json(
         endpoint: &Endpoint,
-        bearer: Option<&str>,
+        api_key: Option<&str>,
         body: &[u8],
         deadline: Instant,
     ) -> Result<Response, String> {
-        super::post_json(endpoint, bearer, body, deadline, &NEVER)
+        super::post_json(endpoint, api_key, body, deadline, &NEVER)
     }
 
     /// A connect that cannot complete — the listener's accept queue is
@@ -373,7 +375,7 @@ pub(crate) mod tests {
         (
             Endpoint {
                 address: std::net::SocketAddr::from(([127, 0, 0, 1], port)),
-                path: "/v1/chat/completions".to_string(),
+                path: "/v1/messages".to_string(),
             },
             rx,
         )
@@ -384,7 +386,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn a_post_carries_the_body_and_the_bearer_and_reads_a_content_length_body() {
+    fn a_post_carries_the_anthropic_headers_and_reads_a_content_length_body() {
         let (endpoint, requests) = serve_once(
             "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 13\r\n\r\n{\"ok\":true}\r\n",
         );
@@ -392,20 +394,22 @@ pub(crate) mod tests {
         assert_eq!(response.status, 200);
         assert_eq!(response.body, b"{\"ok\":true}\r\n");
         let request = String::from_utf8(requests.recv().unwrap()).unwrap();
-        assert!(request.starts_with("POST /v1/chat/completions HTTP/1.1\r\n"));
-        assert!(request.contains("\r\nAuthorization: Bearer tok-123\r\n"));
+        assert!(request.starts_with("POST /v1/messages HTTP/1.1\r\n"));
+        assert!(request.contains("\r\nx-api-key: tok-123\r\n"));
+        assert!(request.contains("\r\nanthropic-version: 2023-06-01\r\n"));
         assert!(request.contains("\r\nContent-Length: 7\r\n"));
         assert!(request.ends_with("\r\n\r\n{\"q\":1}"));
     }
 
     #[test]
-    fn without_a_bearer_no_authorization_header_is_sent() {
+    fn without_an_api_key_no_key_header_is_sent() {
         let (endpoint, requests) = serve_once("HTTP/1.1 204 No Content\r\n\r\n");
         let response = post_json(&endpoint, None, b"{}", soon()).unwrap();
         assert_eq!(response.status, 204);
         assert!(response.body.is_empty());
         let request = String::from_utf8(requests.recv().unwrap()).unwrap();
-        assert!(!request.to_ascii_lowercase().contains("authorization"));
+        assert!(!request.to_ascii_lowercase().contains("x-api-key"));
+        assert!(request.contains("\r\nanthropic-version: 2023-06-01\r\n"));
     }
 
     #[test]
@@ -443,7 +447,7 @@ pub(crate) mod tests {
         assert!(!error.contains("secret"));
     }
 
-    /// A peer that puts the bearer where the parser fails — the status
+    /// A peer that puts the API key where the parser fails — the status
     /// line, a chunk's size line — gets an error that quotes none of it:
     /// not the token, not a fragment of it.
     #[test]

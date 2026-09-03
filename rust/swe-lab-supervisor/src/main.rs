@@ -158,10 +158,15 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
             &selected.digest,
         )
     })?;
+    let api_key_env = config::api_key_env_name()
+        .map_err(|e| refused(&mut outputs, args, e, &config.model.name, &selected.digest))?;
+    let api_key = config::api_key_from_env(&api_key_env)
+        .map_err(|e| refused(&mut outputs, args, e, &config.model.name, &selected.digest))?;
     let model = model::Model {
         name: config.model.name.clone(),
         endpoint,
-        bearer: config::api_key_from_env(),
+        api_key: Some(api_key),
+        api_key_env,
         call_timeout: Duration::from_millis(config.timeouts.model_call_ms),
         stop: std::sync::Arc::clone(&stop),
     };

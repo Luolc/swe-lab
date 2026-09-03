@@ -10,18 +10,19 @@ the run's **values** cross the boundary, and each is here:
   settings, written into the workspace and named on the wrapper's ``--config``
   flag. The binary refuses an unknown field rather than ignoring it, so the
   document this module renders is the schema, not a superset of it;
-- **two environment variables** — :data:`BASE_URL_ENV` and :data:`API_KEY_ENV`,
-  which carry *where the model is* and *how to authenticate to it*. Neither is
-  in the document, and a document naming either is refused. **They cross
+- **three environment variables** — :data:`BASE_URL_ENV`,
+  :data:`API_KEY_NAME_ENV`, and the credential variable named by the latter.
+  They carry *where the model is* and *how to authenticate to it*. None is in
+  the document. **They cross
   asymmetrically, and that asymmetry is the credential boundary:**
-  :data:`API_KEY_ENV` travels by reference (the backend's ``pass_env``, see
-  :data:`SUPERVISOR_PASS_ENV`), so its value reaches no command line, staged
-  file or artifact; :data:`BASE_URL_ENV` is exported by the harness, because it
-  addresses a forwarder the harness itself starts inside the sandbox and no
-  such value exists on the host to forward. Passing the endpoint in would make
-  it host-settable — and since the supervisor's requests carry the credential,
-  a stray same-named variable could then aim an authenticated request at any
-  host;
+  the configured API-key variable travels by reference (the backend's
+  ``pass_env``; :data:`SUPERVISOR_PASS_ENV` names the default), so its value
+  reaches no command line, staged file or artifact; :data:`BASE_URL_ENV` is
+  exported by the harness, because it addresses a forwarder the harness itself
+  starts inside the sandbox and no such value exists on the host to forward.
+  Passing the endpoint in would make it host-settable — and since the
+  supervisor's requests carry the credential, a stray same-named variable
+  could then aim an authenticated request at any host;
 - **the terminal summary** — what the wrapper writes at the end, and the only
   thing a run may be classified from. Not the exit status, in **either**
   direction: a wrapper that ran cleanly exits with the *actor's* status, so
@@ -114,19 +115,23 @@ SUPERVISOR_CONFIG_NAME = "supervisor-config.json"
 #: ending — which is a classification, not an accident to be tolerated.
 SUPERVISOR_SUMMARY_NAME = "supervisor-summary.json"
 
-#: The environment variable naming the base URL of an OpenAI-shaped
-#: chat-completions API, ``http://host[:port]/v1``. Plain HTTP by design: the
+#: The environment variable naming the loopback base URL for an Anthropic
+#: Messages API. Plain HTTP by design: the
 #: binary carries no TLS, so it speaks to a loopback forwarder inside the
 #: sandbox which terminates TLS and forwards the bytes unchanged. Not a
 #: secret — but it lives here beside the credential because the pair is the
 #: whole of what the document may not carry.
 BASE_URL_ENV = "SWE_LAB_SUPERVISOR_BASE_URL"
 
-#: The environment variable holding the bearer credential the endpoint needs.
+#: The default environment variable holding the Anthropic API key.
 #: **Passed by reference and never rendered**: the binary reads it in-process,
-#: splits a comma-separated list itself (so no key is ever taken apart by a
-#: shell), and removes it from the actor's environment before launching it.
-API_KEY_ENV = "SWE_LAB_SUPERVISOR_API_KEY"
+#: and removes it from the actor's environment before launching it.
+API_KEY_ENV = "ANTHROPIC_API_KEY"
+
+#: The non-secret environment variable telling the wrapper which credential
+#: variable to read. The harness exports the name, never the value, so a caller
+#: can choose its deployment's variable without putting a credential in argv.
+API_KEY_NAME_ENV = "SWE_LAB_SUPERVISOR_API_KEY_ENV"
 
 #: A non-secret variable the **wrapper** sets in the actor's environment, not
 #: one we pass in: ``<wrapper pid>-<nanos>``, which it scans ``/proc`` for after
@@ -149,7 +154,7 @@ MARK_ENV = "SWE_LAB_SUPERVISOR_MARK"
 #: That exclusion is a **security** property, not environment hygiene. The
 #: supervisor sends its requests *with the credential attached*, so an endpoint
 #: the host environment can rewrite is an endpoint a stray same-named variable
-#: can point at any host it likes — a request carrying ``Authorization`` sent
+#: can point at any host it likes — a request carrying ``x-api-key`` sent
 #: somewhere we did not choose. That is the shape of credential exfiltration,
 #: not of dialling the wrong address. Pinning the endpoint in the harness makes
 #: "the credential only ever reaches the loopback forwarder we started" true by

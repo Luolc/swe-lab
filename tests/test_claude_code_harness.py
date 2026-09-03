@@ -1552,7 +1552,8 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
     )
     return {
         "model": "served/model",
-        "choices": [{"message": {"content": content}}],
+        "content": [{"type": "text", "text": content}],
+        "stop_reason": "end_turn",
     }
 
   registered_workflow = workflow_definition("oracle_guided_trace")
@@ -1579,4 +1580,4 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
   for payload in payloads:
     messages = payload["messages"]
     assert isinstance(messages, list)
-    assert sentinel in messages[1]["content"]
+    assert sentinel in messages[0]["content"]

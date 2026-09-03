@@ -196,8 +196,8 @@ mod tests {
                 let (mut socket, _) = listener.accept().unwrap();
                 let _request = read_request(&mut socket);
                 *counter.lock().unwrap() += 1;
-                let body = json!({"model": "m", "choices": [{"finish_reason": "stop",
-                    "message": {"content": content}}]})
+                let body = json!({"model": "m", "content": [{"type": "text", "text": content}],
+                    "stop_reason": "end_turn"})
                 .to_string();
                 let reply = format!(
                     "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{body}",
@@ -211,9 +211,10 @@ mod tests {
                 name: "m".to_string(),
                 endpoint: Endpoint {
                     address: std::net::SocketAddr::from(([127, 0, 0, 1], port)),
-                    path: "/v1/chat/completions".to_string(),
+                    path: "/v1/messages".to_string(),
                 },
-                bearer: None,
+                api_key: None,
+                api_key_env: "TEST_API_KEY".to_string(),
                 call_timeout: Duration::from_secs(5),
                 stop: std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             },

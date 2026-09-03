@@ -23,18 +23,19 @@ Status lives in [`README.md`](README.md), not here.
   So there is no TLS in the binary — both mainstream TLS stacks carry C and
   assembly — and the model endpoint is plain HTTP on loopback: a second
   `cc-reverse-proxy` instance in the sandbox, started by the Python side with
-  `--target https://openrouter.ai/api`, terminates TLS and forwards the bytes
-  unchanged (its log redacts the credential header). The actor's own calls
+  a configurable HTTPS target (defaulting to the Anthropic API), terminates
+  TLS and forwards the bytes unchanged (its log redacts the credential
+  header). The actor's own calls
   already go through the first instance via `ANTHROPIC_BASE_URL`; the
   supervisor's follow the same pattern. `https://` is refused by the binary,
   and that refusal guards the invariant, not a stopgap: the binary only ever
   speaks to loopback. Should that change, it is an ADR — dependency shape and
   deployment contract move together — not a `Cargo.toml` edit.
-- **Where the model is and how to authenticate are environment variables**
-  (`SWE_LAB_SUPERVISOR_BASE_URL`, `SWE_LAB_SUPERVISOR_API_KEY`), passed into
-  the sandbox by reference the way the actor's own are, read in-process, and
-  removed from the actor's environment before it is launched. The config
-  file carries neither: it is non-secret run settings only.
+- **Where the model is and how to authenticate are environment variables.**
+  The harness exports `SWE_LAB_SUPERVISOR_BASE_URL` for its loopback proxy and
+  passes the configured API-key variable by reference. The binary reads both
+  in-process and removes the key from the actor's environment before launch.
+  The config file carries neither: it is non-secret run settings only.
 - **Static is a structural property**, checked in CI as the absence of a
   `PT_INTERP` program header — after the artifact is proven to exist and to
   be an ELF with a program-header table, because a missing file also has no
@@ -89,8 +90,9 @@ than in #375:
   wrapper's stdin plays no part.
 
 `model` carries only the name. The endpoint and the credential are the
-environment's (§1); a local stub needs no credential, and the binary sends
-no `Authorization` header when the variable is unset.
+environment's (§1). Requests use the Anthropic Messages wire: the binary
+appends `/v1/messages`, sends the instructions in top-level `system`, and
+authenticates with `x-api-key` plus `anthropic-version`.
 
 ## 3. Judgment boundaries under batching
 
