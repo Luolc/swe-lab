@@ -211,8 +211,12 @@ def test_budget_zero_speaks_nothing_and_still_marks_every_deviation() -> None:
   assert [marker.cursor for marker in speaker.markers] == [1, 2, 3, 4, 5]
 
 
-def test_the_judge_runs_at_every_boundary_with_no_budget_to_speak() -> None:
+def test_the_judge_runs_at_every_evidence_bearing_boundary_unbudgeted() -> None:
   """Gate order: judgement precedes the budget, so `budget=0` still judges.
+
+  Every boundary this fixture builds carries a record, which is the whole
+  population the claim is about: a boundary with none is not judged in either
+  arm, and that is pinned separately above.
 
   Call counts only, on the policy alone — no arm is built here. What matched
   judge calls buy a comparison is stated once, at
