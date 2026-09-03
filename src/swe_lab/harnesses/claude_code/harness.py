@@ -674,6 +674,12 @@ class ClaudeCodeHarness(Harness):
     Returns:
       One asset, or two under ``PROXY`` capture.
     """
+    from swe_lab.trace_synthesis.supervisor_binary import (
+        ensure_supervisor_binary,
+        local_build,
+        supervisor_version,
+    )
+
     from .binary import ensure_claude_binary
     from .proxy import ensure_proxy_binary, proxy_source_version
 
@@ -683,18 +689,37 @@ class ClaudeCodeHarness(Harness):
         version=version,
         fetch=lambda dest: ensure_claude_binary(version=version, dest=dest),
     )
-    if self.capture != "proxy":
-      return (agent,)
-    return (
-        agent,
-        AgentAsset(
-            path=PROXY_BINARY_AT,
-            # cc-reverse-proxy is a single unversioned Go file in a sibling
-            # checkout, so its content hash *is* its release (see the module).
-            version=proxy_source_version(),
-            fetch=lambda dest: ensure_proxy_binary(dest=dest),
-        ),
-    )
+    assets = [agent]
+    if self.capture == "proxy":
+      assets.append(
+          AgentAsset(
+              path=PROXY_BINARY_AT,
+              # cc-reverse-proxy is a single unversioned Go file in a sibling
+              # checkout, so its content hash *is* its release (see the
+              # module).
+              version=proxy_source_version(),
+              fetch=lambda dest: ensure_proxy_binary(dest=dest),
+          )
+      )
+    # Independent of capture: the wrapper runs the actor, which every capture
+    # mode needs. Nesting this under the proxy branch left a supervised stream
+    # run declaring no wrapper at all — the script would exec a path nothing
+    # had placed, and the run would stop at the `--version` probe.
+    if self.native_supervision is not None:
+      # The version is read off the binary rather than pinned here: there is
+      # no release to pin against yet, and asserting a guess would refuse a
+      # real artifact. `ensure_supervisor_binary` raises when there is nothing
+      # to verify, so this declaration cannot name a version for a wrapper
+      # that is not there.
+      source = local_build()
+      assets.append(
+          AgentAsset(
+              path=SUPERVISOR_BINARY_AT,
+              version=supervisor_version(source) if source else "unreleased",
+              fetch=lambda dest: ensure_supervisor_binary(dest=dest),
+          )
+      )
+    return tuple(assets)
 
   @override
   def mounts(self, workdir: str) -> Mounts:

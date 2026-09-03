@@ -141,23 +141,52 @@ The binary is being written in parallel, and most of this does not wait on it:
    it is **the switch, not the finishing touches**: until both steps below
    exist, no combination of settings produces a natively supervised rollout.
 
-   - [ ] **Declare an `AgentAsset` for the wrapper**, so something puts a
-         binary at `SUPERVISOR_BINARY_AT`. Today `ClaudeCodeHarness.assets()`
-         declares the agent binary and, under proxy capture, the proxy — and
-         nothing else. There is no environment override either: no code reads
-         one, so exporting a variable to point at a local build does nothing
-         today. Fetching from a release with a pinned checksum, or from a local
-         build, is this step's to decide.
-   - [ ] **Pass `native_supervision=` from a workflow definition.**
-         `definitions.py` names it nowhere, so no shipped workflow can take
-         this path however the harness is configured.
+   - [x] **Declare an `AgentAsset` for the wrapper.**
+         `ClaudeCodeHarness.assets()` adds one at `SUPERVISOR_BINARY_AT` when
+         and only when `native_supervision` is set. `supervisor_binary.py`
+         gets the bytes under the same `Materializer` contract as the agent
+         binary and the proxy.
+   - [x] **Pass `native_supervision=` from a workflow definition.**
+         `NATIVE_SUPERVISED_ROLLOUT`, registered as
+         `native_supervised_rollout_and_unit_test`. Its own definition rather
+         than a flag on the host arms: it cannot use the correction channel,
+         takes no `supervision_factory`, and needs a second credential in
+         `pass_env`.
 
-   The asset's validation is a positive chain, not a list of exclusions, and
-   **the "a real artifact is still accepted" arm is tested with the rest** —
-   a gate that rejects everything is green on every negative arm and
-   indistinguishable from a correct one.
-4. **The round-trip schema check** (§7a). Needs the binary to be runnable, and
-   should follow the wiring closely: every slice after it adds config fields.
+   **The release path is still the intended one and does not exist yet.** The
+   wrapper has not been published, so `ensure_supervisor_binary` has nothing to
+   fetch and verify a checksum against; asking for it raises. `SWE_LAB_SUPERVISOR_BINARY`
+   names a local build, is **read by code** (not merely documented, which is
+   what it was before), and is transitional — when the release exists this
+   becomes a developer convenience rather than the only way in.
+
+   The asset's validation is a positive chain, not a list of exclusions: the
+   path is a file → it runs → `--version` exits 0 → the answer names
+   `swe-lab-supervisor` and a version. The version is *read off* the binary
+   rather than compared to a pin, because there is no release to pin and a
+   guess would refuse a real artifact.
+
+   **The "a real artifact is still accepted" arm is tested with the rest**, and
+   the two failure directions are measured separately: a gate that refuses
+   everything turns the accept arms red and leaves every rejection arm green,
+   while a gate that stops at the exit status turns the impostor arms red and
+   leaves the accept arms green. Both were run against this code.
+
+   What the host-side check does **not** establish is that the bytes run in the
+   container — a different machine and a different libc. The invocation
+   script's own `--version` probe settles that, and it stays.
+4. **The round-trip schema check** (§7a). Unblocked now that
+   `SWE_LAB_SUPERVISOR_BINARY` is a real code path — a local build is a runnable
+   binary — and it should follow closely, because every slice after it adds
+   config fields.
+
+   **Its trap is a silent skip.** A test that skips when no binary is present
+   is green forever and green for the wrong reason: in a CI summary a skip and
+   a pass are the same line, which is this repo's recurring defect in yet
+   another medium. So either it *fails* when a binary should have been there
+   and was not, or it sits behind a gate that runs it only when one is present
+   **and that gate is itself asserted** — a check on the check, since a gate
+   stuck closed is indistinguishable from an environment with no binary.
 
 ## 7a. The schema is aligned by hand today, and that is the defect generator
 
