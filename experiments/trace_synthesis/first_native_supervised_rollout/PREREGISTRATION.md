@@ -7,6 +7,42 @@ run is not a criterion, whatever it says.
 The design, method and how-to-run are in [`README.md`](README.md); this file is
 only the readings and what would falsify them.
 
+## Where the defects in this file have actually been
+
+Every flaw found in this document so far — four in the criteria, one in the
+censoring rule, one in the projection — is recorded where it happened rather
+than quietly fixed, because the pattern is more useful than any of them.
+
+**Defects accumulate in the parts of a document nobody treats as an object of
+review.** Criteria, assertions and conclusions are what a reader knows to
+attack. Censoring rules, definitions, units, defaults, normalizations, and the
+"everything else" arm of a table wear procedural clothing and get skimmed —
+and they decide the conclusion just as much.
+
+This file has the receipt. It refused "it failed for an unrelated reason, so it
+doesn't count" in every criterion, and then did exactly that inside its
+censoring rule, where it survived review twice. The projection in criterion 8
+was the same thing again: an implicit normalization sitting underneath an
+assertion everyone was busy checking.
+
+So the derived rules, applied above:
+
+- **the censoring rule is a criterion** and is written to be attacked like one;
+- **the projection is written out** rather than left to the implementation;
+- **the "everything else" arm is the inclusive one**, so that what nobody
+  enumerated is counted rather than dropped.
+
+**And one about how they were found.** Not one was caught by re-reading. Every
+one took someone else supplying a concrete world to check — `[A, A, B]` against
+`[A, B, B]`, or a wrapper recording only messages one and three. Re-reading
+your own document is a comparison whose two sides are both yours.
+
+The consequence worth stating, because it is easy to get backwards: **failing
+to think of a counterexample is not evidence that none exists.** "I searched my
+own head and found nothing" gives the same output whether or not there is
+something to find. That is why a criteria document goes to another reader — not
+because they are smarter, but because their search starts somewhere else.
+
 ## Success criteria
 
 Every one of these is checked against **persisted artifacts**, after the
@@ -65,10 +101,28 @@ this run:
   reconstructing message text from SSE deltas to get a count out of it is
   possible but is not relied on here, and that is said rather than assumed.
 
-Not byte equality; the representations differ by construction. **The matching
-rule, fixed here:** an assistant message is identified by the concatenation of
-its text blocks with trailing whitespace stripped, and by the `name` of each
-tool-use block in order. Two messages correspond when those agree.
+Not byte equality; the representations differ by construction, so the
+comparison is between **projections** of the two records — and the projection
+is where the next hole lives. `project(log) == project(oracle)` keeps the shape
+of a structural assertion no matter how much `project` throws away: a
+normalization greedy enough to discard a field makes two sequences that ought
+to differ compare equal, and the criterion still *reads* like set equality.
+**An unwritten projection is an unreviewed projection**, which is exactly the
+part of a document defects accumulate in (see below).
+
+**The projection, written out.** An assistant message's identity is the tuple:
+
+| kept | why |
+|---|---|
+| its position in the sequence | order is part of what a faithful relay preserves |
+| the concatenation of its text blocks, trailing whitespace stripped | the message's content |
+| the `name` of each tool-use block, in order | *which* actions were taken |
+| the sha256 of each tool-use block's input, in order | *with what arguments* — without this a wrapper could alter a tool call's parameters and both sequences would still compare equal |
+
+| dropped | and whether that is a weakening |
+|---|---|
+| block ids, timestamps, `usage`, `stop_reason`, `model` | no — the two paths assign these independently and disagreement carries no information about relaying |
+| thinking blocks | **yes, a stated weakening.** The two records are not guaranteed to represent these the same way, so requiring them risks failing C for a representation difference rather than a defect. A wrapper that dropped only thinking content would not be caught here. Recorded rather than hidden; closing it needs a comparison of how each path represents them, which this run does not have. |
 
 8. **The two records are the same record.** The sequence of identities read
    off the wrapper's actor event log **equals**, element by element and in
@@ -94,13 +148,30 @@ tool-use block in order. Two messages correspond when those agree.
      agree at 3, every entry on each side corresponds to one on the other, and
      yet an `A` was dropped and a `B` invented.*
 
-   *Each fix was tighter and each was still a subset assertion in disguise.
-   Sequence equality is not one more tightening — it is the **structural**
-   form, which compares everything at once and has no next loophole to find.
-   This repo keeps arriving here: prefer the structural comparison first, and
-   the enumerated one only where no structure is available.)*
+   - *"sequence equality" — **the projection**. The form
+     `project(log) == project(oracle)` is only as strong as `project`, and a
+     normalization that drops a field makes unequal records compare equal
+     while the criterion still reads structural.*
 
-10. **If the two sequences differ for a structural reason** — one record
+   *Each fix was tighter and each was still a subset assertion in disguise —
+   and the fourth is why "sequence equality has no next loophole", which an
+   earlier draft of this file said, was itself the same mistake one level up.
+   A structural comparison is the right form, and it moves the question rather
+   than ending it: from what is compared to **what the comparison can see**.
+   Hence the projection is written out above and gets its own control arms
+   below.)*
+
+10. **The projection is exercised, one control arm per field it claims to
+    keep.** Four fields are kept, so four arms, each perturbing exactly one in
+    a copy of the wrapper's log: change one character of message text; rename
+    one tool-use block; alter one tool-use input; move one message. **C must
+    go red in each.** An arm that stays green means the projection silently
+    discards the field it claims to keep — which is precisely how the
+    structural form decays back into a subset assertion. The arms are run
+    against the real records from this run, and their results are reported
+    with the criteria.
+
+11. **If the two sequences differ for a structural reason** — one record
     legitimately carrying assistant messages the other never represents — that
     is reported as **C failed**, together with the difference observed. It is
     **not** grounds for relaxing 8 during or after this run. A criterion
@@ -109,7 +180,7 @@ tool-use block in order. Two messages correspond when those agree.
     benign reason costs one re-run, while one that passes for a bad reason
     enters the record as data. A revised rule belongs to the next experiment.
 
-11. **The witness is present and non-empty.** The transcript archive exists
+12. **The witness is present and non-empty.** The transcript archive exists
     and yields ≥ 1 assistant message. If it does not, C **fails** — it does not
     quietly fall back to the wrapper's own account. An equality assertion over
     two empty sequences is true and says nothing.
@@ -121,19 +192,19 @@ comparison came from it. A wrapper that read the stream, dropped half, and
 hashed the half it kept would have passed. A comparison whose two sides share
 a source is an echo.)*
 
-12. `summary.actor_event_log_sha256` matches the digest of the persisted event
+13. `summary.actor_event_log_sha256` matches the digest of the persisted event
     log. **This is integrity, not authenticity** — it establishes that the file
     was not altered after the wrapper closed it, and says nothing about
     whether its contents are what the actor emitted. That is what 8 and 9 are
     for, and this is not a substitute for either.
-13. `summary.criterion_sha256` equals the digest of the criterion rendered into
+14. `summary.criterion_sha256` equals the digest of the criterion rendered into
     the config.
 
 **D. Two upstreams, kept apart.**
 
-14. `claude.proxy.jsonl` has ≥ 1 record with a 2xx response.
-15. `supervisor.proxy.jsonl` has ≥ 1 record with a 2xx response.
-16. For one record from each log, the **response headers are reproduced in
+15. `claude.proxy.jsonl` has ≥ 1 record with a 2xx response.
+16. `supervisor.proxy.jsonl` has ≥ 1 record with a 2xx response.
+17. For one record from each log, the **response headers are reproduced in
     full and verbatim** in the report, and then read for which upstream
     answered. The response is the far end's own output, so it is evidence;
     `--target` is our configuration, and proving it against itself is an echo.
@@ -150,12 +221,12 @@ a source is an echo.)*
     the effective criterion, which is screening the observation through the
     expectation.
 
-*(15 is the only artifact-level evidence that the supervisor's model calls
+*(16 is the only artifact-level evidence that the supervisor's model calls
 happened at all. **A known weakness, recorded rather than papered over:** the
 proxy's log format has no field naming where a request went — it records
 request headers/body and response status/headers only, and **not** the
 response body, so headers are the only place the far end speaks for itself. So
-16 is read off the response after the fact rather than asserted in advance,
+17 is read off the response after the fact rather than asserted in advance,
 and the first run reports what it saw.
 
 If that turns out not to discriminate, **the fix is a field in the proxy's
@@ -166,17 +237,17 @@ experiment.)*
 
 **E. No credential is anywhere in the record.**
 
-17. **Every file under the run's output directory** is scanned — traversed,
+18. **Every file under the run's output directory** is scanned — traversed,
     not listed. No artifact is named here on purpose: a list omits whatever is
     added next, and what is added next is exactly what a list would miss.
     Neither credential's value appears in any of them. Checked by reading the
     values inside a process and printing **only a boolean** — never echoed,
     never an argument, never through a shell.
-18. `authorization` appears as `[REDACTED]` in both proxy logs — the positive
-    half, so that 17 passing cannot be explained by the proxy having recorded
+19. `authorization` appears as `[REDACTED]` in both proxy logs — the positive
+    half, so that 18 passing cannot be explained by the proxy having recorded
     no headers at all.
 
-*(**The boundary of 17, written down because an unwritten boundary is read as
+*(**The boundary of 18, written down because an unwritten boundary is read as
 "already checked":** it finds a credential only in its literal form. A copy
 that was base64'd, URL-encoded, or split across a line boundary is invisible
 to it. Not widened for a first end-to-end run — the point is to say what this
@@ -232,7 +303,7 @@ call that hands the choice back to whoever writes the report.
 
 | verdict | condition | the sentence it licenses, and no stronger |
 |---|---|---|
-| `supervised` | every criterion 1–18 passes | "One rollout was supervised end to end by the in-sandbox wrapper: its own account says so, an independent witness confirms it watched the whole actor stream, and both upstreams answered." |
+| `supervised` | every criterion 1–19 passes | "One rollout was supervised end to end by the in-sandbox wrapper: its own account says so, an independent witness confirms it watched the whole actor stream, and both upstreams answered." |
 | `not-supervised` | any criterion fails | "This run did not demonstrate supervision. The criteria that failed were: …" — naming every one, not the first. |
 | `not-supervised (§3a is not in effect)` | the run exited 78 (arm 1 above) | "The wrapper was never placed, or its credential never crossed, so the run refused to start unsupervised. The fail-closed guard worked; the wiring did not." |
 
@@ -267,7 +338,8 @@ same producer, the row is an echo and not a check.
 | 4 | `rollout_outcome` | the classifier, reading the metrics |
 | 7 | boundaries vs assistant messages | the wrapper, and the actor's own log |
 | 8 | nothing dropped, nothing invented | **the transcript — never the wrapper** |
-| 11 | the witness exists at all | the agent CLI, which wrote it |
-| 12 | the file is unaltered | the wrapper, about its own file (integrity only) |
-| 16 | which upstream answered | the upstream, in its response headers |
-| 18 | headers were recorded | the proxy |
+| 10 | the projection sees what it claims | four perturbed copies, each red |
+| 12 | the witness exists at all | the agent CLI, which wrote it |
+| 13 | the file is unaltered | the wrapper, about its own file (integrity only) |
+| 17 | which upstream answered | the upstream, in its response headers |
+| 19 | headers were recorded | the proxy |
