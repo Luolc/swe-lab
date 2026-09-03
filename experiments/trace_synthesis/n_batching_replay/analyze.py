@@ -1,4 +1,8 @@
-"""Recompute every number in `REPORT.md` from `runs/`.
+"""Recompute `REPORT.md`'s sections 2 to 8 from `runs/`.
+
+Not section 1: that shape table comes from `replay.py shape`, which reads the
+event stream and makes no model call. The corpus, criterion and task digests
+come from `runs/*/*/manifest.json`. No single command regenerates all three.
 
 One command, no model calls:
 

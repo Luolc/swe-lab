@@ -53,7 +53,9 @@ export OPENROUTER_API_KEYS=$(op read --no-newline --force \
 uv run python replay.py run --pass a
 uv run python replay.py run --pass b
 
-# Every number in REPORT.md, recomputed from runs/:
+# REPORT.md's §§2-8, recomputed from runs/. (§1 comes from `shape` above, and
+# the corpus/criterion/task digests from runs/*/*/manifest.json -- no single
+# command regenerates all three.)
 uv run python analyze.py
 ```
 
@@ -64,7 +66,7 @@ silently — it prints what it skipped.
 
 ```
 replay.py                  the runner; also `shape`, `self-check`, `verify-task`
-analyze.py                 recomputes every number in REPORT.md from runs/
+analyze.py                 recomputes REPORT.md's §§2-8 from runs/
 runs/<arm>/<pass>/
   judgments.jsonl          one row per boundary — the raw artifact
   manifest.json            arm, params, digests, git sha, wall clock

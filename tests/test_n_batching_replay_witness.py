@@ -15,6 +15,12 @@ committed:
   what makes them evidence about the shipped component. The experiment's own
   `self-check` claimed this while never invoking the driver, so a driver that
   raised on every call still printed OK.
+- **A fresh run reaches its manifest.** `cmd_run` writes the judgments as it
+  goes and the manifest only at the end, so a fault in that last step costs a
+  whole arm's paid calls and leaves an un-provenanced directory behind. One
+  landed there — an undefined name in the manifest literal — and was invisible
+  because every committed artifact predated it and `self-check` stops before
+  `cmd_run`.
 
 The driver lives under `experiments/`, which is exempt from the code-quality
 hooks and is not an importable package, so it is loaded by path.
@@ -22,7 +28,9 @@ hooks and is not an importable package, so it is loaded by path.
 
 from __future__ import annotations
 
+import argparse
 import importlib.util
+import json
 from pathlib import Path
 import sys
 from types import ModuleType
@@ -85,3 +93,40 @@ def test_the_driver_reproduces_the_shipped_supervisor(
   # window: a driver can produce the right row kinds off the wrong evidence.
   assert found["driver_prompts"] == found["shipped_prompts"]
   assert len(found["driver_rows"]) == 170
+
+
+def test_a_fresh_run_writes_its_manifest(
+    driver: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  """`cmd_run` completes an arm and records it, with no network call.
+
+  The regression is real and was found in review: the manifest literal
+  referenced a name bound only inside `replay`, so a fresh run wrote every
+  judgment and then raised before recording what produced them.
+  """
+  if not driver.EVENT_STREAM.exists():
+    pytest.skip(f"corpus absent at {driver.CORPUS_ID}")
+
+  arm = next(a for a in driver.ARMS if a.name == "n10")
+  recording = driver.RecordingTransport
+  monkeypatch.setattr(driver, "RUNS", tmp_path)
+  monkeypatch.setattr(driver, "ARMS", (arm,))
+  monkeypatch.setattr(
+      driver,
+      "RecordingTransport",
+      lambda: recording(send=driver._canned),
+  )
+
+  driver.cmd_run(argparse.Namespace(pass_id="a"))
+
+  manifest = json.loads(
+      (tmp_path / arm.name / "a" / "manifest.json").read_text()
+  )
+  assert manifest["arm"] == arm.name
+  assert manifest["window"] == arm.window
+  assert manifest["boundaries"] == 5
+  assert manifest["events"] == 170
+  rows = (
+      (tmp_path / arm.name / "a" / "judgments.jsonl").read_text().splitlines()
+  )
+  assert len(rows) == manifest["boundaries"]

@@ -669,7 +669,9 @@ def cmd_run(args: argparse.Namespace) -> None:
                 "arm": arm.name,
                 "pass": args.pass_id,
                 "n": arm.n,
-                "window": window,
+                # From the policy, not the arm: the policy is what slices the
+                # evidence, so the manifest records what the judge actually saw.
+                "window": policy.window,
                 "budget": arm.budget,
                 "cooldown": COOLDOWN,
                 "model_requested": MODEL,

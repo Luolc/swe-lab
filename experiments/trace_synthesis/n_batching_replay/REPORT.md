@@ -154,7 +154,7 @@ difference is the `# What you have already said to them` section — 0 character
 until `replicate` speaks, then 153 / 348 / 477 (pass a) and 145 / 281 / 409
 (pass b), exactly the cumulative lengths of its own corrections.
 
-The noise floor is measured, not assumed:
+What the same-prompt comparisons show, set out before the between-arm ones:
 
 | comparison | prompts | `off_track` agreement |
 | --- | --- | --- |
@@ -304,9 +304,12 @@ model past 512 tokens six times as often. *Which* property of that block does it
 
 ### What is attributable
 
-**A1. On this trajectory, `off_track` is stable across runs and the divergence
-between arms is not sampling.** 320/320 agreement at byte-identical prompts is
-the measured floor. Every between-arm difference below is read against it.
+**A1. No same-prompt comparison here produced an `off_track` disagreement** —
+320 comparable pairs, drawn from four runs whose calls are reused across the
+four comparisons, so not 320 independent observations. That is the whole of it:
+it is an observation over four runs, **not** an estimate of a sampling rate and
+not a basis for calling any between-arm difference significant. The readings in
+A2 and A3 are set beside it and are not converted into such a claim.
 
 **A2 (post-hoc arm). Batching to any `N ≥ 1` removed every correction on this
 trajectory, and what did it is *which* moments get judged rather than how
