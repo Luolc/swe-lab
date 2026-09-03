@@ -7,8 +7,7 @@ use std::io::{self, Read, Write};
 use std::path::Path;
 
 use serde::Serialize;
-
-use crate::criterion::sha256_hex;
+use sha2::{Digest, Sha256};
 
 /// The one schema version this binary writes.
 pub const SCHEMA_VERSION: u32 = 1;
@@ -69,6 +68,9 @@ pub struct Summary {
     pub stale_verdicts_discarded: u64,
     /// The longest a boundary waited for its decision.
     pub max_decision_lag_ms: u64,
+    /// Marked descendants found outside the actor's process group when it
+    /// was ended, and killed.
+    pub stragglers_killed: u64,
     /// The model name every request was sent with.
     pub model: String,
     /// The pinned criterion's digest.
@@ -101,6 +103,7 @@ impl Summary {
             gaps: 0,
             stale_verdicts_discarded: 0,
             max_decision_lag_ms: 0,
+            stragglers_killed: 0,
             model: model.to_string(),
             criterion_sha256: criterion_sha256.to_string(),
             actor_event_log_sha256: None,
@@ -130,10 +133,23 @@ impl Summary {
 /// The sha256 of a file's contents, or `None` when it cannot be read.
 #[must_use]
 pub fn file_sha256(path: &Path) -> Option<String> {
+    // Only a regular file is an artifact with a digest: a device or a pipe
+    // is neither finite nor the run's record. Streamed, because the event
+    // log may be as large as its cap.
+    if !std::fs::metadata(path).ok()?.is_file() {
+        return None;
+    }
     let mut file = File::open(path).ok()?;
-    let mut contents = Vec::new();
-    file.read_to_end(&mut contents).ok()?;
-    Some(sha256_hex(&contents))
+    let mut hasher = Sha256::new();
+    let mut chunk = vec![0u8; 64 * 1024];
+    loop {
+        let read = file.read(&mut chunk).ok()?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&chunk[..read]);
+    }
+    Some(format!("{:x}", hasher.finalize()))
 }
 
 #[cfg(test)]

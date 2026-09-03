@@ -75,7 +75,18 @@ than in #375:
   uses. `off`: the actor runs ahead and overtaken verdicts are discarded.
   `stdout`: the wrapper stops reading the actor's stdout for the duration of
   a judgment. `sigstop`: the wrapper stops the actor's process group and
-  resumes it (§4). None is a default.
+  resumes it. None is a default in the binary; **`sigstop` is the one a run
+  should choose**, for the reason measured in §4.
+- **`task` is the judge's, and the actor's prompt is a file.** The config's
+  `task` is the goal statement quoted to the judge and the writer. The actor's
+  prompt — `instance.prompt()`, long, with repository detail and format
+  requirements — is a file the wrapper is given as `--actor-prompt`, writes
+  on the actor's stdin byte for byte before anything else, and never reads.
+  Binding the two would mean that editing what the judge measures against
+  changes what the actor was told, a semantic error, not an inconvenience.
+  Forwarding the wrapper's own stdin instead would tie the actor's stdin to a
+  file's end, when its closing is the loop's decision (§3, ending); the
+  wrapper's stdin plays no part.
 
 `model` carries only the name. The endpoint and the credential are the
 environment's (§1); a local stub needs no credential, and the binary sends
@@ -145,12 +156,20 @@ past is discarded, one on the current window is delivered. That is what makes
 `sigstop` the exact form and `stdout` the one for a run where a stopped actor
 is unacceptable.
 
-**To test, not yet decided** — recorded here so the number is not lost: under
-`stdout`, whether the loop should drain the pipe's residual before the
-freshness check; whether shrinking the pipe (`F_SETPIPE_SZ`, down to one
-page) is worth a Linux-only knob; or whether `sigstop` simply carries the runs
-that need exactness. In every case the stale gate is what keeps the residual
-safe; blocking narrows the window, it does not close it.
+**Decided (2026-09-03), on those numbers: `sigstop` is the mode a run should
+use; `stdout` stays as an option with its blind window documented.** The
+stale gate exists to confirm, before a correction is delivered, that the
+evidence the judgment rests on is still the latest; under `stdout` several
+hundred events can sit unread in the pipe at that moment, so the gate passes
+verdicts it should have failed. That is not a loss of precision, it is the
+gate not holding under that mode, and the README says so in as many words.
+The two modes' real defects, side by side: `stdout` self-releases if the
+wrapper dies and has the blind window above; `sigstop` sees everything the
+actor wrote and leaves the actor stopped if the wrapper dies during a
+judgment — `SIGCONT` on every path out and the handle's drop backstop are the
+mitigation, not a proof. Draining the residual before the check, or shrinking
+the pipe with `F_SETPIPE_SZ`, would narrow `stdout`'s window; neither is
+built, because `sigstop` closes it by construction.
 
 Whether a *given actor* actually stalls on a full stdout pipe depends on how
 it writes. A synchronous write does; a runtime that queues writes in memory

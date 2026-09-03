@@ -2,7 +2,8 @@
 //! ends every one of them, and says when the record is not whole.
 //!
 //! No model is ever contacted here — the endpoint variable names a port
-//! nothing listens on, and this slice makes no call.
+//! nothing listens on, and these actors emit nothing a boundary would fall
+//! on, so no call is made.
 
 // An integration test's helpers are not inside a `#[test]` function, so the
 // tests-only unwrap allowance in clippy.toml does not reach them; a panic is
@@ -47,10 +48,14 @@ fn config(dir: &Path, grace_ms: u64) -> PathBuf {
 /// Run the wrapper around `sh -c <script>`, with `probe` in the actor's
 /// environment so its descendants can be found afterwards.
 fn wrap(dir: &Path, script: &str, event_log: &Path, probe: &str) -> Output {
+    let prompt = dir.join("prompt.stream.json");
+    fs::write(&prompt, "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"t\"}]}}\n").unwrap();
     Command::new(env!("CARGO_BIN_EXE_swe-lab-supervisor"))
         .arg("run")
         .arg("--config")
         .arg(config(dir, 500))
+        .arg("--actor-prompt")
+        .arg(&prompt)
         .arg("--actor-event-log")
         .arg(event_log)
         .arg("--supervisor-log")

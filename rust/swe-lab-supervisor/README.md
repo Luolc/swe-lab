@@ -21,6 +21,7 @@ decided about the reach of `stdout` blocking is in task 20 §4.
 ```text
 swe-lab-supervisor run \
     --config /workspace/supervisor-config.json \
+    --actor-prompt /workspace/prompt.stream.json \
     --actor-event-log /workspace/actor.event_stream.jsonl \
     --supervisor-log /workspace/supervisor.jsonl \
     --summary /workspace/supervisor-summary.json \
@@ -35,15 +36,27 @@ The actor argv after `--` is executed as given — never joined into a shell
 command, never augmented. Flag construction for a particular harness stays on
 the Python side.
 
+**The actor's prompt is a file.** `--actor-prompt` is written on the actor's
+stdin byte for byte before anything else, and the wrapper does not read it:
+whether it is one `stream-json` user event or several, and how it is framed,
+is between the side that writes the file and the actor. The wrapper's own
+stdin is never read, and when the actor's stdin closes is the loop's decision
+(a quiet `result` closes it; a correction at a `result` keeps it open), never
+a file's end. The `task` in the config is the judge's statement of the goal
+and is not sent to the actor — the two are edited independently.
+
 **Exit code.** When the wrapper ran cleanly, its exit status is the actor's
 (`128 + signal` when the actor died of a signal), so a script that records
 `$?` sees what it would have seen without the wrapper. `2` is a usage error and
-`3` a refused run (unusable config, a criterion whose digest is not the pinned
-one, an unusable endpoint, an actor that could not be launched) — all before
-any actor process exists, or before it took its prompt. `1` is the one case
-the wrapper's own status replaces the actor's: the actor ran but the summary
-could not be written. Never classify a run from the exit status alone: the
-terminal summary is written for that.
+`3` a refused run (unusable config, an unreadable prompt file, a criterion
+whose digest is not the pinned one, an unusable endpoint, an actor that could
+not be launched) — all before any actor process exists, or before it took its
+prompt. `1` is the case the wrapper's own status replaces the actor's: the
+actor ran, and the run is **not accounted for** — a drain stopped with an
+error or did not finish, the wrapper's ending was unclean, or the summary
+could not be written — because then the actor's success cannot be read off
+its record. Never classify a run from the exit status alone: the terminal
+summary is written for that.
 
 ## Artifacts
 
@@ -84,7 +97,7 @@ to authenticate to it are not in the file at all — see
     "cooldown": 4,
     "window": 8,
     "judge_every_n_assistant_messages": 3,
-    "block_actor_while_judging": "stdout"
+    "block_actor_while_judging": "sigstop"
   },
   "model": { "name": "anthropic/claude-sonnet-5" },
   "timeouts": { "model_call_ms": 180000, "term_grace_ms": 10000 },
@@ -96,6 +109,9 @@ to authenticate to it are not in the file at all — see
 }
 ```
 
+- `task` — the goal the judge measures the actor against, quoted in every
+  judge and writer prompt. It is not the actor's prompt (that is the
+  `--actor-prompt` file) and is not sent to the actor.
 - `criterion` — the name of a criterion compiled into the binary and the
   sha256 its text must have. Startup verifies the digest before the actor is
   launched and refuses the run on a mismatch. `swe-lab-supervisor criteria`
@@ -107,11 +123,20 @@ to authenticate to it are not in the file at all — see
   `judge_every_n_assistant_messages` is the batch size `N` of #375 — a
   boundary falls every `N` admitted assistant messages and at every actor
   `result` with new evidence behind it. `block_actor_while_judging` is what
-  the wrapper does to the actor while a judgment is in flight: `"off"` lets
-  it run ahead (overtaken verdicts are discarded as stale), `"stdout"` stops
-  reading its stdout (the actor blocks on its next write once the pipe is
-  full), `"sigstop"` stops its process group with `SIGSTOP` and resumes it
-  with `SIGCONT` — always, on every path out, before the wrapper exits.
+  the wrapper does to the actor while a judgment is in flight, and
+  **`"sigstop"` is the mode a run should use**: the process group is stopped
+  with `SIGSTOP` when the judgment starts and resumed with `SIGCONT` when it
+  completes — and on every other path out, before the wrapper exits — so the
+  actor produces nothing while judged and the freshness check sees all of
+  its evidence. Its cost is a real state: a wrapper that dies during a
+  judgment leaves the actor stopped, which the `SIGCONT`-on-every-path and
+  the handle's drop backstop mitigate but cannot rule out. `"stdout"` stops
+  reading the actor's stdout instead, and self-releases if the wrapper dies,
+  but it is measured to leave a blind window: the actor can still write one
+  pipe (544 events, ~65 KiB in the measurement) after the gate closes, and
+  those events land only after the freshness check — **the stale gate is not
+  guaranteed under `"stdout"`**. `"off"` lets the actor run ahead and relies
+  on the stale gate alone. The measurement and the reasoning: task 20 §4.
 - `model` — the model name sent on every request, recorded in the summary.
 - `timeouts` — `model_call_ms` bounds one judge or writer call; a call past it
   is one recorded lapse. `term_grace_ms` bounds shutdown: how long the actor's

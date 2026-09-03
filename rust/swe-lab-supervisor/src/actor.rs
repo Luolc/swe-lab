@@ -494,10 +494,11 @@ fn finish(
 
 /// Kill every process whose environment carries the actor's mark and whose
 /// process group is not the actor's — a descendant that called `setsid` —
-/// until none is found or the passes run out. Returns how many were found.
+/// until none is found or the passes run out. Returns how many distinct
+/// processes were found: one still dying is seen by the next pass too.
 fn sweep(mark: &str, group: Pid) -> usize {
     let needle = format!("{MARK_ENV}={mark}");
-    let mut found = 0;
+    let mut found = std::collections::HashSet::new();
     for _ in 0..SWEEP_PASSES {
         let escaped: Vec<Pid> = marked_processes(&needle)
             .into_iter()
@@ -509,12 +510,12 @@ fn sweep(mark: &str, group: Pid) -> usize {
         }
         for pid in escaped {
             if kill(pid, Signal::SIGKILL).is_ok() {
-                found += 1;
+                found.insert(pid);
             }
         }
         thread::sleep(EXIT_POLL_INTERVAL);
     }
-    found
+    found.len()
 }
 
 /// Every live process whose initial environment holds `needle` as one entry,
@@ -537,12 +538,13 @@ fn marked_processes(needle: &str) -> Vec<(Pid, Pid)> {
                 return None;
             }
             let stat = fs::read_to_string(entry.path().join("stat")).ok()?;
-            // `pid (comm) state ppid pgrp ...` — after the last `)`.
+            // `pid (comm) state ppid pgrp session ...`: after the last `)`,
+            // the group is the third field.
             let pgrp: i32 = stat
                 .rsplit_once(')')?
                 .1
                 .split_whitespace()
-                .nth(3)?
+                .nth(2)?
                 .parse()
                 .ok()?;
             Some((Pid::from_raw(i32::try_from(pid).ok()?), Pid::from_raw(pgrp)))
@@ -790,11 +792,19 @@ mod tests {
         let read_progress =
             || -> usize { std::fs::read_to_string(&progress).map_or(0, |s| s.lines().count()) };
         // Wait for the pipe to fill and the actor to stall on it.
+        // Stalled: no progress across eight consecutive samples. One quiet
+        // sample is not a stall on a loaded box, only a descheduled actor.
         let mut stalled_at = 0;
-        for _ in 0..200 {
+        let mut quiet = 0;
+        for _ in 0..400 {
             thread::sleep(Duration::from_millis(25));
             let now = read_progress();
-            if now > 0 && now == stalled_at {
+            quiet = if now > 0 && now == stalled_at {
+                quiet + 1
+            } else {
+                0
+            };
+            if quiet >= 8 {
                 break;
             }
             stalled_at = now;
@@ -835,7 +845,11 @@ mod tests {
     #[test]
     fn a_frozen_group_is_stopped_and_end_always_continues_it_before_signalling() {
         let dir = scratch("freeze");
-        let (mut actor, rx) = launch(&dir, "sleep 30", 1024);
+        // `exec`: dash otherwise vforks, and a SIGSTOP that lands on the
+        // child between vfork and exec leaves the parent in an
+        // uninterruptible vfork wait (`D` in `kernel_clone`) — stopped in
+        // every sense but the letter this test reads.
+        let (mut actor, rx) = launch(&dir, "exec sleep 30", 1024);
         actor.freeze().unwrap();
         assert!(actor.frozen());
         let state = || {
@@ -846,11 +860,30 @@ mod tests {
         };
         // The stop takes effect when the process next returns to user mode,
         // which can be after the read that follows it — so poll.
-        let deadline = Instant::now() + Duration::from_secs(5);
+        // A process in an uninterruptible wait (`D`, e.g. paging its binary
+        // in on a loaded box) stops only once that wait ends; give it time.
+        let deadline = Instant::now() + Duration::from_secs(20);
         while state() != 'T' && Instant::now() < deadline {
             thread::sleep(Duration::from_millis(20));
         }
-        assert_eq!(state(), 'T', "SIGSTOP did not stop the group");
+        let diagnostic = || {
+            let pid = actor.pid();
+            let read = |name: &str| {
+                std::fs::read_to_string(format!("/proc/{pid}/{name}")).unwrap_or_default()
+            };
+            format!(
+                "stat: {}wchan: {}\nstatus: {}",
+                read("stat"),
+                read("wchan"),
+                read("status")
+            )
+        };
+        assert_eq!(
+            state(),
+            'T',
+            "SIGSTOP did not stop the group: {}",
+            diagnostic()
+        );
         // TERM alone would queue behind the stop; `end` lifts it first, so
         // the actor dies of the TERM within the grace rather than of the KILL.
         let ended = actor.end(Duration::from_secs(5)).unwrap();
@@ -1042,7 +1075,10 @@ mod tests {
         let events = drain(&rx);
         assert_eq!(lines(&events).len(), 500);
         let ended = actor.end(Duration::from_millis(500)).unwrap();
-        assert!(ended.status.signal().is_some(), "{ended:?}");
+        // Past the cap the read end is dropped, so the actor's next write is
+        // an EPIPE / SIGPIPE rather than a stall; either way it did not
+        // finish on its own terms.
+        assert!(!ended.status.success(), "{ended:?}");
         assert_eq!(ended.stdout, Some(Err(CAP_REACHED.to_string())));
         assert_eq!(
             std::fs::metadata(dir.join("events.jsonl")).unwrap().len(),
@@ -1091,8 +1127,14 @@ mod tests {
             |_| {},
         )
         .unwrap();
+        let group = Pid::from_raw(i32::try_from(actor.pid()).unwrap());
+        let escaped = || {
+            marked_processes(&format!("PROBE={probe}"))
+                .iter()
+                .any(|(_, pgrp)| *pgrp != group)
+        };
         assert!(
-            wait_until(Duration::from_secs(5), || probes_alive(&probe) >= 2),
+            wait_until(Duration::from_secs(5), escaped),
             "the escaped descendant never appeared"
         );
         let ended = actor.end(Duration::from_millis(500)).unwrap();

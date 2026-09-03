@@ -36,10 +36,11 @@ use summary::Summary;
 
 /// The command line could not be used as given.
 const EXIT_USAGE: u8 = 2;
-/// The actor was supervised to its end, but the summary — the artifact a run
-/// is classified from — could not be written; the exit status is the
-/// wrapper's, not the actor's.
-const EXIT_UNWRITTEN: u8 = 1;
+/// The actor ran, and the run is not accounted for: the wrapper's ending was
+/// unclean, or the summary — the artifact a run is classified from — could
+/// not be written. The exit status is the wrapper's, not the actor's, because
+/// the actor's success cannot be told from its record.
+const EXIT_UNHEALTHY: u8 = 1;
 /// The run was refused before the actor was launched: an unusable config, or a
 /// criterion that is not the one the config pins.
 const EXIT_REFUSED: u8 = 3;
@@ -74,9 +75,9 @@ fn main() -> ExitCode {
                 eprintln!("swe-lab-supervisor: refusing to start: {reason}");
                 ExitCode::from(EXIT_REFUSED)
             }
-            Err(Failed::SummaryUnwritten(reason)) => {
-                eprintln!("swe-lab-supervisor: {reason}");
-                ExitCode::from(EXIT_UNWRITTEN)
+            Err(Failed::Unhealthy(reason)) => {
+                eprintln!("swe-lab-supervisor: the run is not accounted for: {reason}");
+                ExitCode::from(EXIT_UNHEALTHY)
             }
         },
     }
@@ -86,8 +87,9 @@ fn main() -> ExitCode {
 enum Failed {
     /// Refused before any actor process existed.
     Refused(String),
-    /// The actor ran, and the summary could not be written.
-    SummaryUnwritten(String),
+    /// The actor ran, and its record is not whole: an unclean ending, or a
+    /// summary that could not be written.
+    Unhealthy(String),
 }
 
 /// Validate the run's inputs, run the actor under supervision, write the
@@ -112,6 +114,14 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
         .map_err(|e| refused(e, &config.model.name, &config.criterion.sha256))?;
     let endpoint = config::Endpoint::from_env()
         .map_err(|e| refused(e, &config.model.name, &selected.digest))?;
+    // Unread here: whatever the file holds goes to the actor as it is.
+    let actor_prompt = std::fs::read(&args.actor_prompt).map_err(|e| {
+        refused(
+            format!("reading the actor prompt: {e}"),
+            &config.model.name,
+            &selected.digest,
+        )
+    })?;
     let model = model::Model {
         name: config.model.name.clone(),
         endpoint,
@@ -132,20 +142,24 @@ fn run(args: &cli::RunArgs) -> Result<ExitCode, Failed> {
     };
     let digest = selected.digest.clone();
     let model_name = config.model.name.clone();
-    let ended = supervisor::run(
-        config,
-        selected.text,
-        &digest,
-        model,
-        &args.actor_argv,
-        &paths,
-        &stop,
-    )
-    .map_err(|e| refused(e, &model_name, &digest))?;
+    let launch = supervisor::Launch {
+        argv: &args.actor_argv,
+        prompt: &actor_prompt,
+    };
+    let ended = supervisor::run(config, selected.text, &digest, model, launch, &paths, &stop)
+        .map_err(|e| refused(e, &model_name, &digest))?;
     ended
         .summary
         .write(&args.summary)
-        .map_err(|e| Failed::SummaryUnwritten(format!("writing the summary: {e}")))?;
+        .map_err(|e| Failed::Unhealthy(format!("writing the summary: {e}")))?;
+    if ended.summary.supervisor_exit == summary::SupervisorExit::Unclean {
+        return Err(Failed::Unhealthy(
+            ended
+                .summary
+                .unclean_reason
+                .unwrap_or_else(|| "unclean ending".to_string()),
+        ));
+    }
     Ok(ended.status.map_or(ExitCode::FAILURE, exit_code_of))
 }
 

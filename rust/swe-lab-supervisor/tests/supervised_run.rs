@@ -28,6 +28,9 @@ use sha2::{Digest, Sha256};
 
 const KEY_SENTINEL: &str = "KEY_SENTINEL_MUST_NOT_BE_LOGGED";
 const TASK: &str = "Fix the flaky test in the scheduler.";
+/// The actor's prompt file: one stream-json user event whose text is not
+/// the task, and which carries the escapes a shell `echo` would mangle.
+const PROMPT_LINE: &str = "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"PROMPT_SENTINEL: the scheduler test flakes under load\\nsee tests/test_scheduler.py \\\\ line 40\"}]}}\n";
 const CORRECTION: &str = "Run the test suite before you declare the change done.";
 const MARKER: &str = "declared done without running the tests";
 const CRITERION_SHA256: &str = "ffb2dadfe2b36eb3f44f28c4282a8d51e84e1c943558500787cbb0518e2900a1";
@@ -42,7 +45,9 @@ const ACTOR: &str = r#"
 [ -n "$SWE_LAB_SUPERVISOR_BASE_URL" ] && echo "LEAK: the base url is in the actor's environment" >&2
 ( sleep 30; kill -TERM $$ ) >/dev/null 2>&1 </dev/null &
 read -r prompt || exit 90
-case "$prompt" in *"Fix the flaky test in the scheduler."*) ;; *) exit 92 ;; esac
+case "$prompt" in *PROMPT_SENTINEL*) ;; *) exit 92 ;; esac
+printf '%s
+' "$prompt"
 printf '%s\n' '{"type":"system","subtype":"init","model":"fake"}'
 printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Done; I will not run the tests."}]}}'
 printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"Bash","input":{"command":"git commit -am done"}}]}}'
@@ -109,12 +114,19 @@ fn actor_states(script: &Path) -> Vec<char> {
             continue;
         };
         // `pid (comm) S ...` — the state is the first field after the last `)`.
-        if let Some(state) = stat
+        let Some(state) = stat
             .rsplit_once(')')
             .and_then(|(_, rest)| rest.trim_start().chars().next())
-        {
-            states.push(state);
-        }
+        else {
+            continue;
+        };
+        // A shell that vforked a child which was stopped before it could
+        // exec waits in `D` inside `kernel_clone`: stopped, by any measure
+        // but the letter.
+        let vfork_wait = state == 'D'
+            && fs::read_to_string(format!("/proc/{pid}/wchan"))
+                .is_ok_and(|wchan| wchan.trim() == "kernel_clone");
+        states.push(if vfork_wait { 'T' } else { state });
     }
     states
 }
@@ -218,7 +230,11 @@ fn supervise(blocking: &str) -> Run {
             },
             "model": {"name": "fake-model"},
             "timeouts": {"model_call_ms": 10_000, "term_grace_ms": 2_000},
-            "limits": {"max_event_line_bytes": 65_536},
+            "limits": {
+                "max_event_line_bytes": 65_536,
+                "max_actor_stdout_bytes": 1_048_576,
+                "max_actor_stderr_bytes": 1_048_576,
+            },
         })
         .to_string(),
     )
@@ -233,10 +249,14 @@ fn supervise(blocking: &str) -> Run {
                 .to_string(),
         ],
     );
+    let prompt = dir.join("prompt.stream.json");
+    fs::write(&prompt, PROMPT_LINE).unwrap();
     let output = Command::new(env!("CARGO_BIN_EXE_swe-lab-supervisor"))
         .arg("run")
         .arg("--config")
         .arg(&config)
+        .arg("--actor-prompt")
+        .arg(&prompt)
         .arg("--actor-event-log")
         .arg(dir.join("events.jsonl"))
         .arg("--supervisor-log")
@@ -290,11 +310,19 @@ fn rows_of(text: &str) -> Vec<Value> {
 
 /// The actor's side: prompted, corrected, released, its environment clean.
 fn check_actor(run: &Run, context: &str) {
-    let events = rows_of(&run.event_log);
-    assert_eq!(events.len(), 6, "{context}");
-    assert_eq!(events[3]["type"], "user", "{context}");
+    // The prompt file's bytes reached the actor as they were: it echoed its
+    // first stdin line, and that line is the file minus its newline.
     assert_eq!(
-        events[3]["message"]["content"][0]["text"],
+        run.event_log.lines().next(),
+        Some(PROMPT_LINE.trim_end()),
+        "{context}"
+    );
+    let events = rows_of(&run.event_log);
+    assert_eq!(events.len(), 7, "{context}");
+    assert_eq!(events[0]["type"], "user", "{context}");
+    assert_eq!(events[4]["type"], "user", "{context}");
+    assert_eq!(
+        events[4]["message"]["content"][0]["text"],
         format!("<supervisor_note>\n{CORRECTION}\n</supervisor_note>"),
         "{context}"
     );
@@ -312,13 +340,14 @@ fn check_account(run: &Run, context: &str) {
     assert_eq!(
         kinds,
         [
-            "observed", "observed", "spoke", "observed", "observed", "silent"
+            "observed", "observed", "observed", "spoke", "observed", "observed", "silent"
         ],
         "{context}"
     );
-    let spoke = &rows[2];
+    assert_eq!(rows[0]["evidence"], "excluded-external-text", "{context}");
+    let spoke = &rows[3];
     assert_eq!(spoke["boundary"], 1, "{context}");
-    assert_eq!(spoke["cursor"], 3, "{context}");
+    assert_eq!(spoke["cursor"], 4, "{context}");
     assert_eq!(spoke["marker"], MARKER, "{context}");
     assert_eq!(spoke["text"], CORRECTION, "{context}");
     let purposes: Vec<&str> = spoke["calls"]
@@ -333,12 +362,12 @@ fn check_account(run: &Run, context: &str) {
         "blocking failed: {context}"
     );
     assert_eq!(
-        rows[3]["evidence"], "excluded-own-intervention",
+        rows[4]["evidence"], "excluded-own-intervention",
         "{context}"
     );
-    let silent = &rows[5];
+    let silent = &rows[6];
     assert_eq!(silent["boundary"], 2, "{context}");
-    assert_eq!(silent["cursor"], 6, "{context}");
+    assert_eq!(silent["cursor"], 7, "{context}");
     assert!(silent.get("marker").is_none(), "{context}");
 }
 
@@ -348,7 +377,7 @@ fn check_summary(run: &Run, context: &str) {
         ("accounted_for", json!(true)),
         ("supervisor_exit", json!("clean")),
         ("actor_exit_code", json!(0)),
-        ("events", json!(6)),
+        ("events", json!(7)),
         ("undecodable_lines", json!(0)),
         ("oversized_lines", json!(0)),
         ("boundaries", json!(2)),
@@ -358,6 +387,7 @@ fn check_summary(run: &Run, context: &str) {
         ("lapses", json!(0)),
         ("gaps", json!(0)),
         ("stale_verdicts_discarded", json!(0)),
+        ("stragglers_killed", json!(0)),
         ("model", json!("fake-model")),
         ("criterion_sha256", json!(CRITERION_SHA256)),
         (
@@ -393,6 +423,8 @@ fn check_endpoint(run: &Run, blocking: &str, context: &str) {
     );
     assert!(first_judge.contains("git commit -am done"), "{first_judge}");
     assert!(!first_judge.contains("already said"), "{first_judge}");
+    assert!(!first_judge.contains("PROMPT_SENTINEL"), "{first_judge}");
+    assert!(first_judge.contains(TASK), "{first_judge}");
     let writer = prompt_of(&run.answered[1]);
     assert!(
         writer.contains("# What you have already said to them"),

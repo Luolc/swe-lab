@@ -3,7 +3,7 @@
 //!
 //! One thread owns everything here — the evidence, the policy state, the
 //! actor's stdin, the log. Two things happen elsewhere and report back
-//! through one channel: the actor's stdout reader (`actor.rs`), and at most
+//! through one bounded queue: the actor's readers (`actor.rs`), and at most
 //! **one** judgment at a time, run on its own thread so that draining never
 //! waits on a model call. While a judgment is in flight the loop keeps
 //! consuming; when the judgment returns, its evidence revision is compared
@@ -21,13 +21,17 @@
 //! **Ending.** A quiet `result` — no judgment pending and nothing delivered —
 //! closes the actor's stdin, and a cooperative actor exits on the EOF. A
 //! correction delivered at a `result` keeps the actor open for another turn.
-//! When stdout closes, the loop finishes whatever judgment is in flight,
-//! ends the actor's process group, and writes the summary.
+//! The loop ends when stdout closes and no judgment is in flight; when a log
+//! stops taking output; when the wrapper is told to stop; or when the leader
+//! has exited and, a descendant still holding its stdout, the grace has
+//! passed. Then the actor's process group is ended, stragglers swept, the
+//! drains finished, and the summary written.
 //!
 //! **Failure semantics.** A failed judge or writer call is one lapse; the
 //! next boundary is judged normally. A failed stdin write is a gap: the loop
 //! stops speaking, keeps accounting, and the run is not evidence about
-//! supervision. So is an unclean ending.
+//! supervision. So is an unclean ending — a drain that stopped with an error
+//! or did not finish, a log that could not be written, a signal that failed.
 
 use std::ffi::OsString;
 use std::fs::File;
@@ -36,7 +40,7 @@ use std::path::PathBuf;
 use std::process::ExitStatus;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
+use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -51,8 +55,8 @@ use crate::prompt::Observation;
 use crate::stream::user_event_line;
 use crate::summary::{self, Summary, SupervisorExit};
 
-/// How long the loop sleeps between checks of the stop flag when no event
-/// arrives.
+/// How long the loop sleeps between checks of the stop flag and the leader
+/// when no event arrives.
 const TICK: Duration = Duration::from_millis(100);
 
 /// The word every row carries; the one policy this binary implements.
@@ -67,6 +71,16 @@ pub struct Paths {
     pub supervisor_log: PathBuf,
     /// The actor's stderr.
     pub actor_stderr: PathBuf,
+}
+
+/// What the actor is launched with.
+#[derive(Debug, Clone, Copy)]
+pub struct Launch<'a> {
+    /// The command, as opaque tokens.
+    pub argv: &'a [OsString],
+    /// The first bytes on the actor's stdin, verbatim — the actor's prompt,
+    /// in whatever framing the actor takes. The wrapper does not read them.
+    pub prompt: &'a [u8],
 }
 
 /// How a supervised run ended.
@@ -125,7 +139,7 @@ struct Loop {
     model: Arc<Model>,
     actor: Actor,
     gate: Arc<Gate>,
-    outbox: Sender<Msg>,
+    outbox: SyncSender<Msg>,
     inbox: Receiver<Msg>,
     log: BufWriter<File>,
     cursor: u64,
@@ -140,6 +154,12 @@ struct Loop {
     in_flight: Option<InFlight>,
     pending: Pending,
     stdout_closed: bool,
+    /// The leader was seen exited, at this instant; its stdout may still be
+    /// held by a descendant.
+    leader_exited_at: Option<Instant>,
+    /// A drain stopped with an error: the run ends as soon as no judgment
+    /// is in flight.
+    faulted: bool,
     mute: bool,
     unclean: Option<String>,
     counts: Counts,
@@ -157,23 +177,27 @@ pub fn run(
     criterion_text: &'static str,
     criterion_sha256: &str,
     model: Model,
-    actor_argv: &[OsString],
+    launch: Launch<'_>,
     paths: &Paths,
     stop: &AtomicBool,
 ) -> Result<Ended, String> {
     let log = File::create(&paths.supervisor_log)
         .map_err(|e| format!("supervisor log {}: {e}", paths.supervisor_log.display()))?;
-    let (outbox, inbox) = mpsc::channel();
-    let command = actor::command(actor_argv, &[config::BASE_URL_ENV, config::API_KEY_ENV])
+    let (outbox, inbox) = actor::event_queue();
+    let command = actor::command(launch.argv, &[config::BASE_URL_ENV, config::API_KEY_ENV])
         .map_err(|e| format!("actor command: {e}"))?;
-    let max_line_bytes = usize::try_from(config.limits.max_event_line_bytes.get())
-        .map_err(|_| "limits.max_event_line_bytes does not fit".to_string())?;
+    let limits = actor::Limits {
+        line: usize::try_from(config.limits.max_event_line_bytes.get())
+            .map_err(|_| "limits.max_event_line_bytes does not fit".to_string())?,
+        stdout: config.limits.max_actor_stdout_bytes.get(),
+        stderr: config.limits.max_actor_stderr_bytes.get(),
+    };
     let relay = outbox.clone();
     let actor = Actor::spawn(
         command,
         &paths.actor_event_log,
         &paths.actor_stderr,
-        max_line_bytes,
+        limits,
         move |event| {
             // The loop being gone means the wrapper is already on its way out.
             let _ = relay.send(Msg::Actor(event));
@@ -202,21 +226,22 @@ pub fn run(
         in_flight: None,
         pending: Pending::default(),
         stdout_closed: false,
+        leader_exited_at: None,
+        faulted: false,
         mute: false,
         unclean: None,
         counts: Counts::default(),
     };
     let grace = Duration::from_millis(run.config.timeouts.term_grace_ms);
-    if let Err(error) = run
-        .actor
-        .write_stdin(user_event_line(&run.config.task).as_bytes())
-    {
-        let status = run
+    if let Err(error) = run.actor.write_stdin(launch.prompt) {
+        drop(run.inbox);
+        let ended = run
             .actor
             .end(grace)
             .map_err(|e| format!("ending the actor: {e}"))?;
         return Err(format!(
-            "the actor did not take its prompt ({error}); it ended with {status}"
+            "the actor did not take its prompt ({error}); it ended with {}",
+            ended.status
         ));
     }
     let terminated = run.serve(stop);
@@ -224,9 +249,10 @@ pub fn run(
 }
 
 impl Loop {
-    /// Consume until the actor's stdout closes and no judgment is in flight,
-    /// or until the wrapper is told to stop. Returns whether it was stopped.
+    /// Consume until the run is over and no judgment is in flight, or until
+    /// the wrapper is told to stop. Returns whether it was stopped.
     fn serve(&mut self, stop: &AtomicBool) -> bool {
+        let grace = Duration::from_millis(self.config.timeouts.term_grace_ms);
         loop {
             if stop.load(Ordering::Relaxed) {
                 return true;
@@ -237,20 +263,43 @@ impl Loop {
                 Ok(Msg::Actor(Event::StdoutClosed(result))) => {
                     self.stdout_closed = true;
                     if let Err(error) = result {
-                        self.unclean = Some(format!("reading the actor's stdout: {error}"));
+                        self.fault(format!("the actor's stdout: {error}"));
+                    }
+                }
+                Ok(Msg::Actor(Event::StderrClosed(result))) => {
+                    if let Err(error) = result {
+                        self.fault(format!("the actor's stderr: {error}"));
                     }
                 }
                 Ok(Msg::Judged(ordinal, judged)) => self.complete(ordinal, judged),
                 Err(RecvTimeoutError::Timeout) => {}
                 Err(RecvTimeoutError::Disconnected) => {
-                    self.unclean = Some("the event channel closed".to_string());
-                    return false;
+                    self.fault("the event queue closed".to_string());
                 }
             }
-            if self.stdout_closed && self.in_flight.is_none() {
+            if self.leader_exited_at.is_none() {
+                match self.actor.exited() {
+                    Ok(true) => self.leader_exited_at = Some(Instant::now()),
+                    Ok(false) => {}
+                    Err(error) => self.fault(format!("observing the actor: {error}")),
+                }
+            }
+            let over = self.stdout_closed
+                || self.faulted
+                || self
+                    .leader_exited_at
+                    .is_some_and(|at| at.elapsed() >= grace);
+            if over && self.in_flight.is_none() {
                 return false;
             }
         }
+    }
+
+    /// The run's record is not whole: end it as soon as the judgment in
+    /// flight, if any, is in.
+    fn fault(&mut self, reason: String) {
+        self.faulted = true;
+        self.unclean.get_or_insert(reason);
     }
 
     fn consume_line(&mut self, line: &[u8]) {
@@ -424,7 +473,7 @@ impl Loop {
 
         if self.pending.boundary {
             self.pending.boundary = false;
-            if !self.stdout_closed {
+            if !self.stdout_closed && !self.faulted && self.leader_exited_at.is_none() {
                 self.start_boundary(self.last_disposition);
                 return;
             }
@@ -450,11 +499,11 @@ impl Loop {
                 )),
             );
         }
-        if self.stdout_closed {
+        if self.stdout_closed || self.leader_exited_at.is_some() {
             self.counts.stale += 1;
             return (
                 "stale",
-                Some("the actor's stdout closed before delivery".to_string()),
+                Some("the actor was gone before delivery".to_string()),
             );
         }
         if self.mute {
@@ -505,56 +554,85 @@ impl Loop {
         }
     }
 
-    fn finish(mut self, terminated: bool, criterion_sha256: &str, paths: &Paths) -> Ended {
-        let grace = Duration::from_millis(self.config.timeouts.term_grace_ms);
-        let status = match self.actor.end(grace) {
-            Ok(status) => Some(status),
+    fn finish(self, terminated: bool, criterion_sha256: &str, paths: &Paths) -> Ended {
+        let Loop {
+            config,
+            actor,
+            inbox,
+            mut log,
+            counts,
+            mut unclean,
+            ..
+        } = self;
+        // A reader blocked on the full queue can only finish once nobody
+        // holds the receiver.
+        drop(inbox);
+        let grace = Duration::from_millis(config.timeouts.term_grace_ms);
+        let (status, stragglers) = match actor.end(grace) {
+            Ok(ended) => {
+                for (stream, drain) in [("stdout", ended.stdout), ("stderr", ended.stderr)] {
+                    if let Some(reason) = drain_fault(stream, drain) {
+                        unclean.get_or_insert(reason);
+                    }
+                }
+                (Some(ended.status), ended.stragglers)
+            }
             Err(error) => {
-                self.unclean
-                    .get_or_insert_with(|| format!("ending the actor: {error}"));
-                None
+                unclean.get_or_insert_with(|| format!("ending the actor: {error}"));
+                (None, 0)
             }
         };
-        if let Err(error) = self.log.flush() {
-            self.unclean
-                .get_or_insert_with(|| format!("flushing the supervisor log: {error}"));
+        if let Err(error) = log.flush() {
+            unclean.get_or_insert_with(|| format!("flushing the supervisor log: {error}"));
         }
         let supervisor_exit = if terminated {
             SupervisorExit::Terminated
-        } else if self.unclean.is_some() {
+        } else if unclean.is_some() {
             SupervisorExit::Unclean
         } else {
             SupervisorExit::Clean
         };
         let summary = Summary {
             schema_version: summary::SCHEMA_VERSION,
-            accounted_for: self.counts.gaps == 0
+            accounted_for: counts.gaps == 0
                 && supervisor_exit == SupervisorExit::Clean
-                && self.counts.events > 0,
+                && counts.events > 0,
             supervisor_exit,
-            unclean_reason: self.unclean.clone(),
+            unclean_reason: unclean,
             actor_exit_code: status.and_then(|s| s.code()),
             actor_exit_signal: status.and_then(|s| {
                 use std::os::unix::process::ExitStatusExt;
                 s.signal()
             }),
-            events: self.counts.events,
-            undecodable_lines: self.counts.undecodable,
-            oversized_lines: self.counts.oversized,
-            boundaries: self.counts.boundaries,
-            corrections: self.counts.corrections,
-            silent: self.counts.silent,
-            unjudged: self.counts.unjudged,
-            lapses: self.counts.lapses,
-            gaps: self.counts.gaps,
-            stale_verdicts_discarded: self.counts.stale,
-            max_decision_lag_ms: millis(self.counts.max_lag),
-            model: self.config.model.name.clone(),
+            events: counts.events,
+            undecodable_lines: counts.undecodable,
+            oversized_lines: counts.oversized,
+            boundaries: counts.boundaries,
+            corrections: counts.corrections,
+            silent: counts.silent,
+            unjudged: counts.unjudged,
+            lapses: counts.lapses,
+            gaps: counts.gaps,
+            stale_verdicts_discarded: counts.stale,
+            max_decision_lag_ms: millis(counts.max_lag),
+            stragglers_killed: u64::try_from(stragglers).unwrap_or(u64::MAX),
+            model: config.model.name,
             criterion_sha256: criterion_sha256.to_string(),
             actor_event_log_sha256: summary::file_sha256(&paths.actor_event_log),
             supervisor_log_sha256: summary::file_sha256(&paths.supervisor_log),
         };
         Ended { status, summary }
+    }
+}
+
+/// What a drain's ending says against the run, if anything.
+fn drain_fault(stream: &str, drain: Option<Result<(), String>>) -> Option<String> {
+    match drain {
+        Some(Ok(())) => None,
+        Some(Err(error)) => Some(format!("the actor's {stream}: {error}")),
+        None => Some(format!(
+            "the actor's {stream}: the drain did not finish within the grace; a process the wrapper could not find still holds the pipe"
+        )),
     }
 }
 

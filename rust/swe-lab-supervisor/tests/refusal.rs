@@ -35,6 +35,7 @@ fn a_refused_run_names_the_fault_and_repeats_nothing_the_caller_passed() {
     let mut command = wrapper();
     command
         .args(["run", "--config", &missing])
+        .args(["--actor-prompt", "/dev/null"])
         .args([
             "--actor-event-log",
             "/dev/null",
@@ -93,8 +94,8 @@ fn help_is_a_command_with_its_text_on_stdout_not_a_usage_error() {
     }
 }
 
-#[test]
-fn a_bad_base_url_is_refused_without_the_url() {
+/// A valid config in a file of its own.
+fn valid_config() -> std::path::PathBuf {
     let config = std::env::temp_dir().join(format!(
         "swe-lab-supervisor-refusal-{}-{}.json",
         std::process::id(),
@@ -116,10 +117,48 @@ fn a_bad_base_url_is_refused_without_the_url() {
               "max_actor_stderr_bytes": 1048576}}"#,
     )
     .unwrap();
+    config
+}
+
+#[test]
+fn a_missing_actor_prompt_is_refused_without_the_path() {
+    let config = valid_config();
+    let missing = format!("/nonexistent/{PATH_SENTINEL}.stream.json");
     let mut command = wrapper();
     command
         .args(["run", "--config"])
         .arg(&config)
+        .args(["--actor-prompt", &missing])
+        .args([
+            "--actor-event-log",
+            "/dev/null",
+            "--supervisor-log",
+            "/dev/null",
+        ])
+        .args([
+            "--summary",
+            "/dev/null",
+            "--actor-stderr",
+            "/dev/null",
+            "--",
+            "actor",
+        ])
+        .env("SWE_LAB_SUPERVISOR_BASE_URL", "http://127.0.0.1:9/v1");
+    let (code, stderr) = stderr_of(command);
+    assert_eq!(code, 3, "{stderr}");
+    assert!(stderr.contains("actor prompt"), "{stderr}");
+    assert!(!stderr.contains(PATH_SENTINEL), "{stderr}");
+    std::fs::remove_file(&config).unwrap();
+}
+
+#[test]
+fn a_bad_base_url_is_refused_without_the_url() {
+    let config = valid_config();
+    let mut command = wrapper();
+    command
+        .args(["run", "--config"])
+        .arg(&config)
+        .args(["--actor-prompt", "/dev/null"])
         .args([
             "--actor-event-log",
             "/dev/null",
