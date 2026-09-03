@@ -34,8 +34,8 @@ image="swe-lab-rust-build:$version-$pin"
 
 docker build --quiet --tag "$image" - <<DOCKERFILE >/dev/null
 FROM rust:$version
-# --no-self-update: rustup itself stays what the base image ships, so two
-# builds of one tag run the same rustup.
+# --no-self-update: the install runs on the rustup the base image ships and
+# does not replace it — which rustup that is follows the base tag, not this.
 RUN mkdir /pin \
  && echo '$(base64 -w0 "$crate/rust-toolchain.toml")' | base64 -d > /pin/rust-toolchain.toml \
  && cd /pin && rustup toolchain install --no-self-update
