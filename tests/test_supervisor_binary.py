@@ -194,10 +194,12 @@ def test_the_probe_does_not_hand_the_child_our_environment(
 ):
   """`--version` needs no credential, so the probe passes none.
 
-  Not a boundary on its own — a child running as this user can read
-  `/proc/<parent>/environ` whatever we pass it — which is why the errors above
-  say nothing either. This narrows what a merely careless binary picks up;
-  those stop a deliberate leak from being written down.
+  **Not something to rely on**, which is why the errors above say nothing
+  either: whether a same-uid child can read the parent's `/proc/<pid>/environ`
+  is decided by `ptrace_may_access` and varies with `ptrace_scope`, the
+  target's `dumpable` flag and capabilities. This narrows what a careless
+  binary picks up; not repeating child output is what stops a deliberate leak
+  from being written down.
   """
   reporter = _script(
       tmp_path / "reporter",

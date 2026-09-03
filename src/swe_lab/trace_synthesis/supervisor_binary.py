@@ -19,11 +19,18 @@ host, a ``dest`` puts the file exactly there.
   exists this becomes a developer convenience rather than the only way in.
 
 **The probe runs a file somebody else named, so it is treated as hostile.**
-Two separate measures, because neither is sufficient. It executes under a
+Two separate measures, and only one of them is a boundary. It executes under a
 minimal environment (:data:`_PROBE_ENV`), since ``--version`` needs no
-credential — but a child running as this user can read the parent's
-environment out of ``/proc`` whatever we pass it, so that alone would not be a
-boundary. The one that is: **child output is never repeated in an exception.**
+credential — but that is **not something to rely on**: whether a same-uid child
+can read the parent's ``/proc/<pid>/environ`` is decided by
+``ptrace_may_access``, which varies with ``ptrace_scope``, the target's
+``dumpable`` flag and capabilities. A property that varies with the
+environment cannot be a premise that holds everywhere — in either direction.
+Scrubbing narrows what a careless binary picks up, and that is its whole
+value.
+
+The boundary is the other one: **child output is never repeated in an
+exception.**
 An error message travels into logs, tracebacks and CI transcripts, so a
 process that printed a credential and exited nonzero would otherwise have
 written it there. Diagnosis is left to whoever can run the file themselves.
