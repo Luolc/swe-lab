@@ -41,6 +41,7 @@ use std::ffi::OsString;
 use std::fs::{self, File};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::os::fd::AsFd;
+use std::os::unix::fs::MetadataExt;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, ExitStatus, Stdio};
@@ -267,6 +268,12 @@ impl Actor {
     {
         let event_log = File::create(event_log)?;
         let stderr_log = File::create(stderr_log)?;
+        if same_file(&event_log, &stderr_log)? {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "the event log and the stderr log are one file",
+            ));
+        }
         let mark = format!(
             "{}-{}",
             std::process::id(),
@@ -618,9 +625,11 @@ fn sweep(mark: &str, group: Pid) -> Result<usize, String> {
             return Ok(killed.len());
         }
         for straggler in stragglers {
-            if start_time(straggler.pid) != Some(straggler.started) {
+            match start_time(straggler.pid) {
+                Probe::Present(started) if started == straggler.started => {}
                 // Not the process that was found: gone, or its pid reused.
-                continue;
+                Probe::Present(_) | Probe::Gone => continue,
+                Probe::Unprovable(reason) => return Err(reason),
             }
             if kill(straggler.pid, Signal::SIGKILL).is_ok() {
                 killed.insert(straggler.pid);
@@ -658,17 +667,19 @@ fn marked_processes(needle: &str) -> Result<Vec<Marked>, String> {
         if pid == me {
             continue;
         }
-        let environ = match fs::read(entry.path().join("environ")) {
-            Ok(environ) => environ,
-            Err(error) if unreadable_is_absent(&error) => continue,
-            Err(error) => return Err(format!("reading /proc/{pid}/environ: {error}")),
+        let environ = match proc_file(pid, "environ") {
+            Probe::Present(environ) => environ,
+            Probe::Gone => continue,
+            Probe::Unprovable(reason) => return Err(reason),
         };
         if !environ.split(|b| *b == 0).any(|e| e == needle.as_bytes()) {
             continue;
         }
-        let Some((group, started)) = stat_fields(pid) else {
+        let (group, started) = match stat_fields(pid) {
+            Probe::Present(fields) => fields,
             // Gone between the two reads.
-            continue;
+            Probe::Gone => continue,
+            Probe::Unprovable(reason) => return Err(reason),
         };
         found.push(Marked {
             pid: Pid::from_raw(i32::try_from(pid).map_err(|_| "pid does not fit".to_string())?),
@@ -679,25 +690,82 @@ fn marked_processes(needle: &str) -> Result<Vec<Marked>, String> {
     Ok(found)
 }
 
-/// A process that is gone, or not this user's, cannot be the actor's.
-fn unreadable_is_absent(error: &io::Error) -> bool {
-    matches!(
-        error.kind(),
-        io::ErrorKind::NotFound | io::ErrorKind::PermissionDenied
-    ) || error.raw_os_error() == Some(Errno::ESRCH as i32)
+/// What one read of a process's `/proc` entry established. A read that
+/// fails is not a process that is gone: the two are different states, and
+/// this type keeps them apart at every use — a caller has to say what it
+/// does with an answer it cannot trust, and the compiler holds it to that.
+/// (A two-state answer is how "cannot read" once became "gone", and a
+/// marked descendant outlived the sweep.)
+#[derive(Debug)]
+enum Probe<T> {
+    /// The process is there; this is what was read.
+    Present(T),
+    /// The process is gone (`ENOENT` / `ESRCH`), or is not this user's to
+    /// read — which none of the actor's descendants can be.
+    Gone,
+    /// The read failed, or what it returned did not parse: the process's
+    /// state is not known, and the reason says why.
+    Unprovable(String),
+}
+
+/// The bytes of `/proc/<pid>/<name>`. Bytes, not a string: what a process
+/// names itself is any bytes at all, and it appears in `stat`.
+fn proc_file(pid: u32, name: &str) -> Probe<Vec<u8>> {
+    match fs::read(format!("/proc/{pid}/{name}")) {
+        Ok(bytes) => Probe::Present(bytes),
+        Err(error)
+            if matches!(
+                error.kind(),
+                io::ErrorKind::NotFound | io::ErrorKind::PermissionDenied
+            ) || error.raw_os_error() == Some(Errno::ESRCH as i32) =>
+        {
+            Probe::Gone
+        }
+        Err(error) => Probe::Unprovable(format!("reading /proc/{pid}/{name}: {error}")),
+    }
 }
 
 /// The process group and start time of a process, from `/proc/<pid>/stat`:
-/// `pid (comm) state ppid pgrp session ... starttime ...` — after the last
-/// `)`, the group is the third field and the start time the twentieth.
-fn stat_fields(pid: u32) -> Option<(i32, u64)> {
-    let stat = fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
-    let fields: Vec<&str> = stat.rsplit_once(')')?.1.split_whitespace().collect();
-    Some((fields.get(2)?.parse().ok()?, fields.get(19)?.parse().ok()?))
+/// the fields after the comm's closing parenthesis — the last one, since the
+/// comm may hold parentheses of its own — of which the third is the group
+/// and the twentieth the start time, in clock ticks since boot.
+fn stat_fields(pid: u32) -> Probe<(i32, u64)> {
+    let stat = match proc_file(pid, "stat") {
+        Probe::Present(stat) => stat,
+        Probe::Gone => return Probe::Gone,
+        Probe::Unprovable(reason) => return Probe::Unprovable(reason),
+    };
+    let parsed = || -> Option<(i32, u64)> {
+        let close = stat.iter().rposition(|b| *b == b')')?;
+        let fields: Vec<&[u8]> = stat[close + 1..]
+            .split(u8::is_ascii_whitespace)
+            .filter(|field| !field.is_empty())
+            .collect();
+        let field = |index: usize| std::str::from_utf8(fields.get(index)?).ok();
+        Some((field(2)?.parse().ok()?, field(19)?.parse().ok()?))
+    };
+    parsed().map_or_else(
+        || Probe::Unprovable(format!("/proc/{pid}/stat did not parse")),
+        Probe::Present,
+    )
 }
 
-fn start_time(pid: Pid) -> Option<u64> {
-    stat_fields(u32::try_from(pid.as_raw()).ok()?).map(|(_, started)| started)
+fn start_time(pid: Pid) -> Probe<u64> {
+    let Ok(pid) = u32::try_from(pid.as_raw()) else {
+        return Probe::Unprovable("a pid below zero".to_string());
+    };
+    match stat_fields(pid) {
+        Probe::Present((_, started)) => Probe::Present(started),
+        Probe::Gone => Probe::Gone,
+        Probe::Unprovable(reason) => Probe::Unprovable(reason),
+    }
+}
+
+/// Whether two open files are one file — by device and inode, so that a
+/// hard link or a symlink to the other is caught, not only the same path.
+fn same_file(a: &File, b: &File) -> io::Result<bool> {
+    let (a, b) = (a.metadata()?, b.metadata()?);
+    Ok((a.dev(), a.ino()) == (b.dev(), b.ino()))
 }
 
 /// The event log: every record whole or absent. A line is committed as one
@@ -870,6 +938,9 @@ mod tests {
     use std::os::unix::process::ExitStatusExt;
     use std::path::PathBuf;
     use std::sync::mpsc::Receiver;
+
+    use nix::sys::stat::Mode;
+    use nix::unistd::mkfifo;
 
     use super::*;
 
@@ -1499,5 +1570,76 @@ mod tests {
             wait_until(Duration::from_secs(5), || probes_alive(&probe) == 0),
             "a descendant outside the group survived the end"
         );
+    }
+
+    #[test]
+    fn a_descendant_whose_comm_is_not_utf8_is_still_found_and_killed() {
+        let dir = scratch("comm");
+        let probe = format!("comm-{}", std::process::id());
+        let pid_file = dir.join("escaped.pid");
+        let fifo = dir.join("never-written");
+        mkfifo(&fifo, Mode::S_IRWXU).unwrap();
+        // A descendant that leaves the group and names itself in bytes that
+        // are not UTF-8, so that its `/proc/<pid>/stat` is not a string;
+        // then it blocks opening a fifo nobody writes — alive for good,
+        // forking nothing, so only the sweep can end it. It writes its pid
+        // after naming itself: the file appearing is the fixture in place.
+        let script = format!(
+            "setsid sh -c 'printf \"\\377\\376\" > /proc/self/comm; echo $$ > \"$0\"; \
+             read _ < \"$1\"' {} {} >/dev/null 2>&1 </dev/null & sleep 30",
+            pid_file.display(),
+            fifo.display()
+        );
+        let mut command = command(&sh(&script), &[]).unwrap();
+        command.env("PROBE", &probe);
+        let actor = Actor::spawn(
+            command,
+            &dir.join("events.jsonl"),
+            &dir.join("stderr.log"),
+            LIMITS,
+            |_| {},
+        )
+        .unwrap();
+        let written = || {
+            fs::read_to_string(&pid_file)
+                .ok()
+                .and_then(|s| s.trim().parse::<i32>().ok())
+        };
+        assert!(
+            wait_until(Duration::from_secs(5), || written().is_some()),
+            "the escaped descendant never wrote its pid"
+        );
+        let escaped = written().unwrap();
+        let comm = fs::read(format!("/proc/{escaped}/comm")).unwrap();
+        assert!(
+            std::str::from_utf8(&comm).is_err(),
+            "the fixture's comm is UTF-8: {comm:?}"
+        );
+        // Alive by an oracle of its own: a live process has an environment,
+        // a zombie or a gone one has none.
+        let alive = || fs::read(format!("/proc/{escaped}/environ")).is_ok_and(|e| !e.is_empty());
+        assert!(alive(), "the fixture died on its own");
+        let ended = actor.end(Duration::from_millis(500)).unwrap();
+        let gone = wait_until(Duration::from_secs(5), || !alive());
+        if !gone {
+            let _ = kill(Pid::from_raw(escaped), Signal::SIGKILL);
+        }
+        assert!(
+            gone,
+            "the descendant with a non-UTF-8 comm survived the end: {ended:?}"
+        );
+        assert!(matches!(ended.stragglers, Ok(n) if n >= 1), "{ended:?}");
+    }
+
+    #[test]
+    fn one_file_for_both_logs_is_refused_before_the_actor_starts() {
+        let dir = scratch("alias");
+        let probe = format!("alias-{}", std::process::id());
+        let mut command = command(&sh("sleep 30"), &[]).unwrap();
+        command.env("PROBE", &probe);
+        let log = dir.join("one.log");
+        let error = Actor::spawn(command, &log, &log, LIMITS, |_| {}).expect_err("aliased logs");
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput, "{error}");
+        assert_eq!(probes_alive(&probe), 0, "an actor was started");
     }
 }
