@@ -184,7 +184,7 @@ sample 0's `unit_test/`, `edges/` and `store/` were gone.
 **Frozen at** (absolute, gitignored — the tree is not in the repo):
 
 ```
-/home/ubuntu/dev/swe-lab-handmade/experiments/trace_synthesis/handmade_instance/frozen/failure-rollout-0/
+~/dev/swe-lab-handmade/experiments/trace_synthesis/handmade_instance/frozen/failure-rollout-0/
 ```
 
 1.4 MB, 99 files. What phase B needs is all present:

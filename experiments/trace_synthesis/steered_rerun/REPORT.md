@@ -779,7 +779,7 @@ hand-assembled dataset row:
 So the artifact this round produces is not "a frozen run directory" — it is a
 **mountable input**, and the guidebook agent and the workflow that mounts it are
 built against its layout. [`freeze_sample.py`](freeze_sample.py) writes it, at
-`/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/<instance_id>/`:
+`~/dev/swe-lab-artifacts/trace_synthesis/<instance_id>/`:
 
 | File | What it is | Why it is separate |
 |---|---|---|

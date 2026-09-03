@@ -70,7 +70,7 @@
           "store/adhoc/instance_navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310/r0/rollout/a0/claude_code.proxy_log.jsonl"
         ]
       },
-      "frozen": "/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/baseline-navidrome-rollout-0",
+      "frozen": "~/dev/swe-lab-artifacts/trace_synthesis/baseline-navidrome-rollout-0",
       "boundaries_judged": 0,
       "supervisor_errors": 0,
       "boundaries_unjudged": 0,
@@ -186,7 +186,7 @@
           "store/adhoc/instance_navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310/r2/rollout/a0/claude_code.proxy_log.jsonl"
         ]
       },
-      "frozen": "/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/baseline-navidrome-rollout-2",
+      "frozen": "~/dev/swe-lab-artifacts/trace_synthesis/baseline-navidrome-rollout-2",
       "boundaries_judged": 0,
       "supervisor_errors": 0,
       "boundaries_unjudged": 0,
@@ -303,7 +303,7 @@
           "store/adhoc/instance_NodeBB__NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/r0/rollout/a0/claude_code.proxy_log.jsonl"
         ]
       },
-      "frozen": "/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/baseline-nodebb-rollout-0",
+      "frozen": "~/dev/swe-lab-artifacts/trace_synthesis/baseline-nodebb-rollout-0",
       "boundaries_judged": 0,
       "supervisor_errors": 0,
       "boundaries_unjudged": 0,
@@ -420,7 +420,7 @@
           "store/adhoc/instance_NodeBB__NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/r1/rollout/a0/claude_code.proxy_log.jsonl"
         ]
       },
-      "frozen": "/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/baseline-nodebb-rollout-1",
+      "frozen": "~/dev/swe-lab-artifacts/trace_synthesis/baseline-nodebb-rollout-1",
       "boundaries_judged": 0,
       "supervisor_errors": 0,
       "boundaries_unjudged": 0,
@@ -535,7 +535,7 @@
           "store/adhoc/instance_qutebrowser__qutebrowser-9ed748effa8f3bcd804612d9291da017b514e12f-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d/r0/rollout/a0/claude_code.proxy_log.jsonl"
         ]
       },
-      "frozen": "/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/baseline-qutebrowser-rollout-0",
+      "frozen": "~/dev/swe-lab-artifacts/trace_synthesis/baseline-qutebrowser-rollout-0",
       "boundaries_judged": 0,
       "supervisor_errors": 0,
       "boundaries_unjudged": 0,
@@ -638,7 +638,7 @@
           "store/adhoc/instance_future-architect__vuls-4c04acbd9ea5b073efe999e33381fa9f399d6f27/r0/rollout/a0/claude_code.proxy_log.jsonl"
         ]
       },
-      "frozen": "/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/baseline-vuls-rollout-0",
+      "frozen": "~/dev/swe-lab-artifacts/trace_synthesis/baseline-vuls-rollout-0",
       "boundaries_judged": 0,
       "supervisor_errors": 0,
       "boundaries_unjudged": 0,
@@ -755,7 +755,7 @@
           "store/adhoc/instance_protonmail__webclients-a6e6f617026794e7b505d649d2a7a9cdf17658c8/r0/rollout/a0/claude_code.proxy_log.jsonl"
         ]
       },
-      "frozen": "/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/baseline-webclients-rollout-0",
+      "frozen": "~/dev/swe-lab-artifacts/trace_synthesis/baseline-webclients-rollout-0",
       "boundaries_judged": 0,
       "supervisor_errors": 0,
       "boundaries_unjudged": 0,
@@ -872,7 +872,7 @@
           "store/adhoc/instance_qutebrowser__qutebrowser-9ed748effa8f3bcd804612d9291da017b514e12f-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d/r11/rollout/a0/claude_code.proxy_log.jsonl"
         ]
       },
-      "frozen": "/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/steered-qutebrowser-rollout-11",
+      "frozen": "~/dev/swe-lab-artifacts/trace_synthesis/steered-qutebrowser-rollout-11",
       "boundaries_judged": 27,
       "supervisor_errors": 0,
       "boundaries_unjudged": 0,

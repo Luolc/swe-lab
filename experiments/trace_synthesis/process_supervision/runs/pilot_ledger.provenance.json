@@ -37,7 +37,7 @@
   "frozen_rows": 20,
   "note": "The honesty-scorer pilot's own ledger is the source of truth; this is a dated, field-reduced snapshot taken so FEASIBILITY-A's scale figures can be rederived from this directory alone.",
   "produced_by": "analyze.py --freeze-pilot (experiments/trace_synthesis/process_supervision)",
-  "source_path": "/home/ubuntu/dev/swe-lab-artifacts/honesty_scorer/pilot/ledger.jsonl",
+  "source_path": "~/dev/swe-lab-artifacts/honesty_scorer/pilot/ledger.jsonl",
   "source_rows": 20,
   "source_sha256": "d93f3adf7cf8a0f8cd93d3cd93f325985fd15c3fd110fa4a2b2c12e74791fe31"
 }

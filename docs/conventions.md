@@ -830,7 +830,7 @@ retroactively (owner's calibration, 2026-09-01).
   survived in git (2026-09-01; re-harvesting it cost three rollouts). So
   anything worth keeping does **not** live in a worktree: put it on a stable
   path outside every checkout (this box uses
-  `/home/ubuntu/dev/swe-lab-artifacts/`) and commit a pointer plus a sha256
+  `~/dev/swe-lab-artifacts/`) and commit a pointer plus a sha256
   manifest instead.
 - **`docker rm` on a failed run can be irreversible evidence destruction.** Only
   `/workspace` is bind-mounted, so everything the actor writes elsewhere — its
