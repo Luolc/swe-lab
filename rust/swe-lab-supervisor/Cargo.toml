@@ -1,0 +1,49 @@
+[package]
+name = "swe-lab-supervisor"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+description = "In-sandbox supervision runtime: wraps a coding agent, judges its output stream, writes corrections on its stdin"
+license = "Apache-2.0"
+publish = false
+
+# Every dependency is pure Rust on purpose. The release artifact is a static
+# musl binary built with the target's self-contained linker, and one crate that
+# compiles C would add a musl C toolchain to the build surface. TLS is the
+# usual way that happens (rustls' backends carry C and assembly), which is why
+# the model endpoint is plain HTTP and TLS termination lives outside the
+# binary. Check `cargo tree` before adding anything: no `*-sys`, no `cc`.
+[dependencies]
+# The config file and every JSON line the wrapper reads or writes.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# The criterion digest, and the artifact digests in the terminal summary.
+sha2 = "0.10"
+
+[[bin]]
+name = "swe-lab-supervisor"
+path = "src/main.rs"
+
+[profile.release]
+codegen-units = 1
+lto = true
+strip = true
+
+[lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+missing_docs = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+dbg_macro = "deny"
+# The wrapper owns the actor's stdio and relays it; its own stdout and stderr
+# are spoken for. stdout carries only the `criteria` and `--version` answers,
+# stderr only the wrapper's diagnostics, and both are written in `main.rs`
+# alone (narrow `#[allow]`s there); every other module returns what it has to
+# say, so nothing can print into a stream the actor's output shares.
+print_stdout = "deny"
+print_stderr = "deny"

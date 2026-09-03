@@ -1,0 +1,8 @@
+# `unwrap`/`expect` are denied in the binary's code (Cargo.toml lints) but
+# allowed in tests, where a panic is a perfectly good failure signal.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+
+# Proper nouns that trip `doc_markdown` (pedantic) but are not code. `..`
+# extends clippy's built-in list rather than replacing it.
+doc-valid-idents = ["OpenAI", "OpenRouter", ".."]
