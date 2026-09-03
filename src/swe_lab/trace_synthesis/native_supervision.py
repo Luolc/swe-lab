@@ -17,9 +17,13 @@ the run's **values** cross the boundary, and each is here:
   actor's own credential does, so neither value reaches a command line, a
   staged file or any artifact;
 - **the terminal summary** — what the wrapper writes at the end, and the only
-  thing a run may be classified from. Not the exit status: a wrapper that ran
-  cleanly exits with the *actor's* status, so exit 0 says the actor was happy
-  and says nothing about whether supervision happened.
+  thing a run may be classified from. Not the exit status, in **either**
+  direction: a wrapper that ran cleanly exits with the *actor's* status, so
+  exit 0 says the actor was happy and says nothing about whether supervision
+  happened — and a wrapper that could not account for the run exits ``1`` of
+  its own accord, which says nothing about whether the actor succeeded. The
+  exit status describes the wrapper's ability to give an account, not the
+  actor's result.
 
 The boundary carries one thing that is not a value and is not here: the
 **actor's argv**, handed to the wrapper after ``--`` as opaque tokens. That one
@@ -58,6 +62,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import dataclasses
+import enum
 import json
 import pathlib
 from typing import Any
@@ -110,6 +115,14 @@ BASE_URL_ENV = "SWE_LAB_SUPERVISOR_BASE_URL"
 #: shell), and removes it from the actor's environment before launching it.
 API_KEY_ENV = "SWE_LAB_SUPERVISOR_API_KEY"
 
+#: A non-secret variable the **wrapper** sets in the actor's environment, not
+#: one we pass in: ``<wrapper pid>-<nanos>``, which it scans ``/proc`` for after
+#: ``killpg`` to find descendants that escaped the process group via ``setsid``.
+#: Named here because the environment boundary is this module's to describe and
+#: because it is the one supervisor variable that must **not** be scrubbed from
+#: the actor — the two above still are.
+MARK_ENV = "SWE_LAB_SUPERVISOR_MARK"
+
 #: The one terminal-summary schema this consumer reads.
 SUMMARY_SCHEMA_VERSION = 1
 
@@ -132,6 +145,7 @@ SUPERVISION_MAX_DECISION_LAG_METRIC = "supervision.max_decision_lag_ms"
 U32_MAX = 2**32 - 1
 U64_MAX = 2**64 - 1
 
+
 #: Every numeric field, with the range the Rust type it deserializes into
 #: admits. ``budget`` and ``cooldown`` are ``u32``; ``window``,
 #: ``judge_every_n_assistant_messages`` and ``max_event_line_bytes`` are
@@ -140,6 +154,29 @@ U64_MAX = 2**64 - 1
 #: non-zero. **``term_grace_ms`` is a plain ``u64`` and zero is a value the
 #: binary accepts**, so this does not refuse it: the two sides agreeing on what
 #: is configurable matters more than this side being defensible alone.
+class Blocking(enum.StrEnum):
+  """How the actor is held while a judgment is in flight.
+
+  A three-valued setting rather than the boolean it started as: blocking and
+  the stale gate are two answers to the same lag, and there turned out to be
+  two ways of blocking with different costs. Mirrors `config.rs`'s ``Blocking``,
+  which deserializes these kebab-case tokens and refuses anything else.
+
+  Attributes:
+    OFF: Not held. The actor runs ahead, and a verdict that newer admitted
+      evidence overtook is discarded as stale.
+    STDOUT: The wrapper stops reading the actor's stdout; the pipe fills and
+      the actor's next write waits for the verdict. The absence of a read,
+      which self-releases if the wrapper dies.
+    SIGSTOP: ``SIGSTOP`` to the actor's process group, ``SIGCONT`` after the
+      verdict. Exact, and a real state the wrapper must leave before it exits.
+  """
+
+  OFF = "off"
+  STDOUT = "stdout"
+  SIGSTOP = "sigstop"
+
+
 #: The fields whose Rust type is not a number, and the JSON type each must
 #: have. Checked through :func:`getattr` like the numeric ones rather than off
 #: the attributes directly: the annotations already say ``str`` and ``bool``,
@@ -147,7 +184,7 @@ U64_MAX = 2**64 - 1
 #: downstream consumer, or ``dataclasses.replace``, which takes ``Any``.
 NON_NUMERIC_FIELDS: Mapping[str, type] = {
     "model": str,
-    "block_actor_while_judging": bool,
+    "block_actor_while_judging": Blocking,
 }
 
 NUMERIC_FIELDS: Mapping[str, tuple[int, int]] = {
@@ -158,6 +195,8 @@ NUMERIC_FIELDS: Mapping[str, tuple[int, int]] = {
     "model_call_ms": (1, U64_MAX),
     "term_grace_ms": (0, U64_MAX),
     "max_event_line_bytes": (1, U32_MAX),
+    "max_actor_stdout_bytes": (1, U64_MAX),
+    "max_actor_stderr_bytes": (1, U64_MAX),
 }
 
 #: The default ceiling on one judge or writer call, in milliseconds. A
@@ -174,6 +213,17 @@ DEFAULT_TERM_GRACE_MS = 10_000
 #: whole file, so the framing buffer grows to this rather than to a fixed size;
 #: a longer line is still written to the event log and reaches no judgment.
 DEFAULT_MAX_EVENT_LINE_BYTES = 16 * 1024 * 1024
+
+#: The default ceilings on the *whole* of what the actor writes to each stream.
+#: Unlike the per-line ceiling above, reaching one of these ends the run: the
+#: log is truncated at a line boundary (a partial line is not written at all),
+#: the stream is not read again, and the run is reported unhealthy.
+#:
+#: **Not backpressure.** Ceasing to read here is terminal, not a pause the
+#: wrapper later resumes, so it opens none of the freshness window that
+#: blocking the actor mid-judgment would.
+DEFAULT_MAX_ACTOR_STDOUT_BYTES = 1024 * 1024 * 1024
+DEFAULT_MAX_ACTOR_STDERR_BYTES = 256 * 1024 * 1024
 
 
 def _require_type(name: str, value: object, kind: type) -> None:
@@ -227,14 +277,20 @@ class NativeSupervision:
       between two judgment boundaries. A boundary also falls at every actor
       ``result`` carrying new evidence, so a partial batch at the end of a turn
       is judged rather than dropped.
-    block_actor_while_judging: Whether the wrapper stops reading the actor's
-      stdout while a judgment is in flight, so the actor blocks on its next
-      write. Off, the actor runs ahead and an overtaken verdict is discarded as
-      stale. Not a default either: the two are answers to the same lag.
+    block_actor_while_judging: How the actor is held while a judgment is in
+      flight — see :class:`Blocking`. Not defaulted either: holding it and the
+      stale gate are two answers to the same lag, and a run says which it
+      uses. A :class:`Blocking` member, never the bare string: a token the
+      binary does not know is a run refused at startup, and requiring the
+      member is what makes a typo impossible to write.
     model_call_ms: The bound on one judge or writer call, connection included.
     term_grace_ms: The shutdown grace described at
       :data:`DEFAULT_TERM_GRACE_MS`.
     max_event_line_bytes: The ceiling on one line of actor stdout.
+    max_actor_stdout_bytes: The ceiling on the whole of the actor's stdout, as
+      described at :data:`DEFAULT_MAX_ACTOR_STDOUT_BYTES`. Reaching it ends the
+      run and reports it unhealthy.
+    max_actor_stderr_bytes: The same ceiling for the actor's stderr.
   """
 
   model: str
@@ -242,10 +298,12 @@ class NativeSupervision:
   cooldown: int
   window: int
   judge_every_n_assistant_messages: int
-  block_actor_while_judging: bool
+  block_actor_while_judging: Blocking
   model_call_ms: int = DEFAULT_MODEL_CALL_MS
   term_grace_ms: int = DEFAULT_TERM_GRACE_MS
   max_event_line_bytes: int = DEFAULT_MAX_EVENT_LINE_BYTES
+  max_actor_stdout_bytes: int = DEFAULT_MAX_ACTOR_STDOUT_BYTES
+  max_actor_stderr_bytes: int = DEFAULT_MAX_ACTOR_STDERR_BYTES
 
   def __post_init__(self) -> None:
     """Refuse a configuration the binary would refuse, here instead.
@@ -340,14 +398,18 @@ class NativeSupervision:
             "judge_every_n_assistant_messages": (
                 self.judge_every_n_assistant_messages
             ),
-            "block_actor_while_judging": self.block_actor_while_judging,
+            "block_actor_while_judging": (self.block_actor_while_judging.value),
         },
         "model": {"name": self.model},
         "timeouts": {
             "model_call_ms": self.model_call_ms,
             "term_grace_ms": self.term_grace_ms,
         },
-        "limits": {"max_event_line_bytes": self.max_event_line_bytes},
+        "limits": {
+            "max_event_line_bytes": self.max_event_line_bytes,
+            "max_actor_stdout_bytes": self.max_actor_stdout_bytes,
+            "max_actor_stderr_bytes": self.max_actor_stderr_bytes,
+        },
     }
 
   def config_bytes(
