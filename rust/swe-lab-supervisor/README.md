@@ -92,7 +92,12 @@ Four files, at the paths given on the command line:
   capped at `max_actor_stdout_bytes` — deliberately the cap of the stdout it
   accounts for, not a key of its own — and a row that would cross the cap,
   or a write that fails, ends the run as not accounted for: an account the
-  wrapper can no longer keep is not evidence about supervision.
+  wrapper can no longer keep is not evidence about supervision. A boundary's
+  row is the one exception the cap makes room for: 16 KiB is held for it
+  from the moment its judge starts (no judge is started without it, and no
+  other row may take it), its strings from outside are bounded, and a row
+  that would still not fit is written without the raw answers,
+  `calls[].raw_omitted` saying so. The one definition: task 20 §6.
 - `--summary` — the terminal summary, written to a staging name
   (`<summary>.partial`) and renamed into place when the run ends, so it is
   either whole or absent — nothing exists at its name until then; the name
@@ -176,7 +181,10 @@ to authenticate to it are not in the file at all — see
   snapshot is taken then, so nothing the actor wrote before it stopped is
   missing from it; the group stays stopped through the freshness check and
   the correction's write, and is resumed with `SIGCONT` after — and on
-  every other path out, before the wrapper exits. A group that cannot be
+  every other path out, before the wrapper exits; a marked descendant that
+  had left the group and was stopped by pid is resumed by pid, once the pid
+  is checked to still be that process (a pid reused since is left alone),
+  and every continuation is attempted whatever another did. A group that cannot be
   confirmed stopped within two seconds leaves that boundary unjudged, with
   the reason, rather than judged on evidence that may still be moving. Its
   cost is a real state: a wrapper that dies during a
@@ -192,7 +200,9 @@ to authenticate to it are not in the file at all — see
   on the stale gate alone. The measurement and the reasoning: task 20 §4.
 - `model` — the model name sent on every request, recorded in the summary.
 - `timeouts` — `model_call_ms` bounds one judge or writer call; a call past it
-  is one recorded lapse. `term_grace_ms` bounds every wait on the actor: how
+  is one recorded lapse. The call waits in slices of at most 100 ms, the
+  connect included, so a stop to the wrapper reaches it within that.
+  `term_grace_ms` bounds every wait on the actor: how
   long it gets to exit on its own once its stdout has closed (or to close
   its stdout once its leader has exited), how long its process group gets to
   honour `SIGTERM` before `SIGKILL`, and how long a write on its stdin — the

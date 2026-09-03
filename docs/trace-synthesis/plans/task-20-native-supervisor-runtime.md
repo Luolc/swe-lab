@@ -141,8 +141,13 @@ if the wrapper dies. The second, `sigstop`, is the exact form: `SIGSTOP` to
 the actor's process group when a judgment starts, `SIGCONT` when it completes
 — and on every other path out of the wrapper (a failed judgment, a stop signal
 to the wrapper, the wrapper's own drop), because a stopped group the wrapper
-leaves behind is a hung sandbox. Both sit behind the reader's gate and the
-`Actor` handle; a config picks one (§2).
+leaves behind is a hung sandbox. A marked descendant that has left the group
+is stopped by pid and held with the start time it had then; the `SIGCONT` to
+it is sent only once the pid is checked to still be that process — a pid
+reused since names another, which is left alone — and every held
+continuation and the group's are attempted whatever another did, the
+failures counted in one error. Both mechanisms sit behind the reader's gate
+and the `Actor` handle; a config picks one (§2).
 
 The reach of the first mechanism is measured, not assumed. **The numbers
 are of the kernel they were measured on** — the host's 6.17, shared by the
@@ -223,14 +228,24 @@ depend on it.
   exception). A latest-value channel, as #375 says, not a queue of
   prefixes. The judge runs on a named thread whose outcome reaches the loop
   whatever happens — a panic reports as such and is unclean — and which is
-  joined once it has reported.
+  joined once it has reported. Its word comes by a channel of its own, one
+  deep and never behind the actor's events: a full event queue cannot hold
+  the word, so the join is bounded by the calls' cancellation (next).
 - **A cancellation reaches the judge.** The wrapper's stop flag travels with
-  the model: every wait on the socket is a slice of at most 100 ms, and a
-  call in progress returns as cancelled within that of the stop; the writer
-  is not asked after it. On the way out the loop joins the judge and
-  settles its word like any other — every call it made on record, a
-  correction it wrote recorded `stale` and not delivered, nothing started
-  behind it — before the actor is ended and the summary written.
+  the model: every wait on the socket — the connect included — is a slice
+  of at most 100 ms, and a call in progress returns as cancelled within
+  that of the stop; the writer is not asked after it. On the way out the
+  loop joins the judge and settles its word like any other — every call it
+  made on record, a correction it wrote recorded `stale` and not delivered,
+  nothing started behind it — before the actor is ended and the summary
+  written.
+- **The run's fate is decided once.** When the loop ends it says what
+  stopped it — the signal, or nothing — and the summary's `supervisor_exit`
+  and the wrapper's exit status both follow that one decision; a signal
+  raised after it, while the actor is torn down or the logs digested,
+  changes neither. Debug builds hold between the actor's end and the
+  summary for `SWE_LAB_SUPERVISOR_DEBUG_HOLD_BEFORE_SUMMARY_MS` milliseconds,
+  for the test of exactly that; the release binary reads no such thing.
 - **Parallel judgments are not built**: response completion order would
   become an unstated policy.
 
@@ -259,9 +274,9 @@ per-kind fields. The kinds:
 A boundary's row is written when its judgment completes, carrying the
 boundary's cursor, so rows are in time order, not cursor order. `calls`
 records every model call of that boundary — purpose, the model requested and
-the one that answered, `max_tokens` sent, `finish_reason`, the raw answer,
-duration — so a ceiling hit, a refusal and an unparseable answer are told
-apart from the account alone.
+the one that answered, `max_tokens` sent, `finish_reason`, the raw answer
+(when the room allows it, below), duration — so a ceiling hit, a refusal and
+an unparseable answer are told apart from the account alone.
 
 The account is capped at `limits.max_actor_stdout_bytes` — the cap of the
 stdout it accounts for, shared on purpose rather than a key of its own that
@@ -269,6 +284,23 @@ the Python side would mirror by hand — and a row that would cross it, or a
 write that fails, is a fault: the run ends, not accounted for. A supervisor
 that has lost its own account would be producing supervision without
 evidence.
+
+**A boundary's row is the one exception the cap makes room for.** 16 KiB is
+held for it from the moment its judge starts until the row is written: a
+judge is not started unless that room is there (the boundary is `unjudged`
+with the reason, and the run faults), and no other row may take it while
+the judge is out — the actor's events fault the run at the cap less the
+reserve. When the row is written, every string of it that came from outside
+— the judge's reason (`marker`), the decision's `reason`, each call's
+`requested_model`, `response_model`, `finish_reason` and `error` — is bounded
+to 256 characters, control characters replaced, an ellipsis marking a cut;
+and if the row still would not fit, the raw answers go: `calls[].raw` is
+null and `calls[].raw_omitted` says why. The call, its error and the marker
+are never dropped, and the row is fitted *before* any correction is written,
+so an intervention is never without its record. A row so cut is under the
+reserve by construction (the crate's
+`a_boundary_row_at_every_ceiling_fits_the_room_held_for_it` is the named
+test).
 
 The terminal summary is the shape in #375 (schema-versioned, written to a
 temporary name and renamed), and it is what the Python side classifies from:

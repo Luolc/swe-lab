@@ -192,8 +192,9 @@ mod tests {
     #[test]
     fn the_committed_fixtures_carry_exactly_the_summary_s_keys_and_their_types() {
         // Every optional field set, and every one unset: a fixture's value
-        // must have the JSON type the struct gives that key, null allowed
-        // only where the struct's field is an `Option`.
+        // must have the JSON type the struct gives that key — an integer
+        // is not a float — null allowed only where the struct's field is
+        // an `Option`.
         let full = to_map(&Summary {
             unclean_reason: Some("u".to_string()),
             actor_exit_code: Some(0),
@@ -241,11 +242,15 @@ mod tests {
         }
     }
 
+    /// The JSON type of a value, an integer told from a float: the Python
+    /// reader takes an exact `int`, so a count that became a float on this
+    /// side would read as a number here and be refused there.
     fn json_type(value: &serde_json::Value) -> &'static str {
         match value {
             serde_json::Value::Null => "null",
             serde_json::Value::Bool(_) => "bool",
-            serde_json::Value::Number(_) => "number",
+            serde_json::Value::Number(number) if number.is_f64() => "float",
+            serde_json::Value::Number(_) => "integer",
             serde_json::Value::String(_) => "string",
             serde_json::Value::Array(_) => "array",
             serde_json::Value::Object(_) => "object",
