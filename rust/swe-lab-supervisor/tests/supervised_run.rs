@@ -650,3 +650,65 @@ fn a_boundary_during_a_judgment_keeps_its_ordinal_and_is_judged_after_it() {
     );
     fs::remove_dir_all(&run.dir).unwrap();
 }
+
+/// An actor whose descendant leaves the process group (`setsid`) and keeps
+/// the actor's stdout: the descendant writes a line after a delay, then
+/// the result; the leader gives it time to leave the group, then writes
+/// the boundary line and waits on stdin. Run as `<script> child`, the
+/// script is the descendant.
+const ESCAPED_WRITER_ACTOR: &str = r#"
+case "$1" in
+  child)
+    sleep 2.5
+    printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"ESCAPED_LINE"}]}}'
+    printf '%s\n' '{"type":"result","subtype":"success","is_error":false}'
+    exit 0
+    ;;
+esac
+( sleep 30; kill -TERM $$ ) >/dev/null 2>&1 </dev/null &
+read -r prompt || exit 90
+setsid /bin/sh "$0" child &
+sleep 0.2
+printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"BOUNDARY_LINE"}]}}'
+cat >/dev/null
+exit 0
+"#;
+
+/// Under `sigstop`, a marked descendant that left the process group is
+/// stopped and confirmed with the group: it cannot write behind the
+/// barrier while the judge runs. The endpoint samples every process
+/// running the script — the leader, its watchdog subshell, the escaped
+/// child — and finds all of them in `T` while it answers. The control:
+/// with the group alone stopped, the child sleeps on in `S` for longer
+/// than the sampler waits for a settled picture, and the sample carries
+/// its `S`.
+#[test]
+fn under_sigstop_a_descendant_that_left_the_group_is_stopped_too() {
+    let run = supervise_scenario(&Scenario {
+        name: "escaped",
+        blocking: "sigstop",
+        actor: ESCAPED_WRITER_ACTOR,
+        judge_every_n_assistant_messages: 1,
+        answers: vec![SILENT.to_string(), SILENT.to_string()],
+        answer_delay: Duration::from_millis(500),
+    });
+    let context = format!(
+        "wrapper stderr:\n{}\nsupervisor log:\n{}\nsummary:\n{}",
+        run.wrapper_stderr, run.supervisor_log, run.summary
+    );
+    assert_eq!(run.status, Some(0), "{context}");
+    assert!(!run.answered.is_empty(), "{context}");
+    let first = prompt_of(&run.answered[0]);
+    assert!(
+        first.contains("BOUNDARY_LINE") && !first.contains("ESCAPED_LINE"),
+        "{first}"
+    );
+    let states = &run.answered[0].actor_states;
+    assert!(
+        states.len() >= 3 && states.iter().all(|s| *s == 'T'),
+        "not every process of the actor's was stopped: {states:?}"
+    );
+    let summary: Value = serde_json::from_str(&run.summary).unwrap();
+    assert_eq!(summary["accounted_for"], true, "{context}");
+    fs::remove_dir_all(&run.dir).unwrap();
+}

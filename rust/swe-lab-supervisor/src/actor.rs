@@ -248,6 +248,9 @@ pub struct Actor {
     /// The id of the barrier asked for and not yet reported, or zero.
     barrier: Arc<AtomicU64>,
     frozen: bool,
+    /// Marked descendants outside the group that [`Actor::freeze`]
+    /// stopped one by one, to be resumed one by one.
+    held: Vec<Pid>,
     reaped: bool,
     stdout_drain: Option<JoinHandle<Result<(), String>>>,
     stderr_drain: Option<JoinHandle<Result<(), String>>>,
@@ -329,6 +332,7 @@ impl Actor {
             wake: wake_write,
             barrier: Arc::clone(&barrier),
             frozen: false,
+            held: Vec::new(),
             started: floor,
             reaped: false,
             stdout_drain: None,
@@ -463,26 +467,33 @@ impl Actor {
         self.stdin.is_some()
     }
 
-    /// `SIGSTOP` the whole group, and return once every member is confirmed
-    /// stopped. The stdout pipe keeps draining, so nothing the actor already
-    /// wrote is lost, and it writes nothing more until [`Actor::thaw`].
+    /// `SIGSTOP` the actor — the whole group, and every marked descendant
+    /// that left it — and return once each is confirmed stopped. The stdout
+    /// pipe keeps draining, so nothing the actor already wrote is lost, and
+    /// it writes nothing more until [`Actor::thaw`].
     ///
     /// The signal alone is not the confirmation: `killpg` names the members
     /// it finds, and a member in the middle of a fork when it is sent has a
-    /// child a moment later that the signal never reached. So the group is
-    /// read from `/proc` until two looks in a row find the same members,
-    /// every thread of each stopped; a look that finds one running sends the
-    /// signal again, for the child the first one missed.
+    /// child a moment later that the signal never reached; and a descendant
+    /// that called `setsid` is in no group `killpg` is sent to, while it
+    /// may still hold the actor's stdout. So the actor's processes are read
+    /// from `/proc` — the group, and outside it whatever carries the mark
+    /// and started after the wrapper — until two looks in a row find the
+    /// same set, every thread of each stopped; a look that finds one running
+    /// signals it, the group again or the escaped one by pid.
     ///
     /// # Errors
     ///
-    /// The group could not be signalled, or could not be confirmed stopped
-    /// within [`STOP_CONFIRMATION_BOUND`]. The group may be stopped either
-    /// way; the caller thaws it.
+    /// The group could not be signalled, or the actor could not be
+    /// confirmed stopped within [`STOP_CONFIRMATION_BOUND`] — or proved so:
+    /// a process of this user's own that `/proc` refuses to show is a state
+    /// unknown. Whatever was stopped stays stopped either way; the caller
+    /// thaws it.
     pub fn freeze(&mut self) -> Result<(), String> {
         signal_group(self.group, Signal::SIGSTOP).map_err(|e| format!("SIGSTOP: {e}"))?;
         self.frozen = true;
-        confirm_stopped(self.group)
+        let needle = format!("{MARK_ENV}={}", self.mark);
+        confirm_stopped(self.group, &needle, self.started, &mut self.held)
     }
 
     /// Ask the stdout reader for a barrier: once it has reported every line
@@ -513,6 +524,13 @@ impl Actor {
             return Ok(());
         }
         self.frozen = false;
+        // The escaped ones first: one that is gone is nothing to resume.
+        for pid in self.held.drain(..) {
+            match kill(pid, Signal::SIGCONT) {
+                Ok(()) | Err(Errno::ESRCH) => {}
+                Err(errno) => return Err(io::Error::from(errno)),
+            }
+        }
         signal_group(self.group, Signal::SIGCONT)
     }
 
@@ -930,16 +948,21 @@ enum Halt {
     Running,
 }
 
-/// One live member of a process group.
+/// One live process of the actor's: a member of its group, or a marked
+/// descendant outside it.
 #[derive(Debug, Clone, Copy)]
 struct Member {
     pid: u32,
     ppid: u32,
     halt: Halt,
+    in_group: bool,
 }
 
-/// The live members of `group` among this user's processes.
-fn group_members(group: Pid) -> Result<Vec<Member>, String> {
+/// The actor's live processes among this user's own: the members of
+/// `group`, and outside it every process that started at or after `floor`
+/// whose environment carries `needle` (the mark; see [`marked_processes`]
+/// for why the floor and what a refused read means).
+fn members(group: Pid, needle: &str, floor: u64) -> Result<Vec<Member>, String> {
     let entries = fs::read_dir("/proc").map_err(|e| format!("listing /proc: {e}"))?;
     let me = std::process::id();
     let mut members = Vec::new();
@@ -965,8 +988,27 @@ fn group_members(group: Pid) -> Result<Vec<Member>, String> {
             Probe::Gone => continue,
             Probe::Unprovable(reason) => return Err(reason),
         };
-        if stat.group != group.as_raw() || stat.exited() {
+        if stat.exited() {
             continue;
+        }
+        let in_group = stat.group == group.as_raw();
+        if !in_group {
+            if stat.started < floor {
+                continue;
+            }
+            let environ = match proc_file(owned.0, "environ") {
+                Probe::Present(environ) => environ,
+                Probe::Gone => continue,
+                Probe::Unprovable(reason) => match stat_fields(owned) {
+                    Probe::Present(stat) if stat.exited() => continue,
+                    Probe::Gone => continue,
+                    Probe::Present(_) => return Err(reason),
+                    Probe::Unprovable(reason) => return Err(reason),
+                },
+            };
+            if !environ.split(|b| *b == 0).any(|e| e == needle.as_bytes()) {
+                continue;
+            }
         }
         let halt = match threads_halt(owned) {
             Probe::Present(halt) => halt,
@@ -977,6 +1019,7 @@ fn group_members(group: Pid) -> Result<Vec<Member>, String> {
             pid,
             ppid: stat.ppid,
             halt,
+            in_group,
         });
     }
     Ok(members)
@@ -1024,15 +1067,22 @@ fn threads_halt(pid: Owned) -> Probe<Halt> {
     Probe::Present(halt)
 }
 
-/// Wait until every member of `group` is confirmed stopped: two looks in a
-/// row that find the same members, each stopped, with the signal sent
-/// again after any look that finds one that is not (see [`Actor::freeze`]).
-fn confirm_stopped(group: Pid) -> Result<(), String> {
+/// Wait until every process of the actor's is confirmed stopped: two looks
+/// in a row that find the same members, each stopped, with a signal after
+/// any look that finds one that is not — the group again for a member of
+/// it, the pid for an escaped one, which is then recorded in `held` for
+/// the thaw (see [`Actor::freeze`]).
+fn confirm_stopped(
+    group: Pid,
+    needle: &str,
+    floor: u64,
+    held: &mut Vec<Pid>,
+) -> Result<(), String> {
     let deadline = Instant::now() + STOP_CONFIRMATION_BOUND;
     let mut previous: Option<Vec<u32>> = None;
     let mut pause = Duration::from_millis(1);
     loop {
-        let members = group_members(group)?;
+        let members = members(group, needle, floor)?;
         let stopped = |member: &Member| match member.halt {
             Halt::Stopped => true,
             Halt::Running => false,
@@ -1050,11 +1100,27 @@ fn confirm_stopped(group: Pid) -> Result<(), String> {
             previous = Some(pids);
         } else {
             previous = None;
-            signal_group(group, Signal::SIGSTOP).map_err(|e| format!("SIGSTOP: {e}"))?;
+            if running.iter().any(|member| member.in_group) {
+                signal_group(group, Signal::SIGSTOP).map_err(|e| format!("SIGSTOP: {e}"))?;
+            }
+            for member in running.iter().filter(|member| !member.in_group) {
+                let pid = Pid::from_raw(
+                    i32::try_from(member.pid).map_err(|_| "pid does not fit".to_string())?,
+                );
+                match kill(pid, Signal::SIGSTOP) {
+                    Ok(()) => {
+                        if !held.contains(&pid) {
+                            held.push(pid);
+                        }
+                    }
+                    Err(Errno::ESRCH) => {}
+                    Err(errno) => return Err(format!("SIGSTOP to an escaped descendant: {errno}")),
+                }
+            }
         }
         if Instant::now() >= deadline {
             return Err(format!(
-                "the actor's group was not confirmed stopped within {STOP_CONFIRMATION_BOUND:?}: {} of {} members still running",
+                "the actor was not confirmed stopped within {STOP_CONFIRMATION_BOUND:?}: {} of {} of its processes still running",
                 running.len(),
                 members.len()
             ));
