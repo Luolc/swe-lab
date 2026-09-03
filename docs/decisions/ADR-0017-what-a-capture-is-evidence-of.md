@@ -40,7 +40,13 @@ because the CLI echoes no stdin; `--replay-user-messages` recovers it
 disqualifying, on the ground that a stream-derived trace would assert a turn the
 model never saw. That conflates two questions a capture can be asked:
 
-- *What did the model receive?* — answered by the wire, and only by the wire.
+- *What did the client send upstream?* — answered by the wire, and only by the
+  wire. Not the same as *what the model saw*: two reminders reach the actor
+  that appear in no client request body at all — a token-usage
+  `<system_warning>` and a `PROMPT INJECTION WARNING` — so they are injected
+  above the client→API wire and a proxy capture cannot see them
+  ([`spec.md` §10](../trace-synthesis/spec.md),
+  [`injection_shape/REPORT.md`](../../experiments/trace_synthesis/injection_shape/REPORT.md)).
 - *What must the stored trace preserve, for a consumer that will decide its own
   training representation?* — answered by whether the information survives at
   all.
@@ -52,9 +58,11 @@ not rank; they differ, and the difference is recorded rather than resolved.
 
 ## Decision
 
-1. **The wire remains the truth about evidence.** A claim about what the model
-   received is answered by a proxy capture and by nothing else. Nothing here
-   promotes a stream trace to that role.
+1. **The wire remains the truth about what the client sent upstream.** A claim
+   about the request bodies a run produced is answered by a proxy capture and by
+   nothing else, and nothing here promotes a stream trace to that role. It is
+   **not** a complete record of what the model saw — see the Context — and this
+   ADR does not widen it into one.
 2. **A stored trace may carry a representation the wire does not.** The two
    answer different questions, so a trace is not false for holding a form the
    wire did not carry — it is false only if it loses information or misreports

@@ -163,9 +163,10 @@ def _supervised_rollout(supervision_factory: SupervisionFactory) -> WorkflowDef:
       WorkflowEntry(
           ROLLOUT_KEY,
           CodingAgentTask(
-              # Proxy capture is required by the channel and refused otherwise:
-              # a stream-derived trace of a supervised run asserts a turn the
-              # model never saw.
+              # Proxy capture is a choice about evidence here, not something
+              # the channel requires (ADR-0017): a run from these two
+              # definitions is read as evidence *about* supervision, and the
+              # wire is the only record of the request bodies it produced.
               harness=ClaudeCodeHarness(
                   model=DEFAULT_MODEL,
                   bare=False,
