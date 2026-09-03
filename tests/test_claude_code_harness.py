@@ -51,6 +51,7 @@ from swe_lab.harnesses.claude_code.constants import (
     PROXY_STDERR_NAME,
     STREAM_JSON_PROMPT_NAME,
 )
+from swe_lab.harnesses.claude_code.harness import _reap
 from swe_lab.harnesses.claude_code.proxy import PROXY_SOURCE_ENV
 from swe_lab.harnesses.common import AgentInfoObserver, home_fallback_lines
 from swe_lab.sandbox import (
@@ -162,6 +163,58 @@ def test_invocation_script_shape_and_quoting():
   # stream-json message the run opens with
   assert '< "$SANDBOX_WORKSPACE"/prompt.stream.json' in script
   assert '> "$SANDBOX_WORKSPACE"/claude.event_stream.jsonl' in script
+
+
+def test_two_proxy_instances_share_no_shell_variable() -> None:
+  """A second instance can be started beside the first without colliding.
+
+  Both instances register with the script's one `EXIT` trap, so each needs its
+  own pid variable: a second start reusing the first's would leave the trap
+  reaping one process twice and the other never — a proxy outliving the run,
+  with its log still open.
+  """
+  from swe_lab.harnesses.claude_code.harness import _proxy_start_lines
+
+  first = _proxy_start_lines(
+      target="https://api.anthropic.com",
+      port=9527,
+      log_name="a.jsonl",
+      own_log_name="a.log",
+      name="proxy",
+      label="capture",
+  )
+  second = _proxy_start_lines(
+      target="https://openrouter.ai/api",
+      port=9528,
+      log_name="b.jsonl",
+      own_log_name="b.log",
+      name="supervisor_proxy",
+      label="supervisor",
+  )
+
+  def shell_variables(lines: list[str]) -> set[str]:
+    return {
+        line.split("=", 1)[0]
+        for line in lines
+        if "=" in line and line[:1].isalpha()
+    }
+
+  # `reaped_pids` is the one trap's list and is shared on purpose; everything
+  # else has to be per-instance.
+  shared = {"reaped_pids"}
+  mine, theirs = (
+      shell_variables(first) - shared,
+      shell_variables(second) - shared,
+  )
+
+  # Asserted as equalities, not as "no overlap": two empty sets are disjoint
+  # too, and would pass this silently.
+  assert mine == {"proxy_pid", "proxy_wait"}
+  assert theirs == {"supervisor_proxy_pid", "supervisor_proxy_wait"}
+  assert not mine & theirs
+  # Each still hands its own pid to the one trap, which is what reaps it.
+  assert _reap("proxy_pid") in first
+  assert _reap("supervisor_proxy_pid") in second
 
 
 _ARGV_CONFIGURATIONS = (

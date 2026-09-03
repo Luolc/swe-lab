@@ -283,7 +283,7 @@ def test_every_value_in_the_document_is_pinned_or_validated() -> None:
   assert _leaf_paths(document) == set(validated.values()) | {
       "schema_version",  # pinned to CONFIG_SCHEMA_VERSION
       "policy.kind",  # pinned to POLICY_KIND
-      "criterion.name",  # the artifact's own filename
+      "criterion.name",  # pinned to CRITERION_NAME
       "criterion.sha256",  # the digest load_criterion just computed
       "task",  # checked in config_document
   }
