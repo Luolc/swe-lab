@@ -28,6 +28,7 @@ from swe_lab.trace_synthesis.criterion import (
 from swe_lab.trace_synthesis.judge import (
     Call,
     JUDGE_INSTRUCTIONS,
+    JUDGE_TOOL_NAME,
     JudgeAnswerError,
     LOCATE_DEVIATION_INSTRUCTION,
     messages_transport,
@@ -96,7 +97,7 @@ class RecordingTransport:
     payloads: Every request body sent.
   """
 
-  answers: list[str]
+  answers: list[str | list[dict[str, Any]]]
   model: str = "served/model-x"
   finish_reason: str | None = None
   payloads: list[dict[str, Any]] = dataclasses.field(default_factory=list)
@@ -112,10 +113,26 @@ class RecordingTransport:
     """
     self.payloads.append(dict(payload))
     index = min(len(self.payloads) - 1, len(self.answers) - 1)
-    response: dict[str, Any] = {
-        "model": self.model,
-        "content": [{"type": "text", "text": self.answers[index]}],
-    }
+    answer = self.answers[index]
+    if isinstance(answer, list):
+      content = answer
+    elif "tools" in payload:
+      try:
+        tool_input = json.loads(answer)
+      except json.JSONDecodeError:
+        content = [{"type": "text", "text": answer}]
+      else:
+        content = [
+            {
+                "type": "tool_use",
+                "id": "toolu_test",
+                "name": JUDGE_TOOL_NAME,
+                "input": tool_input,
+            }
+        ]
+    else:
+      content = [{"type": "text", "text": answer}]
+    response: dict[str, Any] = {"model": self.model, "content": content}
     if self.finish_reason is not None:
       response["stop_reason"] = self.finish_reason
     return response
@@ -251,7 +268,7 @@ def test_every_call_records_what_answered_it_and_what_was_not_sent() -> None:
 
 
 def test_model_calls_use_the_anthropic_messages_wire_shape() -> None:
-  """System is top-level and the messages list contains only conversation."""
+  """The judge sends the exact native tool contract and forces its use."""
   transport = RecordingTransport(answers=[ON_TRACK_JSON])
   judge = ModelJudge(model="claude-sonnet-5", transport=transport)
 
@@ -268,7 +285,166 @@ def test_model_calls_use_the_anthropic_messages_wire_shape() -> None:
               "content": payload["messages"][0]["content"],
           }
       ],
+      "tools": [
+          {
+              "name": "submit_supervision_verdict",
+              "description": "Submit the supervision verdict.",
+              "input_schema": {
+                  "type": "object",
+                  "properties": {
+                      "off_track": {"type": "boolean"},
+                      "self_correcting": {"type": "boolean"},
+                      "reason": {"type": "string"},
+                      "deviation_started_steps_ago": {
+                          "anyOf": [{"type": "integer"}, {"type": "null"}]
+                      },
+                  },
+                  "required": ["off_track", "self_correcting", "reason"],
+                  "additionalProperties": False,
+              },
+          }
+      ],
+      "tool_choice": {
+          "type": "tool",
+          "name": "submit_supervision_verdict",
+      },
   }
+
+
+def test_one_matching_tool_use_constructs_a_verdict() -> None:
+  """A valid matching tool call is the judge's only usable answer shape."""
+  judge = ModelJudge(
+      model="m", transport=RecordingTransport(answers=[OFF_TRACK_JSON])
+  )
+
+  verdict = judge(observation(), load_criterion())
+
+  assert verdict.off_track is True
+  assert verdict.self_correcting is False
+  assert verdict.reason == "guessing"
+  assert judge.calls[0].raw == [
+      {
+          "type": "tool_use",
+          "id": "toolu_test",
+          "name": "submit_supervision_verdict",
+          "input": {
+              "off_track": True,
+              "self_correcting": False,
+              "reason": "guessing",
+          },
+      }
+  ]
+
+
+def test_a_text_only_judge_answer_is_unusable() -> None:
+  """Free-form text is never parsed as a fallback verdict."""
+  transport = RecordingTransport(answers=["not a tool call"])
+
+  with pytest.raises(JudgeAnswerError, match="exactly one"):
+    ModelJudge(model="m", transport=transport)(observation(), load_criterion())
+
+
+def test_a_missing_tool_call_is_unusable() -> None:
+  """A completed response with no content cannot become a verdict."""
+  transport = RecordingTransport(answers=[[]])
+
+  with pytest.raises(JudgeAnswerError, match="exactly one"):
+    ModelJudge(model="m", transport=transport)(observation(), load_criterion())
+
+
+def test_duplicate_matching_tool_calls_are_unusable() -> None:
+  """Taking the first matching call would silently weaken exactly-one."""
+  tool_use = {
+      "type": "tool_use",
+      "id": "toolu_one",
+      "name": "submit_supervision_verdict",
+      "input": {
+          "off_track": False,
+          "self_correcting": False,
+          "reason": "fine",
+      },
+  }
+  transport = RecordingTransport(answers=[[tool_use, dict(tool_use)]])
+
+  with pytest.raises(JudgeAnswerError, match="exactly one"):
+    ModelJudge(model="m", transport=transport)(observation(), load_criterion())
+
+
+def test_a_tool_call_with_the_wrong_name_is_unusable() -> None:
+  """Only the tool declared by the judge may carry its verdict."""
+  transport = RecordingTransport(
+      answers=[
+          [
+              {
+                  "type": "tool_use",
+                  "id": "toolu_wrong",
+                  "name": "other_tool",
+                  "input": {
+                      "off_track": False,
+                      "self_correcting": False,
+                      "reason": "fine",
+                  },
+              }
+          ]
+      ]
+  )
+
+  with pytest.raises(JudgeAnswerError, match="exactly one"):
+    ModelJudge(model="m", transport=transport)(observation(), load_criterion())
+
+
+@pytest.mark.parametrize(
+    "tool_input",
+    [
+        {"off_track": False, "self_correcting": False},
+        {
+            "off_track": False,
+            "self_correcting": False,
+            "reason": "fine",
+            "unexpected": "field",
+        },
+        {"off_track": 0, "self_correcting": False, "reason": "fine"},
+        {"off_track": False, "self_correcting": 0, "reason": "fine"},
+        {"off_track": False, "self_correcting": False, "reason": 1},
+        {
+            "off_track": False,
+            "self_correcting": False,
+            "reason": "fine",
+            "deviation_started_steps_ago": "3",
+        },
+        [False, False, "fine"],
+    ],
+)
+def test_malformed_tool_input_is_unusable(tool_input: Any) -> None:
+  """Local validation rejects malformed input even if a gateway does not."""
+  transport = RecordingTransport(
+      answers=[
+          [
+              {
+                  "type": "tool_use",
+                  "id": "toolu_bad_input",
+                  "name": "submit_supervision_verdict",
+                  "input": tool_input,
+              }
+          ]
+      ]
+  )
+
+  with pytest.raises(JudgeAnswerError, match="unusable judge answer"):
+    ModelJudge(model="m", transport=transport)(observation(), load_criterion())
+
+
+def test_boolean_deviation_start_is_unusable_not_an_integer() -> None:
+  """A boolean cannot wear an integer measurement's clothes."""
+  answer = (
+      '{"off_track": true, "self_correcting": false, "reason": "guessing",'
+      ' "deviation_started_steps_ago": true}'
+  )
+
+  with pytest.raises(JudgeAnswerError, match="integer or null"):
+    ModelJudge(model="m", transport=RecordingTransport(answers=[answer]))(
+        observation(), load_criterion()
+    )
 
 
 def test_an_unusable_judge_answer_is_never_retried() -> None:
@@ -461,7 +637,9 @@ def test_a_non_boolean_verdict_field_is_unusable_not_coerced() -> None:
   One request, then rejection.
   """
   transport = RecordingTransport(
-      answers=['{"off_track": "false", "self_correcting": false}']
+      answers=[
+          '{"off_track": "false", "self_correcting": false, "reason": "x"}'
+      ]
   )
   judge = ModelJudge(model="anthropic/claude-sonnet-5", transport=transport)
 
@@ -627,6 +805,10 @@ else.
   assert len(transport.payloads) == 2
   assert transport.payloads[0]["system"] == expected_judge
   assert transport.payloads[1]["system"] == expected_writer
+  assert "tools" in transport.payloads[0]
+  assert "tool_choice" in transport.payloads[0]
+  assert "tools" not in transport.payloads[1]
+  assert "tool_choice" not in transport.payloads[1]
 
 
 def test_a_judge_asked_to_locate_a_deviation_says_so_in_its_prompt() -> None:
@@ -641,19 +823,11 @@ def test_a_judge_asked_to_locate_a_deviation_says_so_in_its_prompt() -> None:
   assert LOCATE_DEVIATION_INSTRUCTION in system
 
 
-def test_the_located_deviation_is_read_but_never_coerced() -> None:
-  """An integer is carried; anything else is absence, not a number.
-
-  Same rule as the two booleans: a value this record would claim was measured
-  has to have been measured, so a string "3" reads as "the judge did not say".
-  """
+def test_the_located_deviation_is_read_without_coercion() -> None:
+  """An integer is carried directly as the optional measurement."""
   answered = (
       '{"off_track": true, "self_correcting": false, "reason": "guessing",'
       ' "deviation_started_steps_ago": 3}'
-  )
-  as_text = (
-      '{"off_track": true, "self_correcting": false, "reason": "guessing",'
-      ' "deviation_started_steps_ago": "3"}'
   )
   criterion = load_criterion()
 
@@ -662,30 +836,7 @@ def test_the_located_deviation_is_read_but_never_coerced() -> None:
       transport=RecordingTransport(answers=[answered]),
       locate_deviation=True,
   )(observation(), criterion)
-  coerced = ModelJudge(
-      model="m",
-      transport=RecordingTransport(answers=[as_text]),
-      locate_deviation=True,
-  )(observation(), criterion)
-
   assert located.deviation_started_steps_ago == 3
-  assert coerced.deviation_started_steps_ago is None
-  # The rest of the verdict is unaffected either way.
-  assert coerced.off_track is True
-
-  # And the case a plain `isinstance` would let through: `bool` subclasses
-  # `int`, so a judge answering `true` would otherwise be recorded as "1 step
-  # ago" — a boolean wearing a measurement's clothes.
-  as_bool = (
-      '{"off_track": true, "self_correcting": false, "reason": "guessing",'
-      ' "deviation_started_steps_ago": true}'
-  )
-  boolean = ModelJudge(
-      model="m",
-      transport=RecordingTransport(answers=[as_bool]),
-      locate_deviation=True,
-  )(observation(), criterion)
-  assert boolean.deviation_started_steps_ago is None
 
 
 def test_a_default_judges_verdict_carries_no_located_deviation() -> None:

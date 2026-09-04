@@ -46,7 +46,7 @@ import dataclasses
 import json
 import os
 import pathlib
-from typing import Any
+from typing import Any, cast
 import urllib.request
 
 from swe_lab.conversation import Message, TextBlock
@@ -76,6 +76,28 @@ Transport = Callable[[Mapping[str, Any]], Mapping[str, Any]]
 #: is a lost supervisor rather than a slow one — the run's own teardown treats
 #: it that way — so the call has a bound of its own rather than relying on it.
 CALL_TIMEOUT_SECONDS = 180.0
+
+#: The sole tool a judge may call. The provider schema narrows ordinary
+#: responses; :class:`ModelJudge` validates the same contract locally because
+#: a caller-configured gateway need not enforce it.
+JUDGE_TOOL_NAME = "submit_supervision_verdict"
+JUDGE_TOOL: Mapping[str, Any] = {
+    "name": JUDGE_TOOL_NAME,
+    "description": "Submit the supervision verdict.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "off_track": {"type": "boolean"},
+            "self_correcting": {"type": "boolean"},
+            "reason": {"type": "string"},
+            "deviation_started_steps_ago": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}]
+            },
+        },
+        "required": ["off_track", "self_correcting", "reason"],
+        "additionalProperties": False,
+    },
+}
 
 
 def messages_transport(
@@ -224,7 +246,8 @@ class Call:
       looking correct, so the requested name cannot stand in for this.
     sampling_sent: Every key in :data:`SAMPLING_KEYS` mapped to the value sent,
       or ``None`` where the request left it to the provider.
-    raw: The answer's text, before parsing.
+    raw: The answer evidence before parsing. Judge calls keep the native
+      content blocks; writer calls keep their text.
     finish_reason: The provider's ``stop_reason``, or ``None`` when absent.
       ``"max_tokens"`` means the answer was truncated by
       ``max_tokens`` rather than completed.
@@ -233,7 +256,7 @@ class Call:
   requested_model: str
   response_model: str | None
   sampling_sent: Mapping[str, Any]
-  raw: str
+  raw: object
   finish_reason: str | None
 
 
@@ -349,8 +372,8 @@ class ModelJudge:
       The verdict.
 
     Raises:
-      JudgeAnswerError: The answer was not one JSON object with the two
-        booleans. Not retried.
+      JudgeAnswerError: The answer was not exactly one matching tool call with
+        valid input. Not retried.
     """
     instructions = (
         GUIDED_JUDGE_INSTRUCTIONS
@@ -364,27 +387,59 @@ class ModelJudge:
         "messages": [
             {"role": "user", "content": _prompt(observation, criterion)}
         ],
+        "tools": [JUDGE_TOOL],
+        "tool_choice": {"type": "tool", "name": JUDGE_TOOL_NAME},
     }
     response = self.transport(payload)
-    raw = response["content"][0]["text"]
     finish_reason = response.get("stop_reason")
+    content = response.get("content")
     self.calls.append(
         Call(
             requested_model=self.model,
             response_model=response.get("model"),
             sampling_sent=_sampling_sent(payload),
-            raw=raw,
+            raw=content,
             finish_reason=finish_reason,
         )
     )
-    try:
-      answer = json.loads(raw)
-      off_track = answer["off_track"]
-      self_correcting = answer["self_correcting"]
-    except (json.JSONDecodeError, KeyError, TypeError) as error:
+    if not isinstance(content, list):
       raise JudgeAnswerError(
-          f"unusable judge answer: {error}", finish_reason=finish_reason
-      ) from error
+          "unusable judge answer: expected a content list",
+          finish_reason=finish_reason,
+      )
+    matching_tool_uses = [
+        block
+        for block in content
+        if isinstance(block, Mapping)
+        and block.get("type") == "tool_use"
+        and block.get("name") == JUDGE_TOOL_NAME
+    ]
+    if len(matching_tool_uses) != 1:
+      raise JudgeAnswerError(
+          f"unusable judge answer: expected exactly one {JUDGE_TOOL_NAME}"
+          f" tool call, got {len(matching_tool_uses)}",
+          finish_reason=finish_reason,
+      )
+
+    answer = matching_tool_uses[0].get("input")
+    if not isinstance(answer, Mapping):
+      raise JudgeAnswerError(
+          "unusable judge answer: tool input must be an object",
+          finish_reason=finish_reason,
+      )
+    expected_fields = {"off_track", "self_correcting", "reason"}
+    allowed_fields = expected_fields | {"deviation_started_steps_ago"}
+    if (
+        not expected_fields <= answer.keys()
+        or not answer.keys() <= allowed_fields
+    ):
+      raise JudgeAnswerError(
+          "unusable judge answer: tool input fields do not match the schema",
+          finish_reason=finish_reason,
+      )
+
+    off_track = answer["off_track"]
+    self_correcting = answer["self_correcting"]
 
     # Coercion here would read "false" as True — a verdict of *no* becoming a
     # correction — so the shape is required rather than converted.
@@ -394,24 +449,41 @@ class ModelJudge:
     ):
       if type(value) is not bool:
         raise JudgeAnswerError(
-            f"{name} must be a JSON boolean, got {type(value).__name__}",
+            "unusable judge answer:"
+            f" {name} must be a JSON boolean, got {type(value).__name__}",
             finish_reason=finish_reason,
         )
+    off_track = cast(bool, off_track)
+    self_correcting = cast(bool, self_correcting)
 
-    # Read with `.get` and type-checked rather than coerced, like `reason`: an
-    # answer that omits it is not an error, and a string "3" is not an integer
-    # this record may claim was measured.
+    reason = answer["reason"]
+    if type(reason) is not str:
+      raise JudgeAnswerError(
+          "unusable judge answer: reason must be a JSON string, got"
+          f" {type(reason).__name__}",
+          finish_reason=finish_reason,
+      )
+
+    # Read with `.get` and type-checked rather than coerced: an answer that
+    # omits it is not an error, and a string "3" is not an integer this record
+    # may claim was measured.
     started = answer.get("deviation_started_steps_ago")
+    # `type(...) is int`, deliberately **not** `isinstance`: `bool` is a
+    # subclass of `int` in Python, so `isinstance(True, int)` is True and a
+    # judge answering `true` here would be recorded as "1 step ago" — a
+    # boolean wearing a measurement's clothes, with nothing to catch it.
+    # A lint pass "correcting" this to `isinstance` turns no light red.
+    if started is not None and type(started) is not int:
+      raise JudgeAnswerError(
+          "unusable judge answer: deviation_started_steps_ago must be a JSON"
+          f" integer or null, got {type(started).__name__}",
+          finish_reason=finish_reason,
+      )
     return Verdict(
         off_track=off_track,
         self_correcting=self_correcting,
-        reason=str(answer.get("reason", "")),
-        # `type(...) is int`, deliberately **not** `isinstance`: `bool` is a
-        # subclass of `int` in Python, so `isinstance(True, int)` is True and a
-        # judge answering `true` here would be recorded as "1 step ago" — a
-        # boolean wearing a measurement's clothes, with nothing to catch it.
-        # A lint pass "correcting" this to `isinstance` turns no light red.
-        deviation_started_steps_ago=(started if type(started) is int else None),
+        reason=reason,
+        deviation_started_steps_ago=started,
         judge_input=dict(payload),
     )
 
