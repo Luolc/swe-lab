@@ -353,6 +353,8 @@ class ModelJudge:
       answer so that how many turns late its corrections were is a measured
       distribution rather than a recollection.
     calls: What answered each request, in order.
+    instructions: Optional system instructions for evaluation prompt variants.
+      ``None`` preserves the guided or unguided default.
   """
 
   model: str
@@ -360,6 +362,7 @@ class ModelJudge:
   max_tokens: int = 4096
   locate_deviation: bool = False
   calls: list[Call] = dataclasses.field(default_factory=list)
+  instructions: str | None = None
 
   def __call__(self, observation: Observation, criterion: Criterion) -> Verdict:
     """Judge one moment against the criterion handed in.
@@ -375,11 +378,13 @@ class ModelJudge:
       JudgeAnswerError: The answer was not exactly one matching tool call with
         valid input. Not retried.
     """
-    instructions = (
-        GUIDED_JUDGE_INSTRUCTIONS
-        if observation.guidebook is not None
-        else JUDGE_INSTRUCTIONS
-    ) + (LOCATE_DEVIATION_INSTRUCTION if self.locate_deviation else "")
+    instructions = self.instructions
+    if instructions is None:
+      instructions = (
+          GUIDED_JUDGE_INSTRUCTIONS
+          if observation.guidebook is not None
+          else JUDGE_INSTRUCTIONS
+      ) + (LOCATE_DEVIATION_INSTRUCTION if self.locate_deviation else "")
     payload = {
         "model": self.model,
         "max_tokens": self.max_tokens,
@@ -552,6 +557,7 @@ def supervising_policy(
     gold_patch: str | None = None,
     criterion_path: pathlib.Path | None = None,
     locate_deviation: bool = False,
+    instructions: str | None = None,
 ) -> SpeakWhenOffTrack:
   """Build the judging policy, or reject the artifact.
 
@@ -573,6 +579,8 @@ def supervising_policy(
     locate_deviation: Ask the judge how far back the deviation started. Off by
       default, which leaves the A′ arms' prompt byte-identical; see
       :class:`ModelJudge`.
+    instructions: Optional judge system instructions. ``None`` preserves the
+      guided or unguided default.
 
   Returns:
     The policy, holding a criterion whose digest is the pinned one.
@@ -584,7 +592,10 @@ def supervising_policy(
   )
   return SpeakWhenOffTrack(
       judge=ModelJudge(
-          model=model, transport=transport, locate_deviation=locate_deviation
+          model=model,
+          transport=transport,
+          locate_deviation=locate_deviation,
+          instructions=instructions,
       ),
       writer=ModelWriter(model=model, transport=transport),
       criterion=criterion,

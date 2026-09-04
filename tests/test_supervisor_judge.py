@@ -823,6 +823,33 @@ def test_a_judge_asked_to_locate_a_deviation_says_so_in_its_prompt() -> None:
   assert LOCATE_DEVIATION_INSTRUCTION in system
 
 
+def test_a_judge_uses_override_instructions_verbatim() -> None:
+  """An evaluation prompt variant occupies the system field byte for byte."""
+  instructions = "JUDGE-OVERRIDE-sentinel\nKeep this exact trailing line.\n"
+  transport = RecordingTransport(answers=[ON_TRACK_JSON])
+  judge = ModelJudge(model="m", transport=transport, instructions=instructions)
+
+  _ = judge(observation(guidebook="guidebook"), load_criterion())
+
+  assert transport.payloads[0]["system"] == instructions
+
+
+def test_supervising_policy_passes_override_instructions_to_the_judge() -> None:
+  """Deleting the helper's pass-through changes the request under test."""
+  instructions = "POLICY-OVERRIDE-sentinel"
+  transport = RecordingTransport(answers=[ON_TRACK_JSON])
+  policy = supervising_policy(
+      model="m",
+      transport=transport,
+      budget=1,
+      instructions=instructions,
+  )
+
+  _ = policy.consider(observation())
+
+  assert transport.payloads[0]["system"] == instructions
+
+
 def test_the_located_deviation_is_read_without_coercion() -> None:
   """An integer is carried directly as the optional measurement."""
   answered = (
