@@ -1497,7 +1497,7 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
   """Drive the registered handoff through the harness and segmented loop."""
   from swe_lab.rollout import CodingAgentTask
   from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
-  from swe_lab.trace_synthesis.judge import supervising_policy
+  from swe_lab.trace_synthesis.judge import JUDGE_TOOL_NAME, supervising_policy
   from swe_lab.workflow import definitions, workflow_definition
 
   class AppendingSandbox(FakeSandbox):
@@ -1559,13 +1559,24 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
   def transport(payload: Mapping[str, Any]) -> Mapping[str, Any]:
     payloads.append(dict(payload))
     content = (
-        '{"off_track": true, "self_correcting": false, "reason": "drift"}'
+        [
+            {
+                "type": "tool_use",
+                "id": "toolu_test",
+                "name": JUDGE_TOOL_NAME,
+                "input": {
+                    "off_track": True,
+                    "self_correcting": False,
+                    "reason": "drift",
+                },
+            }
+        ]
         if len(payloads) == 1
-        else "look again"
+        else [{"type": "text", "text": "look again"}]
     )
     return {
         "model": "served/model",
-        "content": [{"type": "text", "text": content}],
+        "content": content,
         "stop_reason": "end_turn",
     }
 
