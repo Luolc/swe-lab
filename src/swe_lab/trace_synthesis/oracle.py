@@ -5,8 +5,8 @@ already in hand — an ``oracle_failures`` record, which stages the failed
 conversation, verdict and patch through its own ``mounts`` — with everything
 the actor never had: the reference patch (when the dataset records one), the
 exact grading procedure, and the repository's **unpurged** git history. Its one
-output is ``guidebook.md``,
-a staged tutorial for a future blind actor, checked against the schema in
+output is ``guidebook.md``: a staged tutorial for a future blind actor alongside
+a compact supervisor-facing rubric, checked against the schema in
 :mod:`swe_lab.trace_synthesis.guidebook`.
 
 The task is deliberately contaminated, and says so by construction rather than
@@ -47,7 +47,12 @@ from swe_lab.sandbox import (
 from swe_lab.sandbox.observers import BASE_REF_NAME
 from swe_lab.workflow import AttemptResult, InputsBuilder, Task
 
-from .guidebook import GUIDEBOOK_NAME, STAGE_FIELDS, validate_guidebook
+from .guidebook import (
+    GUIDEBOOK_NAME,
+    RUBRIC_FIELDS,
+    STAGE_FIELDS,
+    validate_guidebook,
+)
 from .sample import (
     FAILED_CONVERSATION_NAME,
     FAILED_PATCH_NAME,
@@ -162,6 +167,7 @@ def build_oracle_prompt(instance: TaskInstance[Any]) -> str:
   )
   table = "\n".join(f"| `{name}` | {what} |" for name, what in files)
   fields = "\n".join(f"**{name}.** …" for name in STAGE_FIELDS)
+  rubric_fields = "\n".join(f"**{name}.** …" for name in RUBRIC_FIELDS)
   statement = instance.prompt().rstrip("\n")
   privileges = (
       "its full conversation, the grader's verdict, the reference solution"
@@ -222,8 +228,8 @@ TASK_STATEMENT>>>
 ## The guidebook
 
 Write it to `$SANDBOX_WORKSPACE/{GUIDEBOOK_NAME}`, as Markdown, in exactly this
-shape — the file is machine-checked for the stage headings and the five bold
-fields, and a guidebook missing any of them is rejected:
+shape — the file is machine-checked for the compact rubric, stage headings,
+and their bold fields, and a guidebook missing any of them is rejected:
 
 ```markdown
 # Guidebook — <one line naming the change>
@@ -234,6 +240,12 @@ Unit under change: <the function / class / module>
 
 <How many stages, and which stage holds the decision this guidebook exists to
 get right.>
+
+---
+
+## Supervisor rubric
+
+{rubric_fields}
 
 ---
 
@@ -252,6 +264,12 @@ and `**Tests.**` after the five required fields.
 
 The rules:
 
+- **The rubric is compact and the tutorial stays complete.** Summarize the
+  tutorial's checkpoints and observable signals; do not replace stages with
+  the rubric or introduce a claim the tutorial does not support.
+- **Self-correction signals are diagnostic only.** They explain recorded
+  telemetry for later analysis. Only off-track signals bear on whether the
+  Supervisor speaks; self-correction signals never veto that decision.
 - **Never say or imply that you saw the answer.** No "the reference does X",
   no diff summary, no test names the blind agent could not have found. The
   guidebook reads as a tutorial written by someone who understands the
@@ -344,7 +362,7 @@ class GuidebookObserver(SandboxObserver):
       return Contribution(metrics={PRESENT_METRIC: 0.0})
     text = sb.read(GUIDEBOOK_NAME).decode("utf-8", "backslashreplace")
     self.guidebook = text
-    self.problems = tuple(validate_guidebook(text))
+    self.problems = tuple(validate_guidebook(text, require_rubric=True))
     if self.problems:
       _logger.warning("guidebook rejected: %s", "; ".join(self.problems))
     return Contribution(

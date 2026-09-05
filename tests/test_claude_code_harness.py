@@ -1603,12 +1603,32 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
       "Please inspect the failing parser boundary before changing any code in "
       "this repository today"
   )
-  guidebook_only = (
+  rubric_only = (
+      "opal quartz river saffron timber umber violet willow xenon yellow "
+      "zephyr alder"
+  )
+  tutorial_only = (
       "amber cobalt delta ember fable garnet harbor ivory juniper kelp lunar "
       "marble nectar"
   )
   sentinel = f"""\
 # Guidebook
+
+## Supervisor rubric
+
+**Checkpoints.** Inspect the parser boundary, then test it.
+
+**On-track evidence.** {rubric_only}.
+
+**Disallowed branches.** Do not infer behavior from the failed patch.
+
+**Off-track signals.** The actor edits before inspecting both sides.
+
+**Self-correction signals.** The actor returns to inspect the caller.
+
+**Safe hint justification.** The mismatch is observable in public code.
+
+---
 
 ## Stage 1
 
@@ -1618,7 +1638,7 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
 
 **Expected observations.** The branch differs from its caller.
 
-**Justification.** {task}. {guidebook_only}.
+**Justification.** {task}. {tutorial_only}.
 
 **Exit criteria.** The mismatch is explained.
 """
@@ -1631,7 +1651,9 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
   for payload in payloads:
     messages = payload["messages"]
     assert isinstance(messages, list)
-    assert sentinel in messages[0]["content"]
+    assert "# Guidebook rubric\n\n" in messages[0]["content"]
+    assert rubric_only in messages[0]["content"]
+    assert tutorial_only not in messages[0]["content"]
 
   rows = [
       json.loads(line)
@@ -1643,6 +1665,7 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
   )
   assert spoke["judge_reason"] == "drift"
   assert spoke["running_state"] == "Current checkpoint: inspect parser"
+  assert spoke["guidebook_context_mode"] == "rubric"
   assert spoke["judge_input"] == payloads[0]
   assert spoke["text"] == "look again"
   assert any(
@@ -1662,7 +1685,7 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
   assert shared  # the task-derived text is the false-positive control
   assert leaked == set()
   assert (
-      shingles(sentinel) & shingles(conversation_text + " " + guidebook_only)
+      shingles(sentinel) & shingles(conversation_text + " " + tutorial_only)
   ) - shingles(task)
 
 

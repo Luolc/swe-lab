@@ -7,6 +7,7 @@ in that plan without a test below is a wish, per ``AGENTS.md``.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import dataclasses
 from typing import Any
 
@@ -679,6 +680,33 @@ def test_valid_running_state_versions_persist_on_existing_decision_rows() -> (
       (1, "Current checkpoint: inspect"),
       (2, "Current checkpoint: test"),
   ]
+
+
+def test_guidebook_context_modes_are_distinct_on_decision_rows() -> None:
+  """Compatible inputs must not create an invisible prompt-mode split."""
+  legacy = "# Guidebook — legacy\n\n## Stage 1 — inspect\n"
+  rubric = (
+      "# Guidebook — current\n\n"
+      "## Supervisor rubric\n\n"
+      "**Checkpoints.** Inspect, then test.\n\n"
+      "## Stage 1 — inspect\n"
+  )
+  modes: list[object] = []
+
+  for guidebook in (legacy, rubric, None):
+    rows: list[Mapping[str, Any]] = []
+    supervisor = Supervisor(
+        policy=NeverSpeak(),
+        task="the task",
+        sink=lambda _: None,
+        log=rows.append,
+        guidebook=guidebook,
+    )
+
+    _ = supervisor.observe(assistant_event("inspect"))
+    modes.append(rows[0]["guidebook_context_mode"])
+
+  assert modes == ["legacy_tutorial", "rubric", None]
 
 
 def test_the_log_accounts_for_every_event() -> None:
