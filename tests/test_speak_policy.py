@@ -185,15 +185,11 @@ def test_an_actor_on_track_is_never_spoken_to() -> None:
   assert speaker.markers == ()
 
 
-def test_an_actor_already_recovering_is_left_alone() -> None:
-  """Gate 2: off-track alone does not speak.
-
-  The second question is where the restraint lives, and it is what the graded
-  batch's redundancy measured.
-  """
+def test_an_off_track_actor_already_recovering_is_spoken_to() -> None:
+  """Self-correction telemetry does not veto an off-track judgement."""
   speaker, _, _ = policy(RECOVERING)
-  assert speaker.consider(observation(1)) is None
-  assert speaker.markers == ()
+  assert speaker.consider(observation(1)) is not None
+  assert len(speaker.markers) == 1
 
 
 def test_budget_zero_speaks_nothing_and_still_marks_every_deviation() -> None:

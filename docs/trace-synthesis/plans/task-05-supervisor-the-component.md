@@ -249,11 +249,10 @@ and what has already been said. **It asks two questions, not one:**
 1. **Is the actor off the criterion's path?**
 2. **Left alone, would it come back by itself?**
 
-Only *off-track **and** not self-correcting* speaks. The second question is
-where the restraint lives — an actor that has just said "that didn't work, let
-me reconsider" is already doing the thing an intervention would ask for, and
-speaking there is the redundancy the graded batch measured (roughly half its
-interventions).
+Only the off-track answer controls speech. The self-correcting answer is
+recorded but never acted on. It remains in the verdict so telemetry can measure
+how often it would have vetoed an off-track judgement; that evidence can inform
+a later decision about removing the field in one breaking contract change.
 
 **Precision comes from the bar; restraint comes from the budget; neither may
 come from delay.** The obvious way to buy precision is to debounce — require
@@ -314,13 +313,12 @@ matched control §4.4 depends on. Past that precondition, `consider()` returns
 `None` unless every gate passes, in this order:
 
 1. the judge says off-track, else silent;
-2. the judge says it will not self-correct, else silent;
-3. **the would-have-spoken marker is recorded here**, before any budget is
+2. **the would-have-spoken marker is recorded here**, before any budget is
    consulted — this is what the control arm produces (what it buys is stated
    once, at `workflow.definitions.CONTROL_BUDGET`);
-4. budget remaining, else silent (with the marker already recorded);
-5. cooldown elapsed since the last intervention, else silent (likewise);
-6. the writer produces a usable line, else **a recorded lapse** bounded to this
+3. budget remaining, else silent (with the marker already recorded);
+4. cooldown elapsed since the last intervention, else silent (likewise);
+5. the writer produces a usable line, else **a recorded lapse** bounded to this
    boundary (§6.1) — never a retry.
 
 The cost of this ordering is stated rather than hidden: **the judge runs on
@@ -479,10 +477,12 @@ validate it — and it can falsify it only on the paired dimension above.** If g
 way that matters; if it does not, we have removed one known failure and learned
 nothing about the rest.
 
-**Gate (a) alone is the whole check.** Gate (b) — *would it self-correct* — has
-**no** supporting evidence at all, so it must not be tuned to carry weight here;
-already-finished work is not a deviation under (a), and reaching for (b) to
-explain that would be fitting a second knob to the same data.
+**Gate (a) alone is the whole check.** Question (b) — *would it self-correct* —
+has **no** supporting evidence at all, so it is recorded but never acted on.
+Retaining it as telemetry makes that missing evidence measurable before a later
+breaking change decides whether to remove the field; already-finished work is
+not a deviation under (a), and reaching for (b) to explain that would be fitting
+a second knob to the same data.
 
 **The inputs are read-only and carry operator PII, which constrains what the
 replay may emit.** The committed evidence carries each row's action, correction
