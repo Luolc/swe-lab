@@ -41,6 +41,13 @@ from types import ModuleType
 
 import pytest
 
+from swe_lab.conversation import (
+    Message,
+    Role,
+    TextBlock,
+    ToolResultBlock,
+    ToolUseBlock,
+)
 from swe_lab.trace_synthesis.supervisor import (
     Intervention,
     LOG_KIND_SILENT,
@@ -173,6 +180,66 @@ def test_the_driver_gives_unjudged_its_own_row_kind(
       None,
       "run the failing test before changing anything",
   ]
+
+
+def test_tool_only_records_count_as_rendered_replay_evidence(
+    driver: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  """Replay measurement uses the paired renderer, not visible-text presence.
+
+  Tool calls and results are the population whose omission made the old metric
+  silently report the renderer defect. A fixture with prose would be green
+  under both definitions and could not distinguish them.
+  """
+  tool_only_messages = (
+      Message(
+          role=Role.ASSISTANT,
+          content=[
+              ToolUseBlock(
+                  id="call-1", name="Read", input={"path": "models.py"}
+              )
+          ],
+      ),
+      Message(
+          role=Role.USER,
+          content=[
+              ToolResultBlock(
+                  tool_use_id="call-1", content="class Edition: pass"
+              )
+          ],
+      ),
+  )
+  messages = iter(tool_only_messages)
+  policy = driver._stub_policy()
+
+  def next_message(event: object) -> Message:
+    """Return the next typed record for one synthetic event."""
+    del event
+    return next(messages)
+
+  def stay_silent(observation: Observation) -> None:
+    """Keep the replay focused on measurement rather than model output."""
+    del observation
+
+  monkeypatch.setattr(driver, "event_to_message", next_message)
+  monkeypatch.setattr(policy, "consider", stay_silent)
+
+  rows = list(
+      driver.replay(
+          arm=driver.Arm("tool-only-probe", None),
+          events=({"type": "assistant"}, {"type": "user"}),
+          task="t",
+          policy=policy,
+          boundaries=(2,),
+          criterion=policy.criterion,
+      )
+  )
+
+  assert all(
+      not any(isinstance(block, TextBlock) for block in message.content)
+      for message in tool_only_messages
+  )
+  assert rows[0]["rendered_nonempty_in_window"] == 2
 
 
 def test_a_fresh_run_writes_its_manifest(

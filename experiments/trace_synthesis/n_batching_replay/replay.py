@@ -27,12 +27,8 @@ import subprocess
 import time
 from typing import Any
 
-from swe_lab.conversation import Message, TextBlock
+from swe_lab.conversation import Message
 from swe_lab.harnesses.claude_code.convert import event_to_message
-from swe_lab.trace_synthesis.context_components import (
-    PairedToolEvidenceRenderer,
-    SupervisorPromptBuilder,
-)
 from swe_lab.trace_synthesis.judge import (
     JUDGE_INSTRUCTIONS,
     supervising_policy,
@@ -184,19 +180,6 @@ def boundaries_for(arm: Arm, events: Sequence[Mapping[str, Any]]) -> list[int]:
   return [turns[k] for k in range(arm.n - 1, len(turns), arm.n)]
 
 
-def _text_of(record: Message) -> str:
-  """Return a record's text as the judge's prompt renders it.
-
-  Args:
-    record: One admitted evidence record.
-
-  Returns:
-    The concatenated text blocks — empty for a record that carries only tool
-    calls, tool results or reasoning, which is what `judge._render` sees.
-  """
-  return "".join(b.text for b in record.content if isinstance(b, TextBlock))
-
-
 @dataclasses.dataclass
 class RecordingTransport:
   """A transport, with what answered each call kept beside it.
@@ -331,6 +314,8 @@ def replay(
         cursor=cursor,
         said=tuple(said),
     )
+    prompt_builder = policy.judge.prompt_builder
+    renderer = prompt_builder.renderer
     row: dict[str, Any] = {
         "arm": arm.name,
         "cursor": cursor,
@@ -349,13 +334,11 @@ def replay(
             0, len(evidence) - len(windowed) - admitted_at_previous
         ),
         "rendered_nonempty_in_window": sum(
-            1 for r in windowed if _text_of(r).strip()
+            1 for record in windowed if renderer.render((record,)).strip()
         ),
-        "rendered_evidence_chars": len(
-            PairedToolEvidenceRenderer().render(windowed)
-        ),
+        "rendered_evidence_chars": len(renderer.render(windowed)),
         "prompt_chars": len(
-            policy.judge.prompt_builder.build(
+            prompt_builder.build(
                 dataclasses.replace(observation, evidence=tuple(windowed)),
                 criterion,
             )
