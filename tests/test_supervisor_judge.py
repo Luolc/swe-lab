@@ -457,6 +457,105 @@ def test_an_unusable_judge_answer_is_never_retried() -> None:
   assert len(transport.payloads) == 1
 
 
+def test_the_writer_ignores_a_leading_non_text_block() -> None:
+  """A usable text block need not be the response's first block."""
+  content = [
+      {"type": "thinking", "thinking": "consider the evidence"},
+      {"type": "text", "text": "Check the failed assertion before editing."},
+  ]
+  writer = ModelWriter(
+      model="m", transport=RecordingTransport(answers=[content])
+  )
+
+  line = writer(observation(), load_criterion())
+
+  assert line == "Check the failed assertion before editing."
+
+
+def test_a_missing_writer_text_block_is_one_lapse_and_is_never_retried() -> (
+    None
+):
+  """A completed response without text is bounded to this one boundary."""
+  transport = RecordingTransport(
+      answers=[
+          OFF_TRACK_JSON,
+          [{"type": "thinking", "thinking": "no final answer"}],
+      ]
+  )
+  policy = supervising_policy(model="m", transport=transport, budget=1)
+
+  with pytest.raises(PolicyLapseError, match="writer produced no usable line"):
+    policy.consider(observation())
+
+  assert len(transport.payloads) == 2
+
+
+def test_duplicate_writer_text_blocks_are_unusable() -> None:
+  """Taking the first text block would silently weaken exactly-one."""
+  transport = RecordingTransport(
+      answers=[
+          [
+              {"type": "text", "text": "first"},
+              {"type": "text", "text": "second"},
+          ]
+      ]
+  )
+
+  with pytest.raises(ValueError, match="expected exactly one text block"):
+    ModelWriter(model="m", transport=transport)(observation(), load_criterion())
+
+
+def test_a_non_string_writer_text_block_is_unusable() -> None:
+  """A typed text block must carry a string rather than a coerced value."""
+  transport = RecordingTransport(answers=[[{"type": "text", "text": 7}]])
+
+  with pytest.raises(ValueError, match="text must be a string, got int"):
+    ModelWriter(model="m", transport=transport)(observation(), load_criterion())
+
+
+def test_writer_content_must_be_a_list() -> None:
+  """The writer validates the response container before selecting a block."""
+  writer = ModelWriter(
+      model="m",
+      transport=lambda _: {"content": {"type": "text", "text": "line"}},
+  )
+
+  with pytest.raises(ValueError, match="expected a content list"):
+    writer(observation(), load_criterion())
+
+
+def test_an_unusable_writer_answer_keeps_raw_response_provenance() -> None:
+  """Extraction failure cannot erase the response that explains the lapse."""
+  content = [
+      {"type": "thinking", "thinking": "considering"},
+      {"type": "text", "text": 7},
+  ]
+  writer = ModelWriter(
+      model="m", transport=RecordingTransport(answers=[content])
+  )
+
+  with pytest.raises(ValueError):
+    writer(observation(), load_criterion())
+
+  assert writer.calls[0].raw == content
+
+
+def test_an_unusable_writer_answer_keeps_the_stop_reason() -> None:
+  """The response ending remains readable when text extraction fails."""
+  writer = ModelWriter(
+      model="m",
+      transport=RecordingTransport(
+          answers=[[{"type": "text", "text": 7}]],
+          finish_reason="max_tokens",
+      ),
+  )
+
+  with pytest.raises(ValueError):
+    writer(observation(), load_criterion())
+
+  assert writer.calls[0].finish_reason == "max_tokens"
+
+
 def test_a_token_budget_lapse_is_recorded_differently_from_a_bad_answer() -> (
     None
 ):

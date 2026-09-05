@@ -246,8 +246,7 @@ class Call:
       looking correct, so the requested name cannot stand in for this.
     sampling_sent: Every key in :data:`SAMPLING_KEYS` mapped to the value sent,
       or ``None`` where the request left it to the provider.
-    raw: The answer evidence before parsing. Judge calls keep the native
-      content blocks; writer calls keep their text.
+    raw: The native content blocks before parsing.
     finish_reason: The provider's ``stop_reason``, or ``None`` when absent.
       ``"max_tokens"`` means the answer was truncated by
       ``max_tokens`` rather than completed.
@@ -520,6 +519,10 @@ class ModelWriter:
       The model's line. :class:`SpeakWhenOffTrack` applies the shallow
       answer-form checks and :class:`Intervention` applies the non-empty and
       length bounds; the policy records either rejection as one bounded lapse.
+
+    Raises:
+      ValueError: The answer was not exactly one text block carrying a string.
+        Not retried.
     """
     payload = {
         "model": self.model,
@@ -534,17 +537,37 @@ class ModelWriter:
         ],
     }
     response = self.transport(payload)
-    raw = response["content"][0]["text"]
+    finish_reason = response.get("stop_reason")
+    content = response.get("content")
     self.calls.append(
         Call(
             requested_model=self.model,
             response_model=response.get("model"),
             sampling_sent=_sampling_sent(payload),
-            raw=raw,
-            finish_reason=response.get("stop_reason"),
+            raw=content,
+            finish_reason=finish_reason,
         )
     )
-    return raw
+    if not isinstance(content, list):
+      raise ValueError("unusable writer answer: expected a content list")
+    text_blocks = [
+        block
+        for block in content
+        if isinstance(block, Mapping) and block.get("type") == "text"
+    ]
+    if len(text_blocks) != 1:
+      raise ValueError(
+          "unusable writer answer: expected exactly one text block, got"
+          f" {len(text_blocks)}"
+      )
+
+    text = text_blocks[0].get("text")
+    if type(text) is not str:
+      raise ValueError(
+          "unusable writer answer: text must be a string, got"
+          f" {type(text).__name__}"
+      )
+    return text
 
 
 def supervising_policy(
