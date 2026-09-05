@@ -320,10 +320,10 @@ class Verdict:
 
   Attributes:
     off_track: Whether the actor has left the criterion's path.
-    self_correcting: Whether, left alone, it would come back by itself. This
-      is where the restraint lives — an actor that has just said "that didn't
-      work, let me reconsider" is already doing what an intervention would ask
-      for.
+    self_correcting: Whether, left alone, it would come back by itself.
+      Recorded but never acted on. It remains in the verdict so telemetry can
+      measure how often it would have vetoed an off-track judgement before a
+      later breaking change decides whether to remove it from the contract.
     reason: The judge's own words, recorded but never acted on.
     deviation_started_steps_ago: How many of the shown steps ago the judge
       believes the deviation began, or ``None`` when it was not asked — which
@@ -471,12 +471,11 @@ class SpeakWhenOffTrack:
   ``consider`` returns ``None`` unless every gate passes, in this order:
 
   1. the judge says off track, else silent;
-  2. the judge says it will not self-correct, else silent;
-  3. the would-have-spoken marker is recorded — *before* any budget is
+  2. the would-have-spoken marker is recorded — *before* any budget is
      consulted;
-  4. budget remaining, else silent;
-  5. cooldown elapsed since the last intervention, else silent;
-  6. the writer produces a usable line, else the failure is bounded to this
+  3. budget remaining, else silent;
+  4. cooldown elapsed since the last intervention, else silent;
+  5. the writer produces a usable line, else the failure is bounded to this
      boundary and recorded as a lapse. Never a retry.
 
   The cost of that order is stated rather than hidden: the judge runs on every
@@ -612,7 +611,7 @@ class SpeakWhenOffTrack:
           finish_reason=getattr(error, "finish_reason", None),
       ) from error
     self._verdicts.append(verdict)
-    if not verdict.off_track or verdict.self_correcting:
+    if not verdict.off_track:
       return None
 
     self._markers.append(
