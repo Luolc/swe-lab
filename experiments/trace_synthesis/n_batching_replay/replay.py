@@ -315,7 +315,12 @@ def replay(
         said=tuple(said),
     )
     prompt_builder = policy.judge.prompt_builder
-    renderer = prompt_builder.renderer
+    empty_prompt = prompt_builder.build(
+        dataclasses.replace(observation, evidence=()), criterion
+    )
+    window_prompt = prompt_builder.build(
+        dataclasses.replace(observation, evidence=tuple(windowed)), criterion
+    )
     row: dict[str, Any] = {
         "arm": arm.name,
         "cursor": cursor,
@@ -334,15 +339,16 @@ def replay(
             0, len(evidence) - len(windowed) - admitted_at_previous
         ),
         "rendered_nonempty_in_window": sum(
-            1 for record in windowed if renderer.render((record,)).strip()
-        ),
-        "rendered_evidence_chars": len(renderer.render(windowed)),
-        "prompt_chars": len(
             prompt_builder.build(
-                dataclasses.replace(observation, evidence=tuple(windowed)),
-                criterion,
+                dataclasses.replace(observation, evidence=(record,)), criterion
             )
+            != empty_prompt
+            for record in windowed
         ),
+        "rendered_evidence_chars": max(
+            0, len(window_prompt) - len(empty_prompt)
+        ),
+        "prompt_chars": len(window_prompt),
     }
     previous_boundary = cursor
     admitted_at_previous = len(evidence)
