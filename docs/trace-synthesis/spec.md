@@ -181,9 +181,12 @@ Two rules on the guidebook:
    judgement, not a test.
 
 The guidebook is **private from the actor, not from the Supervisor**: phase C's
-Supervisor receives the complete schema-validated artifact, while it never
-enters the actor's context or the training trace. The handoff and the
-source-aware conversation check are pinned in
+default Supervisor receives the compact rubric from a schema-validated
+artifact, with the complete tutorial retained beside it for human audit. A
+pre-rubric artifact follows the explicit legacy full-tutorial path described by
+[ADR-0021](../decisions/ADR-0021-compact-guidebook-rubric-has-a-legacy-read-path.md).
+Neither representation enters the actor's context or the training trace. The
+handoff and the source-aware conversation check are pinned in
 [§12](#12-invariants-intended-enforced-where-marked).
 
 ### Phase C — the guided rollout
@@ -206,13 +209,16 @@ it considers, the Supervisor takes one of two branches:
   interacts with X?"), giving **a direction and never a specific**, and wrapped
   in a marker that says it came from outside ([§11](#11-open-questions)).
 
-The complete guidebook is visible to both the judge and writer, beside the
-general-practice criterion. Raw gold patches, test patches, hidden tests and
-equivalent privileged artifacts have no independent input field. The remaining
-boundary is on speech: the writer is intended to point, question and suggest a
-way to reason without reciting an implementation. The shallow checks in §5
-enforce only named surface forms; human review decides whether a paraphrase has
-crossed the teaching boundary.
+The compact guidebook rubric is visible to both the default judge and writer,
+beside the general-practice criterion. It names checkpoints, on-track evidence,
+disallowed branches, off-track signals, self-correction signals, and the safe
+hint justification. The detailed tutorial remains complete in the same stored
+artifact. Raw gold patches, test patches, hidden tests and equivalent
+privileged artifacts have no independent input field. The remaining boundary
+is on speech: the writer is intended to point, question and suggest a way to
+reason without reciting an implementation. The shallow checks in §5 enforce
+only named surface forms; human review decides whether a paraphrase has crossed
+the teaching boundary.
 
 The live prompt's recent evidence is a bounded view, not the durable trace
 ([ADR-0019](../decisions/ADR-0019-complete-bounded-supervisor-evidence.md)). The
