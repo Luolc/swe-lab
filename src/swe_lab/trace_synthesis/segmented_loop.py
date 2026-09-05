@@ -678,6 +678,7 @@ class SegmentedRun:
         "judge_reason": verdict.reason,
         "off_track": verdict.off_track,
         "self_correcting": verdict.self_correcting,
+        "running_state": verdict.running_state,
     }
     if decision:
       audit["reason"] = verdict.reason

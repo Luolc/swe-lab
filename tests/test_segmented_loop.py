@@ -536,8 +536,18 @@ def test_a_silent_seam_sends_the_neutral_continue():
 def test_segmented_rows_retain_valid_silent_and_speaking_verdicts():
   """The second runtime records the same diagnostic verdict telemetry."""
   verdicts = [
-      Verdict(off_track=False, self_correcting=False, reason="on track"),
-      Verdict(off_track=True, self_correcting=False, reason="drifting"),
+      Verdict(
+          off_track=False,
+          self_correcting=False,
+          reason="on track",
+          running_state="Current checkpoint: inspect",
+      ),
+      Verdict(
+          off_track=True,
+          self_correcting=False,
+          reason="drifting",
+          running_state="Current checkpoint: test",
+      ),
   ]
 
   def judge(observation: Observation, criterion: Criterion) -> Verdict:
@@ -575,6 +585,10 @@ def test_segmented_rows_retain_valid_silent_and_speaking_verdicts():
   ] == [
       (False, False, "on track"),
       (True, False, "drifting"),
+  ]
+  assert [row["running_state"] for row in rows] == [
+      "Current checkpoint: inspect",
+      "Current checkpoint: test",
   ]
 
 

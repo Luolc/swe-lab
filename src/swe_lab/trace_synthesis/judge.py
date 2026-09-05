@@ -53,8 +53,10 @@ from swe_lab.trace_synthesis.context_components import (
     CompleteAssistantTurnSelector,
     EvidenceRenderer,
     EvidenceSelector,
+    MAX_RUNNING_STATE_CHARS,
     PairedToolEvidenceRenderer,
     PromptBuilder,
+    RUNNING_STATE_INSTRUCTIONS,
     SupervisorPromptBuilder,
 )
 from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
@@ -97,11 +99,21 @@ JUDGE_TOOL: Mapping[str, Any] = {
             "off_track": {"type": "boolean"},
             "self_correcting": {"type": "boolean"},
             "reason": {"type": "string"},
+            "running_state": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": MAX_RUNNING_STATE_CHARS,
+            },
             "deviation_started_steps_ago": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}]
             },
         },
-        "required": ["off_track", "self_correcting", "reason"],
+        "required": [
+            "off_track",
+            "self_correcting",
+            "reason",
+            "running_state",
+        ],
         "additionalProperties": False,
     },
 }
@@ -160,7 +172,9 @@ Judge only against the criterion given below. Do not use any other standard,
 and do not reason about what the correct fix would be.
 
 Answer with one JSON object and nothing else:
-{"off_track": bool, "self_correcting": bool, "reason": "<one short sentence>"}
+{"off_track": bool, "self_correcting": bool,
+ "reason": "<one short sentence>",
+ "running_state": "<bounded observational state>"}
 
 off_track: the work shown is off the criterion's path.
 self_correcting: left alone, the engineer is already returning to it.
@@ -174,17 +188,18 @@ Judge against the general-practice criterion and, when present, the guidebook
 given below. The guidebook says which instance-specific route is on track.
 
 Answer with one JSON object and nothing else:
-{"off_track": bool, "self_correcting": bool, "reason": "<one short sentence>"}
+{"off_track": bool, "self_correcting": bool,
+ "reason": "<one short sentence>",
+ "running_state": "<bounded observational state>"}
 
 off_track: the work shown is off the criterion's path.
 self_correcting: left alone, the engineer is already returning to it.
 """
 
 #: Appended to the selected judge instructions only when a judge is built with
-#: ``locate_deviation``. Kept as a separate constant so the default
-#: instructions are byte-identical to what every A′ run has sent —
-#: ``test_unguided_model_prompts_are_byte_identical_to_the_prior_path`` is what
-#: makes that a check.
+#: ``locate_deviation``. Kept separate so the opt-in changes only its owned
+#: text beyond the required-running-state default; the default bytes are pinned
+#: by ``test_default_unguided_model_system_instructions_are_pinned``.
 LOCATE_DEVIATION_INSTRUCTION = """
 Also answer "deviation_started_steps_ago": if off_track, how many of the steps
 shown above the deviation began — 0 for the most recent step. Omit it or use
@@ -278,6 +293,103 @@ def _sampling_sent(payload: Mapping[str, Any]) -> dict[str, Any]:
   return {key: payload.get(key) for key in SAMPLING_KEYS}
 
 
+def _verdict_from_answer(
+    answer: Mapping[str, Any],
+    *,
+    payload: Mapping[str, Any],
+    finish_reason: str | None,
+) -> Verdict:
+  """Validate one tool input and return its verdict."""
+  expected_fields = {
+      "off_track",
+      "self_correcting",
+      "reason",
+      "running_state",
+  }
+  allowed_fields = expected_fields | {"deviation_started_steps_ago"}
+  missing_fields = expected_fields - answer.keys()
+  if missing_fields:
+    missing = ", ".join(sorted(missing_fields))
+    raise JudgeAnswerError(
+        "unusable judge answer: missing required tool input fields: " + missing,
+        finish_reason=finish_reason,
+    )
+  unexpected_fields = answer.keys() - allowed_fields
+  if unexpected_fields:
+    unexpected = ", ".join(sorted(unexpected_fields))
+    raise JudgeAnswerError(
+        f"unusable judge answer: unexpected tool input fields: {unexpected}",
+        finish_reason=finish_reason,
+    )
+
+  off_track = answer["off_track"]
+  self_correcting = answer["self_correcting"]
+  # Coercion here would read "false" as True — a verdict of *no* becoming a
+  # correction — so the shape is required rather than converted.
+  for name, value in (
+      ("off_track", off_track),
+      ("self_correcting", self_correcting),
+  ):
+    if type(value) is not bool:
+      raise JudgeAnswerError(
+          "unusable judge answer:"
+          f" {name} must be a JSON boolean, got {type(value).__name__}",
+          finish_reason=finish_reason,
+      )
+  off_track = cast(bool, off_track)
+  self_correcting = cast(bool, self_correcting)
+
+  reason = answer["reason"]
+  if type(reason) is not str:
+    raise JudgeAnswerError(
+        "unusable judge answer: reason must be a JSON string, got"
+        f" {type(reason).__name__}",
+        finish_reason=finish_reason,
+    )
+
+  running_state = answer["running_state"]
+  if type(running_state) is not str:
+    raise JudgeAnswerError(
+        "unusable judge answer: running_state must be a JSON string, got"
+        f" {type(running_state).__name__}",
+        finish_reason=finish_reason,
+    )
+  if not running_state.strip():
+    raise JudgeAnswerError(
+        "unusable judge answer: running_state must not be blank",
+        finish_reason=finish_reason,
+    )
+  if len(running_state) > MAX_RUNNING_STATE_CHARS:
+    raise JudgeAnswerError(
+        "unusable judge answer: running_state has"
+        f" {len(running_state):,} characters, over the"
+        f" {MAX_RUNNING_STATE_CHARS:,} limit",
+        finish_reason=finish_reason,
+    )
+
+  # Read with `.get` and type-checked rather than coerced: an answer that
+  # omits it is not an error, and a string "3" is not an integer this record
+  # may claim was measured.
+  started = answer.get("deviation_started_steps_ago")
+  # `type(...) is int`, deliberately **not** `isinstance`: `bool` is a
+  # subclass of `int`, so `isinstance(True, int)` is True and a judge answering
+  # `true` here would be recorded as "1 step ago".
+  if started is not None and type(started) is not int:
+    raise JudgeAnswerError(
+        "unusable judge answer: deviation_started_steps_ago must be a JSON"
+        f" integer or null, got {type(started).__name__}",
+        finish_reason=finish_reason,
+    )
+  return Verdict(
+      off_track=off_track,
+      self_correcting=self_correcting,
+      reason=reason,
+      running_state=running_state,
+      deviation_started_steps_ago=started,
+      judge_input=dict(payload),
+  )
+
+
 @dataclasses.dataclass
 class ModelJudge:
   """Answers the two questions with one model call, and records what answered.
@@ -306,13 +418,10 @@ class ModelJudge:
       the median's ~89 reasoning tokens spends the same either way. See issue
       #383 for the recompute.
     locate_deviation: Ask, in addition, how far back the deviation started.
-      **Off by default, and the default prompt is byte-identical to the one
-      every A′ run has sent** — pinned by
-      ``test_unguided_model_prompts_are_byte_identical_to_the_prior_path``,
-      because a supervision arm whose judge prompt quietly changed would move
-      the thing it measures. On only for the segmented loop, which records the
-      answer so that how many turns late its corrections were is a measured
-      distribution rather than a recollection.
+      Off by default and isolated from the required-running-state prompt,
+      pinned by ``test_default_unguided_model_system_instructions_are_pinned``.
+      On only for the segmented loop, which records the answer so that how many
+      turns late its corrections were is measured rather than recollected.
     calls: What answered each request, in order.
     instructions: Optional system instructions for evaluation prompt variants.
       ``None`` preserves the guided or unguided default.
@@ -400,64 +509,8 @@ class ModelJudge:
           "unusable judge answer: tool input must be an object",
           finish_reason=finish_reason,
       )
-    expected_fields = {"off_track", "self_correcting", "reason"}
-    allowed_fields = expected_fields | {"deviation_started_steps_ago"}
-    if (
-        not expected_fields <= answer.keys()
-        or not answer.keys() <= allowed_fields
-    ):
-      raise JudgeAnswerError(
-          "unusable judge answer: tool input fields do not match the schema",
-          finish_reason=finish_reason,
-      )
-
-    off_track = answer["off_track"]
-    self_correcting = answer["self_correcting"]
-
-    # Coercion here would read "false" as True — a verdict of *no* becoming a
-    # correction — so the shape is required rather than converted.
-    for name, value in (
-        ("off_track", off_track),
-        ("self_correcting", self_correcting),
-    ):
-      if type(value) is not bool:
-        raise JudgeAnswerError(
-            "unusable judge answer:"
-            f" {name} must be a JSON boolean, got {type(value).__name__}",
-            finish_reason=finish_reason,
-        )
-    off_track = cast(bool, off_track)
-    self_correcting = cast(bool, self_correcting)
-
-    reason = answer["reason"]
-    if type(reason) is not str:
-      raise JudgeAnswerError(
-          "unusable judge answer: reason must be a JSON string, got"
-          f" {type(reason).__name__}",
-          finish_reason=finish_reason,
-      )
-
-    # Read with `.get` and type-checked rather than coerced: an answer that
-    # omits it is not an error, and a string "3" is not an integer this record
-    # may claim was measured.
-    started = answer.get("deviation_started_steps_ago")
-    # `type(...) is int`, deliberately **not** `isinstance`: `bool` is a
-    # subclass of `int` in Python, so `isinstance(True, int)` is True and a
-    # judge answering `true` here would be recorded as "1 step ago" — a
-    # boolean wearing a measurement's clothes, with nothing to catch it.
-    # A lint pass "correcting" this to `isinstance` turns no light red.
-    if started is not None and type(started) is not int:
-      raise JudgeAnswerError(
-          "unusable judge answer: deviation_started_steps_ago must be a JSON"
-          f" integer or null, got {type(started).__name__}",
-          finish_reason=finish_reason,
-      )
-    return Verdict(
-        off_track=off_track,
-        self_correcting=self_correcting,
-        reason=reason,
-        deviation_started_steps_ago=started,
-        judge_input=dict(payload),
+    return _verdict_from_answer(
+        answer, payload=payload, finish_reason=finish_reason
     )
 
 
@@ -481,7 +534,9 @@ class ModelWriter:
   calls: list[Call] = dataclasses.field(default_factory=list)
   instructions: str | None = None
   prompt_builder: PromptBuilder = dataclasses.field(
-      default_factory=SupervisorPromptBuilder
+      default_factory=lambda: SupervisorPromptBuilder(
+          running_state_instructions=None
+      )
   )
 
   def __call__(self, observation: Observation, criterion: Criterion) -> str:
@@ -564,6 +619,7 @@ def supervising_policy(
     locate_deviation: bool = False,
     instructions: str | None = None,
     writer_instructions: str | None = None,
+    running_state_instructions: str | None = None,
     selector: EvidenceSelector | None = None,
     renderer: EvidenceRenderer | None = None,
     prompt_builder: PromptBuilder | None = None,
@@ -592,6 +648,8 @@ def supervising_policy(
       guided or unguided default.
     writer_instructions: Optional writer system instructions. ``None``
       preserves the guided or unguided default.
+    running_state_instructions: Optional state-update text for the judge's user
+      prompt. ``None`` keeps the default update active.
     selector: Evidence selector override. ``None`` keeps complete-turn
       selection.
     renderer: Evidence renderer override used by the default prompt builder.
@@ -607,22 +665,34 @@ def supervising_policy(
       else load_criterion(gold_patch=gold_patch)
   )
   if prompt_builder is None:
-    prompt_builder = SupervisorPromptBuilder(
-        renderer=(renderer or PairedToolEvidenceRenderer())
+    renderer = renderer or PairedToolEvidenceRenderer()
+    judge_prompt_builder = SupervisorPromptBuilder(
+        renderer=renderer,
+        running_state_instructions=(
+            running_state_instructions
+            if running_state_instructions is not None
+            else RUNNING_STATE_INSTRUCTIONS
+        ),
     )
+    writer_prompt_builder = SupervisorPromptBuilder(
+        renderer=renderer, running_state_instructions=None
+    )
+  else:
+    judge_prompt_builder = prompt_builder
+    writer_prompt_builder = prompt_builder
   return SpeakWhenOffTrack(
       judge=ModelJudge(
           model=model,
           transport=transport,
           locate_deviation=locate_deviation,
           instructions=instructions,
-          prompt_builder=prompt_builder,
+          prompt_builder=judge_prompt_builder,
       ),
       writer=ModelWriter(
           model=model,
           transport=transport,
           instructions=writer_instructions,
-          prompt_builder=prompt_builder,
+          prompt_builder=writer_prompt_builder,
       ),
       criterion=criterion,
       budget=budget,
