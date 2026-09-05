@@ -5,6 +5,12 @@
 Accepted. The owner decided the direction on 2026-09-03; the implementation
 and the trace-synthesis spec reconciliation landed together.
 
+Partly superseded by
+[ADR-0020](ADR-0020-running-state-is-a-required-judge-output.md), which resolves
+the persisted-audit-shape question and adds host-side `running_state` to the
+exact supervisor input allowlist. The privileged-input and speech boundaries
+decided here are unchanged.
+
 This decision supersedes the information-barrier argument in the module
 docstring of `src/swe_lab/trace_synthesis/supervisor.py` and in the
 `Observation` docstring. Their useful warning survives as the speech boundary
@@ -383,9 +389,7 @@ human-rejected corrections; no threshold is selected in this ADR.
 
 ### What persisted audit shape is compatible with the report contract?
 
-The supervisor log already records emitted text, but auditing the new boundary
-also needs the guidebook identity and the input/reason behind the decision. The
-exact record shape is deferred because changing the report contract is an
-ask-first boundary. Implementation must not smuggle that schema change into the
-guidebook wiring; either reuse existing extensible fields or obtain an explicit
-decision before changing the contract.
+Resolved by
+[ADR-0020](ADR-0020-running-state-is-a-required-judge-output.md): valid running
+states extend the existing open-shaped supervisor decision rows. The closed
+terminal-summary, run-record, and report schemas remain unchanged.
