@@ -214,6 +214,22 @@ way to reason without reciting an implementation. The shallow checks in §5
 enforce only named surface forms; human review decides whether a paraphrase has
 crossed the teaching boundary.
 
+The live prompt's recent evidence is a bounded view, not the durable trace
+([ADR-0019](../decisions/ADR-0019-complete-bounded-supervisor-evidence.md)). The
+default selector keeps complete recent assistant turns, including every tool
+call and following result before the next assistant turn. The renderer pairs
+them by tool-use ID, includes success or error status, marks a genuinely
+missing result, and omits reasoning. Visible assistant text, structured input,
+and result content are bounded independently; every clipped value says how many
+characters were not shown. The full typed values remain in the stored
+conversation and supervisor evidence.
+
+The belief state above remains target design rather than shipped state. Its
+update model and persistence wait on the report-contract decision; this stage
+adds no running summary or compact guidebook representation. Selection,
+rendering, and prompt assembly are already public replaceable components, so
+that later decision does not require another segmented loop or logging path.
+
 **When** it speaks is the open variable, not a settled part of this design: in
 the one graded batch, **8 of 8 non-compliances arrived too late**
 ([report §6.2](../../experiments/trace_synthesis/mid_turn_compliance/REPORT.md)).
@@ -921,6 +937,7 @@ is tuned by reading traces, not asserted by a test.
 | Phase D never collects an exchange the actor was not part of: a request whose body carries a `[SUGGESTION MODE: …]` message, or any other side call the front end makes, is excluded from the conversation | a test over a captured TUI session asserting the collected `Conversation` is built from the agent-loop request and that a trailing prompt-suggestion request is not selected |
 | A hint never alters what the actor observed: the Supervisor emits its own message and never a tool result, an assistant turn, or an edit of either | a test over the Supervisor's emitter asserting every value it can produce is its own tagged message, and that no code path writes into a captured record |
 | The Supervisor's input has exactly `task`, `evidence`, `cursor`, `said` and the validated `guidebook`; raw gold/reference/test patches, hidden tests and their named equivalents have no separate constructor channel | ✅ `test_supervisor_input_carries_the_guidebook` asserts the exact five-field allowlist and the artifact's positive handoff; `test_supervisor_input_rejects_separate_privileged_material` supplies every named negative control and requires constructor rejection |
+| A recent-evidence limit never splits an assistant tool call from its following result; genuine missing results and every prompt-only truncation are explicit, reasoning is omitted without hiding the positive tool evidence, and clipping leaves the raw values complete | ✅ `test_a_raw_record_boundary_never_splits_a_tool_call_from_its_result`, `test_a_genuinely_missing_result_is_marked`, `test_truncation_is_visible_and_short_values_are_unmarked`, `test_oversized_structured_input_has_its_own_visible_marker`, `test_visible_text_can_be_bounded_or_disabled_without_hiding_tools`, `test_tool_evidence_is_rendered_while_reasoning_is_omitted`, and `test_prompt_clipping_does_not_change_the_complete_raw_values` |
 | Phase B runs with the git-history purge **off** and composes no result verifier — the Oracle sees the history it is meant to see, and a run contaminated by declaration is not put through the detector — while the solving definitions keep purging | ✅ `test_the_oracle_task_composes_no_purge_no_extractor_and_no_verifier` and its converse `test_the_rollout_definitions_still_purge` (`tests/test_oracle_analysis.py`) |
 
 ## 13. Where this plugs into swe-lab

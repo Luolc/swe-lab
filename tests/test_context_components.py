@@ -179,6 +179,28 @@ def test_visible_text_can_be_bounded_or_disabled_without_hiding_tools() -> None:
   assert "Tool result call-1" in disabled
 
 
+def test_prompt_clipping_does_not_change_the_complete_raw_values() -> None:
+  """Prompt bounds do not become destructive bounds on durable evidence."""
+  tool_use = ToolUseBlock(
+      id="call-1", name="Read", input={"path": "complete-input.py"}
+  )
+  result = ToolResultBlock(
+      tool_use_id="call-1", content="complete result content"
+  )
+  records = (
+      Message(role=Role.ASSISTANT, content=[tool_use]),
+      Message(role=Role.USER, content=[result]),
+  )
+
+  rendered = PairedToolEvidenceRenderer(
+      max_tool_input_chars=4, max_tool_result_chars=4
+  ).render(records)
+
+  assert "not shown" in rendered
+  assert tool_use.input == {"path": "complete-input.py"}
+  assert result.content == "complete result content"
+
+
 @dataclasses.dataclass(frozen=True)
 class FirstRecordSelector(EvidenceSelector):
   """Select the oldest raw record to prove the policy uses the seam."""

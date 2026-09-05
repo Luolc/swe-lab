@@ -324,7 +324,7 @@ def replay(
     if cursor not in due:
       continue
 
-    windowed = evidence[-window :]
+    windowed = policy.selector.select(evidence, limit=window)
     observation = Observation(
         task=task,
         evidence=tuple(evidence),
@@ -346,7 +346,7 @@ def replay(
         "evidence_in_window": len(windowed),
         "evidence_dropped_by_window": len(evidence) - len(windowed),
         "new_evidence_dropped_by_window": max(
-            0, (len(evidence) - admitted_at_previous) - window
+            0, len(evidence) - len(windowed) - admitted_at_previous
         ),
         "rendered_nonempty_in_window": sum(
             1 for r in windowed if _text_of(r).strip()
@@ -355,7 +355,7 @@ def replay(
             PairedToolEvidenceRenderer().render(windowed)
         ),
         "prompt_chars": len(
-            SupervisorPromptBuilder().build(
+            policy.judge.prompt_builder.build(
                 dataclasses.replace(observation, evidence=tuple(windowed)),
                 criterion,
             )
