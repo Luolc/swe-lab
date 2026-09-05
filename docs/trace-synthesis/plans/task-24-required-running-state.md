@@ -55,6 +55,8 @@ field rather than a report-contract change.
   produce lapses whose recorded reasons differ.
 - A writer request contains the updated state, structured verdict/reason,
   latest selected evidence, and prior intervention, but not older evidence.
+- Two segmented boundaries retain cumulative cursors while each judge receives
+  only the positive evidence from the segment that just completed.
 - Silent and speaking rows in both Python carriers contain the valid state and
   their existing boundary coordinates.
 - The exact native-output set remains unchanged, proving no state artifact was

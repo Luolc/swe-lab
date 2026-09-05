@@ -1568,6 +1568,7 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
                     "off_track": True,
                     "self_correcting": False,
                     "reason": "drift",
+                    "running_state": "Current checkpoint: inspect parser",
                 },
             }
         ]
@@ -1641,6 +1642,7 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
       spoke["guidebook_sha256"] == hashlib.sha256(sentinel.encode()).hexdigest()
   )
   assert spoke["judge_reason"] == "drift"
+  assert spoke["running_state"] == "Current checkpoint: inspect parser"
   assert spoke["judge_input"] == payloads[0]
   assert spoke["text"] == "look again"
   assert any(

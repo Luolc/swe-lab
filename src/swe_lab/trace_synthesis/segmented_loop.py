@@ -518,8 +518,13 @@ class SegmentedRun:
       if stop is not None:
         return last
 
+      prompt = self._seam_prompt(
+          events[consumed:],
+          cursor=len(events),
+          turns=turns,
+          index=request.index,
+      )
       consumed = len(events)
-      prompt = self._seam_prompt(events, turns=turns, index=request.index)
 
   def _seam_reading(self, request: SegmentRequest) -> SeamReading | None:
     """Check the wire after a resumed segment; report a reading only if bad.
@@ -583,6 +588,7 @@ class SegmentedRun:
       self,
       events: Sequence[Mapping[str, Any]],
       *,
+      cursor: int,
       turns: int,
       index: int,
   ) -> str:
@@ -596,7 +602,8 @@ class SegmentedRun:
     neutral continue is what an unsupervised seam looks like.
 
     Args:
-      events: Every event so far.
+      events: The events from the segment that just completed.
+      cursor: The cumulative event position at this boundary.
       turns: The actor's cumulative turn count at this cut.
       index: The segment that just ended.
 
@@ -606,7 +613,7 @@ class SegmentedRun:
     observation = Observation(
         task=self.task,
         evidence=evidence_of(events),
-        cursor=len(events),
+        cursor=cursor,
         said=tuple(self._said),
         guidebook=self.guidebook,
     )

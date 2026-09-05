@@ -654,7 +654,8 @@ def supervising_policy(
       selection.
     renderer: Evidence renderer override used by the default prompt builder.
     prompt_builder: Prompt-builder override. When supplied, it owns rendering
-      and ``renderer`` is ignored.
+      and decision text, so ``renderer`` and ``running_state_instructions`` are
+      ignored.
 
   Returns:
     The policy, holding a criterion whose digest is the pinned one.
