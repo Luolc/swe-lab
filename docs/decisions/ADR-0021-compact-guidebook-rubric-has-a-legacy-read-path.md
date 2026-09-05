@@ -29,8 +29,12 @@ were required.
 
 A 2026-09-04 local inventory found no guidebook or Oracle-analysis artifact in
 the current checkout cache, the primary checkout cache, or `~/corpora`. That
-absence does not remove the supported reuse path and therefore does not make a
-breaking schema change safe.
+inventory first checked that the current cache directory was absent, then used
+`find` over both existing roots for matching artifact names and
+`rg --hidden --no-ignore` for `guidebook` / `oracle analysis` references in
+file contents. `find` emitted no matching names, and both `rg` calls exited 1
+(no match), not 2 (search failure). The absence does not remove the supported
+reuse path and therefore does not make a breaking schema change safe.
 
 The compatibility path creates a second risk: a rubric-backed run and a legacy
 tutorial-backed run otherwise produce traces with the same outward shape even

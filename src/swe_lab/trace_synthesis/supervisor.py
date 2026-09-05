@@ -10,8 +10,10 @@ Three properties are structural rather than advisory, and each has a test:
 - **The policy sees the actor and its guidebook.** :class:`Observation` carries
   the actor's own records, the task, and the complete phase-B guidebook when a
   guided workflow supplies one. The shared criterion remains beside it as the
-  standard for general engineering practice; the guidebook supplies the
-  instance-specific route.
+  standard for general engineering practice. The default prompt builder uses
+  the guidebook's compact rubric when present and the complete tutorial only
+  for an explicit legacy input; a replacement builder still receives the
+  complete artifact.
 - **Speech has a shallow mechanical floor.** Corrections are non-empty and at
   most 400 characters; the policy also rejects fenced code, diff hunks
   and eight-word copying from the guidebook. These checks do not establish that
@@ -48,6 +50,7 @@ from swe_lab.trace_synthesis.criterion import (
     CriterionRejectedError,
     shingles,
 )
+from swe_lab.trace_synthesis.guidebook import guidebook_context_mode
 
 # The cap is the enforceable part of the intervention's shape. "Short,
 # directional, not a solution" is read by a human and deliberately not asserted
@@ -922,6 +925,7 @@ class Supervisor:
                 if self.guidebook is not None
                 else None
             ),
+            "guidebook_context_mode": guidebook_context_mode(self.guidebook),
             **extra,
         }
     )

@@ -56,6 +56,7 @@ from typing import Any
 
 from swe_lab.sandbox import ExecResult
 
+from .guidebook import guidebook_context_mode
 from .seam_shape import (
     DirtySeamError,
     read_seam,
@@ -763,6 +764,7 @@ class SegmentedRun:
             "at": self.now().isoformat(),
             "policy": self.policy.name,
             "guidebook_sha256": self._guidebook_sha256(),
+            "guidebook_context_mode": guidebook_context_mode(self.guidebook),
             "segment": index,
             "cut_at_turn": turns,
             **extra,

@@ -197,6 +197,7 @@ def _run(
     *,
     wire: str | None = _ANCHORED_WIRE,
     now: Callable[[], datetime.datetime] | None = None,
+    guidebook: str | None = None,
 ) -> list[Any]:
   """Drive one loop over a fake actor and return its log rows.
 
@@ -206,6 +207,7 @@ def _run(
     wire: What the capture proxy's log reads as; ``None`` models a run that
       captured none, which the loop refuses to trust.
     now: Optional clock for a wall-clock boundary test.
+    guidebook: Optional phase-B artifact for a guided run.
 
   Returns:
     The rows written, in order.
@@ -219,6 +221,7 @@ def _run(
       log=rows.append,
       read_wire=None if wire is None else (lambda: wire),
       now=now or (lambda: datetime.datetime.now(datetime.UTC)),
+      guidebook=guidebook,
   )
   _ = loop.run(timeout=10_000.0)
   return rows
@@ -590,6 +593,31 @@ def test_segmented_rows_retain_valid_silent_and_speaking_verdicts():
       "Current checkpoint: inspect",
       "Current checkpoint: test",
   ]
+
+
+def test_segmented_decision_rows_distinguish_both_guidebook_modes():
+  """The second carrier must expose the same compatibility split."""
+  legacy = "# Guidebook — legacy\n\n## Stage 1 — inspect\n"
+  rubric = (
+      "# Guidebook — current\n\n"
+      "## Supervisor rubric\n\n"
+      "**Checkpoints.** Inspect, then test.\n\n"
+      "## Stage 1 — inspect\n"
+  )
+  modes: list[object] = []
+
+  for guidebook in (legacy, rubric):
+    actor = FakeActor(
+        segments=[
+            _segment(ids=["a"], subtype=_CUT),
+            _segment(ids=["b"], subtype=_DONE),
+        ]
+    )
+    rows = _run(actor, _supervision(), guidebook=guidebook)
+    silent = next(row for row in rows if row["kind"] == LOG_KIND_SILENT)
+    modes.append(silent["guidebook_context_mode"])
+
+  assert modes == ["legacy_tutorial", "rubric"]
 
 
 def test_each_judgement_receives_only_the_segment_that_just_completed():

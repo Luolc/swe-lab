@@ -151,8 +151,10 @@ place — and, when the dataset records one, the golden patch; the git history
 is left unpurged. Without a reference patch the brief says so and drops every
 instruction that would read one — that branch is tested, not tolerated.
 
-It produces one artifact: a **guidebook** — a staged, step-by-step document
-telling a *future, blind* agent how to solve this task. One entry per stage:
+It produces one artifact: a **guidebook**. The artifact keeps two
+representations alongside each other: a staged, step-by-step tutorial telling
+a *future, blind* agent how to solve this task, and a compact rubric for the
+Supervisor. The tutorial has one entry per stage:
 
 | Field | Content |
 |---|---|
@@ -179,6 +181,15 @@ Two rules on the guidebook:
    as bold labels inside `## Stage N` sections, with `edits` / `tests` left
    optional; whether the reason is genuinely derivable is again a reader's
    judgement, not a test.
+
+The compact `## Supervisor rubric` names checkpoints, on-track evidence,
+disallowed branches, off-track signals, self-correction signals, and the safe
+hint justification. New phase-B output must contain the complete tutorial and
+all six rubric fields. A phase-C read accepts a pre-rubric tutorial from a
+supported resume, but never accepts a partial rubric; each supervisor decision
+row records which representation its default prompt used. That compatible-read
+/ strict-write transition and its exit condition are fixed by
+[ADR-0021](../decisions/ADR-0021-compact-guidebook-rubric-has-a-legacy-read-path.md).
 
 The guidebook is **private from the actor, not from the Supervisor**: phase C's
 default Supervisor receives the compact rubric from a schema-validated
@@ -239,7 +250,7 @@ history. Valid versions are fields on the existing supervisor decision rows,
 whose cursor or segment coordinates locate their boundaries. The instructions
 intend the state to use observable evidence and retain unresolved failures;
 those semantic properties are human-audited rather than claimed as mechanical
-invariants. A compact guidebook representation remains separate work.
+invariants.
 
 **When** it speaks is the open variable, not a settled part of this design: in
 the one graded batch, **8 of 8 non-compliances arrived too late**
@@ -325,7 +336,7 @@ Owner-decided (2026-08-31 / 2026-09-01). These are the design of record.
 | **The tool's own bytes are never touched** — was *appending is our invariant* | Under the hook path this was the hardest row to hold: `updatedToolOutput`'s schema **replaces** the tool output ([§10](#10-what-is-measured-about-hooks)), there is no append mode, and "the tool's real bytes survive verbatim" held only because our hook copied them into every rewrite it emitted. The stdin channel removes the hazard rather than managing it — the supervisor emits its own message and never writes a tool result — so what was a property of our code that a test had to hold up is now a property of the channel. The retired form is kept visible because it is the shape the risk takes if steering ever returns to a hook. |
 | **Never deny** — now **structural** | Let the call execute and take its result; see [§4](#4-why-judging-after-the-fact-and-not-before). The stdin channel carries no decision field, so denial is unreachable rather than declined. |
 | **Inject as an identifiable external hint** | The intervention has to be honest *conditioning* — text the actor visibly received from outside, not a fabricated observation and not something it produced itself. What makes it honest is that the actor can **tell it apart**: the current marker is `<supervisor_note>`; the earlier channel experiments below used `<oracle_hint>`. The wire-level `role` field is **not** the criterion (owner, 2026-09-01) — a tagged segment appended to a tool result qualifies, and so does the message this channel delivers, which is what a real user's mid-turn correction produces on the wire. What a trace may contain is decided by (a)/(b) in [§6](#what-disqualifies-a-trace--the-two-criteria-of-record); [§11](#11-open-questions) states the three tests a *delivery channel* has to pass. |
-| **Direction only, never specifics** | The intended speech boundary in [ADR-0018](../decisions/ADR-0018-the-supervisor-reads-the-guidebook-but-must-not-recite-the-answer.md). The writer may use the whole guidebook privately, taking its reason primarily from `Justification`. Mechanical checks reject empty or over-400-character output, fenced code, diff hunks and any eight-word guidebook copy. They do **not** detect short constants, decisive identifiers or semantic paraphrases; sampled human review owns that judgement. See [§8](#8-what-hint-specificity-now-trades). |
+| **Direction only, never specifics** | The intended speech boundary in [ADR-0018](../decisions/ADR-0018-the-supervisor-reads-the-guidebook-but-must-not-recite-the-answer.md). The default writer uses the compact rubric's safe hint justification, or the complete tutorial on the explicit legacy path. Mechanical checks reject empty or over-400-character output, fenced code, diff hunks and any eight-word guidebook copy. They do **not** detect short constants, decisive identifiers or semantic paraphrases; sampled human review owns that judgement. See [§8](#8-what-hint-specificity-now-trades). |
 | **Not a *fabricated* system-reminder** — rewritten by [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md) against criterion **(b)** | The original ban was aimed at a channel Claude Code uses heavily, where ours would be indistinguishable from machine noise. The mid-turn stdin message is folded into a `role: system` `<system-reminder>` on the wire, and that does **not** revive the ban: what disqualified `additionalContext` was being a **supervision-only artifact**, and this fold is the opposite — measured byte-identical to what an ordinary user's correction produces in the production TUI ([§10](#the-stdin-channel--measured-and-not-a-hook)), so it is a shape that occurs at inference time. The ban that survives is on *manufacturing* a reminder the front end would never produce; see the note in [§6](#what-disqualifies-a-trace--the-two-criteria-of-record) on why the wire-level role is not the criterion. |
 
 > **The attribution row moved on 2026-09-01, and it moved across a gate that
@@ -427,9 +438,9 @@ build tractable.
 
 ## 8. What hint specificity now trades
 
-The writer's access to the guidebook makes this a speech boundary, not an input
-projection: **how much the trace teaches** depends on what crosses from that
-private input into the correction.
+The writer's access to the private guidebook representation makes this a speech
+boundary, not merely an input projection: **how much the trace teaches**
+depends on what crosses from that private input into the correction.
 
 - **Too specific** ("the bug is in `config.py`") and the assistant is merely
   executing an instruction. The trace carries little skill, because the hard
@@ -938,6 +949,7 @@ is tuned by reading traces, not asserted by a test.
 | Intended invariant | Test that must pin it |
 |---|---|
 | The guidebook never enters the actor's context or the training trace | ✅ `test_the_registered_guided_harness_hands_the_guidebook_to_both_calls`: the harness removes the workspace input before launch; in the serialized `Conversation`, guidebook 12-word shingles are counted only after subtracting shingles also present in the task prompt, with both a shared-source control and a guidebook-only contamination control |
+| New phase-B output contains both the complete tutorial and a complete supervisor rubric; phase C accepts an absent legacy rubric but rejects a partial one; default prompts consume the rubric and decision rows identify the representation | ✅ `test_the_complete_tutorial_is_collected_beside_the_rubric`, `test_new_oracle_output_without_a_rubric_fails_the_attempt`, `test_a_legacy_tutorial_remains_a_valid_phase_c_input`, `test_a_partial_rubric_is_invalid_even_on_the_legacy_read_path`, `test_the_compact_rubric_reaches_both_model_calls_without_the_tutorial`, `test_guidebook_context_modes_are_distinct_on_decision_rows`, and `test_segmented_decision_rows_distinguish_both_guidebook_modes` |
 | Running state remains host-side and creates no separate sandbox artifact: valid versions are fields on the existing supervisor decision rows | ✅ `test_valid_running_state_versions_persist_on_existing_decision_rows` asserts the state and cursor pairs; `test_the_wrappers_artifacts_are_registered_so_the_run_outlives_the_box` asserts the exact native-output set and therefore fails if a separate state artifact appears |
 | Every phase B / C record carries the oracle-guided policy stamp | a test asserting the stamp is present on the record and that aggregation across differing stamps still errors |
 | A dropped or timed-out Supervisor decision is recorded, never silently ignored | a test asserting the run record shows the drop |
@@ -961,7 +973,7 @@ from the store — so this is a workflow, not a new subsystem.
 |---|---|---|
 | A | `rollout_and_unit_test`, unchanged — or **skipped**: a cached failure enters as an `oracle_failures` record | the `oracle_failures` dataset and its builder ([task 11](plans/task-11-oracle-failures-dataset.md)) |
 | B | the `Task` layer; the record's mounts carry the failure | `OracleAnalysisTask` + the one-entry `oracle_analysis` workflow ([task 04](plans/task-04-oracle-analysis-task.md)): grading procedure staged, and the golden patch when the dataset records one; git-history purge **off**, declared output `guidebook.md` |
-| C | the rollout composition; `guidebook.md` arrives over the workflow's declared artifact edge | a host-side Supervisor whose judge and writer receive the complete validated guidebook beside the general-practice criterion; a live correction channel on the actor's stdin ([ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)); `claude_code.supervisor.jsonl` records guidebook identity, judge request/reason, each valid running-state version, and emitted text for audit |
+| C | the rollout composition; `guidebook.md` arrives over the workflow's declared artifact edge | a host-side Supervisor whose default judge and writer receive the compact rubric, or the complete tutorial on an explicit legacy path, beside the general-practice criterion; a live correction channel on the actor's stdin ([ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)); `claude_code.supervisor.jsonl` records guidebook identity and context mode, judge request/reason, each valid running-state version, and emitted text for audit |
 | D | the `Conversation` converter + `Store` | — |
 | all | `register_workflow(...)` | the A→B→C→D edges |
 
@@ -1016,12 +1028,13 @@ for it. Two consequences, and neither is negotiable:
 
 ## 16. Out of scope
 
-ADR-0018 and ADR-0020 were re-checked against this boundary. Making the
+ADR-0018, ADR-0020 and ADR-0021 were re-checked against this boundary. Making the
 declared phase-B artifact available to the phase-C Supervisor, constraining
-writer output, and recording running state on the existing diagnostic row do
-not add another harness, authorize trace training, decide the data mixture,
-change the report contract, or permit rewriting actor records; the scope below
-is unchanged.
+writer output, selecting its compact representation, and recording running
+state plus guidebook context mode on the existing diagnostic row do not add
+another harness, authorize trace training, decide the data mixture, change the
+report contract, or permit rewriting actor records; the scope below is
+unchanged.
 
 - **Harnesses other than `claude_code`.** The measured correction channel is
   Claude Code's — its stdin under `--input-format stream-json`

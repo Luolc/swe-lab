@@ -996,8 +996,8 @@ def test_the_built_policy_hands_its_criterion_to_both_model_calls() -> None:
     assert criterion_text in payload["messages"][0]["content"]
 
 
-def test_the_guidebook_reaches_both_model_calls() -> None:
-  """The judge and writer steer from the same complete phase-B artifact."""
+def test_a_legacy_guidebook_reaches_both_model_calls_unchanged() -> None:
+  """A pre-rubric resume retains its full-tutorial prompt fallback."""
   guidebook = "GUIDEBOOK-SENTINEL-4d68\n\n## Stage 1\n\nComplete text."
   transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])
   built = supervising_policy(
@@ -1013,6 +1013,61 @@ def test_the_guidebook_reaches_both_model_calls() -> None:
     assert (
         f"# Guidebook\n\n{guidebook}\n\n" in payload["messages"][0]["content"]
     )
+
+
+def test_the_compact_rubric_reaches_both_model_calls_without_the_tutorial() -> (
+    None
+):
+  """Finding a rubric in the artifact is not proof the models received it."""
+  rubric_sentinel = "RUBRIC-SENTINEL-7d21"
+  tutorial_sentinel = "TUTORIAL-SENTINEL-fb09"
+  guidebook = f"""\
+# Guidebook — both representations
+
+## Supervisor rubric
+
+**Checkpoints.** {rubric_sentinel}
+
+**On-track evidence.** The parser branch is inspected.
+
+**Disallowed branches.** Do not guess from the failing patch.
+
+**Off-track signals.** The actor edits before reading the caller.
+
+**Self-correction signals.** The actor returns to inspect the caller.
+
+**Safe hint justification.** The mismatch is observable in public code.
+
+---
+
+## Stage 1 — inspect
+
+**Goal.** {tutorial_sentinel}
+
+**Actions.** Read the parser and its caller.
+
+**Expected observations.** Their boundary assumptions differ.
+
+**Justification.** Both files are visible to the blind actor.
+
+**Exit criteria.** The mismatch is explained.
+"""
+  transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])
+  built = supervising_policy(
+      model="anthropic/claude-sonnet-5",
+      transport=transport,
+      budget=1,
+      cooldown=0,
+  )
+
+  built.consider(observation(guidebook=guidebook))
+
+  assert len(transport.payloads) == 2
+  for payload in transport.payloads:
+    prompt = payload["messages"][0]["content"]
+    assert "# Guidebook rubric\n\n" in prompt
+    assert rubric_sentinel in prompt
+    assert tutorial_sentinel not in prompt
 
 
 def test_anthropic_transport_sends_the_native_endpoint_headers_and_body():

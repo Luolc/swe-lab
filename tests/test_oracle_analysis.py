@@ -43,7 +43,11 @@ from swe_lab.sandbox.observers import (
 )
 from swe_lab.sandbox.observers.git_history_purge import PURGE_SCRIPT_NAME
 from swe_lab.sandbox.testing import FakeSandbox
-from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME, STAGE_FIELDS
+from swe_lab.trace_synthesis.guidebook import (
+    GUIDEBOOK_NAME,
+    RUBRIC_FIELDS,
+    STAGE_FIELDS,
+)
 from swe_lab.trace_synthesis.oracle import (
     GOLD_PATCH_NAME,
     guidebook_of,
@@ -116,11 +120,24 @@ def _failure(
   )
 
 
-def _guidebook(*, without: str = "") -> str:
+def _guidebook(
+    *,
+    without: str = "",
+    include_rubric: bool = True,
+    rubric_without: str = "",
+) -> str:
   fields = "\n\n".join(
       f"**{name}.** …" for name in STAGE_FIELDS if name != without
   )
-  return f"# Guidebook — x\n\n## Stage 1 — read\n\n{fields}\n"
+  rubric_fields = "\n\n".join(
+      f"**{name}.** …" for name in RUBRIC_FIELDS if name != rubric_without
+  )
+  rubric = (
+      f"## Supervisor rubric\n\n{rubric_fields}\n\n---\n\n"
+      if include_rubric
+      else ""
+  )
+  return f"# Guidebook — x\n\n{rubric}## Stage 1 — read\n\n{fields}\n"
 
 
 def _task() -> OracleAnalysisTask:
@@ -295,16 +312,16 @@ def test_the_brief_carries_the_task_statement_whole_and_names_the_files(
     assert f"**{field}.**" in brief
 
 
-def test_default_oracle_instructions_are_byte_identical_to_the_prior_path(
+def test_default_oracle_instructions_are_pinned(
     tmp_path: Path,
 ) -> None:
-  """A literal digest pins the complete default request, not its builder."""
+  """Pin the complete rubric-aware request rather than only its builder."""
   _, _, workspace = _execute(tmp_path)
 
   assert hashlib.sha256(
       (workspace / "prompt.txt").read_bytes()
   ).hexdigest() == (
-      "83154e1d376a1e02c1ae8fc1cfe05f36f6ab76cc44bc209134aea8595b0f371d"
+      "eaa1e8a1e743f040903ae48f3eaf2cdd54f8c8dda1010dc76841ed5ce8172cd1"
   )
 
 
@@ -358,6 +375,21 @@ def test_the_brief_states_the_two_hard_won_rules(tmp_path: Path):
       "**The verification stage says what a green suite cannot tell you.**"
       in brief
   )
+
+
+def test_the_oracle_brief_requires_a_rubric_alongside_the_tutorial(
+    tmp_path: Path,
+):
+  """A compact representation must not replace the detailed one."""
+  _, _, workspace = _execute(tmp_path)
+  brief = (workspace / PROMPT_NAME).read_text()
+
+  assert "## Supervisor rubric" in brief
+  for field in RUBRIC_FIELDS:
+    assert f"**{field}.**" in brief
+  assert "## Stage 1 — <title>" in brief
+  for field in STAGE_FIELDS:
+    assert f"**{field}.**" in brief
 
 
 def test_a_dataset_without_a_fix_commit_or_a_reference_is_briefed_honestly(
@@ -414,6 +446,33 @@ def test_a_missing_guidebook_fails_the_attempt(tmp_path: Path):
   assert result.run.metrics[PRESENT_METRIC] == 0.0
   assert _task().outputs_valid(result) is False
   assert _task().should_retry(result) is True
+
+
+def test_new_oracle_output_without_a_rubric_fails_the_attempt(tmp_path: Path):
+  """Read compatibility does not weaken the new phase-B write contract."""
+  result, _, _ = _execute(tmp_path, guidebook=_guidebook(include_rubric=False))
+
+  assert result.run.metrics[VALID_METRIC] == 0.0
+  assert _task().outputs_valid(result) is False
+  assert _task().record_extra(result)["guidebook_problems"] == [
+      "missing the '## Supervisor rubric' section"
+  ]
+
+
+def test_the_complete_tutorial_is_collected_beside_the_rubric(tmp_path: Path):
+  """A valid rubric cannot make replaced or clipped tutorial text acceptable."""
+  tutorial_sentinel = "TUTORIAL-SENTINEL-keep-the-detailed-derivation"
+  complete = _guidebook().replace(
+      "**Actions.** …", f"**Actions.** {tutorial_sentinel}"
+  )
+
+  result, _, _ = _execute(tmp_path, guidebook=complete)
+  collected = result.run.artifacts[GUIDEBOOK_NAME].read_text()
+
+  assert collected == complete
+  assert result.run.metrics[VALID_METRIC] == 1.0
+  assert "## Supervisor rubric" in collected
+  assert tutorial_sentinel in collected
 
 
 def test_a_guidebook_missing_a_justification_fails_the_attempt(tmp_path: Path):

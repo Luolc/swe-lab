@@ -15,6 +15,7 @@ from swe_lab.conversation import (
     ToolResultBlock,
     ToolUseBlock,
 )
+from swe_lab.trace_synthesis.guidebook import extract_guidebook_rubric
 
 if TYPE_CHECKING:
   from swe_lab.trace_synthesis.criterion import Criterion
@@ -283,11 +284,12 @@ class SupervisorPromptBuilder(PromptBuilder):
     """
     said = "\n".join(one.text for one in observation.said) or "(nothing yet)"
     done = self.renderer.render(observation.evidence)
-    guidebook = (
-        f"# Guidebook\n\n{observation.guidebook}\n\n"
-        if observation.guidebook is not None
-        else ""
-    )
+    guidebook = ""
+    if observation.guidebook is not None:
+      rubric = extract_guidebook_rubric(observation.guidebook)
+      heading = "Guidebook rubric" if rubric is not None else "Guidebook"
+      content = rubric if rubric is not None else observation.guidebook
+      guidebook = f"# {heading}\n\n{content}\n\n"
     prompt = (
         f"# Criterion\n\n{criterion.text}\n\n"
         f"{guidebook}"
