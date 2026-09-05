@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import dataclasses
+import hashlib
 import json
 from pathlib import Path
 from typing import override
@@ -17,6 +18,7 @@ from typing import override
 from etils import epath
 import pytest
 
+from swe_lab.cli.overrides import apply_overrides, parse_overrides
 from swe_lab.conversation import Conversation
 from swe_lab.datasets.oracle_failures import OracleFailureInstance
 from swe_lab.evaluation.unit_test import ENTRYSCRIPT_NAME
@@ -291,6 +293,42 @@ def test_the_brief_carries_the_task_statement_whole_and_names_the_files(
   assert "against the reference" in brief
   for field in STAGE_FIELDS:
     assert f"**{field}.**" in brief
+
+
+def test_default_oracle_instructions_are_byte_identical_to_the_prior_path(
+    tmp_path: Path,
+) -> None:
+  """A literal digest pins the complete default request, not its builder."""
+  _, _, workspace = _execute(tmp_path)
+
+  assert hashlib.sha256(
+      (workspace / "prompt.txt").read_bytes()
+  ).hexdigest() == (
+      "83154e1d376a1e02c1ae8fc1cfe05f36f6ab76cc44bc209134aea8595b0f371d"
+  )
+
+
+def test_oracle_override_instructions_reach_only_its_model_request(
+    tmp_path: Path,
+) -> None:
+  """The task-level override replaces the Oracle request byte for byte."""
+  instructions = "ORACLE-OVERRIDE-sentinel\nKeep this exact trailing line.\n"
+  workspace = tmp_path / "ws"
+  sandbox = _LocalFakeSandbox(spec=SPEC, workspace=epath.Path(workspace))
+  (entry,) = apply_overrides(
+      workflow_definition("oracle_analysis"),
+      parse_overrides([f"--oracle_analysis.instructions={instructions}"]),
+  )
+  task = entry.task
+  assert isinstance(task, OracleAnalysisTask)
+
+  result = task.execute(
+      sandbox, _failure(), output_dir=tmp_path / "out", timeout=60.0
+  )
+
+  assert result.run.status is RunStatus.SUCCESS
+  assert (workspace / "prompt.txt").read_text() == instructions
+  assert (workspace / PROMPT_NAME).read_text() != instructions
 
 
 def test_an_instance_that_stages_no_failure_is_refused_before_the_sandbox(

@@ -518,6 +518,7 @@ class SpeakWhenOffTrack:
 
   _markers: list[WouldHaveSpoken] = dataclasses.field(default_factory=list)
   _spoken_at: list[int] = dataclasses.field(default_factory=list)
+  _verdicts: list[Verdict] = dataclasses.field(default_factory=list)
 
   def __post_init__(self) -> None:
     """Refuse a criterion that is not the pinned one.
@@ -550,6 +551,15 @@ class SpeakWhenOffTrack:
       ``budget=0`` run is what proves the judge still ran.
     """
     return tuple(self._markers)
+
+  @property
+  def verdicts(self) -> tuple[Verdict, ...]:
+    """Return every valid judgement, including silent ones.
+
+    Returns:
+      The verdicts in the order they were produced.
+    """
+    return tuple(self._verdicts)
 
   def consider(
       self, observation: Observation
@@ -601,6 +611,7 @@ class SpeakWhenOffTrack:
           f"judge call failed: {error!r}",
           finish_reason=getattr(error, "finish_reason", None),
       ) from error
+    self._verdicts.append(verdict)
     if not verdict.off_track or verdict.self_correcting:
       return None
 
@@ -750,8 +761,8 @@ class Supervisor:
         said=tuple(self._said),
         guidebook=self.guidebook,
     )
-    marker_count = (
-        len(self.policy.markers)
+    verdict_count = (
+        len(self.policy.verdicts)
         if isinstance(self.policy, SpeakWhenOffTrack)
         else 0
     )
@@ -767,14 +778,14 @@ class Supervisor:
           LOG_KIND_LAPSE,
           reason=f"policy lapsed: {error!r}",
           finish_reason=error.finish_reason,
-          **self._marker_audit_after(marker_count),
+          **self._verdict_audit_after(verdict_count),
       )
       return None
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
       self._row(
           LOG_KIND_GAP,
           reason=f"policy raised: {error!r}",
-          **self._marker_audit_after(marker_count),
+          **self._verdict_audit_after(verdict_count),
       )
       return None
 
@@ -784,7 +795,10 @@ class Supervisor:
       self._row(LOG_KIND_UNJUDGED, reason=decision.reason)
       return None
     if decision is None:
-      self._row(LOG_KIND_SILENT, **self._marker_audit_after(marker_count))
+      self._row(
+          LOG_KIND_SILENT,
+          **self._verdict_audit_after(verdict_count, decision=True),
+      )
       return None
     intervention = decision
     if self._mute:
@@ -792,7 +806,7 @@ class Supervisor:
           LOG_KIND_GAP,
           reason="sink unusable; not attempted",
           text=intervention.text,
-          **self._marker_audit_after(marker_count),
+          **self._verdict_audit_after(verdict_count),
       )
       return None
 
@@ -806,7 +820,7 @@ class Supervisor:
           LOG_KIND_GAP,
           reason=f"sink raised: {error!r}",
           text=intervention.text,
-          **self._marker_audit_after(marker_count),
+          **self._verdict_audit_after(verdict_count),
       )
       return None
 
@@ -814,22 +828,29 @@ class Supervisor:
     self._row(
         LOG_KIND_SPOKE,
         text=intervention.text,
-        **self._marker_audit_after(marker_count),
+        **self._verdict_audit_after(verdict_count, decision=True),
     )
     return intervention
 
-  def _marker_audit_after(self, count: int) -> dict[str, object]:
-    """Return audit fields for the marker created by this decision, if any."""
+  def _verdict_audit_after(
+      self, count: int, *, decision: bool = False
+  ) -> dict[str, object]:
+    """Return audit fields for the valid verdict created by this decision."""
     if not isinstance(self.policy, SpeakWhenOffTrack):
       return {}
-    markers = self.policy.markers
-    if len(markers) <= count:
+    verdicts = self.policy.verdicts
+    if len(verdicts) <= count:
       return {}
-    marker = markers[-1]
-    return {
-        "judge_input": marker.judge_input,
-        "judge_reason": marker.reason,
+    verdict = verdicts[-1]
+    audit: dict[str, object] = {
+        "judge_input": verdict.judge_input,
+        "judge_reason": verdict.reason,
+        "off_track": verdict.off_track,
+        "self_correcting": verdict.self_correcting,
     }
+    if decision:
+      audit["reason"] = verdict.reason
+    return audit
 
   def _row(self, kind: str, **extra: object) -> None:
     """Write one row of the run's account.

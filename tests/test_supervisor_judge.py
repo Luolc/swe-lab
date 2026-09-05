@@ -910,6 +910,28 @@ else.
   assert "tool_choice" not in transport.payloads[1]
 
 
+def test_guided_model_prompts_are_byte_identical_to_the_prior_path() -> None:
+  """Literal digests pin both guided system requests when overrides are None."""
+  transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])
+  built = supervising_policy(
+      model="m", transport=transport, budget=1, cooldown=0
+  )
+
+  _ = built.consider(observation(guidebook="guidebook"))
+
+  assert len(transport.payloads) == 2
+  assert hashlib.sha256(
+      transport.payloads[0]["system"].encode()
+  ).hexdigest() == (
+      "99730202575e411497466ecce8304fe6b559e9d197fa222daafcd62196c24ef4"
+  )
+  assert hashlib.sha256(
+      transport.payloads[1]["system"].encode()
+  ).hexdigest() == (
+      "56135a93e8bd72a72f2ec53fd4d4d6314cfb80dbae4115f946ed1699302c7613"
+  )
+
+
 def test_a_judge_asked_to_locate_a_deviation_says_so_in_its_prompt() -> None:
   """The positive arm: without it, the control above would pass on a no-op."""
   transport = RecordingTransport(answers=[ON_TRACK_JSON])
@@ -933,6 +955,19 @@ def test_a_judge_uses_override_instructions_verbatim() -> None:
   assert transport.payloads[0]["system"] == instructions
 
 
+def test_a_writer_uses_override_instructions_verbatim() -> None:
+  """A writing prompt variant occupies only its system field byte for byte."""
+  instructions = "WRITER-OVERRIDE-sentinel\nKeep this exact trailing line.\n"
+  transport = RecordingTransport(answers=["look again"])
+  writer = ModelWriter(
+      model="m", transport=transport, instructions=instructions
+  )
+
+  _ = writer(observation(guidebook="guidebook"), load_criterion())
+
+  assert transport.payloads[0]["system"] == instructions
+
+
 def test_supervising_policy_passes_override_instructions_to_the_judge() -> None:
   """Deleting the helper's pass-through changes the request under test."""
   instructions = "POLICY-OVERRIDE-sentinel"
@@ -947,6 +982,28 @@ def test_supervising_policy_passes_override_instructions_to_the_judge() -> None:
   _ = policy.consider(observation())
 
   assert transport.payloads[0]["system"] == instructions
+
+
+def test_supervising_policy_routes_each_override_to_only_its_model_call() -> (
+    None
+):
+  """Deleting either pass-through, or crossing them, changes the requests."""
+  judge_instructions = "JUDGE-ONLY-sentinel"
+  writer_instructions = "WRITER-ONLY-sentinel"
+  transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])
+  policy = supervising_policy(
+      model="m",
+      transport=transport,
+      budget=1,
+      cooldown=0,
+      instructions=judge_instructions,
+      writer_instructions=writer_instructions,
+  )
+
+  _ = policy.consider(observation())
+
+  assert transport.payloads[0]["system"] == judge_instructions
+  assert transport.payloads[1]["system"] == writer_instructions
 
 
 def test_the_located_deviation_is_read_without_coercion() -> None:

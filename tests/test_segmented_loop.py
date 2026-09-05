@@ -24,6 +24,7 @@ from typing import Any
 import pytest
 
 from swe_lab.sandbox import ExecResult
+from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
 from swe_lab.trace_synthesis.seam_shape import DirtySeamError
 from swe_lab.trace_synthesis.segmented_loop import (
     LOG_KIND_SEGMENT,
@@ -48,6 +49,8 @@ from swe_lab.trace_synthesis.supervisor import (
     PolicyLapseError,
     SpeakAt,
     SpeakPolicy,
+    SpeakWhenOffTrack,
+    Verdict,
 )
 
 _CUT = "error_max_turns"
@@ -528,6 +531,51 @@ def test_a_silent_seam_sends_the_neutral_continue():
 
   assert actor.requests[1].prompt == "Carry on."
   assert [r["kind"] for r in rows if r["kind"] == LOG_KIND_SILENT]
+
+
+def test_segmented_rows_retain_valid_silent_and_speaking_verdicts():
+  """The second runtime records the same diagnostic verdict telemetry."""
+  verdicts = [
+      Verdict(off_track=False, self_correcting=False, reason="on track"),
+      Verdict(off_track=True, self_correcting=False, reason="drifting"),
+  ]
+
+  def judge(observation: Observation, criterion: Criterion) -> Verdict:
+    del observation, criterion
+    return verdicts.pop(0)
+
+  def write(observation: Observation, criterion: Criterion) -> str:
+    del observation, criterion
+    return "look again"
+
+  policy = SpeakWhenOffTrack(
+      judge=judge,
+      writer=write,
+      criterion=load_criterion(),
+      budget=1,
+      cooldown=0,
+  )
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_CUT),
+          _segment(ids=["c"], subtype=_DONE),
+      ]
+  )
+
+  rows = [
+      row
+      for row in _run(actor, _supervision(policy))
+      if row["kind"] in {LOG_KIND_SILENT, LOG_KIND_SPOKE}
+  ]
+
+  assert [row["kind"] for row in rows] == [LOG_KIND_SILENT, LOG_KIND_SPOKE]
+  assert [
+      (row["off_track"], row["self_correcting"], row["reason"]) for row in rows
+  ] == [
+      (False, False, "on track"),
+      (True, False, "drifting"),
+  ]
 
 
 def test_a_correction_becomes_the_next_segments_prompt_tagged():
