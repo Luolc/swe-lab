@@ -29,9 +29,11 @@ from typing import Any
 
 from swe_lab.conversation import Message, TextBlock
 from swe_lab.harnesses.claude_code.convert import event_to_message
+from swe_lab.trace_synthesis.context_components import (
+    PairedToolEvidenceRenderer,
+    SupervisorPromptBuilder,
+)
 from swe_lab.trace_synthesis.judge import (
-    _prompt,
-    _render,
     JUDGE_INSTRUCTIONS,
     supervising_policy,
     Transport,
@@ -349,10 +351,14 @@ def replay(
         "rendered_nonempty_in_window": sum(
             1 for r in windowed if _text_of(r).strip()
         ),
-        "rendered_evidence_chars": len(_render(windowed)),
+        "rendered_evidence_chars": len(
+            PairedToolEvidenceRenderer().render(windowed)
+        ),
         "prompt_chars": len(
-            _prompt(dataclasses.replace(observation, evidence=tuple(windowed)),
-                    criterion)
+            SupervisorPromptBuilder().build(
+                dataclasses.replace(observation, evidence=tuple(windowed)),
+                criterion,
+            )
         ),
     }
     previous_boundary = cursor

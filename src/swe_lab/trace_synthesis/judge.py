@@ -41,7 +41,7 @@ its absence is written down.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 import dataclasses
 import json
 import os
@@ -49,7 +49,14 @@ import pathlib
 from typing import Any, cast
 import urllib.request
 
-from swe_lab.conversation import Message, TextBlock
+from swe_lab.trace_synthesis.context_components import (
+    CompleteAssistantTurnSelector,
+    EvidenceRenderer,
+    EvidenceSelector,
+    PairedToolEvidenceRenderer,
+    PromptBuilder,
+    SupervisorPromptBuilder,
+)
 from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
 from swe_lab.trace_synthesis.supervisor import (
     MAX_INTERVENTION_CHARS,
@@ -271,51 +278,6 @@ def _sampling_sent(payload: Mapping[str, Any]) -> dict[str, Any]:
   return {key: payload.get(key) for key in SAMPLING_KEYS}
 
 
-def _render(records: Sequence[Message]) -> str:
-  """Render the actor's records for a prompt.
-
-  Args:
-    records: The evidence window, in order.
-
-  Returns:
-    One block of text, oldest first.
-  """
-  lines: list[str] = []
-  for record in records:
-    body = " ".join(
-        block.text for block in record.content if isinstance(block, TextBlock)
-    )
-    lines.append(f"[{record.role.value}] {body}")
-  return "\n".join(lines)
-
-
-def _prompt(observation: Observation, criterion: Criterion) -> str:
-  """Build the user half of a request.
-
-  Args:
-    observation: What the actor was asked to do and what it has produced.
-    criterion: The standard handed in by the policy — used verbatim, never
-      re-read from disk, which is what the judge's attack test pins.
-
-  Returns:
-    The prompt text.
-  """
-  said = "\n".join(one.text for one in observation.said) or "(nothing yet)"
-  done = _render(observation.evidence)
-  guidebook = (
-      f"# Guidebook\n\n{observation.guidebook}\n\n"
-      if observation.guidebook is not None
-      else ""
-  )
-  return (
-      f"# Criterion\n\n{criterion.text}\n\n"
-      f"{guidebook}"
-      f"# The task the engineer was given\n\n{observation.task}\n\n"
-      f"# What they have done, most recent last\n\n{done}\n\n"
-      f"# What you have already said to them\n\n{said}\n"
-  )
-
-
 @dataclasses.dataclass
 class ModelJudge:
   """Answers the two questions with one model call, and records what answered.
@@ -354,6 +316,7 @@ class ModelJudge:
     calls: What answered each request, in order.
     instructions: Optional system instructions for evaluation prompt variants.
       ``None`` preserves the guided or unguided default.
+    prompt_builder: How the user prompt is assembled from visible inputs.
   """
 
   model: str
@@ -362,6 +325,9 @@ class ModelJudge:
   locate_deviation: bool = False
   calls: list[Call] = dataclasses.field(default_factory=list)
   instructions: str | None = None
+  prompt_builder: PromptBuilder = dataclasses.field(
+      default_factory=SupervisorPromptBuilder
+  )
 
   def __call__(self, observation: Observation, criterion: Criterion) -> Verdict:
     """Judge one moment against the criterion handed in.
@@ -389,7 +355,10 @@ class ModelJudge:
         "max_tokens": self.max_tokens,
         "system": instructions,
         "messages": [
-            {"role": "user", "content": _prompt(observation, criterion)}
+            {
+                "role": "user",
+                "content": self.prompt_builder.build(observation, criterion),
+            }
         ],
         "tools": [JUDGE_TOOL],
         "tool_choice": {"type": "tool", "name": JUDGE_TOOL_NAME},
@@ -503,6 +472,7 @@ class ModelWriter:
     calls: What answered each request, in order.
     instructions: Optional system instructions for writing prompt variants.
       ``None`` preserves the guided or unguided default.
+    prompt_builder: How the user prompt is assembled from visible inputs.
   """
 
   model: str
@@ -510,6 +480,9 @@ class ModelWriter:
   max_tokens: int = 256
   calls: list[Call] = dataclasses.field(default_factory=list)
   instructions: str | None = None
+  prompt_builder: PromptBuilder = dataclasses.field(
+      default_factory=SupervisorPromptBuilder
+  )
 
   def __call__(self, observation: Observation, criterion: Criterion) -> str:
     """Write one line for this moment.
@@ -539,7 +512,10 @@ class ModelWriter:
         "max_tokens": self.max_tokens,
         "system": instructions,
         "messages": [
-            {"role": "user", "content": _prompt(observation, criterion)},
+            {
+                "role": "user",
+                "content": self.prompt_builder.build(observation, criterion),
+            },
         ],
     }
     response = self.transport(payload)
@@ -588,6 +564,9 @@ def supervising_policy(
     locate_deviation: bool = False,
     instructions: str | None = None,
     writer_instructions: str | None = None,
+    selector: EvidenceSelector | None = None,
+    renderer: EvidenceRenderer | None = None,
+    prompt_builder: PromptBuilder | None = None,
 ) -> SpeakWhenOffTrack:
   """Build the judging policy, or reject the artifact.
 
@@ -602,7 +581,7 @@ def supervising_policy(
     transport: How requests are sent.
     budget: How many interventions a run may carry.
     cooldown: Boundaries required between interventions.
-    window: How many of the actor's records the judge sees.
+    window: How many complete recent assistant turns the judge sees.
     gold_patch: This instance's gold patch, when recorded, so the redundant
       overlap half of the criterion check can run.
     criterion_path: The artifact to load; production leaves it unset.
@@ -613,6 +592,11 @@ def supervising_policy(
       guided or unguided default.
     writer_instructions: Optional writer system instructions. ``None``
       preserves the guided or unguided default.
+    selector: Evidence selector override. ``None`` keeps complete-turn
+      selection.
+    renderer: Evidence renderer override used by the default prompt builder.
+    prompt_builder: Prompt-builder override. When supplied, it owns rendering
+      and ``renderer`` is ignored.
 
   Returns:
     The policy, holding a criterion whose digest is the pinned one.
@@ -622,18 +606,27 @@ def supervising_policy(
       if criterion_path is not None
       else load_criterion(gold_patch=gold_patch)
   )
+  if prompt_builder is None:
+    prompt_builder = SupervisorPromptBuilder(
+        renderer=(renderer or PairedToolEvidenceRenderer())
+    )
   return SpeakWhenOffTrack(
       judge=ModelJudge(
           model=model,
           transport=transport,
           locate_deviation=locate_deviation,
           instructions=instructions,
+          prompt_builder=prompt_builder,
       ),
       writer=ModelWriter(
-          model=model, transport=transport, instructions=writer_instructions
+          model=model,
+          transport=transport,
+          instructions=writer_instructions,
+          prompt_builder=prompt_builder,
       ),
       criterion=criterion,
       budget=budget,
       cooldown=cooldown,
       window=window,
+      selector=selector or CompleteAssistantTurnSelector(),
   )
