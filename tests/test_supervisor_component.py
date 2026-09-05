@@ -36,6 +36,7 @@ ALLOWED_OBSERVATION_FIELDS = {
     "cursor",
     "said",
     "guidebook",
+    "running_state",
 }
 
 
@@ -640,6 +641,43 @@ def test_valid_verdict_fields_are_recorded_for_silence_and_speech() -> None:
       (False, False, "on track"),
       (True, True, "recovering"),
       (True, False, "drifting"),
+  ]
+
+
+def test_valid_running_state_versions_persist_on_existing_decision_rows() -> (
+    None
+):
+  """A state without its decision boundary cannot be reconstructed later."""
+  states = ["Current checkpoint: inspect", "Current checkpoint: test"]
+
+  def judge(observation: Observation, criterion: Criterion) -> Verdict:
+    del observation, criterion
+    return Verdict(
+        off_track=False,
+        self_correcting=False,
+        reason="on track",
+        running_state=states.pop(0),
+    )
+
+  rows: list[dict[str, object]] = []
+  supervisor = Supervisor(
+      policy=SpeakWhenOffTrack(
+          judge=judge,
+          writer=lambda observation, criterion: "unused",
+          criterion=load_criterion(),
+          budget=0,
+      ),
+      task="the task",
+      sink=lambda _: None,
+      log=lambda row: rows.append(dict(row)),
+  )
+
+  _ = supervisor.observe(assistant_event("inspect"))
+  _ = supervisor.observe(assistant_event("test"))
+
+  assert [(row["cursor"], row["running_state"]) for row in rows] == [
+      (1, "Current checkpoint: inspect"),
+      (2, "Current checkpoint: test"),
   ]
 
 

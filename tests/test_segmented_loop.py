@@ -536,8 +536,18 @@ def test_a_silent_seam_sends_the_neutral_continue():
 def test_segmented_rows_retain_valid_silent_and_speaking_verdicts():
   """The second runtime records the same diagnostic verdict telemetry."""
   verdicts = [
-      Verdict(off_track=False, self_correcting=False, reason="on track"),
-      Verdict(off_track=True, self_correcting=False, reason="drifting"),
+      Verdict(
+          off_track=False,
+          self_correcting=False,
+          reason="on track",
+          running_state="Current checkpoint: inspect",
+      ),
+      Verdict(
+          off_track=True,
+          self_correcting=False,
+          reason="drifting",
+          running_state="Current checkpoint: test",
+      ),
   ]
 
   def judge(observation: Observation, criterion: Criterion) -> Verdict:
@@ -576,6 +586,50 @@ def test_segmented_rows_retain_valid_silent_and_speaking_verdicts():
       (False, False, "on track"),
       (True, False, "drifting"),
   ]
+  assert [row["running_state"] for row in rows] == [
+      "Current checkpoint: inspect",
+      "Current checkpoint: test",
+  ]
+
+
+def test_each_judgement_receives_only_the_segment_that_just_completed():
+  """A later seam must not re-send evidence from an earlier segment.
+
+  One cut cannot distinguish a per-segment slice from the cumulative stream,
+  so this uses two.  The cumulative cursors still advance by two events while
+  each observation contains one positive assistant record.
+  """
+  observations: list[Observation] = []
+
+  def judge(observation: Observation, criterion: Criterion) -> Verdict:
+    del criterion
+    observations.append(observation)
+    return Verdict(
+        off_track=False,
+        self_correcting=False,
+        reason="on track",
+        running_state=f"Current checkpoint: segment {len(observations)}",
+    )
+
+  policy = SpeakWhenOffTrack(
+      judge=judge,
+      writer=lambda observation, criterion: "unused",
+      criterion=load_criterion(),
+      budget=1,
+      cooldown=0,
+  )
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_CUT),
+          _segment(ids=["c"], subtype=_DONE),
+      ]
+  )
+
+  _ = _run(actor, _supervision(policy))
+
+  assert [observation.cursor for observation in observations] == [2, 4]
+  assert [len(observation.evidence) for observation in observations] == [1, 1]
 
 
 def test_a_correction_becomes_the_next_segments_prompt_tagged():

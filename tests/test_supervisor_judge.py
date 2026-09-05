@@ -28,6 +28,7 @@ from swe_lab.trace_synthesis.criterion import (
 from swe_lab.trace_synthesis.judge import (
     Call,
     JUDGE_INSTRUCTIONS,
+    JUDGE_TOOL,
     JUDGE_TOOL_NAME,
     JudgeAnswerError,
     LOCATE_DEVIATION_INSTRUCTION,
@@ -48,11 +49,22 @@ from swe_lab.trace_synthesis.supervisor import (
     WriterOutputRejectedError,
 )
 
-OFF_TRACK_JSON = (
-    '{"off_track": true, "self_correcting": false, "reason": "guessing"}'
+RUNNING_STATE = "Current checkpoint: inspect the observed failure"
+OFF_TRACK_JSON = json.dumps(
+    {
+        "off_track": True,
+        "self_correcting": False,
+        "reason": "guessing",
+        "running_state": RUNNING_STATE,
+    }
 )
-ON_TRACK_JSON = (
-    '{"off_track": false, "self_correcting": false, "reason": "fine"}'
+ON_TRACK_JSON = json.dumps(
+    {
+        "off_track": False,
+        "self_correcting": False,
+        "reason": "fine",
+        "running_state": RUNNING_STATE,
+    }
 )
 
 
@@ -295,11 +307,21 @@ def test_model_calls_use_the_anthropic_messages_wire_shape() -> None:
                       "off_track": {"type": "boolean"},
                       "self_correcting": {"type": "boolean"},
                       "reason": {"type": "string"},
+                      "running_state": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4_000,
+                      },
                       "deviation_started_steps_ago": {
                           "anyOf": [{"type": "integer"}, {"type": "null"}]
                       },
                   },
-                  "required": ["off_track", "self_correcting", "reason"],
+                  "required": [
+                      "off_track",
+                      "self_correcting",
+                      "reason",
+                      "running_state",
+                  ],
                   "additionalProperties": False,
               },
           }
@@ -308,6 +330,209 @@ def test_model_calls_use_the_anthropic_messages_wire_shape() -> None:
           "type": "tool",
           "name": "submit_supervision_verdict",
       },
+  }
+
+
+def test_running_state_is_a_required_bounded_tool_field() -> None:
+  """The provider schema cannot treat a missing state as a valid update."""
+  schema = JUDGE_TOOL["input_schema"]
+
+  assert "running_state" in schema["required"]
+  assert schema["properties"]["running_state"] == {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4_000,
+  }
+
+
+def test_the_previous_running_state_reaches_the_next_judge_request() -> None:
+  """A heading alone cannot prove the saved state crossed the boundary."""
+  state_one = """Current checkpoint: inspect parser
+Files inspected or changed: parser.py
+Hypotheses tested and observed results: malformed input reproduces
+Tests, errors, and other established facts: test_parser fails
+Current plan: inspect the caller
+Unresolved contradictions or blockers: parser accepts the control input"""
+  state_two = state_one.replace("inspect the caller", "compare both inputs")
+  transport = RecordingTransport(
+      answers=[
+          json.dumps(
+              {
+                  "off_track": False,
+                  "self_correcting": False,
+                  "reason": "still investigating",
+                  "running_state": state_one,
+              }
+          ),
+          json.dumps(
+              {
+                  "off_track": False,
+                  "self_correcting": False,
+                  "reason": "comparison in progress",
+                  "running_state": state_two,
+              }
+          ),
+      ]
+  )
+  policy = supervising_policy(model="m", transport=transport, budget=0)
+
+  _ = policy.consider(observation(cursor=1))
+  _ = policy.consider(observation(cursor=2))
+
+  assert len(transport.payloads) == 2
+  first_prompt = transport.payloads[0]["messages"][0]["content"]
+  second_prompt = transport.payloads[1]["messages"][0]["content"]
+  assert "# Running state before this segment" in first_prompt
+  assert state_one not in first_prompt
+  assert state_one in second_prompt
+  assert state_two not in second_prompt
+
+
+def test_running_state_update_instructions_are_independently_replaceable() -> (
+    None
+):
+  """The update text changes without replacing the judge system prompt."""
+  update_instructions = "UPDATE-STATE-ONLY-sentinel\nKeep the observed error."
+  answer = json.dumps(
+      {
+          "off_track": False,
+          "self_correcting": False,
+          "reason": "fine",
+          "running_state": "Current checkpoint: inspect",
+      }
+  )
+  transport = RecordingTransport(answers=[answer])
+  policy = supervising_policy(
+      model="m",
+      transport=transport,
+      budget=0,
+      running_state_instructions=update_instructions,
+  )
+
+  _ = policy.consider(observation())
+
+  assert transport.payloads[0]["system"] == JUDGE_INSTRUCTIONS
+  assert transport.payloads[0]["messages"][0]["content"].endswith(
+      f"# Decision\n\n{update_instructions}\n"
+  )
+
+
+def test_missing_running_state_and_invalid_verdict_have_distinct_lapses() -> (
+    None
+):
+  """Two strict failures need different recorded reasons to be diagnosable."""
+
+  def lapse_row(answer: str) -> dict[str, object]:
+    rows: list[dict[str, object]] = []
+    supervisor = Supervisor(
+        policy=supervising_policy(
+            model="m",
+            transport=RecordingTransport(answers=[answer]),
+            budget=0,
+        ),
+        task="make the test pass",
+        sink=lambda _: None,
+        log=lambda row: rows.append(dict(row)),
+    )
+    _ = supervisor.observe(
+        {
+            "type": "assistant",
+            "message": {
+                "role": "assistant",
+                "content": [{"type": "text", "text": "inspect parser"}],
+            },
+        }
+    )
+    assert len(rows) == 1
+    return rows[0]
+
+  missing = lapse_row(
+      '{"off_track": false, "self_correcting": false, "reason": "fine"}'
+  )
+  invalid_verdict = lapse_row(
+      '{"off_track": 0, "self_correcting": false, "reason": "fine",'
+      ' "running_state": "Current checkpoint: inspect"}'
+  )
+
+  assert missing["kind"] == invalid_verdict["kind"] == "lapse"
+  assert "running_state" in str(missing["reason"])
+  assert "off_track" in str(invalid_verdict["reason"])
+  assert missing["reason"] != invalid_verdict["reason"]
+
+
+def test_an_overlong_running_state_is_rejected_not_silently_truncated() -> None:
+  """The state bound is a loud failure, not an invisible loss of facts."""
+  answer = json.dumps(
+      {
+          "off_track": False,
+          "self_correcting": False,
+          "reason": "fine",
+          "running_state": "x" * 4_001,
+      }
+  )
+
+  with pytest.raises(JudgeAnswerError, match="running_state.*4,000"):
+    _ = ModelJudge(model="m", transport=RecordingTransport(answers=[answer]))(
+        observation(), load_criterion()
+    )
+
+
+def test_writer_receives_updated_state_verdict_and_only_recent_evidence() -> (
+    None
+):
+  """The writer gets the decision context without the complete old trace."""
+  updated_state = """Current checkpoint: compare parser inputs
+Files inspected or changed: parser.py
+Hypotheses tested and observed results: control passes, malformed fails
+Tests, errors, and other established facts: test_parser fails
+Current plan: inspect normalization
+Unresolved contradictions or blockers: failure remains"""
+  transport = RecordingTransport(
+      answers=[
+          json.dumps(
+              {
+                  "off_track": True,
+                  "self_correcting": False,
+                  "reason": "the old assumption still drives the edit",
+                  "running_state": updated_state,
+              }
+          ),
+          "compare the observed parser inputs again",
+      ]
+  )
+  policy = supervising_policy(
+      model="m", transport=transport, budget=1, cooldown=0, window=1
+  )
+  observed = Observation(
+      task="make the parser test pass",
+      evidence=(
+          Message(
+              role=Role.ASSISTANT, content=[TextBlock(text="OLD-EVIDENCE")]
+          ),
+          Message(
+              role=Role.ASSISTANT, content=[TextBlock(text="LATEST-EVIDENCE")]
+          ),
+      ),
+      cursor=2,
+      said=(Intervention(text="PRIOR-INTERVENTION"),),
+      guidebook="GUIDEBOOK-CHECKPOINT",
+  )
+
+  _ = policy.consider(observed)
+
+  assert len(transport.payloads) == 2
+  writer_prompt = transport.payloads[1]["messages"][0]["content"]
+  assert "LATEST-EVIDENCE" in writer_prompt
+  assert "OLD-EVIDENCE" not in writer_prompt
+  assert "PRIOR-INTERVENTION" in writer_prompt
+  assert "GUIDEBOOK-CHECKPOINT" in writer_prompt
+  assert "# Judge verdict" in writer_prompt
+  structured = json.loads(writer_prompt.split("# Judge verdict\n\n", 1)[1])
+  assert structured == {
+      "off_track": True,
+      "self_correcting": False,
+      "reason": "the old assumption still drives the edit",
+      "running_state": updated_state,
   }
 
 
@@ -331,6 +556,7 @@ def test_one_matching_tool_use_constructs_a_verdict() -> None:
               "off_track": True,
               "self_correcting": False,
               "reason": "guessing",
+              "running_state": RUNNING_STATE,
           },
       }
   ]
@@ -438,6 +664,7 @@ def test_boolean_deviation_start_is_unusable_not_an_integer() -> None:
   """A boolean cannot wear an integer measurement's clothes."""
   answer = (
       '{"off_track": true, "self_correcting": false, "reason": "guessing",'
+      f' "running_state": "{RUNNING_STATE}",'
       ' "deviation_started_steps_ago": true}'
   )
 
@@ -737,7 +964,8 @@ def test_a_non_boolean_verdict_field_is_unusable_not_coerced() -> None:
   """
   transport = RecordingTransport(
       answers=[
-          '{"off_track": "false", "self_correcting": false, "reason": "x"}'
+          '{"off_track": "false", "self_correcting": false, "reason": "x",'
+          f' "running_state": "{RUNNING_STATE}"}}'
       ]
   )
   judge = ModelJudge(model="anthropic/claude-sonnet-5", transport=transport)
@@ -866,8 +1094,8 @@ def test_a_missing_provider_key_says_so_without_naming_a_value():
 # --- locating a deviation, opt-in and only opt-in (task 22 §5) --------------
 
 
-def test_unguided_model_prompts_are_byte_identical_to_the_prior_path() -> None:
-  """The control arm on which guidebook-aware prompting rests.
+def test_default_unguided_model_system_instructions_are_pinned() -> None:
+  """Literal bytes pin the required-state judge and established writer text.
 
   The expected bytes are literals rather than the production constants: a
   test that derives its expected value from the changed value stays green on
@@ -881,7 +1109,9 @@ Judge only against the criterion given below. Do not use any other standard,
 and do not reason about what the correct fix would be.
 
 Answer with one JSON object and nothing else:
-{"off_track": bool, "self_correcting": bool, "reason": "<one short sentence>"}
+{"off_track": bool, "self_correcting": bool,
+ "reason": "<one short sentence>",
+ "running_state": "<bounded observational state>"}
 
 off_track: the work shown is off the criterion's path.
 self_correcting: left alone, the engineer is already returning to it.
@@ -910,7 +1140,7 @@ else.
   assert "tool_choice" not in transport.payloads[1]
 
 
-def test_guided_model_prompts_are_byte_identical_to_the_prior_path() -> None:
+def test_default_guided_model_system_instructions_are_pinned() -> None:
   """Literal digests pin both guided system requests when overrides are None."""
   transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])
   built = supervising_policy(
@@ -923,7 +1153,7 @@ def test_guided_model_prompts_are_byte_identical_to_the_prior_path() -> None:
   assert hashlib.sha256(
       transport.payloads[0]["system"].encode()
   ).hexdigest() == (
-      "99730202575e411497466ecce8304fe6b559e9d197fa222daafcd62196c24ef4"
+      "46878e43a79c6328a6d1e3a9bd534fa0254355df9d2c87e5db4a8789451b1949"
   )
   assert hashlib.sha256(
       transport.payloads[1]["system"].encode()
@@ -1010,6 +1240,7 @@ def test_the_located_deviation_is_read_without_coercion() -> None:
   """An integer is carried directly as the optional measurement."""
   answered = (
       '{"off_track": true, "self_correcting": false, "reason": "guessing",'
+      f' "running_state": "{RUNNING_STATE}",'
       ' "deviation_started_steps_ago": 3}'
   )
   criterion = load_criterion()

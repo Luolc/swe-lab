@@ -489,7 +489,8 @@ def _canned(payload: Mapping[str, Any]) -> Mapping[str, Any]:
   """
   judging = payload["system"] == JUDGE_INSTRUCTIONS
   content = (
-      '{"off_track": true, "self_correcting": false, "reason": "stub"}'
+      '{"off_track": true, "self_correcting": false, "reason": "stub",'
+      ' "running_state": "Current checkpoint: replay stub"}'
       if judging
       else "a stub line"
   )

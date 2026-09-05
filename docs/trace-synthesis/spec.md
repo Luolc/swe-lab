@@ -224,11 +224,16 @@ and result content are bounded independently; every clipped value says how many
 characters were not shown. The full typed values remain in the stored
 conversation and supervisor evidence.
 
-The belief state above remains target design rather than shipped state. Its
-update model and persistence wait on the report-contract decision; this stage
-adds no running summary or compact guidebook representation. Selection,
-rendering, and prompt assembly are already public replaceable components, so
-that later decision does not require another segmented loop or logging path.
+The belief state is shipped as the judge's required bounded `running_state`
+output ([ADR-0020](../decisions/ADR-0020-running-state-is-a-required-judge-output.md)).
+The same judge call receives the previous valid state and the complete selected
+latest segment, then returns the next state with its verdict. The writer sees
+that bounded context and the structured verdict rather than the complete raw
+history. Valid versions are fields on the existing supervisor decision rows,
+whose cursor or segment coordinates locate their boundaries. The instructions
+intend the state to use observable evidence and retain unresolved failures;
+those semantic properties are human-audited rather than claimed as mechanical
+invariants. A compact guidebook representation remains separate work.
 
 **When** it speaks is the open variable, not a settled part of this design: in
 the one graded batch, **8 of 8 non-compliances arrived too late**
@@ -927,7 +932,7 @@ is tuned by reading traces, not asserted by a test.
 | Intended invariant | Test that must pin it |
 |---|---|
 | The guidebook never enters the actor's context or the training trace | ✅ `test_the_registered_guided_harness_hands_the_guidebook_to_both_calls`: the harness removes the workspace input before launch; in the serialized `Conversation`, guidebook 12-word shingles are counted only after subtracting shingles also present in the task prompt, with both a shared-source control and a guidebook-only contamination control |
-| The belief state is host-side only — never written into the sandbox | a test asserting no phase-C mount or write target resolves to the belief-state file |
+| Running state remains host-side and creates no separate sandbox artifact: valid versions are fields on the existing supervisor decision rows | ✅ `test_valid_running_state_versions_persist_on_existing_decision_rows` asserts the state and cursor pairs; `test_the_wrappers_artifacts_are_registered_so_the_run_outlives_the_box` asserts the exact native-output set and therefore fails if a separate state artifact appears |
 | Every phase B / C record carries the oracle-guided policy stamp | a test asserting the stamp is present on the record and that aggregation across differing stamps still errors |
 | A dropped or timed-out Supervisor decision is recorded, never silently ignored | a test asserting the run record shows the drop |
 | The Supervisor's account of a run has **no silent gaps**: every boundary the sandbox saw has a host-side record — judgement, silence, `unjudged` (nothing was there to judge), lapse or explicit gap | a test driving a judge that raises mid-run and asserting the host log carries a record for each unjudged boundary, with the sandbox's sequence numbers contiguous across the join |
@@ -936,7 +941,7 @@ is tuned by reading traces, not asserted by a test.
 | Conversion neither drops nor synthesizes turns: the training trace is exactly the actor's turns plus the interventions the actor received | a test comparing the converted `Conversation` against the capture and the hint log, asserting equality of the turn sequence — no extra turn, no missing one |
 | Phase D never collects an exchange the actor was not part of: a request whose body carries a `[SUGGESTION MODE: …]` message, or any other side call the front end makes, is excluded from the conversation | a test over a captured TUI session asserting the collected `Conversation` is built from the agent-loop request and that a trailing prompt-suggestion request is not selected |
 | A hint never alters what the actor observed: the Supervisor emits its own message and never a tool result, an assistant turn, or an edit of either | a test over the Supervisor's emitter asserting every value it can produce is its own tagged message, and that no code path writes into a captured record |
-| The Supervisor's input has exactly `task`, `evidence`, `cursor`, `said` and the validated `guidebook`; raw gold/reference/test patches, hidden tests and their named equivalents have no separate constructor channel | ✅ `test_supervisor_input_carries_the_guidebook` asserts the exact five-field allowlist and the artifact's positive handoff; `test_supervisor_input_rejects_separate_privileged_material` supplies every named negative control and requires constructor rejection |
+| The Supervisor's input has exactly `task`, `evidence`, `cursor`, `said`, the validated `guidebook`, and host-side `running_state`; raw gold/reference/test patches, hidden tests and their named equivalents have no separate constructor channel | ✅ `test_supervisor_input_carries_the_guidebook` asserts the exact six-field allowlist and the artifact's positive handoff; `test_supervisor_input_rejects_separate_privileged_material` supplies every named negative control and requires constructor rejection |
 | A recent-evidence limit never splits an assistant tool call from its following result; genuine missing results and every prompt-only truncation are explicit, reasoning is omitted without hiding the positive tool evidence, and clipping leaves the raw values complete | ✅ `test_a_raw_record_boundary_never_splits_a_tool_call_from_its_result`, `test_a_genuinely_missing_result_is_marked`, `test_truncation_is_visible_and_short_values_are_unmarked`, `test_oversized_structured_input_has_its_own_visible_marker`, `test_visible_text_can_be_bounded_or_disabled_without_hiding_tools`, `test_tool_evidence_is_rendered_while_reasoning_is_omitted`, and `test_prompt_clipping_does_not_change_the_complete_raw_values` |
 | Phase B runs with the git-history purge **off** and composes no result verifier — the Oracle sees the history it is meant to see, and a run contaminated by declaration is not put through the detector — while the solving definitions keep purging | ✅ `test_the_oracle_task_composes_no_purge_no_extractor_and_no_verifier` and its converse `test_the_rollout_definitions_still_purge` (`tests/test_oracle_analysis.py`) |
 
@@ -950,7 +955,7 @@ from the store — so this is a workflow, not a new subsystem.
 |---|---|---|
 | A | `rollout_and_unit_test`, unchanged — or **skipped**: a cached failure enters as an `oracle_failures` record | the `oracle_failures` dataset and its builder ([task 11](plans/task-11-oracle-failures-dataset.md)) |
 | B | the `Task` layer; the record's mounts carry the failure | `OracleAnalysisTask` + the one-entry `oracle_analysis` workflow ([task 04](plans/task-04-oracle-analysis-task.md)): grading procedure staged, and the golden patch when the dataset records one; git-history purge **off**, declared output `guidebook.md` |
-| C | the rollout composition; `guidebook.md` arrives over the workflow's declared artifact edge | a host-side Supervisor whose judge and writer receive the complete validated guidebook beside the general-practice criterion; a live correction channel on the actor's stdin ([ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)); `supervisor.jsonl` records guidebook identity, judge request/reason and emitted text for audit |
+| C | the rollout composition; `guidebook.md` arrives over the workflow's declared artifact edge | a host-side Supervisor whose judge and writer receive the complete validated guidebook beside the general-practice criterion; a live correction channel on the actor's stdin ([ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)); `claude_code.supervisor.jsonl` records guidebook identity, judge request/reason, each valid running-state version, and emitted text for audit |
 | D | the `Conversation` converter + `Store` | — |
 | all | `register_workflow(...)` | the A→B→C→D edges |
 
@@ -1005,10 +1010,12 @@ for it. Two consequences, and neither is negotiable:
 
 ## 16. Out of scope
 
-ADR-0018 was re-checked against this boundary. Making the declared phase-B
-artifact available to the phase-C Supervisor and constraining writer output
-does not add another harness, authorize trace training, decide the data mixture
-or permit rewriting actor records; the scope below is unchanged.
+ADR-0018 and ADR-0020 were re-checked against this boundary. Making the
+declared phase-B artifact available to the phase-C Supervisor, constraining
+writer output, and recording running state on the existing diagnostic row do
+not add another harness, authorize trace training, decide the data mixture,
+change the report contract, or permit rewriting actor records; the scope below
+is unchanged.
 
 - **Harnesses other than `claude_code`.** The measured correction channel is
   Claude Code's — its stdin under `--input-format stream-json`

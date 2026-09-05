@@ -285,6 +285,7 @@ def test_the_standard_policy_can_replace_only_the_prompt_builder() -> None:
                     "off_track": False,
                     "self_correcting": False,
                     "reason": "fine",
+                    "running_state": "Current checkpoint: inspect",
                 },
             }
         ]
@@ -330,6 +331,7 @@ def test_the_standard_policy_can_replace_only_the_renderer() -> None:
                     "off_track": False,
                     "self_correcting": False,
                     "reason": "fine",
+                    "running_state": "Current checkpoint: inspect",
                 },
             }
         ]

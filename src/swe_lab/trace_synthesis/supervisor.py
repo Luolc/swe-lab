@@ -40,6 +40,7 @@ from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
 from swe_lab.trace_synthesis.context_components import (
     CompleteAssistantTurnSelector,
     EvidenceSelector,
+    INITIAL_RUNNING_STATE,
 )
 from swe_lab.trace_synthesis.criterion import (
     Criterion,
@@ -241,6 +242,8 @@ class Observation:
       can repeat itself indefinitely.
     guidebook: The complete phase-B guidebook for this instance, or ``None``
       for a workflow that uses only the shared criterion.
+    running_state: The last valid bounded observational state before the
+      selected evidence. The standard policy owns and replaces this value.
   """
 
   task: str
@@ -248,6 +251,7 @@ class Observation:
   cursor: int
   said: tuple[Intervention, ...]
   guidebook: str | None = None
+  running_state: str = INITIAL_RUNNING_STATE
 
 
 class SpeakPolicy(Protocol):
@@ -329,6 +333,9 @@ class Verdict:
       measure how often it would have vetoed an off-track judgement before a
       later breaking change decides whether to remove it from the contract.
     reason: The judge's own words, recorded but never acted on.
+    running_state: The bounded observational state after the evidence this
+      verdict judged. The standard model judge requires it; the default keeps
+      lightweight custom judges source-compatible.
     deviation_started_steps_ago: How many of the shown steps ago the judge
       believes the deviation began, or ``None`` when it was not asked — which
       is the default, and every A′ run. **Never acted on**, exactly like
@@ -349,8 +356,24 @@ class Verdict:
   off_track: bool
   self_correcting: bool
   reason: str = ""
+  running_state: str = INITIAL_RUNNING_STATE
   deviation_started_steps_ago: int | None = None
   judge_input: Mapping[str, Any] | None = None
+
+
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class WriterObservation(Observation):
+  """The bounded observation plus the verdict the writer must explain.
+
+  A subtype keeps the established two-argument writer and prompt-builder
+  contracts intact. Custom writers that need only the observation continue to
+  accept it, while the standard writer can include the structured decision.
+
+  Attributes:
+    verdict: The valid judgement for this same selected evidence.
+  """
+
+  verdict: Verdict
 
 
 class Judge(Protocol):
@@ -527,6 +550,7 @@ class SpeakWhenOffTrack:
   _markers: list[WouldHaveSpoken] = dataclasses.field(default_factory=list)
   _spoken_at: list[int] = dataclasses.field(default_factory=list)
   _verdicts: list[Verdict] = dataclasses.field(default_factory=list)
+  _running_state: str = INITIAL_RUNNING_STATE
 
   def __post_init__(self) -> None:
     """Refuse a criterion that is not the pinned one.
@@ -569,6 +593,11 @@ class SpeakWhenOffTrack:
     """
     return tuple(self._verdicts)
 
+  @property
+  def running_state(self) -> str:
+    """Return the latest valid running state."""
+    return self._running_state
+
   def consider(
       self, observation: Observation
   ) -> Intervention | Unjudged | None:
@@ -610,6 +639,7 @@ class SpeakWhenOffTrack:
     windowed = dataclasses.replace(
         observation,
         evidence=self.selector.select(observation.evidence, limit=self.window),
+        running_state=self._running_state,
     )
     if not windowed.evidence:
       return Unjudged(reason="no actor evidence in the window")
@@ -621,6 +651,7 @@ class SpeakWhenOffTrack:
           finish_reason=getattr(error, "finish_reason", None),
       ) from error
     self._verdicts.append(verdict)
+    self._running_state = verdict.running_state
     if not verdict.off_track:
       return None
 
@@ -641,7 +672,16 @@ class SpeakWhenOffTrack:
       return None
 
     try:
-      text = self.writer(windowed, self.criterion)
+      writer_observation = WriterObservation(
+          task=windowed.task,
+          evidence=windowed.evidence,
+          cursor=windowed.cursor,
+          said=windowed.said,
+          guidebook=windowed.guidebook,
+          running_state=windowed.running_state,
+          verdict=verdict,
+      )
+      text = self.writer(writer_observation, self.criterion)
       _check_writer_output(text, observation.guidebook)
       intervention = Intervention(text=text)
     except Exception as error:  # noqa: BLE001 - re-raised with its scope named
@@ -856,6 +896,7 @@ class Supervisor:
         "judge_reason": verdict.reason,
         "off_track": verdict.off_track,
         "self_correcting": verdict.self_correcting,
+        "running_state": verdict.running_state,
     }
     if decision:
       audit["reason"] = verdict.reason

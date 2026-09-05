@@ -28,6 +28,33 @@ DEFAULT_TOOL_VALUE_CHARS = 4_000
 #: smaller independent allowance rather than competing with tool output.
 DEFAULT_VISIBLE_TEXT_CHARS = 1_000
 
+#: A running state shares the screenful-sized budget used for one tool value.
+MAX_RUNNING_STATE_CHARS = DEFAULT_TOOL_VALUE_CHARS
+
+#: The complete shape used before the first valid judge update.
+INITIAL_RUNNING_STATE = """\
+Current checkpoint: (none established)
+Files inspected or changed: (none established)
+Hypotheses tested and observed results: (none established)
+Tests, errors, and other established facts: (none established)
+Current plan: (none established)
+Unresolved contradictions or blockers: (none established)"""
+
+#: The independently replaceable running-state part of the judge request.
+RUNNING_STATE_INSTRUCTIONS = f"""\
+Judge the latest trajectory and update `running_state` in the same tool call.
+For the state update, use only the previous running state and the latest
+completed segment. Use observable evidence only; do not invent hidden
+reasoning. Retain failures until the evidence shows they are resolved.
+
+Return at most {MAX_RUNNING_STATE_CHARS} characters using these six lines:
+Current checkpoint:
+Files inspected or changed:
+Hypotheses tested and observed results:
+Tests, errors, and other established facts:
+Current plan:
+Unresolved contradictions or blockers:"""
+
 
 class EvidenceSelector(ABC):
   """Select records for one model call without changing durable evidence."""
@@ -229,11 +256,19 @@ class PromptBuilder(ABC):
 
 @dataclasses.dataclass(frozen=True)
 class SupervisorPromptBuilder(PromptBuilder):
-  """Assemble the established prompt sections with a replaceable renderer."""
+  """Assemble supervisor prompt sections with replaceable owned parts.
+
+  Attributes:
+    renderer: How selected evidence is represented.
+    running_state_instructions: State-update text for a judge request, or
+      ``None`` for a writer request. Exact replacement keeps summary prompting
+      independent of the judge's system instructions.
+  """
 
   renderer: EvidenceRenderer = dataclasses.field(
       default_factory=PairedToolEvidenceRenderer
   )
+  running_state_instructions: str | None = RUNNING_STATE_INSTRUCTIONS
 
   @override
   def build(self, observation: Observation, criterion: Criterion) -> str:
@@ -253,10 +288,38 @@ class SupervisorPromptBuilder(PromptBuilder):
         if observation.guidebook is not None
         else ""
     )
-    return (
+    prompt = (
         f"# Criterion\n\n{criterion.text}\n\n"
         f"{guidebook}"
         f"# The task the engineer was given\n\n{observation.task}\n\n"
-        f"# What they have done, most recent last\n\n{done}\n\n"
-        f"# What you have already said to them\n\n{said}\n"
+        "# Running state before this segment\n\n"
+        f"{observation.running_state}\n\n"
+        f"# Latest completed segment\n\n{done}\n\n"
+        f"# Prior supervisor interventions\n\n{said}\n"
     )
+    if self.running_state_instructions is not None:
+      prompt += f"\n# Decision\n\n{self.running_state_instructions}\n"
+
+    verdict = getattr(observation, "verdict", None)
+    if verdict is not None:
+      structured_verdict: dict[str, object] = {
+          "off_track": verdict.off_track,
+          "self_correcting": verdict.self_correcting,
+          "reason": verdict.reason,
+          "running_state": verdict.running_state,
+      }
+      if verdict.deviation_started_steps_ago is not None:
+        structured_verdict["deviation_started_steps_ago"] = (
+            verdict.deviation_started_steps_ago
+        )
+      prompt += (
+          "\n# Judge verdict\n\n"
+          + json.dumps(
+              structured_verdict,
+              ensure_ascii=False,
+              sort_keys=True,
+              separators=(",", ":"),
+          )
+          + "\n"
+      )
+    return prompt
