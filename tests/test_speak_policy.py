@@ -289,7 +289,7 @@ def test_a_boundary_with_no_evidence_is_never_put_to_the_judge() -> None:
 
 
 def test_the_judge_sees_only_the_window() -> None:
-  """``window`` bounds the judge's view of the actor's records."""
+  """``window`` bounds the judge's view of complete assistant turns."""
   speaker, judge, _ = policy(ON_TRACK, window=3)
   speaker.consider(observation(9, records=10))
 

@@ -18,6 +18,12 @@
 **This report selects no `N` and contains no verdict.** It was pre-registered
 not to.
 
+> **Historical rendering metric.** This report's “records rendering non-empty
+> text” values were produced by the 2026-09-03 `TextBlock`-only renderer. The
+> rerunnable driver now measures records through the paired tool-evidence
+> renderer introduced for issue #430. Values from a new run answer a different
+> question and must not be compared numerically with the frozen values below.
+
 ## Read this first: what every arm ran on
 
 Three conditions hold for **every** arm below. Each is a defect of the system

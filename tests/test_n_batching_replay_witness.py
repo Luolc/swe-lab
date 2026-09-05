@@ -38,9 +38,19 @@ import json
 from pathlib import Path
 import sys
 from types import ModuleType
+from typing import override
 
 import pytest
 
+from swe_lab.conversation import (
+    Message,
+    Role,
+    TextBlock,
+    ToolResultBlock,
+    ToolUseBlock,
+)
+from swe_lab.trace_synthesis.context_components import PromptBuilder
+from swe_lab.trace_synthesis.criterion import Criterion
 from swe_lab.trace_synthesis.supervisor import (
     Intervention,
     LOG_KIND_SILENT,
@@ -172,6 +182,117 @@ def test_the_driver_gives_unjudged_its_own_row_kind(
       None,
       None,
       "run the failing test before changing anything",
+  ]
+
+
+def test_tool_only_records_count_as_rendered_replay_evidence(
+    driver: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  """Replay measurement uses the paired renderer, not visible-text presence.
+
+  Tool calls and results are the population whose omission made the old metric
+  silently report the renderer defect. A fixture with prose would be green
+  under both definitions and could not distinguish them.
+  """
+  tool_only_messages = (
+      Message(
+          role=Role.ASSISTANT,
+          content=[
+              ToolUseBlock(
+                  id="call-1", name="Read", input={"path": "models.py"}
+              )
+          ],
+      ),
+      Message(
+          role=Role.USER,
+          content=[
+              ToolResultBlock(
+                  tool_use_id="call-1", content="class Edition: pass"
+              )
+          ],
+      ),
+  )
+  messages = iter(tool_only_messages)
+  policy = driver._stub_policy()
+
+  def next_message(event: object) -> Message:
+    """Return the next typed record for one synthetic event."""
+    del event
+    return next(messages)
+
+  def stay_silent(observation: Observation) -> None:
+    """Keep the replay focused on measurement rather than model output."""
+    del observation
+
+  monkeypatch.setattr(driver, "event_to_message", next_message)
+  monkeypatch.setattr(policy, "consider", stay_silent)
+
+  rows = list(
+      driver.replay(
+          arm=driver.Arm("tool-only-probe", None),
+          events=({"type": "assistant"}, {"type": "user"}),
+          task="t",
+          policy=policy,
+          boundaries=(2,),
+          criterion=policy.criterion,
+      )
+  )
+
+  assert all(
+      not any(isinstance(block, TextBlock) for block in message.content)
+      for message in tool_only_messages
+  )
+  assert rows[0]["rendered_nonempty_in_window"] == 2
+
+
+class MinimalPromptBuilder(PromptBuilder):
+  """A valid builder with no renderer attribute."""
+
+  @override
+  def build(self, observation: Observation, criterion: Criterion) -> str:
+    """Return a fixed prompt through the public contract alone."""
+    del observation, criterion
+    return "CUSTOM-PROMPT"
+
+
+def test_replay_uses_a_custom_prompt_builder_without_private_capabilities(
+    driver: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  """Replay depends only on `PromptBuilder.build`, its public contract."""
+  message = Message(
+      role=Role.ASSISTANT, content=[TextBlock(text="visible evidence")]
+  )
+  policy = driver._stub_policy()
+  policy.judge.prompt_builder = MinimalPromptBuilder()
+  considered: list[Observation] = []
+
+  def convert(event: object) -> Message:
+    """Convert the one synthetic event to its typed message."""
+    del event
+    return message
+
+  def stay_silent(observation: Observation) -> None:
+    """Keep the replay focused on prompt measurement."""
+    considered.append(observation)
+
+  monkeypatch.setattr(driver, "event_to_message", convert)
+  monkeypatch.setattr(policy, "consider", stay_silent)
+
+  rows = list(
+      driver.replay(
+          arm=driver.Arm("custom-builder-probe", None),
+          events=({"type": "assistant"},),
+          task="t",
+          policy=policy,
+          boundaries=(1,),
+          criterion=policy.criterion,
+      )
+  )
+
+  assert rows[0]["prompt_chars"] == len("CUSTOM-PROMPT")
+  assert rows[0]["rendered_nonempty_in_window"] == 0
+  assert considered == [
+      Observation(task="t", evidence=(message,), cursor=1, said=())
   ]
 
 

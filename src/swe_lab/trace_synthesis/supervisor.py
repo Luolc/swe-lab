@@ -37,6 +37,10 @@ import re
 from typing import Any, Protocol
 
 from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
+from swe_lab.trace_synthesis.context_components import (
+    CompleteAssistantTurnSelector,
+    EvidenceSelector,
+)
 from swe_lab.trace_synthesis.criterion import (
     Criterion,
     CRITERION_SHA256,
@@ -505,7 +509,9 @@ class SpeakWhenOffTrack:
       delays the first one: precision comes from the bar and restraint from the
       budget, so a late correction is never bought with a later one. No
       measured value.
-    window: How many of the actor's records the judge sees. No measured value.
+    window: How many complete recent assistant turns the judge sees. No
+      measured value.
+    selector: How the evidence window is selected without splitting a turn.
   """
 
   judge: Judge
@@ -514,6 +520,9 @@ class SpeakWhenOffTrack:
   budget: int
   cooldown: int = 4
   window: int = 8
+  selector: EvidenceSelector = dataclasses.field(
+      default_factory=CompleteAssistantTurnSelector
+  )
 
   _markers: list[WouldHaveSpoken] = dataclasses.field(default_factory=list)
   _spoken_at: list[int] = dataclasses.field(default_factory=list)
@@ -599,7 +608,8 @@ class SpeakWhenOffTrack:
         :class:`Intervention` refused.
     """
     windowed = dataclasses.replace(
-        observation, evidence=observation.evidence[-self.window :]
+        observation,
+        evidence=self.selector.select(observation.evidence, limit=self.window),
     )
     if not windowed.evidence:
       return Unjudged(reason="no actor evidence in the window")
