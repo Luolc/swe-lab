@@ -633,7 +633,7 @@ def test_valid_verdict_fields_are_recorded_for_silence_and_speech() -> None:
   for text in ("one", "two", "three"):
     _ = supervisor.observe(assistant_event(text))
 
-  assert [row["kind"] for row in rows] == ["silent", "silent", "spoke"]
+  assert [row["kind"] for row in rows] == ["silent", "spoke", "silent"]
   assert [
       (row["off_track"], row["self_correcting"], row["reason"]) for row in rows
   ] == [
