@@ -381,6 +381,8 @@ class OracleAnalysisTask(Task):
       earlier task produces ``prompt.md``.
     env: Extra environment for the agent process, handed to the harness. Not
       the place for a secret — use the sandbox's ``pass_env``.
+    instructions: Optional model instructions for Oracle prompt variants.
+      ``None`` preserves the instance-built default.
   """
 
   harness: Harness
@@ -390,6 +392,7 @@ class OracleAnalysisTask(Task):
       default=oracle_prompt, kw_only=True
   )
   env: Mapping[str, str] | None = None
+  instructions: str | None = None
 
   @override
   def mounts(self, instance: TaskInstance[Any]) -> Mounts:
@@ -468,14 +471,17 @@ class OracleAnalysisTask(Task):
 
     Args:
       sb: The live sandbox to run in.
-      instance: Unused — the brief reached the workspace before this ran.
+      instance: Unused — the default brief reached the workspace before this
+        ran.
       timeout: Seconds before the agent run is killed.
 
     Returns:
       The agent execution's outcome.
     """
     del instance
-    prompt = sb.read(PROMPT_NAME).decode("utf-8", "backslashreplace")
+    prompt = self.instructions
+    if prompt is None:
+      prompt = sb.read(PROMPT_NAME).decode("utf-8", "backslashreplace")
     return self.harness.run(sb, prompt=prompt, timeout=timeout, env=self.env)
 
   @override

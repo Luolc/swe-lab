@@ -501,12 +501,15 @@ class ModelWriter:
     transport: How a request is sent.
     max_tokens: The one sampling parameter we set.
     calls: What answered each request, in order.
+    instructions: Optional system instructions for writing prompt variants.
+      ``None`` preserves the guided or unguided default.
   """
 
   model: str
   transport: Transport
   max_tokens: int = 256
   calls: list[Call] = dataclasses.field(default_factory=list)
+  instructions: str | None = None
 
   def __call__(self, observation: Observation, criterion: Criterion) -> str:
     """Write one line for this moment.
@@ -524,14 +527,17 @@ class ModelWriter:
       ValueError: The answer was not exactly one text block carrying a string.
         Not retried.
     """
+    instructions = self.instructions
+    if instructions is None:
+      instructions = (
+          GUIDED_WRITER_INSTRUCTIONS
+          if observation.guidebook is not None
+          else WRITER_INSTRUCTIONS
+      )
     payload = {
         "model": self.model,
         "max_tokens": self.max_tokens,
-        "system": (
-            GUIDED_WRITER_INSTRUCTIONS
-            if observation.guidebook is not None
-            else WRITER_INSTRUCTIONS
-        ),
+        "system": instructions,
         "messages": [
             {"role": "user", "content": _prompt(observation, criterion)},
         ],
@@ -581,6 +587,7 @@ def supervising_policy(
     criterion_path: pathlib.Path | None = None,
     locate_deviation: bool = False,
     instructions: str | None = None,
+    writer_instructions: str | None = None,
 ) -> SpeakWhenOffTrack:
   """Build the judging policy, or reject the artifact.
 
@@ -604,6 +611,8 @@ def supervising_policy(
       :class:`ModelJudge`.
     instructions: Optional judge system instructions. ``None`` preserves the
       guided or unguided default.
+    writer_instructions: Optional writer system instructions. ``None``
+      preserves the guided or unguided default.
 
   Returns:
     The policy, holding a criterion whose digest is the pinned one.
@@ -620,7 +629,9 @@ def supervising_policy(
           locate_deviation=locate_deviation,
           instructions=instructions,
       ),
-      writer=ModelWriter(model=model, transport=transport),
+      writer=ModelWriter(
+          model=model, transport=transport, instructions=writer_instructions
+      ),
       criterion=criterion,
       budget=budget,
       cooldown=cooldown,

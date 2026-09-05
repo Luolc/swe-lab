@@ -601,6 +601,48 @@ def test_a_boundary_with_no_evidence_is_recorded_as_unjudged_not_silent() -> (
   assert rows[0]["cursor"] == 1
 
 
+def test_valid_verdict_fields_are_recorded_for_silence_and_speech() -> None:
+  """Every valid judgement stays diagnosable regardless of the speech gate."""
+  verdicts = [
+      Verdict(off_track=False, self_correcting=False, reason="on track"),
+      Verdict(off_track=True, self_correcting=True, reason="recovering"),
+      Verdict(off_track=True, self_correcting=False, reason="drifting"),
+  ]
+
+  def judge(observation: Observation, criterion: Criterion) -> Verdict:
+    del observation, criterion
+    return verdicts.pop(0)
+
+  def write(observation: Observation, criterion: Criterion) -> str:
+    del observation, criterion
+    return "look again"
+
+  rows: list[dict[str, object]] = []
+  supervisor = Supervisor(
+      policy=SpeakWhenOffTrack(
+          judge=judge,
+          writer=write,
+          criterion=load_criterion(),
+          budget=1,
+          cooldown=0,
+      ),
+      task="the task",
+      sink=lambda _: None,
+      log=lambda row: rows.append(dict(row)),
+  )
+  for text in ("one", "two", "three"):
+    _ = supervisor.observe(assistant_event(text))
+
+  assert [row["kind"] for row in rows] == ["silent", "silent", "spoke"]
+  assert [
+      (row["off_track"], row["self_correcting"], row["reason"]) for row in rows
+  ] == [
+      (False, False, "on track"),
+      (True, True, "recovering"),
+      (True, False, "drifting"),
+  ]
+
+
 def test_the_log_accounts_for_every_event() -> None:
   """One row per event consumed: a judgement, a silence, a lapse or a gap."""
   rows: list[dict[str, object]] = []

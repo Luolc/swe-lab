@@ -76,7 +76,7 @@ from .supervisor import (
     SpeakPolicy,
     SpeakWhenOffTrack,
     Unjudged,
-    WouldHaveSpoken,
+    Verdict,
 )
 
 #: The row recording one segment's ending: what it was cut by, where it was cut,
@@ -353,22 +353,16 @@ STOP_MAX_COST = "max-cost"
 STOP_DIRTY_SEAM = "dirty-seam"
 
 
-def _markers_of(policy: SpeakPolicy) -> tuple[WouldHaveSpoken, ...]:
-  """Return the deviation markers a policy keeps, or none if it keeps any.
-
-  Read off the policy rather than through the protocol: ``consider`` returns a
-  decision, not a verdict, so a runtime that wants to record *where a deviation
-  began* has to look at the judging policy's own bookkeeping. Widening
-  :class:`~swe_lab.trace_synthesis.supervisor.SpeakPolicy` for it would change
-  what every policy must implement, including the ones that never judge.
+def _verdicts_of(policy: SpeakPolicy) -> tuple[Verdict, ...]:
+  """Return the valid verdicts a judging policy keeps, or none.
 
   Args:
     policy: The policy that was consulted.
 
   Returns:
-    Its markers, or an empty tuple for a policy that keeps none.
+    Its verdicts, or an empty tuple for a policy that keeps none.
   """
-  return policy.markers if isinstance(policy, SpeakWhenOffTrack) else ()
+  return policy.verdicts if isinstance(policy, SpeakWhenOffTrack) else ()
 
 
 @dataclasses.dataclass
@@ -616,13 +610,10 @@ class SegmentedRun:
         said=tuple(self._said),
         guidebook=self.guidebook,
     )
-    # Requirement C's second quantity. A policy that judges records where it
-    # *found* a deviation; only the judge is asked where it *began*, and only
-    # when built with ``locate_deviation``. Read off the marker rather than
-    # through the protocol, because `SpeakPolicy` returns a decision and not a
-    # verdict, and widening it for one runtime's bookkeeping would change what
-    # every policy must implement.
-    before = len(_markers_of(self.policy))
+    # Read the valid judgement back from the concrete policy. `SpeakPolicy`
+    # returns a decision rather than a verdict, and widening it would change
+    # what policies that never judge must implement.
+    before = len(_verdicts_of(self.policy))
     try:
       decision = self.policy.consider(observation)
     except PolicyLapseError as error:
@@ -632,7 +623,7 @@ class SegmentedRun:
           turns=turns,
           reason=f"policy lapsed: {error!r}",
           finish_reason=error.finish_reason,
-          **self._marker_audit_after(before),
+          **self._verdict_audit_after(before),
       )
       return self.supervision.neutral_continue
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
@@ -641,15 +632,14 @@ class SegmentedRun:
           index=index,
           turns=turns,
           reason=f"policy raised: {error!r}",
-          **self._marker_audit_after(before),
+          **self._verdict_audit_after(before),
       )
       return self.supervision.neutral_continue
 
-    # Only a marker this call produced. A seam the policy passed in silence
-    # adds none, and reading the tail regardless would attribute an earlier
-    # seam's finding to this one.
-    markers = _markers_of(self.policy)
-    found = markers[-1] if len(markers) > before else None
+    # Only a verdict this call produced. Reading the tail regardless would
+    # attribute an earlier seam's judgement to this one.
+    verdicts = _verdicts_of(self.policy)
+    found = verdicts[-1] if len(verdicts) > before else None
     located = {
         "deviation_started_steps_ago": (
             found.deviation_started_steps_ago if found is not None else None
@@ -657,7 +647,7 @@ class SegmentedRun:
         # The denominator for reading the number above: it counts rendered
         # steps and this counts turns, and one turn renders as several steps.
         "evidence_records": len(observation.evidence),
-        **self._marker_audit_after(before),
+        **self._verdict_audit_after(before, decision=True),
     }
 
     if isinstance(decision, Unjudged):
@@ -675,16 +665,23 @@ class SegmentedRun:
     )
     return decision.rendered()
 
-  def _marker_audit_after(self, count: int) -> dict[str, object]:
-    """Return human-audit fields for this decision's marker, if any."""
-    markers = _markers_of(self.policy)
-    if len(markers) <= count:
+  def _verdict_audit_after(
+      self, count: int, *, decision: bool = False
+  ) -> dict[str, object]:
+    """Return audit fields for the valid verdict created by this decision."""
+    verdicts = _verdicts_of(self.policy)
+    if len(verdicts) <= count:
       return {}
-    marker = markers[-1]
-    return {
-        "judge_input": marker.judge_input,
-        "judge_reason": marker.reason,
+    verdict = verdicts[-1]
+    audit: dict[str, object] = {
+        "judge_input": verdict.judge_input,
+        "judge_reason": verdict.reason,
+        "off_track": verdict.off_track,
+        "self_correcting": verdict.self_correcting,
     }
+    if decision:
+      audit["reason"] = verdict.reason
+    return audit
 
   def _segment_row(
       self,
