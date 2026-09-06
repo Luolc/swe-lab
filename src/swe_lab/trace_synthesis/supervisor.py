@@ -376,7 +376,7 @@ class WriterObservation(Observation):
 
 
 class Judge(Protocol):
-  """Decides whether the actor is off track and whether it will recover."""
+  """Decides whether the actor is off the criterion's path."""
 
   def __call__(self, observation: Observation, criterion: Criterion) -> Verdict:
     """Judge one moment against the criterion.
