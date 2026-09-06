@@ -51,7 +51,7 @@ export SWE_LAB_SUPERVISOR_BINARY=<path to swe-lab-supervisor>
 
 uv run swe-lab run native_supervised_rollout_and_unit_test <instance_id> \
     --sweep first-native-e2e \
-    --output-root ~/dev/swe-lab-artifacts
+    --output-root ~/data/swe-lab
 ```
 
 `swe-lab run` takes **one instance per invocation**, so one instance and one
@@ -73,7 +73,7 @@ decides:
 
 `--output-root` is not optional here even though the flag is: it defaults to
 `.cache/runs` *inside the checkout*, which for a worktree is a directory that
-will be removed. `~/dev/swe-lab-artifacts` is outside every checkout, so the
+will be removed. `~/data/swe-lab` is outside every checkout, so the
 evidence outlives all of them.
 
 Credentials reach the sandbox by name (`pass_env`) and appear in no command
