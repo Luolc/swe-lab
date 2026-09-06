@@ -5,6 +5,7 @@
 Accepted, **partly superseded**: the record-absence rule of §10 is superseded by
 [ADR-0009](ADR-0009-workflow-record-always-written.md) (the rest of §10 stands).
 Three 2026-08-03 amendments follow the body.
+Also **partly superseded** by [ADR-0023 §6](ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md): §10's "written last" discipline gains "removed first" (2026-09-06).
 
 ## Date
 

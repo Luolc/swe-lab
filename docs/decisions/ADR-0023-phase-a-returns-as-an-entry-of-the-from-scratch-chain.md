@@ -35,7 +35,7 @@ this ADR replaces are quoted here so the boundary is exact:
   correct, since no work was attempted."* Absence now means **the latest
   invocation never finished**: either it never got past binding (nothing is
   written, and nothing is removed either), or it retired the previous record,
-  ran, and died before writing its own. ADR-0009's list of *"the two
+  ran, and died before writing its own. ADR-0009's list of *"The two
   properties that made it trustworthy"* — written last, atomically — gains a
   third, removed first. Everything else in ADR-0009 stands: the record is
   still written whatever the outcome, it still carries `succeeded` and each
