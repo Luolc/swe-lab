@@ -36,7 +36,7 @@ import datetime
 import hashlib
 import json
 import re
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
 from swe_lab.trace_synthesis.context_components import (
@@ -57,6 +57,15 @@ from swe_lab.trace_synthesis.guidebook import guidebook_context_mode
 # here: a predicate that can check it forces the correction to name a concrete
 # action, which is most of the way to handing over the answer.
 MAX_INTERVENTION_CHARS = 400
+
+#: Who is shown what the supervisor has already said (:attr:`Observation.said`)
+#: when the default prompts are built. ``"writer"``, the default (ADR-0024):
+#: the writer sees it and the judge does not — a judge shown its own
+#: corrections read them as the actor's record and confirmed itself for the
+#: rest of the run (issue #381). ``"both"``: the behaviour before ADR-0024,
+#: kept as an A/B arm. ``"none"``: neither call sees it, the A/B control.
+#: Every decision row records the value it ran under as ``said_visibility``.
+type SaidVisibility = Literal["writer", "both", "none"]
 
 # The provenance marker: what makes an intervention identifiable as external,
 # so the actor can mistake it neither for its own output nor for a tool's.
@@ -154,19 +163,36 @@ class PolicyLapseError(Exception):
       lapse in a 902-call replay look the same until someone read the raw
       calls by hand (issue #383); this field is how ``supervisor.jsonl`` tells
       them apart without a rerun.
+    judge_input: The credential-free judge request behind the lapse, when the
+      request was built — carried over from the judge's own error, whether
+      the answer came back unusable
+      (:class:`~swe_lab.trace_synthesis.judge.JudgeAnswerError`) or never
+      came back at all
+      (:class:`~swe_lab.trace_synthesis.judge.JudgeTransportError`), so the
+      boundary records what was asked exactly as one with a valid verdict
+      does. ``None`` when the lapse did not come from a judge call at all.
   """
 
   finish_reason: str | None
+  judge_input: Mapping[str, Any] | None
 
-  def __init__(self, message: str, *, finish_reason: str | None = None) -> None:
-    """Record the lapse together with the finish reason behind it, if any.
+  def __init__(
+      self,
+      message: str,
+      *,
+      finish_reason: str | None = None,
+      judge_input: Mapping[str, Any] | None = None,
+  ) -> None:
+    """Record the lapse together with what is known about the call behind it.
 
     Args:
       message: What went wrong.
       finish_reason: See the class attribute.
+      judge_input: See the class attribute.
     """
     super().__init__(message)
     self.finish_reason = finish_reason
+    self.judge_input = judge_input
 
 
 @dataclasses.dataclass(frozen=True)
@@ -242,7 +268,9 @@ class Observation:
     said: What this supervisor has already said in this run — its **memory**,
       a separate channel from its evidence. Its own words never come back as
       observations, so without this a policy has nothing to check against and
-      can repeat itself indefinitely.
+      can repeat itself indefinitely. Which model call is shown it is
+      :data:`SaidVisibility`'s question: the writer by default, the judge only
+      under ``"both"`` (ADR-0024).
     guidebook: The complete phase-B guidebook for this instance, or ``None``
       for a workflow that uses only the shared criterion.
     running_state: The last valid bounded observational state before the
@@ -534,6 +562,14 @@ class SpeakWhenOffTrack:
     window: How many complete recent assistant turns the judge sees. No
       measured value.
     selector: How the evidence window is selected without splitting a turn.
+    said_visibility: Which of the two calls' default prompts render
+      :attr:`Observation.said`; see :data:`SaidVisibility`. A record for the
+      decision rows rather than a switch: the prompt builders inside ``judge``
+      and ``writer`` own the rendering, and
+      :func:`~swe_lab.trace_synthesis.judge.supervising_policy` sets both from
+      its one argument — pinned by
+      ``test_the_policy_records_the_said_visibility_its_builders_were_given``.
+      A policy assembled by hand states its own.
   """
 
   judge: Judge
@@ -545,6 +581,7 @@ class SpeakWhenOffTrack:
   selector: EvidenceSelector = dataclasses.field(
       default_factory=CompleteAssistantTurnSelector
   )
+  said_visibility: SaidVisibility = "writer"
 
   _markers: list[WouldHaveSpoken] = dataclasses.field(default_factory=list)
   _spoken_at: list[int] = dataclasses.field(default_factory=list)
@@ -648,6 +685,7 @@ class SpeakWhenOffTrack:
       raise PolicyLapseError(
           f"judge call failed: {error!r}",
           finish_reason=getattr(error, "finish_reason", None),
+          judge_input=getattr(error, "judge_input", None),
       ) from error
     self._verdicts.append(verdict)
     self._running_state = verdict.running_state
@@ -688,6 +726,72 @@ class SpeakWhenOffTrack:
       raise PolicyLapseError(unusable) from error
     self._spoken_at.append(observation.cursor)
     return intervention
+
+
+def said_visibility_of(policy: SpeakPolicy) -> SaidVisibility | None:
+  """Return the said visibility a judging policy records, or ``None``.
+
+  Args:
+    policy: The policy that was consulted.
+
+  Returns:
+    Its :attr:`SpeakWhenOffTrack.said_visibility`, or ``None`` for a policy
+    that makes no model call and so has no prompt for the question to apply
+    to.
+  """
+  if isinstance(policy, SpeakWhenOffTrack):
+    return policy.said_visibility
+  return None
+
+
+def judge_prompt_sha256(judge_input: Mapping[str, Any] | None) -> str | None:
+  """Digest the user prompt behind a verdict, when the record carries one.
+
+  The user prompt is the half of the request that ``said`` can enter, so its
+  digest is what pairs a row with its counterpart in another arm: two rows
+  with one digest were judged on the same bytes. The system half is pinned
+  by test and left out.
+
+  Args:
+    judge_input: The credential-free request a verdict carries, or ``None``
+      from a judge that exposes none.
+
+  Returns:
+    The hex SHA-256 of the first message's string content, or ``None`` when
+    the record has no such content.
+  """
+  if judge_input is None:
+    return None
+  messages = judge_input.get("messages")
+  first = messages[0] if isinstance(messages, list) and messages else None
+  content = first.get("content") if isinstance(first, Mapping) else None
+  if not isinstance(content, str):
+    return None
+  return hashlib.sha256(content.encode()).hexdigest()
+
+
+def lapsed_judge_request(error: PolicyLapseError) -> dict[str, object]:
+  """Return the request fields a judge lapse still carries, or nothing.
+
+  A judge whose answer was unusable, or whose transport raised, built its
+  request all the same; the row for that boundary records it, with its
+  digest, so the pairing across arms survives on exactly the rows where the
+  judge failed. A lapse that did not come from a judge call carries nothing
+  here — the writer's lapse row takes those fields from the valid verdict
+  that preceded it.
+
+  Args:
+    error: The bounded failure the policy raised.
+
+  Returns:
+    ``judge_input`` and ``judge_prompt_sha256``, or an empty mapping.
+  """
+  if error.judge_input is None:
+    return {}
+  return {
+      "judge_input": error.judge_input,
+      "judge_prompt_sha256": judge_prompt_sha256(error.judge_input),
+  }
 
 
 # How a message was dispositioned, recorded so the account of a run says why
@@ -775,6 +879,7 @@ class Supervisor:
   _cursor: int = 0
   _mute: bool = False
   _disposition: str = EXCLUDED_NOTHING_TO_KEEP
+  _said_count: int = 0
 
   def observe(self, event: Mapping[str, Any]) -> Intervention | None:
     """Consume one stream event and act on it.
@@ -802,6 +907,10 @@ class Supervisor:
     if record is not None:
       self._evidence.append(record)
 
+    # Read before the policy answers: a delivered correction is appended
+    # below, and the row counts the corrections delivered *before* this
+    # boundary — what the observation carries, whichever call is shown it.
+    self._said_count = len(self._said)
     observation = Observation(
         task=self.task,
         evidence=tuple(self._evidence),
@@ -826,7 +935,10 @@ class Supervisor:
           LOG_KIND_LAPSE,
           reason=f"policy lapsed: {error!r}",
           finish_reason=error.finish_reason,
-          **self._verdict_audit_after(verdict_count),
+          **(
+              lapsed_judge_request(error)
+              | self._verdict_audit_after(verdict_count)
+          ),
       )
       return None
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
@@ -892,6 +1004,7 @@ class Supervisor:
     verdict = verdicts[-1]
     audit: dict[str, object] = {
         "judge_input": verdict.judge_input,
+        "judge_prompt_sha256": judge_prompt_sha256(verdict.judge_input),
         "judge_reason": verdict.reason,
         "off_track": verdict.off_track,
         "running_state": verdict.running_state,
@@ -921,6 +1034,8 @@ class Supervisor:
                 else None
             ),
             "guidebook_context_mode": guidebook_context_mode(self.guidebook),
+            "said_visibility": said_visibility_of(self.policy),
+            "said_count": self._said_count,
             **extra,
         }
     )

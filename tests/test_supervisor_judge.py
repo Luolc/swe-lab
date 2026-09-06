@@ -7,6 +7,7 @@ defect is not a guard.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 import dataclasses
 import hashlib
 import inspect
@@ -19,6 +20,7 @@ from unittest import mock
 import pytest
 
 from swe_lab.conversation import Message, Role, TextBlock
+from swe_lab.trace_synthesis.context_components import SupervisorPromptBuilder
 from swe_lab.trace_synthesis.criterion import (
     Criterion,
     CRITERION_PATH,
@@ -31,6 +33,7 @@ from swe_lab.trace_synthesis.judge import (
     JUDGE_TOOL,
     JUDGE_TOOL_NAME,
     JudgeAnswerError,
+    JudgeTransportError,
     LOCATE_DEVIATION_INSTRUCTION,
     messages_transport,
     ModelJudge,
@@ -44,6 +47,7 @@ from swe_lab.trace_synthesis.supervisor import (
     MAX_INTERVENTION_CHARS,
     Observation,
     PolicyLapseError,
+    SaidVisibility,
     Supervisor,
     Verdict,
     WriterOutputRejectedError,
@@ -1321,3 +1325,228 @@ def test_a_default_judges_verdict_carries_no_located_deviation() -> None:
   )(observation(), load_criterion())
 
   assert verdict.deviation_started_steps_ago is None
+
+
+# --- what the supervisor already said: the writer's to read, not the judge's
+# (issue #381, ADR-0024) ------------------------------------------------------
+
+#: A line no evidence, criterion or instruction text contains, so its presence
+#: in a prompt can only mean the prior interventions were rendered into it.
+SAID_SENTINEL = "SAID-SENTINEL-7c1e look at the failing assertion first"
+
+
+def _off_track_transport(
+    payloads: list[dict[str, Any]],
+) -> Callable[[Mapping[str, Any]], dict[str, Any]]:
+  """Return a transport whose judge is always off track and whose writer speaks.
+
+  Args:
+    payloads: Where every request body is appended, in call order.
+
+  Returns:
+    The transport.
+  """
+
+  def transport(payload: Mapping[str, Any]) -> dict[str, Any]:
+    payloads.append(dict(payload))
+    if "tools" in payload:
+      return {
+          "stop_reason": "tool_use",
+          "content": [
+              {
+                  "type": "tool_use",
+                  "id": "toolu_test",
+                  "name": JUDGE_TOOL_NAME,
+                  "input": {
+                      "off_track": True,
+                      "reason": "guessing",
+                      "running_state": RUNNING_STATE,
+                  },
+              }
+          ],
+      }
+    return {
+        "stop_reason": "end_turn",
+        "content": [{"type": "text", "text": SAID_SENTINEL}],
+    }
+
+  return transport
+
+
+def _two_arms(
+    said_visibility: SaidVisibility,
+) -> tuple[list[str], list[str], list[str]]:
+  """Replay one stream through a speaking arm and a silent arm.
+
+  The shape of issue #381's measurement: both arms are shown the same evidence
+  at every boundary, and the only thing that can differ between them is what
+  each has already said — the speaking arm accumulates its own corrections
+  exactly as ``Supervisor`` does, and the silent arm (``budget=0``) never has
+  any.
+
+  Args:
+    said_visibility: The mode both arms are built under.
+
+  Returns:
+    The speaking arm's judge prompts, the silent arm's judge prompts and the
+    speaking arm's writer prompts, each in boundary order.
+  """
+  evidence = [
+      Message(role=Role.ASSISTANT, content=[TextBlock(text=f"step {i}")])
+      for i in range(1, 5)
+  ]
+  judge_prompts: dict[int, list[str]] = {}
+  writer_prompts: list[str] = []
+  for budget in (3, 0):
+    payloads: list[dict[str, Any]] = []
+    policy = supervising_policy(
+        model="m",
+        transport=_off_track_transport(payloads),
+        budget=budget,
+        cooldown=0,
+        said_visibility=said_visibility,
+    )
+    said: list[Intervention] = []
+    for cursor in range(1, len(evidence) + 1):
+      decision = policy.consider(
+          Observation(
+              task="make the test pass",
+              evidence=tuple(evidence[:cursor]),
+              cursor=cursor,
+              said=tuple(said),
+          )
+      )
+      if isinstance(decision, Intervention):
+        said.append(decision)
+    judge_prompts[budget] = [
+        p["messages"][0]["content"] for p in payloads if "tools" in p
+    ]
+    if budget:
+      writer_prompts = [
+          p["messages"][0]["content"] for p in payloads if "tools" not in p
+      ]
+  return judge_prompts[3], judge_prompts[0], writer_prompts
+
+
+def test_the_judge_prompt_does_not_depend_on_what_was_said() -> None:
+  """Under ``writer`` and ``none`` the two arms' judge prompts are one set.
+
+  Byte for byte, boundary by boundary — the property issue #381 found
+  missing, where the speaking arm's judge prompt grew by exactly its own
+  corrections and its ``off_track`` rate with it. ``both`` is the positive
+  arm: the same comparison must be able to see the section when it is
+  rendered, or an assertion of sameness proves nothing.
+  """
+  for mode in ("writer", "none"):
+    speaking, silent, _ = _two_arms(mode)
+    assert len(speaking) == len(silent) == 4
+    assert speaking == silent
+    assert all("# Prior supervisor interventions" not in p for p in speaking)
+
+  speaking, silent, _ = _two_arms("both")
+  assert speaking[0] == silent[0]  # nothing said yet on either side
+  assert all(s != q for s, q in zip(speaking[1:], silent[1:], strict=True))
+  assert all(SAID_SENTINEL in p for p in speaking[1:])
+  assert all(SAID_SENTINEL not in p for p in silent)
+
+
+def test_the_writer_prompt_carries_what_was_said_unless_told_not_to() -> None:
+  """The writer is shown the prior interventions under ``writer`` and ``both``.
+
+  The first writer call sees the empty placeholder, the later ones see the
+  line already delivered; under ``none`` the section is absent altogether.
+  """
+  for mode in ("writer", "both"):
+    _, _, writer = _two_arms(mode)
+    assert len(writer) == 3
+    assert (
+        "# Prior supervisor interventions\n\n(nothing yet)\n\n# Judge verdict\n"
+        in writer[0]
+    )
+    assert SAID_SENTINEL in writer[1]
+    assert SAID_SENTINEL in writer[2]
+
+  _, _, writer = _two_arms("none")
+  assert len(writer) == 3
+  assert all("# Prior supervisor interventions" not in p for p in writer)
+  assert all(SAID_SENTINEL not in p for p in writer)
+
+
+def test_the_policy_records_the_said_visibility_its_builders_were_given() -> (
+    None
+):
+  """One argument sets both builders and the value the decision rows carry."""
+  transport = RecordingTransport(answers=[ON_TRACK_JSON])
+  expected: tuple[tuple[SaidVisibility, bool, bool], ...] = (
+      ("writer", False, True),
+      ("both", True, True),
+      ("none", False, False),
+  )
+  for mode, judge_sees, writer_sees in expected:
+    policy = supervising_policy(
+        model="m", transport=transport, budget=1, said_visibility=mode
+    )
+    assert policy.said_visibility == mode
+    assert isinstance(policy.judge, ModelJudge)
+    assert isinstance(policy.writer, ModelWriter)
+    assert isinstance(policy.judge.prompt_builder, SupervisorPromptBuilder)
+    assert isinstance(policy.writer.prompt_builder, SupervisorPromptBuilder)
+    assert policy.judge.prompt_builder.include_said is judge_sees
+    assert policy.writer.prompt_builder.include_said is writer_sees
+
+  by_default = supervising_policy(model="m", transport=transport, budget=1)
+  assert by_default.said_visibility == "writer"
+
+
+def test_the_default_builders_render_said_to_the_writer_only() -> None:
+  """A judge built by hand gets the same default as one built by the policy."""
+  criterion = load_criterion()
+  spoken = Observation(
+      task="make the test pass",
+      evidence=(
+          Message(role=Role.ASSISTANT, content=[TextBlock(text="editing")]),
+      ),
+      cursor=2,
+      said=(Intervention(text=SAID_SENTINEL),),
+  )
+  quiet = dataclasses.replace(spoken, said=())
+  transport = RecordingTransport(answers=[ON_TRACK_JSON])
+
+  judge_builder = ModelJudge(model="m", transport=transport).prompt_builder
+  assert judge_builder.build(spoken, criterion) == judge_builder.build(
+      quiet, criterion
+  )
+  assert "# Prior supervisor interventions" not in judge_builder.build(
+      spoken, criterion
+  )
+
+  writer_builder = ModelWriter(model="m", transport=transport).prompt_builder
+  assert writer_builder.build(spoken, criterion).endswith(
+      f"# Prior supervisor interventions\n\n{SAID_SENTINEL}\n"
+  )
+  assert writer_builder.build(quiet, criterion).endswith(
+      "# Prior supervisor interventions\n\n(nothing yet)\n"
+  )
+
+
+def test_a_transport_failure_carries_the_request_it_was_sent() -> None:
+  """The judge's request survives a transport that raised before answering.
+
+  Built before the transport is called, the request is what the decision
+  row pairs on; it travels on the error the way ``finish_reason`` travels on
+  an unusable answer, with the transport's own exception as the cause.
+  """
+  seen: list[Mapping[str, Any]] = []
+
+  def transport(payload: Mapping[str, Any]) -> dict[str, Any]:
+    seen.append(payload)
+    raise RuntimeError("upstream 503")
+
+  with pytest.raises(JudgeTransportError, match="upstream 503") as caught:
+    _ = ModelJudge(model="m", transport=transport)(
+        observation(), load_criterion()
+    )
+
+  assert len(seen) == 1
+  assert caught.value.judge_input == seen[0]
+  assert isinstance(caught.value.__cause__, RuntimeError)

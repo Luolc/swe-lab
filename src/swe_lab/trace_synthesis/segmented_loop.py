@@ -66,6 +66,8 @@ from .seam_shape import (
 from .supervisor import (
     evidence_of,
     Intervention,
+    judge_prompt_sha256,
+    lapsed_judge_request,
     LOG_KIND_GAP,
     LOG_KIND_LAPSE,
     LOG_KIND_SILENT,
@@ -74,6 +76,7 @@ from .supervisor import (
     LogWriter,
     Observation,
     PolicyLapseError,
+    said_visibility_of,
     SpeakPolicy,
     SpeakWhenOffTrack,
     Unjudged,
@@ -629,9 +632,10 @@ class SegmentedRun:
           LOG_KIND_LAPSE,
           index=index,
           turns=turns,
+          said_count=len(observation.said),
           reason=f"policy lapsed: {error!r}",
           finish_reason=error.finish_reason,
-          **self._verdict_audit_after(before),
+          **(lapsed_judge_request(error) | self._verdict_audit_after(before)),
       )
       return self.supervision.neutral_continue
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
@@ -639,6 +643,7 @@ class SegmentedRun:
           LOG_KIND_GAP,
           index=index,
           turns=turns,
+          said_count=len(observation.said),
           reason=f"policy raised: {error!r}",
           **self._verdict_audit_after(before),
       )
@@ -660,16 +665,31 @@ class SegmentedRun:
 
     if isinstance(decision, Unjudged):
       self._decision_row(
-          LOG_KIND_UNJUDGED, index=index, turns=turns, reason=decision.reason
+          LOG_KIND_UNJUDGED,
+          index=index,
+          turns=turns,
+          said_count=len(observation.said),
+          reason=decision.reason,
       )
       return self.supervision.neutral_continue
     if decision is None:
-      self._decision_row(LOG_KIND_SILENT, index=index, turns=turns, **located)
+      self._decision_row(
+          LOG_KIND_SILENT,
+          index=index,
+          turns=turns,
+          said_count=len(observation.said),
+          **located,
+      )
       return self.supervision.neutral_continue
 
     self._said.append(decision)
     self._decision_row(
-        LOG_KIND_SPOKE, index=index, turns=turns, text=decision.text, **located
+        LOG_KIND_SPOKE,
+        index=index,
+        turns=turns,
+        said_count=len(observation.said),
+        text=decision.text,
+        **located,
     )
     return decision.rendered()
 
@@ -683,6 +703,7 @@ class SegmentedRun:
     verdict = verdicts[-1]
     audit: dict[str, object] = {
         "judge_input": verdict.judge_input,
+        "judge_prompt_sha256": judge_prompt_sha256(verdict.judge_input),
         "judge_reason": verdict.reason,
         "off_track": verdict.off_track,
         "running_state": verdict.running_state,
@@ -746,7 +767,13 @@ class SegmentedRun:
     )
 
   def _decision_row(
-      self, kind: str, *, index: int, turns: int, **extra: object
+      self,
+      kind: str,
+      *,
+      index: int,
+      turns: int,
+      said_count: int,
+      **extra: object,
   ) -> None:
     """Record what the policy decided at one seam.
 
@@ -755,6 +782,9 @@ class SegmentedRun:
       index: The segment that just ended.
       turns: The actor's cumulative turn count at this cut — requirement C's
         first quantity, and knowable only while running.
+      said_count: How many corrections had been delivered before this seam —
+        the observation's ``said``, so a ``spoke`` row does not count its
+        own; how many the judge was shown follows from ``said_visibility``.
       **extra: Fields specific to the kind.
     """
     self.log(
@@ -764,6 +794,8 @@ class SegmentedRun:
             "policy": self.policy.name,
             "guidebook_sha256": self._guidebook_sha256(),
             "guidebook_context_mode": guidebook_context_mode(self.guidebook),
+            "said_visibility": said_visibility_of(self.policy),
+            "said_count": said_count,
             "segment": index,
             "cut_at_turn": turns,
             **extra,

@@ -270,6 +270,23 @@ intend the state to use observable evidence and retain unresolved failures;
 those semantic properties are human-audited rather than claimed as mechanical
 invariants.
 
+What the supervisor has already said stays out of the judge's prompt by default
+([ADR-0024](../decisions/ADR-0024-the-judge-is-not-told-what-the-supervisor-said.md)).
+`Observation.said` is rendered to the writer, so the line it writes is written
+against the lines already delivered, and not to the judge: on the first corpus
+that section moved the judge's `off_track` rate from 0/6 before its first
+correction to 104/134 after it, against 3/166 for a supervisor that could not
+speak — the judge read its own corrections as the actor's record
+([#381](https://github.com/Luolc/swe-lab/issues/381)). `said_visibility` keeps
+the two other shapes, `both` (the pre-ADR prompt) and `none`, as A/B arms named
+per workflow definition and never read from the environment. Every decision row
+records the mode and how many corrections had been delivered before that
+boundary (what the judge was shown follows from the mode); every row behind
+which a judge request was built — a valid verdict, a lapse whose answer was
+unusable, or a lapse whose transport raised — records the request and the digest
+of its user prompt, and a row with no request behind it (a policy with no model
+call, or an unjudged boundary) carries neither.
+
 **When** it speaks is the open variable, not a settled part of this design: in
 the one graded batch, **8 of 8 non-compliances arrived too late**
 ([report §6.2](../../experiments/trace_synthesis/mid_turn_compliance/REPORT.md)).
@@ -978,6 +995,7 @@ is tuned by reading traces, not asserted by a test.
 | Phase D never collects an exchange the actor was not part of: a request whose body carries a `[SUGGESTION MODE: …]` message, or any other side call the front end makes, is excluded from the conversation | a test over a captured TUI session asserting the collected `Conversation` is built from the agent-loop request and that a trailing prompt-suggestion request is not selected |
 | A hint never alters what the actor observed: the Supervisor emits its own message and never a tool result, an assistant turn, or an edit of either | a test over the Supervisor's emitter asserting every value it can produce is its own tagged message, and that no code path writes into a captured record |
 | The Supervisor's input has exactly `task`, `evidence`, `cursor`, `said`, the validated `guidebook`, and host-side `running_state`; raw gold/reference/test patches, hidden tests and their named equivalents have no separate constructor channel | ✅ `test_supervisor_input_carries_the_guidebook` asserts the exact six-field allowlist and the artifact's positive handoff; `test_supervisor_input_rejects_separate_privileged_material` supplies every named negative control and requires constructor rejection |
+| The judge's default prompt does not depend on what the supervisor has already said, the writer's carries it unless the definition says `none`, and the mode reaches the builders from the definition and not from the environment. Every decision row of either carrier names the mode it ran under and the corrections delivered before it; every row behind which a judge request was built — a valid verdict, a lapse whose answer was unusable, or a lapse whose transport raised — carries the request and its digest, and a writer lapse keeps the valid verdict's; the two kinds of row with no request behind them (a policy with no model call, an `unjudged` boundary) carry the two mode fields and neither request field | ✅ `test_the_judge_prompt_does_not_depend_on_what_was_said` (a speaking arm and a silent arm send one set of judge bytes under `writer` and `none`, and different bytes under `both` — the positive arm), `test_the_writer_prompt_carries_what_was_said_unless_told_not_to`, `test_the_policy_records_the_said_visibility_its_builders_were_given`; the routing by `test_the_channel_factory_forwards_a_non_default_said_visibility`, `test_the_shipped_segmented_factory_reads_the_named_said_visibility` and `test_nothing_in_building_a_supervision_reads_the_environment`; the rows with a request by `test_decision_rows_record_said_visibility_count_and_prompt_digest` / `test_segmented_decision_rows_record_said_visibility_count_and_digest` (valid verdicts), `test_a_judge_lapse_row_still_carries_the_request_and_its_digest` / `test_a_segmented_judge_lapse_row_still_carries_the_request_and_digest` (an unusable answer), `test_a_lapse_whose_transport_raised_still_carries_the_request` (the transport raised) and `test_a_writer_lapse_row_keeps_the_valid_verdicts_request` / `test_a_segmented_writer_lapse_row_keeps_the_valid_verdicts_request` (a writer lapse); the two no-request rows, on each carrier, by `test_decision_rows_record_said_visibility_count_and_prompt_digest` (no model call) and `test_a_boundary_with_no_evidence_is_recorded_as_unjudged_not_silent` (unjudged) for the channel and `test_segmented_rows_without_a_request_carry_neither_request_field` for the segmented loop |
 | A recent-evidence limit never splits an assistant tool call from its following result; genuine missing results and every prompt-only truncation are explicit, reasoning is omitted without hiding the positive tool evidence, and clipping leaves the raw values complete | ✅ `test_a_raw_record_boundary_never_splits_a_tool_call_from_its_result`, `test_a_genuinely_missing_result_is_marked`, `test_truncation_is_visible_and_short_values_are_unmarked`, `test_oversized_structured_input_has_its_own_visible_marker`, `test_visible_text_can_be_bounded_or_disabled_without_hiding_tools`, `test_tool_evidence_is_rendered_while_reasoning_is_omitted`, and `test_prompt_clipping_does_not_change_the_complete_raw_values` |
 | Phase B runs with the git-history purge **off** and composes no result verifier — the Oracle sees the history it is meant to see, and a run contaminated by declaration is not put through the detector — while the solving definitions keep purging | ✅ `test_the_oracle_task_composes_no_purge_no_extractor_and_no_verifier` and its converse `test_the_rollout_definitions_still_purge` (`tests/test_oracle_analysis.py`) |
 

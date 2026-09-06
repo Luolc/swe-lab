@@ -9,6 +9,7 @@ back, and that a registered name really does run end to end — here over the
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+import os
 from pathlib import Path
 from typing import Any, final, override
 
@@ -33,10 +34,15 @@ from swe_lab.sandbox import (
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.observers.diff_extract import BASE_REF_NAME
 from swe_lab.sandbox.testing import FakeSandboxConfig
+from swe_lab.trace_synthesis.channel import supervision
+from swe_lab.trace_synthesis.context_components import SupervisorPromptBuilder
 from swe_lab.trace_synthesis.criterion import load_criterion
+from swe_lab.trace_synthesis.judge import ModelJudge, ModelWriter
+from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
 from swe_lab.trace_synthesis.supervisor import (
     Intervention,
     Observation,
+    SaidVisibility,
     SpeakWhenOffTrack,
     Verdict,
 )
@@ -534,3 +540,161 @@ def test_the_control_arm_pays_the_same_judge_calls_as_the_treatment():
   # …and they part company only after a correction has been decided on.
   assert (treatment[1], treatment[2]) == (3, 3)
   assert (control[1], control[2]) == (0, 0)
+
+
+# --- who is shown what the supervisor said, routed from the definitions
+# down to the two prompt builders (ADR-0024) -----------------------------------
+
+
+def _builders_of(
+    policy: SpeakWhenOffTrack,
+) -> tuple[SupervisorPromptBuilder, SupervisorPromptBuilder]:
+  """Return the judge's and the writer's default prompt builders.
+
+  Args:
+    policy: A policy built by ``supervising_policy``.
+
+  Returns:
+    The two builders, judge first.
+  """
+  assert isinstance(policy.judge, ModelJudge)
+  assert isinstance(policy.writer, ModelWriter)
+  judge_builder = policy.judge.prompt_builder
+  writer_builder = policy.writer.prompt_builder
+  assert isinstance(judge_builder, SupervisorPromptBuilder)
+  assert isinstance(writer_builder, SupervisorPromptBuilder)
+  return judge_builder, writer_builder
+
+
+def _segmented_supervision_of(entry: WorkflowEntry) -> SegmentedSupervision:
+  """Return the segmented supervision a shipped segmented entry carries.
+
+  Args:
+    entry: The segmented rollout entry.
+
+  Returns:
+    Its supervision configuration.
+  """
+  from swe_lab.harnesses.claude_code import ClaudeCodeHarness
+  from swe_lab.rollout import CodingAgentTask
+
+  assert isinstance(entry.task, CodingAgentTask)
+  assert isinstance(entry.task.harness, ClaudeCodeHarness)
+  segmented = entry.task.harness.segmented
+  assert segmented is not None
+  return segmented
+
+
+def test_the_channel_factory_forwards_a_non_default_said_visibility() -> None:
+  """A `supervision()` that dropped the argument would build the default.
+
+  Asked for a non-default mode on purpose: with the default, a factory that
+  forgot to forward and one that forwarded are the same policy.
+  """
+  expected: tuple[tuple[SaidVisibility, bool, bool], ...] = (
+      ("both", True, True),
+      ("none", False, False),
+  )
+  for mode, judge_sees, writer_sees in expected:
+    built = supervision(
+        model="m",
+        transport=lambda payload: {},
+        budget=1,
+        said_visibility=mode,
+    )("solve it")
+    policy = built.policy
+    assert isinstance(policy, SpeakWhenOffTrack)
+    assert policy.said_visibility == mode
+    judge_builder, writer_builder = _builders_of(policy)
+    assert judge_builder.include_said is judge_sees
+    assert writer_builder.include_said is writer_sees
+
+
+def test_the_shipped_segmented_factory_reads_the_named_said_visibility(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+  """The segmented definition passes the constant, not a literal of its own.
+
+  Its factory reads the module constant when it is called, so setting the
+  constant to a non-default mode and calling the shipped factory tells a
+  definition that passes it apart from one that omits the argument and gets
+  the default.
+  """
+  monkeypatch.setattr(definitions, "SUPERVISOR_SAID_VISIBILITY", "none")
+  segmented = _segmented_supervision_of(definitions.SEGMENTED_ROLLOUT[0])
+
+  policy = segmented.policy_factory(segmented.cooldown)
+
+  assert isinstance(policy, SpeakWhenOffTrack)
+  assert policy.said_visibility == "none"
+  judge_builder, writer_builder = _builders_of(policy)
+  assert judge_builder.include_said is False
+  assert writer_builder.include_said is False
+
+
+def test_the_shipped_channel_arms_carry_the_named_said_visibility() -> None:
+  """Both A′ arms run under the one named value, builders agreeing with it.
+
+  Their factories captured the constant when the module was imported, so
+  this cannot tell a definition that passes it from one that omits it while
+  the constant is the default; what it pins is that the two arms agree with
+  the constant and with each other, and that each arm's two builders agree
+  with the mode recorded on its policy.
+  """
+  for entry in (
+      definitions.SUPERVISED_ROLLOUT[0],
+      definitions.CONTROL_ROLLOUT[0],
+  ):
+    policy = _policy_of(entry)
+    assert policy.said_visibility == definitions.SUPERVISOR_SAID_VISIBILITY
+    judge_builder, writer_builder = _builders_of(policy)
+    assert judge_builder.include_said is (policy.said_visibility == "both")
+    assert writer_builder.include_said is (
+        policy.said_visibility in {"writer", "both"}
+    )
+
+
+class _NoEnvironmentRead:
+  """An ``os.environ`` stand-in that fails the test on any read."""
+
+  def __getattr__(self, name: str) -> object:
+    raise AssertionError(f"construction read os.environ.{name}")
+
+  def __getitem__(self, key: str) -> str:
+    raise AssertionError(f"construction read os.environ[{key!r}]")
+
+  def __contains__(self, key: object) -> bool:
+    raise AssertionError(f"construction tested {key!r} in os.environ")
+
+
+def test_nothing_in_building_a_supervision_reads_the_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+  """The mode comes from the definition; construction consults no variable.
+
+  `os.environ` is replaced by an object that raises on any read for the
+  duration of building the shipped A′ arms, the shipped segmented factory's
+  policy, and a channel factory asked for a non-default mode — so a
+  construction path that read a variable, whatever its name, fails here.
+  """
+  with monkeypatch.context() as patched:
+    patched.setattr(os, "environ", _NoEnvironmentRead())
+    for entry in (
+        definitions.SUPERVISED_ROLLOUT[0],
+        definitions.CONTROL_ROLLOUT[0],
+    ):
+      assert _policy_of(entry).said_visibility == (
+          definitions.SUPERVISOR_SAID_VISIBILITY
+      )
+    segmented = _segmented_supervision_of(definitions.SEGMENTED_ROLLOUT[0])
+    shipped = segmented.policy_factory(segmented.cooldown)
+    assert isinstance(shipped, SpeakWhenOffTrack)
+    assert shipped.said_visibility == definitions.SUPERVISOR_SAID_VISIBILITY
+    asked = supervision(
+        model="m",
+        transport=lambda payload: {},
+        budget=1,
+        said_visibility="none",
+    )("solve it").policy
+    assert isinstance(asked, SpeakWhenOffTrack)
+    assert asked.said_visibility == "none"

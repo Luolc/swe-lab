@@ -227,7 +227,9 @@ evidence.** Since a correction never returns as an observation, a policy has
 nothing to compare against unless the supervisor keeps a list of what it has
 already said — and would otherwise be free to say the same thing three times in
 a row. That list is handed to the policy beside the evidence, never mixed into
-it (`test_what_it_said_is_remembered_outside_the_evidence`).
+it (`test_what_it_said_is_remembered_outside_the_evidence`), and rendered to
+the writer's prompt rather than the judge's
+([ADR-0024](../../decisions/ADR-0024-the-judge-is-not-told-what-the-supervisor-said.md)).
 
 ## 4. When it speaks, and what it says
 
@@ -243,8 +245,10 @@ run.** Returning `None` is the ordinary case and is not an error.
 ### 4.1 What "off track" means, and why the bar is not a delay
 
 A policy that speaks needs a judgement, and the judgement is a model call over
-the `Observation`: the task, a window of the actor's own records,
-and what has already been said. **It asks one question:**
+the `Observation`: the task, a window of the actor's own records and the
+running state — not what has already been said, which is rendered to the
+writer alone by default
+([ADR-0024](../../decisions/ADR-0024-the-judge-is-not-told-what-the-supervisor-said.md)). **It asks one question:**
 
 1. **Is the actor off the criterion's path?**
 
@@ -388,10 +392,16 @@ The writer adds two checks that rule out failures a length cap does not:
 | no fenced code block and no diff hunk header | the most literal form of handing over the answer |
 | no verbatim eight-word shingle shared with the complete guidebook | any guidebook section being **pasted through** the channel into the actor's context; eight reuses `criterion.py`'s established `SHINGLE_WORDS`, rather than introducing another unexplained threshold |
 
-A third property — *not a repeat of what it already said* — belongs to the
-policy rather than the writer: `said` is in the `Observation` precisely so the
-judgement can decline to speak again, and rejecting a duplicate after paying for
-it would be the wrong layer.
+A third property — *not a repeat of what it already said* — has two halves, and
+neither is the judge's. How **often** it speaks is the policy's gates, budget
+and cooldown, which read no text at all; **what** it says against what it has
+already said is the writer's, the one call shown `said` by default. The judge
+is not shown it: on the first corpus a judge shown its own corrections read
+them as the actor's record
+([ADR-0024](../../decisions/ADR-0024-the-judge-is-not-told-what-the-supervisor-said.md),
+[#381](https://github.com/Luolc/swe-lab/issues/381)), so a duplicate is not
+something the judgement declines — it never sees one — and rejecting a
+duplicate after paying for it would still be the wrong layer.
 
 **The shingle guard is a floor, not a proof.** A paraphrase, short constant or
 decisive identifier defeats it. It catches literal copying from `Edits`,

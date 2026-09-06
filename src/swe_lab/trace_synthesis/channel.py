@@ -57,6 +57,7 @@ from .supervisor import (
     LOG_KIND_GAP,
     LOG_KIND_LAPSE,
     LOG_KIND_SPOKE,
+    SaidVisibility,
     SpeakPolicy,
     Supervisor,
 )
@@ -518,6 +519,7 @@ def supervision(
     window: int = 8,
     gold_patch: str | None = None,
     criterion_path: pathlib.Path | None = None,
+    said_visibility: SaidVisibility = "writer",
 ) -> Callable[[str], SupervisedRun]:
   """Return the supervision a rollout composes, given how to reach a model.
 
@@ -543,6 +545,8 @@ def supervision(
     gold_patch: This instance's gold patch, when recorded, for the criterion's
       redundant overlap check.
     criterion_path: The artifact to load; production leaves it unset.
+    said_visibility: Which call is shown what the supervisor has already
+      said; ``supervising_policy``'s, forwarded.
 
   Returns:
     A callable taking the task text and returning the run's supervision.
@@ -558,6 +562,7 @@ def supervision(
             window=window,
             gold_patch=gold_patch,
             criterion_path=criterion_path,
+            said_visibility=said_visibility,
         ),
         task=task,
     )

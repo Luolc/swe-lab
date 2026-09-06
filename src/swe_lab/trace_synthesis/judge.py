@@ -31,6 +31,15 @@ attacked is a wish (see the experiment playbook's entry on guards).
 - **No branch depends on two verdicts agreeing.** The judgement is a model
   call and is not a function; the pipeline is what must be correct under that.
   ``test_the_pipeline_is_correct_when_the_judge_disagrees_with_itself``.
+- **The judge is not told what the supervisor has already said**, by default:
+  ``observation.said`` reaches the writer's prompt and not the judge's, so the
+  judge's prompt does not depend on whether the supervisor has spoken. On the
+  first corpus that section moved the judge's ``off_track`` rate from 0/6
+  before its first correction to 104/134 after it, against 3/166 for a
+  supervisor that could not speak (issue #381, ADR-0024); ``said_visibility``
+  keeps the other two shapes as A/B arms.
+  ``test_the_judge_prompt_does_not_depend_on_what_was_said`` and
+  ``test_the_writer_prompt_carries_what_was_said_unless_told_not_to``.
 
 What each call records is fixed here rather than left to a caller: the model
 the **response** reports (never the requested alias, which stays correct when
@@ -63,6 +72,7 @@ from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
 from swe_lab.trace_synthesis.supervisor import (
     MAX_INTERVENTION_CHARS,
     Observation,
+    SaidVisibility,
     SpeakWhenOffTrack,
     Verdict,
 )
@@ -238,19 +248,61 @@ class JudgeAnswerError(ValueError):
       model finished and still produced something this class could not use.
       A caller that only sees "the judge call failed" cannot tell those apart
       (issue #383); this is how it can.
+    judge_input: The credential-free request whose answer was unusable — the
+      same record a :class:`~swe_lab.trace_synthesis.supervisor.Verdict`
+      carries for an answer that parsed. A request that went out and came
+      back unusable is still a request that went out, and the decision row
+      for that boundary records it (ADR-0024).
   """
 
   finish_reason: str | None
+  judge_input: Mapping[str, Any] | None
 
-  def __init__(self, message: str, *, finish_reason: str | None) -> None:
-    """Record the answer shape failure together with why the call ended.
+  def __init__(
+      self,
+      message: str,
+      *,
+      finish_reason: str | None,
+      judge_input: Mapping[str, Any] | None = None,
+  ) -> None:
+    """Record the answer shape failure together with the call behind it.
 
     Args:
       message: What was wrong with the answer.
       finish_reason: See the class attribute.
+      judge_input: See the class attribute.
     """
     super().__init__(message)
     self.finish_reason = finish_reason
+    self.judge_input = judge_input
+
+
+class JudgeTransportError(RuntimeError):
+  """Raised when the judge's transport raised and no answer came back.
+
+  The request had already been built when the transport failed, so it is
+  carried out with the failure: the decision row for that boundary records
+  what was asked, exactly as it does for an answer that came back unusable
+  (:class:`JudgeAnswerError`) or valid — every row behind which a request was
+  built carries it (ADR-0024). Never retried, for the reason the answer-shape
+  error is not: a second ask would make the verdict a function of how many
+  times we asked.
+
+  Attributes:
+    judge_input: The credential-free request that got no answer.
+  """
+
+  judge_input: Mapping[str, Any]
+
+  def __init__(self, message: str, *, judge_input: Mapping[str, Any]) -> None:
+    """Record the transport failure together with the request it was sent.
+
+    Args:
+      message: What the transport raised, in its own words.
+      judge_input: See the class attribute.
+    """
+    super().__init__(message)
+    self.judge_input = judge_input
 
 
 @dataclasses.dataclass(frozen=True)
@@ -308,6 +360,7 @@ def _verdict_from_answer(
     raise JudgeAnswerError(
         "unusable judge answer: missing required tool input fields: " + missing,
         finish_reason=finish_reason,
+        judge_input=payload,
     )
   unexpected_fields = answer.keys() - allowed_fields
   if unexpected_fields:
@@ -315,6 +368,7 @@ def _verdict_from_answer(
     raise JudgeAnswerError(
         f"unusable judge answer: unexpected tool input fields: {unexpected}",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
 
   off_track = answer["off_track"]
@@ -325,6 +379,7 @@ def _verdict_from_answer(
         "unusable judge answer:"
         f" off_track must be a JSON boolean, got {type(off_track).__name__}",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
 
   reason = answer["reason"]
@@ -333,6 +388,7 @@ def _verdict_from_answer(
         "unusable judge answer: reason must be a JSON string, got"
         f" {type(reason).__name__}",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
 
   running_state = answer["running_state"]
@@ -341,11 +397,13 @@ def _verdict_from_answer(
         "unusable judge answer: running_state must be a JSON string, got"
         f" {type(running_state).__name__}",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
   if not running_state.strip():
     raise JudgeAnswerError(
         "unusable judge answer: running_state must not be blank",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
   if len(running_state) > MAX_RUNNING_STATE_CHARS:
     raise JudgeAnswerError(
@@ -353,6 +411,7 @@ def _verdict_from_answer(
         f" {len(running_state):,} characters, over the"
         f" {MAX_RUNNING_STATE_CHARS:,} limit",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
 
   # Read with `.get` and type-checked rather than coerced: an answer that
@@ -367,6 +426,7 @@ def _verdict_from_answer(
         "unusable judge answer: deviation_started_steps_ago must be a JSON"
         f" integer or null, got {type(started).__name__}",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
   return Verdict(
       off_track=off_track,
@@ -412,7 +472,8 @@ class ModelJudge:
     calls: What answered each request, in order.
     instructions: Optional system instructions for evaluation prompt variants.
       ``None`` preserves the guided or unguided default.
-    prompt_builder: How the user prompt is assembled from visible inputs.
+    prompt_builder: How the user prompt is assembled from visible inputs. The
+      default renders no prior interventions (ADR-0024).
   """
 
   model: str
@@ -438,6 +499,8 @@ class ModelJudge:
     Raises:
       JudgeAnswerError: The answer was not exactly one matching tool call with
         valid input. Not retried.
+      JudgeTransportError: The transport raised before any answer came back;
+        the built request travels on it. Not retried.
     """
     instructions = self.instructions
     if instructions is None:
@@ -459,7 +522,12 @@ class ModelJudge:
         "tools": [JUDGE_TOOL],
         "tool_choice": {"type": "tool", "name": JUDGE_TOOL_NAME},
     }
-    response = self.transport(payload)
+    try:
+      response = self.transport(payload)
+    except Exception as error:  # noqa: BLE001 - re-raised with the request
+      raise JudgeTransportError(
+          f"judge transport failed: {error!r}", judge_input=payload
+      ) from error
     finish_reason = response.get("stop_reason")
     content = response.get("content")
     self.calls.append(
@@ -475,6 +543,7 @@ class ModelJudge:
       raise JudgeAnswerError(
           "unusable judge answer: expected a content list",
           finish_reason=finish_reason,
+          judge_input=payload,
       )
     matching_tool_uses = [
         block
@@ -488,6 +557,7 @@ class ModelJudge:
           f"unusable judge answer: expected exactly one {JUDGE_TOOL_NAME}"
           f" tool call, got {len(matching_tool_uses)}",
           finish_reason=finish_reason,
+          judge_input=payload,
       )
 
     answer = matching_tool_uses[0].get("input")
@@ -495,6 +565,7 @@ class ModelJudge:
       raise JudgeAnswerError(
           "unusable judge answer: tool input must be an object",
           finish_reason=finish_reason,
+          judge_input=payload,
       )
     return _verdict_from_answer(
         answer, payload=payload, finish_reason=finish_reason
@@ -512,7 +583,9 @@ class ModelWriter:
     calls: What answered each request, in order.
     instructions: Optional system instructions for writing prompt variants.
       ``None`` preserves the guided or unguided default.
-    prompt_builder: How the user prompt is assembled from visible inputs.
+    prompt_builder: How the user prompt is assembled from visible inputs. The
+      default renders the prior interventions, so the line written is not
+      the line already delivered.
   """
 
   model: str
@@ -522,7 +595,7 @@ class ModelWriter:
   instructions: str | None = None
   prompt_builder: PromptBuilder = dataclasses.field(
       default_factory=lambda: SupervisorPromptBuilder(
-          running_state_instructions=None
+          running_state_instructions=None, include_said=True
       )
   )
 
@@ -604,6 +677,7 @@ def supervising_policy(
     gold_patch: str | None = None,
     criterion_path: pathlib.Path | None = None,
     locate_deviation: bool = False,
+    said_visibility: SaidVisibility = "writer",
     instructions: str | None = None,
     writer_instructions: str | None = None,
     running_state_instructions: str | None = None,
@@ -631,6 +705,11 @@ def supervising_policy(
     locate_deviation: Ask the judge how far back the deviation started. Off by
       default, which leaves the A′ arms' prompt byte-identical; see
       :class:`ModelJudge`.
+    said_visibility: Which default prompt renders what the supervisor has
+      already said — the writer's alone (``"writer"``, the default), both
+      (``"both"``, the shape before ADR-0024) or neither (``"none"``); see
+      :data:`~swe_lab.trace_synthesis.supervisor.SaidVisibility`. Recorded on
+      the returned policy, and so on every decision row.
     instructions: Optional judge system instructions. ``None`` preserves the
       guided or unguided default.
     writer_instructions: Optional writer system instructions. ``None``
@@ -640,9 +719,16 @@ def supervising_policy(
     selector: Evidence selector override. ``None`` keeps complete-turn
       selection.
     renderer: Evidence renderer override used by the default prompt builder.
-    prompt_builder: Prompt-builder override. When supplied, it owns rendering
-      and decision text, so ``renderer`` and ``running_state_instructions`` are
-      ignored.
+    prompt_builder: Prompt-builder override, handed to both calls as-is. When
+      supplied, it owns rendering, decision text **and** whether prior
+      interventions are rendered, so ``renderer``,
+      ``running_state_instructions`` and ``said_visibility`` do not reach it —
+      ``said_visibility`` is still recorded, as the mode the default builders
+      would have run under, exactly as ``guidebook_context_mode`` names what
+      the default prompt consumes. A builder that needs to differ per call
+      is set on ``policy.judge.prompt_builder`` or
+      ``policy.writer.prompt_builder`` after construction; nothing shipped
+      needs two overrides here.
 
   Returns:
     The policy, holding a criterion whose digest is the pinned one.
@@ -661,9 +747,12 @@ def supervising_policy(
             if running_state_instructions is not None
             else RUNNING_STATE_INSTRUCTIONS
         ),
+        include_said=said_visibility == "both",
     )
     writer_prompt_builder = SupervisorPromptBuilder(
-        renderer=renderer, running_state_instructions=None
+        renderer=renderer,
+        running_state_instructions=None,
+        include_said=said_visibility in {"writer", "both"},
     )
   else:
     judge_prompt_builder = prompt_builder
@@ -687,4 +776,5 @@ def supervising_policy(
       cooldown=cooldown,
       window=window,
       selector=selector or CompleteAssistantTurnSelector(),
+      said_visibility=said_visibility,
   )

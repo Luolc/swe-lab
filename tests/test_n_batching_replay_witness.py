@@ -51,6 +51,7 @@ from swe_lab.conversation import (
 )
 from swe_lab.trace_synthesis.context_components import PromptBuilder
 from swe_lab.trace_synthesis.criterion import Criterion
+from swe_lab.trace_synthesis.judge import JUDGE_TOOL_NAME
 from swe_lab.trace_synthesis.supervisor import (
     Intervention,
     LOG_KIND_SILENT,
@@ -331,3 +332,34 @@ def test_a_fresh_run_writes_its_manifest(
       (tmp_path / arm.name / "a" / "judgments.jsonl").read_text().splitlines()
   )
   assert len(rows) == manifest["boundaries"]
+
+
+def test_the_driver_reads_the_judges_tool_use_answer(
+    driver: ModuleType,
+) -> None:
+  """A tool-contract answer parses; the frozen runs' text answers still do.
+
+  ``ModelJudge`` records the content list, whose answer is the input of its
+  one matching tool call; the driver read only the text form the frozen runs
+  recorded, so every row of a new arm came out with ``off_track`` empty.
+  """
+  tool_use = {
+      "type": "tool_use",
+      "id": "toolu_1",
+      "name": JUDGE_TOOL_NAME,
+      "input": {
+          "off_track": True,
+          "reason": "guessing",
+          "running_state": "Current checkpoint: inspect",
+      },
+  }
+  assert driver._verdict_fields({"judge_raw": [tool_use]}) == {
+      "off_track": True,
+      "judge_reason": "guessing",
+  }
+  assert driver._verdict_fields(
+      {"judge_raw": '{"off_track": false, "reason": "fine"}'}
+  ) == {"off_track": False, "judge_reason": "fine"}
+  assert driver._verdict_fields(
+      {"judge_raw": [{"type": "text", "text": "no tool call"}]}
+  ) == {"off_track": None, "judge_reason": None}

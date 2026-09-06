@@ -7,14 +7,16 @@ in that plan without a test below is a wish, per ``AGENTS.md``.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 import dataclasses
+import hashlib
 from typing import Any
 
 import pytest
 
 from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
 from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
+from swe_lab.trace_synthesis.judge import supervising_policy
 from swe_lab.trace_synthesis.supervisor import (
     evidence_of,
     Intervention,
@@ -601,6 +603,11 @@ def test_a_boundary_with_no_evidence_is_recorded_as_unjudged_not_silent() -> (
   # without it.
   assert len(asked) == 1
   assert rows[0]["cursor"] == 1
+  # No request was built for the unjudged boundary, so the row names the mode
+  # and the count and carries neither request field (ADR-0024).
+  assert (rows[0]["said_visibility"], rows[0]["said_count"]) == ("writer", 0)
+  assert "judge_input" not in rows[0]
+  assert "judge_prompt_sha256" not in rows[0]
 
 
 def test_valid_verdict_fields_are_recorded_for_silence_and_speech() -> None:
@@ -737,3 +744,226 @@ def test_a_policy_is_replaceable_without_touching_anything_else() -> None:
     supervisor.observe(assistant_event("same event"))
   assert len(spoken) == 1
   assert not silent
+
+
+def test_decision_rows_record_said_visibility_count_and_prompt_digest() -> None:
+  """The mode fields are on every row; the request fields where one was built.
+
+  ``said_count`` is the number of corrections delivered before the boundary —
+  the observation's ``said`` — so a ``spoke`` row does not count its own;
+  under ``none`` (as here) and ``writer`` the judge was shown none of them,
+  which ``said_visibility`` on the same row says. The digest is of the user
+  prompt the verdict records, so rows judged on the same bytes can be paired
+  across arms. The second arm is a policy that makes no model call: its row
+  carries the two mode fields and neither request field.
+  """
+
+  def judge(observation: Observation, criterion: Criterion) -> Verdict:
+    del criterion
+    return Verdict(
+        off_track=True,
+        reason="drifting",
+        judge_input={
+            "messages": [
+                {"role": "user", "content": f"PROMPT-{observation.cursor}"}
+            ]
+        },
+    )
+
+  rows: list[dict[str, object]] = []
+  supervisor = Supervisor(
+      policy=SpeakWhenOffTrack(
+          judge=judge,
+          writer=lambda observation, criterion: "look again",
+          criterion=load_criterion(),
+          budget=2,
+          cooldown=0,
+          said_visibility="none",
+      ),
+      task="the task",
+      sink=lambda _: None,
+      log=lambda row: rows.append(dict(row)),
+  )
+  for text in ("one", "two", "three"):
+    _ = supervisor.observe(assistant_event(text))
+
+  assert [row["kind"] for row in rows] == ["spoke", "spoke", "silent"]
+  assert [row["said_visibility"] for row in rows] == ["none", "none", "none"]
+  assert [row["said_count"] for row in rows] == [0, 1, 2]
+  assert [row["judge_prompt_sha256"] for row in rows] == [
+      hashlib.sha256(f"PROMPT-{cursor}".encode()).hexdigest()
+      for cursor in (1, 2, 3)
+  ]
+
+  # A policy that consults no model has no prompt for the mode to describe.
+  quiet: list[dict[str, object]] = []
+  _ = Supervisor(
+      policy=NeverSpeak(),
+      task="the task",
+      sink=lambda _: None,
+      log=lambda row: quiet.append(dict(row)),
+  ).observe(assistant_event("one"))
+  assert quiet[0]["said_visibility"] is None
+  assert quiet[0]["said_count"] == 0
+  assert "judge_input" not in quiet[0]
+  assert "judge_prompt_sha256" not in quiet[0]
+
+
+def test_a_judge_lapse_row_still_carries_the_request_and_its_digest() -> None:
+  """A request that came back unusable is recorded like one that parsed.
+
+  The transport receives the request and answers with no tool call, so the
+  judge raises rather than returning a verdict; the lapse row must still
+  carry ``judge_input`` and ``judge_prompt_sha256`` — the rows where pairing
+  across arms is most needed are the ones where the judge failed.
+  """
+  payloads: list[dict[str, object]] = []
+
+  def transport(payload: Mapping[str, object]) -> dict[str, object]:
+    payloads.append(dict(payload))
+    return {
+        "stop_reason": "end_turn",
+        "content": [{"type": "text", "text": "no tool call"}],
+    }
+
+  rows: list[dict[str, object]] = []
+  supervisor = Supervisor(
+      policy=supervising_policy(model="m", transport=transport, budget=1),
+      task="the task",
+      sink=lambda _: None,
+      log=lambda row: rows.append(dict(row)),
+  )
+
+  _ = supervisor.observe(assistant_event("editing blind"))
+
+  assert [row["kind"] for row in rows] == ["lapse"]
+  assert len(payloads) == 1
+  sent = payloads[0]["messages"]
+  assert isinstance(sent, list)
+  prompt = sent[0]["content"]
+  assert isinstance(prompt, str)
+  assert rows[0]["judge_input"] == payloads[0]
+  assert rows[0]["judge_prompt_sha256"] == (
+      hashlib.sha256(prompt.encode()).hexdigest()
+  )
+  assert rows[0]["finish_reason"] == "end_turn"
+  assert "off_track" not in rows[0]
+
+
+def test_a_lapse_whose_transport_raised_still_carries_the_request() -> None:
+  """A judge call that never got an answer still records what it asked.
+
+  The request is built before the transport is called, so a transport that
+  raises has received it; the row for that boundary carries ``judge_input``
+  and its digest like any other request-bearing row, ``finish_reason`` as an
+  explicit ``None`` (nothing answered), and the transport's own words in the
+  reason.
+  """
+  payloads: list[dict[str, object]] = []
+
+  def transport(payload: Mapping[str, object]) -> dict[str, object]:
+    payloads.append(dict(payload))
+    raise RuntimeError("upstream 503")
+
+  rows: list[dict[str, object]] = []
+  supervisor = Supervisor(
+      policy=supervising_policy(model="m", transport=transport, budget=1),
+      task="the task",
+      sink=lambda _: None,
+      log=lambda row: rows.append(dict(row)),
+  )
+
+  _ = supervisor.observe(assistant_event("editing blind"))
+
+  assert [row["kind"] for row in rows] == ["lapse"]
+  assert "upstream 503" in str(rows[0]["reason"])
+  assert rows[0]["finish_reason"] is None
+  assert (rows[0]["said_visibility"], rows[0]["said_count"]) == ("writer", 0)
+  assert len(payloads) == 1
+  assert rows[0]["judge_input"] == payloads[0]
+  sent = payloads[0]["messages"]
+  assert isinstance(sent, list)
+  prompt = sent[0]["content"]
+  assert isinstance(prompt, str)
+  assert rows[0]["judge_prompt_sha256"] == (
+      hashlib.sha256(prompt.encode()).hexdigest()
+  )
+
+
+def _judge_then_fenced_writer(
+    payloads: list[dict[str, object]],
+) -> Callable[[Mapping[str, object]], dict[str, object]]:
+  """Return a transport whose judge says off track and whose writer is refused.
+
+  The writer's line carries a fenced code block, which the policy rejects
+  before it becomes an intervention — a writer lapse *after* a valid verdict.
+
+  Args:
+    payloads: Where every request body is appended.
+
+  Returns:
+    The transport.
+  """
+
+  def transport(payload: Mapping[str, object]) -> dict[str, object]:
+    payloads.append(dict(payload))
+    if "tools" in payload:
+      return {
+          "stop_reason": "tool_use",
+          "content": [
+              {
+                  "type": "tool_use",
+                  "id": "toolu_test",
+                  "name": "submit_supervision_verdict",
+                  "input": {
+                      "off_track": True,
+                      "reason": "guessing",
+                      "running_state": "Current checkpoint: inspect",
+                  },
+              }
+          ],
+      }
+    return {
+        "stop_reason": "end_turn",
+        "content": [{"type": "text", "text": "```python\nfix()\n```"}],
+    }
+
+  return transport
+
+
+def test_a_writer_lapse_row_keeps_the_valid_verdicts_request() -> None:
+  """A lapse the writer caused still carries the judge's request and verdict.
+
+  The judge answered; the writer's line was refused. The lapse row records
+  the judge's request and digest — from the valid verdict, since the writer's
+  failure carries none — beside the verdict's own fields.
+  """
+  payloads: list[dict[str, object]] = []
+  rows: list[dict[str, object]] = []
+  supervisor = Supervisor(
+      policy=supervising_policy(
+          model="m",
+          transport=_judge_then_fenced_writer(payloads),
+          budget=1,
+          cooldown=0,
+      ),
+      task="the task",
+      sink=lambda _: None,
+      log=lambda row: rows.append(dict(row)),
+  )
+
+  _ = supervisor.observe(assistant_event("editing blind"))
+
+  assert [row["kind"] for row in rows] == ["lapse"]
+  assert "writer produced no usable line" in str(rows[0]["reason"])
+  assert rows[0]["finish_reason"] is None
+  assert rows[0]["off_track"] is True
+  assert len(payloads) == 2  # the judge's request, then the writer's
+  assert rows[0]["judge_input"] == payloads[0]
+  sent = payloads[0]["messages"]
+  assert isinstance(sent, list)
+  prompt = sent[0]["content"]
+  assert isinstance(prompt, str)
+  assert rows[0]["judge_prompt_sha256"] == (
+      hashlib.sha256(prompt.encode()).hexdigest()
+  )

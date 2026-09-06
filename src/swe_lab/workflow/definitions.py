@@ -61,6 +61,7 @@ from swe_lab.trace_synthesis.native_supervision import (
 )
 from swe_lab.trace_synthesis.oracle import OracleAnalysisTask
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
+from swe_lab.trace_synthesis.supervisor import SaidVisibility
 
 from .registry import register_workflow, WorkflowDef
 from .workflow import WorkflowEntry
@@ -195,6 +196,13 @@ SUPERVISOR_TRANSPORT = functools.partial(
 # How many corrections one run may carry. No measured value — task 05 owns that
 # question — so it is stated rather than derived, and stated once.
 SUPERVISOR_BUDGET = 3
+# Who is shown what the supervisor has already said: the writer, and not the
+# judge (ADR-0024). Named here and never read from the environment, because an
+# arm whose setting the record cannot show is not an arm: a definition wanting
+# another value states it in its own `supervision(...)` call, the way
+# `CONTROL_ROLLOUT` states its budget, and every decision row records which
+# one it ran under.
+SUPERVISOR_SAID_VISIBILITY: SaidVisibility = "writer"
 # The control arm's budget. Zero rather than a silent policy, because
 # `SpeakWhenOffTrack` gates *speech* on the budget and never gates judgement:
 # it consults the judge on every boundary carrying evidence and records what it
@@ -268,6 +276,7 @@ SUPERVISED_ROLLOUT: WorkflowDef = _supervised_rollout(
         budget=SUPERVISOR_BUDGET,
         cooldown=SUPERVISOR_COOLDOWN,
         window=SUPERVISOR_WINDOW,
+        said_visibility=SUPERVISOR_SAID_VISIBILITY,
     )
 )
 
@@ -283,6 +292,7 @@ CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
         budget=CONTROL_BUDGET,
         cooldown=SUPERVISOR_COOLDOWN,
         window=SUPERVISOR_WINDOW,
+        said_visibility=SUPERVISOR_SAID_VISIBILITY,
     )
 )
 
@@ -326,6 +336,7 @@ def _segmented_rollout(
                           budget=SUPERVISOR_BUDGET,
                           cooldown=cooldown,
                           window=SUPERVISOR_WINDOW,
+                          said_visibility=SUPERVISOR_SAID_VISIBILITY,
                           # The one thing only a live run can record: how many
                           # turns late each correction was.
                           locate_deviation=True,
@@ -381,7 +392,7 @@ NATIVE_JUDGE_EVERY_N = 1
 # The knob values are the ones the prior supervision measurements used, so the
 # first native runs are read against calls of the same shape rather than a new
 # unknown. That is the same reasoning as `SUPERVISOR_MODEL` and **not** a claim
-# that the two runtimes agree: they deliberately diverge (#380, #381, #383).
+# that the two runtimes agree: they deliberately diverge (#380, #383).
 NATIVE_SUPERVISED_ROLLOUT: WorkflowDef = (
     WorkflowEntry(
         ROLLOUT_KEY,
