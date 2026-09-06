@@ -65,7 +65,7 @@ MAX_INTERVENTION_CHARS = 400
 #: rest of the run (issue #381). ``"both"``: the behaviour before ADR-0024,
 #: kept as an A/B arm. ``"none"``: neither call sees it, the A/B control.
 #: Every decision row records the value it ran under as ``said_visibility``.
-SaidVisibility = Literal["writer", "both", "none"]
+type SaidVisibility = Literal["writer", "both", "none"]
 
 # The provenance marker: what makes an intervention identifiable as external,
 # so the actor can mistake it neither for its own output nor for a tool's.
@@ -163,19 +163,34 @@ class PolicyLapseError(Exception):
       lapse in a 902-call replay look the same until someone read the raw
       calls by hand (issue #383); this field is how ``supervisor.jsonl`` tells
       them apart without a rerun.
+    judge_input: The credential-free judge request behind the lapse, when the
+      request was built — carried over from the same
+      :class:`~swe_lab.trace_synthesis.judge.JudgeAnswerError`, so a boundary
+      whose answer was unusable still records what was asked, exactly as a
+      boundary with a valid verdict does. ``None`` when the lapse did not come
+      from a judge answer at all.
   """
 
   finish_reason: str | None
+  judge_input: Mapping[str, Any] | None
 
-  def __init__(self, message: str, *, finish_reason: str | None = None) -> None:
-    """Record the lapse together with the finish reason behind it, if any.
+  def __init__(
+      self,
+      message: str,
+      *,
+      finish_reason: str | None = None,
+      judge_input: Mapping[str, Any] | None = None,
+  ) -> None:
+    """Record the lapse together with what is known about the call behind it.
 
     Args:
       message: What went wrong.
       finish_reason: See the class attribute.
+      judge_input: See the class attribute.
     """
     super().__init__(message)
     self.finish_reason = finish_reason
+    self.judge_input = judge_input
 
 
 @dataclasses.dataclass(frozen=True)
@@ -668,6 +683,7 @@ class SpeakWhenOffTrack:
       raise PolicyLapseError(
           f"judge call failed: {error!r}",
           finish_reason=getattr(error, "finish_reason", None),
+          judge_input=getattr(error, "judge_input", None),
       ) from error
     self._verdicts.append(verdict)
     self._running_state = verdict.running_state
@@ -750,6 +766,29 @@ def judge_prompt_sha256(judge_input: Mapping[str, Any] | None) -> str | None:
   if not isinstance(content, str):
     return None
   return hashlib.sha256(content.encode()).hexdigest()
+
+
+def lapsed_judge_request(error: PolicyLapseError) -> dict[str, object]:
+  """Return the request fields a judge lapse still carries, or nothing.
+
+  A judge whose answer was unusable built and sent its request all the same;
+  the row for that boundary records it, with its digest, so the pairing
+  across arms survives on exactly the rows where the judge failed. A lapse
+  that did not come from a judge answer carries nothing here — the writer's
+  lapse row takes those fields from the valid verdict that preceded it.
+
+  Args:
+    error: The bounded failure the policy raised.
+
+  Returns:
+    ``judge_input`` and ``judge_prompt_sha256``, or an empty mapping.
+  """
+  if error.judge_input is None:
+    return {}
+  return {
+      "judge_input": error.judge_input,
+      "judge_prompt_sha256": judge_prompt_sha256(error.judge_input),
+  }
 
 
 # How a message was dispositioned, recorded so the account of a run says why
@@ -866,8 +905,8 @@ class Supervisor:
       self._evidence.append(record)
 
     # Read before the policy answers: a delivered correction is appended
-    # below, and the row must say how many the judge was shown, not how many
-    # exist once it has spoken.
+    # below, and the row counts the corrections delivered *before* this
+    # boundary — what the observation carries, whichever call is shown it.
     self._said_count = len(self._said)
     observation = Observation(
         task=self.task,
@@ -893,7 +932,10 @@ class Supervisor:
           LOG_KIND_LAPSE,
           reason=f"policy lapsed: {error!r}",
           finish_reason=error.finish_reason,
-          **self._verdict_audit_after(verdict_count),
+          **(
+              lapsed_judge_request(error)
+              | self._verdict_audit_after(verdict_count)
+          ),
       )
       return None
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed

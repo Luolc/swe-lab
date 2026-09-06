@@ -14,7 +14,7 @@ does.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 import datetime
 import hashlib
@@ -26,6 +26,7 @@ import pytest
 
 from swe_lab.sandbox import ExecResult
 from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
+from swe_lab.trace_synthesis.judge import supervising_policy
 from swe_lab.trace_synthesis.seam_shape import DirtySeamError
 from swe_lab.trace_synthesis.segmented_loop import (
     LOG_KIND_SEGMENT,
@@ -926,3 +927,38 @@ def test_segmented_decision_rows_record_said_visibility_count_and_digest():
       for row in rows
   ]
   assert len(set(digests)) == 3
+
+
+def test_a_segmented_judge_lapse_row_still_carries_the_request_and_digest():
+  """The second carrier records the request on a lapse row too."""
+  payloads: list[dict[str, Any]] = []
+
+  def transport(payload: Mapping[str, Any]) -> dict[str, Any]:
+    payloads.append(dict(payload))
+    return {
+        "stop_reason": "end_turn",
+        "content": [{"type": "text", "text": "no tool call"}],
+    }
+
+  policy = supervising_policy(model="m", transport=transport, budget=1)
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_DONE),
+      ]
+  )
+
+  rows = [
+      row
+      for row in _run(actor, _supervision(policy))
+      if row["kind"] == LOG_KIND_LAPSE
+  ]
+
+  assert len(rows) == 1
+  assert len(payloads) == 1
+  prompt = payloads[0]["messages"][0]["content"]
+  assert rows[0]["judge_input"] == payloads[0]
+  assert rows[0]["judge_prompt_sha256"] == (
+      hashlib.sha256(prompt.encode()).hexdigest()
+  )
+  assert rows[0]["finish_reason"] == "end_turn"

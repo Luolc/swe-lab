@@ -151,11 +151,23 @@ Every decision row of both carriers (`Supervisor._row`,
 
 - `said_visibility` — the mode the policy ran under (`null` for a policy that
   makes no model call);
-- `said_count` — how many corrections the judge was shown at that boundary,
-  read off the observation, so a `spoke` row counts the ones before its own;
+- `said_count` — how many corrections had been delivered before that
+  boundary: the length of the observation's `said`, so a `spoke` row does not
+  count its own. It is the same quantity under all three modes and on rows
+  written before this record; how many the judge was actually shown follows
+  from `said_visibility` on the same row — `said_count` under `"both"`, zero
+  under `"writer"` and `"none"`;
 - `judge_prompt_sha256` — the digest of the judge's user prompt, from the
   `judge_input` the row already carries, so rows judged on the same bytes can
-  be paired across arms without re-reading the prompt.
+  be paired across arms without re-reading the prompt. On a **lapse** row
+  too: when the request went out and the answer was unusable, the judge
+  carries the request on its error and the row records `judge_input` and the
+  digest all the same — the rows where pairing is most needed are the ones
+  where the judge failed (29 and 31 of the treatment's boundaries on the
+  frozen record). A lapse that is not a judge answer carries what it has: the
+  writer's lapse row keeps the valid verdict's fields; a lapse whose
+  transport raised carries no request, because nothing answered it and the
+  digest pairs requests that were judged.
 
 This is the same mechanism as #431's verdict telemetry, ADR-0020's
 `running_state` and ADR-0021's `guidebook_context_mode`: an additive field on
@@ -174,6 +186,21 @@ nothing. `test_the_writer_prompt_carries_what_was_said_unless_told_not_to`
 is the writer's half. Both were run against the mutant that renders the
 section unconditionally and against the one that never renders it; each
 mutant turns the pair red.
+
+The routing above the policy has its own tests, each asked for a
+non-default mode so that a seam which drops the argument and builds the
+default is told apart from one that forwards it:
+`test_the_channel_factory_forwards_a_non_default_said_visibility` through
+`channel.supervision()`,
+`test_the_shipped_segmented_factory_reads_the_named_said_visibility` through
+the shipped segmented definition's factory with the constant patched, and
+`test_nothing_in_building_a_supervision_reads_the_environment`, which builds
+the shipped arms and a channel factory with `os.environ` replaced by an
+object that fails on any read. The two A′ definitions captured the constant
+at import, so `test_the_shipped_channel_arms_carry_the_named_said_visibility`
+pins only that they agree with it and with each other. The lapse-row half of
+the telemetry is `test_a_judge_lapse_row_still_carries_the_request_and_its_digest`
+and its segmented twin.
 
 ## Alternatives Considered
 

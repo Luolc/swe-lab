@@ -67,6 +67,7 @@ from .supervisor import (
     evidence_of,
     Intervention,
     judge_prompt_sha256,
+    lapsed_judge_request,
     LOG_KIND_GAP,
     LOG_KIND_LAPSE,
     LOG_KIND_SILENT,
@@ -634,7 +635,7 @@ class SegmentedRun:
           said_count=len(observation.said),
           reason=f"policy lapsed: {error!r}",
           finish_reason=error.finish_reason,
-          **self._verdict_audit_after(before),
+          **(lapsed_judge_request(error) | self._verdict_audit_after(before)),
       )
       return self.supervision.neutral_continue
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
@@ -781,9 +782,9 @@ class SegmentedRun:
       index: The segment that just ended.
       turns: The actor's cumulative turn count at this cut — requirement C's
         first quantity, and knowable only while running.
-      said_count: How many corrections the policy was shown at this seam —
-        read off the observation, so a ``spoke`` row counts the ones before
-        its own.
+      said_count: How many corrections had been delivered before this seam —
+        the observation's ``said``, so a ``spoke`` row does not count its
+        own; how many the judge was shown follows from ``said_visibility``.
       **extra: Fields specific to the kind.
     """
     self.log(

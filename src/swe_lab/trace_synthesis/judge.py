@@ -248,19 +248,33 @@ class JudgeAnswerError(ValueError):
       model finished and still produced something this class could not use.
       A caller that only sees "the judge call failed" cannot tell those apart
       (issue #383); this is how it can.
+    judge_input: The credential-free request whose answer was unusable — the
+      same record a :class:`~swe_lab.trace_synthesis.supervisor.Verdict`
+      carries for an answer that parsed. A request that went out and came
+      back unusable is still a request that went out, and the decision row
+      for that boundary records it (ADR-0024).
   """
 
   finish_reason: str | None
+  judge_input: Mapping[str, Any] | None
 
-  def __init__(self, message: str, *, finish_reason: str | None) -> None:
-    """Record the answer shape failure together with why the call ended.
+  def __init__(
+      self,
+      message: str,
+      *,
+      finish_reason: str | None,
+      judge_input: Mapping[str, Any] | None = None,
+  ) -> None:
+    """Record the answer shape failure together with the call behind it.
 
     Args:
       message: What was wrong with the answer.
       finish_reason: See the class attribute.
+      judge_input: See the class attribute.
     """
     super().__init__(message)
     self.finish_reason = finish_reason
+    self.judge_input = judge_input
 
 
 @dataclasses.dataclass(frozen=True)
@@ -318,6 +332,7 @@ def _verdict_from_answer(
     raise JudgeAnswerError(
         "unusable judge answer: missing required tool input fields: " + missing,
         finish_reason=finish_reason,
+        judge_input=payload,
     )
   unexpected_fields = answer.keys() - allowed_fields
   if unexpected_fields:
@@ -325,6 +340,7 @@ def _verdict_from_answer(
     raise JudgeAnswerError(
         f"unusable judge answer: unexpected tool input fields: {unexpected}",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
 
   off_track = answer["off_track"]
@@ -335,6 +351,7 @@ def _verdict_from_answer(
         "unusable judge answer:"
         f" off_track must be a JSON boolean, got {type(off_track).__name__}",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
 
   reason = answer["reason"]
@@ -343,6 +360,7 @@ def _verdict_from_answer(
         "unusable judge answer: reason must be a JSON string, got"
         f" {type(reason).__name__}",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
 
   running_state = answer["running_state"]
@@ -351,11 +369,13 @@ def _verdict_from_answer(
         "unusable judge answer: running_state must be a JSON string, got"
         f" {type(running_state).__name__}",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
   if not running_state.strip():
     raise JudgeAnswerError(
         "unusable judge answer: running_state must not be blank",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
   if len(running_state) > MAX_RUNNING_STATE_CHARS:
     raise JudgeAnswerError(
@@ -363,6 +383,7 @@ def _verdict_from_answer(
         f" {len(running_state):,} characters, over the"
         f" {MAX_RUNNING_STATE_CHARS:,} limit",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
 
   # Read with `.get` and type-checked rather than coerced: an answer that
@@ -377,6 +398,7 @@ def _verdict_from_answer(
         "unusable judge answer: deviation_started_steps_ago must be a JSON"
         f" integer or null, got {type(started).__name__}",
         finish_reason=finish_reason,
+        judge_input=payload,
     )
   return Verdict(
       off_track=off_track,
@@ -486,6 +508,7 @@ class ModelJudge:
       raise JudgeAnswerError(
           "unusable judge answer: expected a content list",
           finish_reason=finish_reason,
+          judge_input=payload,
       )
     matching_tool_uses = [
         block
@@ -499,6 +522,7 @@ class ModelJudge:
           f"unusable judge answer: expected exactly one {JUDGE_TOOL_NAME}"
           f" tool call, got {len(matching_tool_uses)}",
           finish_reason=finish_reason,
+          judge_input=payload,
       )
 
     answer = matching_tool_uses[0].get("input")
@@ -506,6 +530,7 @@ class ModelJudge:
       raise JudgeAnswerError(
           "unusable judge answer: tool input must be an object",
           finish_reason=finish_reason,
+          judge_input=payload,
       )
     return _verdict_from_answer(
         answer, payload=payload, finish_reason=finish_reason

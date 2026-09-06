@@ -16,6 +16,7 @@ import pytest
 
 from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
 from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
+from swe_lab.trace_synthesis.judge import supervising_policy
 from swe_lab.trace_synthesis.supervisor import (
     evidence_of,
     Intervention,
@@ -743,10 +744,12 @@ def test_a_policy_is_replaceable_without_touching_anything_else() -> None:
 def test_decision_rows_record_said_visibility_count_and_prompt_digest() -> None:
   """The three issue-#381 fields are on every row, read at judgement time.
 
-  ``said_count`` on a ``spoke`` row is the number of corrections the judge
-  was shown, not the number that exist once this one is delivered; the digest
-  is of the user prompt the verdict records, so rows judged on the same bytes
-  can be paired across arms.
+  ``said_count`` is the number of corrections delivered before the boundary —
+  the observation's ``said`` — so a ``spoke`` row does not count its own;
+  under ``none`` (as here) and ``writer`` the judge was shown none of them,
+  which ``said_visibility`` on the same row says. The digest is of the user
+  prompt the verdict records, so rows judged on the same bytes can be paired
+  across arms.
   """
 
   def judge(observation: Observation, criterion: Criterion) -> Verdict:
@@ -797,3 +800,44 @@ def test_decision_rows_record_said_visibility_count_and_prompt_digest() -> None:
   assert quiet[0]["said_visibility"] is None
   assert quiet[0]["said_count"] == 0
   assert "judge_prompt_sha256" not in quiet[0]
+
+
+def test_a_judge_lapse_row_still_carries_the_request_and_its_digest() -> None:
+  """A request that came back unusable is recorded like one that parsed.
+
+  The transport receives the request and answers with no tool call, so the
+  judge raises rather than returning a verdict; the lapse row must still
+  carry ``judge_input`` and ``judge_prompt_sha256`` — the rows where pairing
+  across arms is most needed are the ones where the judge failed.
+  """
+  payloads: list[dict[str, object]] = []
+
+  def transport(payload: Mapping[str, object]) -> dict[str, object]:
+    payloads.append(dict(payload))
+    return {
+        "stop_reason": "end_turn",
+        "content": [{"type": "text", "text": "no tool call"}],
+    }
+
+  rows: list[dict[str, object]] = []
+  supervisor = Supervisor(
+      policy=supervising_policy(model="m", transport=transport, budget=1),
+      task="the task",
+      sink=lambda _: None,
+      log=lambda row: rows.append(dict(row)),
+  )
+
+  _ = supervisor.observe(assistant_event("editing blind"))
+
+  assert [row["kind"] for row in rows] == ["lapse"]
+  assert len(payloads) == 1
+  sent = payloads[0]["messages"]
+  assert isinstance(sent, list)
+  prompt = sent[0]["content"]
+  assert isinstance(prompt, str)
+  assert rows[0]["judge_input"] == payloads[0]
+  assert rows[0]["judge_prompt_sha256"] == (
+      hashlib.sha256(prompt.encode()).hexdigest()
+  )
+  assert rows[0]["finish_reason"] == "end_turn"
+  assert "off_track" not in rows[0]
