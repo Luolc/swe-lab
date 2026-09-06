@@ -87,6 +87,10 @@ in the GitHub UI — do it, and report the PR link. What is specific to this rep
   to match the tag, land it, then `gh release create vX.Y.Z --generate-notes`
   (which triggers the `publish.yml` Trusted-Publishing workflow). Full steps:
   [`docs/conventions.md`](docs/conventions.md#releasing).
+- **Off-repo data root.** This repo's off-repo data root on this box (rollout
+  `--output-root`, artifact copies, sha256-manifested evidence) is
+  `~/data/swe-lab/`; see
+  [`docs/conventions.md`](docs/conventions.md#hazards-learned-the-hard-way).
 
 ## Quality bar
 

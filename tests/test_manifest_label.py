@@ -49,9 +49,7 @@ def _label(root: str, home: str = _HOME) -> str:
 def test_the_home_directory_and_paths_under_it_render_as_a_tilde() -> None:
   """The case the repair exists for: no home path reaches the manifest."""
   assert _label(_HOME) == "~"
-  assert (
-      _label(f"{_HOME}/dev/swe-lab-artifacts/x") == "~/dev/swe-lab-artifacts/x"
-  )
+  assert _label(f"{_HOME}/data/swe-lab/x") == "~/data/swe-lab/x"
 
 
 def test_a_sibling_sharing_the_home_prefix_is_left_alone() -> None:
