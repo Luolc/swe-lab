@@ -81,8 +81,7 @@ in the GitHub UI — do it, and report the PR link. What is specific to this rep
   sufficient — run the [quality bar](#quality-bar) locally before pushing to
   fail fast, and the LGTM is what authorizes the merge. The heavy
   `eval`/`rollout`/`verify-golden` workflows stay manual (`workflow_dispatch`).
-- **Commit messages:** imperative mood, explain the *why*; end with a
-  `Co-Authored-By:` trailer for the model that wrote the change.
+- **Commit messages:** imperative mood, explain the *why*.
 - **Releasing.** When the user says "release", it means **both** a GitHub
   tag/Release **and** a PyPI publish — they go together. Bump `project.version`
   to match the tag, land it, then `gh release create vX.Y.Z --generate-notes`
