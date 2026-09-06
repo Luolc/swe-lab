@@ -46,6 +46,7 @@ from swe_lab.workflow import (
     WorkflowEntry,
     WorkflowError,
 )
+import swe_lab.workflow.workflow as workflow_module
 
 
 def _on(wf: Workflow, sandbox: SandboxConfig) -> Workflow:
@@ -570,6 +571,46 @@ def test_the_workflow_record_is_written_whatever_the_outcome(tmp_path: Path):
     assert outcome.succeeded is (name == "ok")
     record = json.loads(store.get_bytes(outcome.record_key))
     assert record["succeeded"] is (name == "ok")
+
+
+def test_the_previous_record_is_retired_before_the_first_entry_runs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+  """A record that is present is the latest invocation's — by construction.
+
+  The record is written last, so an invocation killed mid-way would otherwise
+  leave the previous one in place under its own fresh shards, and no reader
+  could tell (two invocations can share a ``run_ts``; a re-run can rewrite an
+  artifact without moving the metadata the record copies). So ``execute``
+  removes it before anything of the new run lands — on every invocation,
+  resumed or not, since a resumed run that re-runs a failed entry and dies
+  leaves the same stale record. Killed at the first entry, the store holds
+  no record at all; the shards beside it are untouched.
+  """
+  for resume in (False, True):
+    root = tmp_path / f"resume-{resume}"
+    store = _store(root)
+    first = _on(_chain(root), FakeSandboxConfig()).execute(
+        _Instance(), output_dir=root / "out", run_ts="ts-1"
+    )
+    assert first.succeeded is True
+    _ = store.get_bytes(first.record_key)  # there is a record to retire
+    shards_before = len(store.read_manifests("sw"))
+
+    def _killed(*args: object, **kwargs: object) -> object:
+      del args, kwargs
+      raise RuntimeError("killed at the first entry")
+
+    monkeypatch.setattr(workflow_module, "run_task", _killed)
+    with pytest.raises(RuntimeError, match="killed at the first entry"):
+      _ = _on(_chain(root), FakeSandboxConfig()).execute(
+          _Instance(), output_dir=root / "out2", run_ts="ts-2", resume=resume
+      )
+    monkeypatch.undo()
+
+    with pytest.raises(SandboxError, match="not found"):
+      _ = store.get_bytes(first.record_key)
+    assert len(store.read_manifests("sw")) == shards_before
 
 
 def test_the_record_names_the_run_it_describes(tmp_path: Path):

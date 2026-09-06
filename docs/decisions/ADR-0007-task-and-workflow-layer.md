@@ -350,6 +350,12 @@ requirement; v1 can record success only.
 > record is now written whatever the outcome, with `succeeded` and each entry's
 > status and metrics *in* it — for reporting, not for control flow. Resume is
 > unchanged and still reads task markers, exactly as argued above.
+>
+> **Amended by [ADR-0023 §6](ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md)
+> (2026-09-06).** The record is also **removed before the first entry of the
+> next invocation runs** — every invocation, resumed or not — and written last
+> as before, so a record that is present is the latest invocation's own and a
+> run killed in between leaves none. Shards and task markers are untouched.
 
 ### 11. Provided subclasses, open registry
 

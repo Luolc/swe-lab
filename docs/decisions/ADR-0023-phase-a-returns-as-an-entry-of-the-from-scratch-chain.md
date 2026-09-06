@@ -4,7 +4,11 @@
 
 Accepted. The owner asked for the from-scratch form on 2026-09-05; the
 workflow, the analysis reading and the trace-synthesis spec reconciliation
-land with this record.
+land with this record. On 2026-09-06 the owner ruled, after the accepting
+PR's review escalated it, that the engine retires the previous workflow
+record before the first entry of every invocation runs (§6) — the reading's
+"a present record is the current invocation's" rests on that, not on any
+read-side test.
 
 This supersedes one paragraph of
 [`trace-synthesis/spec.md` §3](../trace-synthesis/spec.md#phase-a--baseline-rollout-and-eval)
@@ -176,38 +180,25 @@ record is the same authority the task runner already uses for itself: its
 terminal marker names `run_ts` and the attempts spent, and resume reads that
 shard, never the last one on disk.
 
-The record must also be the **current** one, and its presence does not prove
-that: nothing clears the previous invocation's `workflow.json` when a
-`resume=False` run starts — `Workflow.execute` overwrites it last — so a run
-killed after its fresh shards landed and before its record leaves new shards
-under an old record describing a run that no longer exists. Two read-side
-tests establish that a record is current, both from what the store already
-holds, and a record failing either is read as no record:
+The record must also be the **current** invocation's, and the engine — not
+the reader — makes that true (owner's ruling, 2026-09-06): `Workflow.execute`
+**removes the previous invocation's record before its first entry runs** and
+writes its own last, on every invocation and not only `resume=False` — a
+resumed run that re-runs a failed entry and dies mid-way would otherwise leave
+the same stale record behind. Only that one roll-up is removed; shards and
+terminal markers are the tasks' own, and resume reads them. So a run killed
+anywhere between its first shard and its record leaves shards and **no**
+record, and reads as incomplete (`missing workflow.json`); a record that is
+present is the latest invocation's own. `Store` gains an idempotent
+`delete(key)` for exactly this.
 
-1. **No shard under the run postdates the record** (`missing` names it
-   `workflow.json predates shards`). `run_ts` is sortable by construction
-   (`persist_wiring.run_ts`); a shard written by a later invocation sorts
-   after a record that predates it. Deliberately *not* "every shard's
-   `run_ts` equals the record's": a `resume=True` invocation legitimately
-   rolls up resumed entries whose shards carry an older `run_ts`, and a
-   completed forced re-run legitimately sits beside outlived older attempts
-   — both are older than their record.
-2. **The record agrees with the shards it rolls up** (`workflow.json
-   disagrees with shards`). The clock has one-second grain, so two
-   invocations can share a `run_ts` and the first test is blind to them. But
-   the record copies each entry's final attempt — metrics and artifact keys
-   — and a later invocation that rewrote that attempt's shard left one that
-   no longer says what the record says. For every entry the record ran, the
-   shard at its final attempt must exist and match.
-
-**What read-side cannot see, stated rather than assumed.** A re-run whose
-every landed shard is identical, metric for metric, to the one it replaced
-passes the second test — and for those entries the record's answer *is* the
-re-run's answer, so the cell is right. The residue is a re-run launched in the
-same second as the run that wrote the record, killed after landing only such
-identical shards: its unreached entries read as the record's. Closing that
-needs a per-invocation generation signal on shards and record; see the
-alternative below.
+No read-side rule could have established that, and two were tried and
+retired during the accepting PR's review (rounds 3 and 4): ordering by
+`run_ts` fails because the clock has one-second grain, so two invocations can
+share a timestamp; agreement between the record's copied metadata and the
+shards fails because a re-run can rewrite a shard's artifacts — a different
+`patch.diff` — without moving the metrics and artifact keys the record
+copies. Neither is invocation identity.
 
 Four cells are counted — `kept`, `gained`, `regressed`, `unsolved` — plus the
 two marginals the chain is run for, **solved at baseline** (kept + regressed)
@@ -272,27 +263,33 @@ record is that marker one level up, and the reading now uses it. Two
 regression tests pin both shapes (the outlived attempt, and a stopped-early
 re-run beside the previous run's downstream shard) through the real engine.
 
+### Read-side generation tests: timestamp order, then metadata agreement
+
+Tried in review rounds 3 and 4 of the accepting PR and retired on real-store
+control arms. Ordering by `run_ts` cannot separate two invocations launched
+in the same second (`persist_wiring.run_ts` has one-second grain); requiring
+the record's copied `metrics` / `artifact_keys` to match the shards at its
+recorded attempts cannot see a re-run that rewrote a rollout's artifacts
+under identical metadata before it was killed. Metadata equality is not
+invocation identity; only the engine can make a present record mean
+"current", which is the decision above.
+
 ### A per-invocation generation signal on the shards and the record
 
-Not adopted here. It is the only thing that closes the residue above — a
-unique invocation id (a nonce beside `run_ts`, or `run_ts` at a resolution
-the clock does not collide at, which still is not identity) stamped on every
-shard and on the record, so a reader can demand that the record's id match
-its shards' — but it changes the shape of `AttemptRecord` and of the workflow
-record, which is the report contract's and is ask-first. It is the named
-follow-up if the residue is judged to matter: a `run --resume` and a forced
-`run` launched within one wall-clock second, the second killed after landing
-only shards identical to the first's.
+Not adopted. A unique invocation id on every shard and on the record would
+also close the class, and would additionally give a pair a traceable
+identity — but it changes the shape of `AttemptRecord` and of the workflow
+record, which is the report contract's and is ask-first, while retiring the
+record at the start of an invocation closes the same class with no shape
+change. Left as the follow-up if provenance on the shards is ever wanted for
+its own sake.
 
 ### Have the runner clear the previous record when a forced run starts
 
-Rejected, for the killed-run case above. It would make the state after a kill
-"no record" rather than "a stale record", which the reading already treats
-identically — so it buys nothing the read-side generation test does not, and
-it costs an engine change: `Store` has no delete, and `Workflow.execute`'s
-persistence would be altered for one reader. A durable in-progress marker
-was rejected for the same reason plus one more: it changes the workflow
-record's shape, which is the report contract's.
+**Adopted, widened to every invocation** — this is the decision in §6. The
+first cut of the accepting PR rejected it as buying nothing over a read-side
+test; the review's control arms showed the read-side tests cannot establish
+identity at all, and the owner ruled for this mechanism on 2026-09-06.
 
 ### A `Rate` line (ADR-0015 §5 / ADR-0016) for the marginals
 
@@ -323,11 +320,16 @@ prints its counts: an absent measurement must not read as a low one.
 - The `_segmented_rollout`, rollout and grading entries are built by small
   factories taking a key, so a future chain that needs a third solve + grade
   pair adds a key rather than a copy.
-- **The reading needs the current workflow record.** A run persisted by
-  anything other than `Workflow.execute` — attempt shards written by hand, or
-  an invocation killed before its record — reads as incomplete: `missing
-  workflow.json`, `workflow.json predates shards`, or `workflow.json
-  disagrees with shards`, by design.
+- **The reading needs the workflow record, and a present record is
+  current.** The engine removes the previous invocation's record before the
+  first entry runs and writes its own last, so a run killed in between reads
+  as incomplete, `missing workflow.json`. A run persisted by anything other
+  than `Workflow.execute` (shards written by hand) reads as incomplete too,
+  by design; a store written *before* this rule can still hold an earlier
+  invocation's record beside newer shards, and nothing read-side can tell.
+- **`Store` gains `delete(key)`**, idempotent — a missing key is not an
+  error. `FilesystemStore` and `FakeStore` implement it; a future vendor (the
+  S3 store of task 13) must.
 - **What this does not decide.** Whether the guidebook helps is still the
   empirical question ADR-0018 left open; this chain produces the pair of
   verdicts that question needs and claims nothing about their difference.

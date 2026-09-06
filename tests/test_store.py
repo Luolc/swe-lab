@@ -15,6 +15,7 @@ from swe_lab.sandbox import (
     SandboxError,
     Store,
 )
+from swe_lab.sandbox.testing import FakeStore
 
 
 def _record(
@@ -156,3 +157,34 @@ def test_put_bytes_get_bytes_roundtrip(tmp_path: Path):
   assert store.get_bytes("sw/inst/r0/eval/complete.json") == b'{"outcome": "x"}'
   with pytest.raises(SandboxError, match="not found"):
     _ = store.get_bytes("sw/inst/r0/eval/nope")
+
+
+def test_delete_removes_one_object_and_a_missing_key_is_not_an_error(
+    tmp_path: Path,
+):
+  # The one caller retires a previous invocation's workflow record before a
+  # run lands anything, without knowing whether one is there: idempotent, and
+  # scoped to the key — the shards beside it are the tasks' own.
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  store.put_bytes("sw/inst/r0/workflow.json", b"{}")
+  store.append_manifest(_record())
+
+  store.delete("sw/inst/r0/workflow.json")
+
+  with pytest.raises(SandboxError, match="not found"):
+    _ = store.get_bytes("sw/inst/r0/workflow.json")
+  assert len(store.read_manifests("sw")) == 1  # the shard is untouched
+  store.delete("sw/inst/r0/workflow.json")  # nothing there: the first-run case
+
+
+def test_the_fake_store_deletes_the_same_way():
+  store = FakeStore()
+  store.put_bytes("sw/inst/r0/workflow.json", b"{}")
+  store.append_manifest(_record())
+
+  store.delete("sw/inst/r0/workflow.json")
+
+  with pytest.raises(SandboxError, match="not found"):
+    _ = store.get_bytes("sw/inst/r0/workflow.json")
+  assert len(store.read_manifests("sw")) == 1
+  store.delete("sw/inst/r0/workflow.json")

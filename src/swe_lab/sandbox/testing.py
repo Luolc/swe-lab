@@ -430,6 +430,10 @@ class FakeStore(Store):
     return self.objects[key]
 
   @override
+  def delete(self, key: str) -> None:
+    _ = self.objects.pop(key, None)
+
+  @override
   def append_manifest(self, record: AttemptRecord) -> None:
     self.manifests.append(record)
 

@@ -149,7 +149,9 @@ class WorkflowOutcome:
     entries: Per-entry outcomes, in declared order.
     record_key: The written workflow record's store key. Always a key: the
       record is written whether or not the workflow succeeded (ADR-0009), so
-      there is no absent case to check for.
+      there is no absent case to check for. It is absent only while an
+      invocation is in flight — ``execute`` removes the previous one before
+      the first entry runs and writes this one last.
   """
 
   succeeded: bool
@@ -253,6 +255,15 @@ class Workflow:
     dead = sorted(provided.keys() - consumed)
     if dead:
       raise WorkflowError(f"workflow input(s) {dead} are consumed by no entry")
+    # The previous invocation's record goes before anything of this one lands
+    # (ADR-0023 §6). The record is written last, so a run that dies in between
+    # leaves shards and no record — and a reader that finds a record knows it
+    # is the latest invocation's, not one that a killed re-run left in place.
+    # Every invocation, not only `resume=False`: a resumed run that re-runs a
+    # failed entry and dies mid-way leaves the same stale record behind. Only
+    # this one roll-up is removed; shards and markers are the tasks' own and
+    # resume reads them.
+    self.store.delete(self._record_key(instance.instance_id))
     output_dir = epath.Path(output_dir)
     outcomes: list[EntryOutcome] = []
     runs: dict[str, TaskRunOutcome] = {}
@@ -391,6 +402,13 @@ class Workflow:
       return None
     return Mount(LocalFile(dest), read_only=True)
 
+  def _record_key(self, instance_id: str) -> str:
+    """Return the store key of this run's workflow record."""
+    return (
+        f"{self.sweep_id}/{instance_id}/r{self.rollout_id}"
+        f"/{WORKFLOW_RECORD_NAME}"
+    )
+
   def _write_record(
       self,
       outcomes: Sequence[EntryOutcome],
@@ -406,7 +424,10 @@ class Workflow:
     measured): per entry its status, attempts, resumed flag, artifact keys and
     metrics, plus the resolved edge map. Written whatever the outcome
     (ADR-0009): the failed run is the one most worth reading, and copying the
-    metrics here saves a consumer one object read per task per run.
+    metrics here saves a consumer one object read per task per run. The
+    previous invocation's record was removed before the first entry ran
+    (``execute``), so between the two a run has none — a record present is
+    the latest invocation's own.
 
     The body names the run it describes — sweep, instance, rollout — as
     ``AttemptRecord`` does, so a consumer globbing ``**/workflow.json`` reads
@@ -440,10 +461,7 @@ class Workflow:
       if outcome.missing_inputs:
         entry["missing_inputs"] = list(outcome.missing_inputs)
       entries_json.append(entry)
-    key = (
-        f"{self.sweep_id}/{instance_id}/r{self.rollout_id}"
-        f"/{WORKFLOW_RECORD_NAME}"
-    )
+    key = self._record_key(instance_id)
     self.store.put_bytes(
         key,
         json.dumps(

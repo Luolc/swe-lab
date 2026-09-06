@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 import json
 from pathlib import Path
-from typing import Any, final, override
+from typing import Any, cast, final, override
 
 from etils import epath
 import pytest
@@ -36,6 +36,7 @@ from swe_lab.sandbox import (
     Inline,
     Mount,
     RunStatus,
+    SandboxError,
     SandboxFs,
     SandboxObserver,
 )
@@ -44,10 +45,8 @@ from swe_lab.sandbox.testing import FakeSandboxConfig
 from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
 from swe_lab.trace_synthesis.guided_gain import (
     Cell,
-    DISAGREEING_RECORD,
     guided_gain,
     IncompleteRun,
-    STALE_RECORD,
 )
 from swe_lab.trace_synthesis.oracle import (
     oracle_prompt,
@@ -60,14 +59,17 @@ from swe_lab.trace_synthesis.sample import FAILURE_NAMES
 from swe_lab.workflow import (
     AttemptResult,
     EntryStatus,
+    run_task,
     Task,
+    TaskAddress,
     Workflow,
     workflow_definition,
     WorkflowEntry,
     WorkflowError,
 )
 import swe_lab.workflow.definitions as definitions
-from swe_lab.workflow.workflow import _resolve_edges
+from swe_lab.workflow.workflow import _resolve_edges, WORKFLOW_RECORD_NAME
+import swe_lab.workflow.workflow as workflow_module
 
 from .test_oracle_analysis import _guidebook, _LocalFakeSandbox
 from .test_oracle_failures_record import _Underlying, CONVERSATION, SPEC
@@ -441,10 +443,11 @@ def _steps(
     baseline_grader: _Step,
     guided_grader: _Step,
     oracle: _Step | None = None,
+    baseline_patch: bytes = b"BASELINE PATCH",
 ) -> dict[str, _Step]:
   """Build the five fakes, keyed as the definition keys them."""
   return {
-      definitions.BASELINE_ROLLOUT_KEY: _solver(b"BASELINE PATCH"),
+      definitions.BASELINE_ROLLOUT_KEY: _solver(baseline_patch),
       definitions.BASELINE_UNIT_TEST_KEY: baseline_grader,
       definitions.ORACLE_ANALYSIS_KEY: oracle or _oracle(),
       definitions.GUIDED_ROLLOUT_KEY: replace(
@@ -665,14 +668,13 @@ def test_a_rerun_that_stopped_early_is_not_completed_by_stale_shards(
 def test_a_run_killed_before_its_record_does_not_inherit_the_previous_one(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-  """A forced re-run leaves the old ``workflow.json`` in place until its end.
+  """A forced re-run killed before its record leaves no record at all.
 
-  Nothing clears the previous invocation's record when a ``resume=False`` run
-  starts; ``Workflow.execute`` overwrites it last. So a run killed after its
-  fresh shards landed and before its record leaves the store holding new
-  shards beside an old record that describes a run which no longer exists.
-  The reading must not take that record as the current run: a record older
-  than a shard under it predates the invocation the shards belong to.
+  The record is written last, so a run killed after its fresh shards landed
+  would leave the previous invocation's record in place under them — and a
+  reader would take it for the current run. ``Workflow.execute`` therefore
+  removes the previous record before its first entry runs; here the store
+  ends with the re-run's shards and no record, and the reading says so.
 
   The kill is placed at exactly that boundary — every entry has run and
   persisted, the record write is what dies — by making the write raise. A
@@ -711,15 +713,15 @@ def test_a_run_killed_before_its_record_does_not_inherit_the_previous_one(
       "sw", "acme__widget-1", 0, definitions.BASELINE_UNIT_TEST_KEY
   )
   assert [(s.attempt, s.run_ts) for s in fresh] == [(0, "20260906-020000")]
-  record = json.loads(store.get_bytes("sw/acme__widget-1/r0/workflow.json"))
-  assert record["run_ts"] == "20260906-010000"
-
   reading = _reading(store)
 
   assert reading.runs == ()
   assert reading.incomplete == (
-      IncompleteRun("acme__widget-1", 0, missing=(STALE_RECORD,)),
+      IncompleteRun("acme__widget-1", 0, missing=(WORKFLOW_RECORD_NAME,)),
   )
+  # …because the re-run retired the previous record before it ran anything
+  with pytest.raises(SandboxError, match="not found"):
+    _ = store.get_bytes("sw/acme__widget-1/r0/workflow.json")
 
 
 def test_a_same_second_rerun_killed_before_its_record_is_not_the_resumed_run(
@@ -730,10 +732,10 @@ def test_a_same_second_rerun_killed_before_its_record_is_not_the_resumed_run(
   A complete old run; then a ``resume=True`` invocation that resumes every
   entry and writes a fresh record at ``T`` over the older shards (legitimate);
   then a forced re-run launched in the same second ``T``, which lands both
-  gradings as failures and is killed at its record write. Every shard and the
-  record now carry ``T``, so no shard *postdates* the record — the timestamp
-  test cannot see this one. What can: the record rolls up each entry's final
-  attempt, and the shards it claims to roll up no longer say what it says.
+  gradings as failures and is killed at its record write. Nothing read-side
+  could tell the resumed record from the killed re-run — same timestamp
+  everywhere. The engine can: the re-run retired the resumed record before
+  its first entry ran, so the store holds failing shards and no record.
   """
   store = FilesystemStore(epath.Path(tmp_path / "store"))
   old = _steps(
@@ -787,12 +789,100 @@ def test_a_same_second_rerun_killed_before_its_record_is_not_the_resumed_run(
     assert [
         (s.attempt, s.run_ts, s.metrics["unit_test.resolved"]) for s in shards
     ] == [(0, "20260906-020000", 0.0)]
-  record = json.loads(store.get_bytes("sw/acme__widget-1/r0/workflow.json"))
-  assert record["run_ts"] == "20260906-020000"
-
   reading = _reading(store)
 
   assert reading.runs == ()
   assert reading.incomplete == (
-      IncompleteRun("acme__widget-1", 0, missing=(DISAGREEING_RECORD,)),
+      IncompleteRun("acme__widget-1", 0, missing=(WORKFLOW_RECORD_NAME,)),
   )
+  # …because the re-run retired the previous record before it ran anything
+  with pytest.raises(SandboxError, match="not found"):
+    _ = store.get_bytes("sw/acme__widget-1/r0/workflow.json")
+
+
+def test_a_rerun_killed_after_one_rewritten_rollout_shard_is_incomplete(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+  """Metadata equality is not invocation identity — only the engine is.
+
+  The same-second sequence, but the re-run lands exactly one shard before it
+  dies: ``baseline_rollout/a0`` with a *different* patch, yet the same empty
+  metrics and the same deterministic artifact keys the record copied. Nothing
+  the record carries can see that its shard was rewritten, and the other
+  entries' shards are still the previous run's. The reading is right anyway,
+  because the re-run retired the record before it landed that shard.
+  """
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  assert (
+      _execute(
+          store,
+          _steps(
+              baseline_grader=_grader(resolved=1.0),
+              guided_grader=_grader(resolved=1.0),
+          ),
+          output_dir=tmp_path / "old",
+          run_ts="20260906-010000",
+      ).succeeded
+      is True
+  )
+  assert (
+      _execute(
+          store,
+          _steps(
+              baseline_grader=_grader(resolved=1.0),
+              guided_grader=_grader(resolved=1.0),
+          ),
+          output_dir=tmp_path / "resume",
+          run_ts="20260906-020000",
+          resume=True,
+      ).succeeded
+      is True
+  )
+  assert [(run.cell, run.run_ts) for run in _reading(store).runs] == [
+      (Cell.KEPT, "20260906-020000")
+  ]
+
+  real_run_task = run_task  # the real one, before it is patched below
+
+  def _killed_at_the_grading(*args: object, **kwargs: object) -> object:
+    address = cast(TaskAddress, kwargs["address"])
+    if address.task == definitions.BASELINE_UNIT_TEST_KEY:
+      raise RuntimeError("killed before the baseline grading")
+    return real_run_task(*args, **kwargs)  # pyright: ignore[reportArgumentType]
+
+  monkeypatch.setattr(workflow_module, "run_task", _killed_at_the_grading)
+  with pytest.raises(RuntimeError, match="killed before the baseline grading"):
+    _ = _execute(
+        store,
+        _steps(
+            baseline_grader=_grader(resolved=0.0),
+            guided_grader=_grader(resolved=0.0),
+            baseline_patch=b"DIFFERENT NEW PATCH",
+        ),
+        output_dir=tmp_path / "new",
+        run_ts="20260906-020000",
+        resume=False,
+    )
+  # the state the kill leaves: one rewritten rollout shard whose metadata is
+  # indistinguishable from the old one, every other shard the old run's
+  (rollout,) = store.read_manifest(
+      "sw", "acme__widget-1", 0, definitions.BASELINE_ROLLOUT_KEY
+  )
+  assert rollout.run_ts == "20260906-020000"
+  assert rollout.metrics == {}
+  assert store.get_bytes(rollout.artifact_keys[PATCH_NAME]) == (
+      b"DIFFERENT NEW PATCH"
+  )
+  (guided,) = store.read_manifest(
+      "sw", "acme__widget-1", 0, definitions.GUIDED_UNIT_TEST_KEY
+  )
+  assert guided.run_ts == "20260906-010000"
+  reading = _reading(store)
+
+  assert reading.runs == ()
+  assert reading.incomplete == (
+      IncompleteRun("acme__widget-1", 0, missing=(WORKFLOW_RECORD_NAME,)),
+  )
+  # …because the re-run retired the previous record before it ran anything
+  with pytest.raises(SandboxError, match="not found"):
+    _ = store.get_bytes("sw/acme__widget-1/r0/workflow.json")

@@ -161,47 +161,31 @@ shapes are pinned on a real `FilesystemStore` through the real engine in
 `tests/test_from_scratch_guided_trace.py` (the two re-run tests), and both go
 red when the selection is put back to "highest attempt on disk".
 
-**Why the record's presence is not enough.** Nothing clears the previous
-invocation's `workflow.json` when a `resume=False` run starts; the engine
-overwrites it last. A run killed after its fresh shards landed and before its
-record leaves new shards under an old record, and reading that record would
-report the *previous* run's cell for an invocation that has no verdicts. So
-the record is consulted only if it is **current**, on two tests:
-
-- **no shard under the run carries a `run_ts` later than the record's**
-  (`run_ts` is sortable by construction) — not "all shards equal the
-  record's `run_ts`": a `--resume`d entry's shards and a completed forced
-  re-run's outlived attempts are both legitimately *older* than their record;
-- **the record agrees with the shards it rolls up** — the clock has one-second
-  grain, so two invocations can share a `run_ts`; but the record copies each
-  entry's final attempt (metrics, artifact keys), and for every entry it ran
-  the shard at that attempt must exist and match, or a later invocation
-  rewrote it.
-
-Both are pinned through the real engine by killing the record write of a
-forced re-run over a complete old run — once with a later `run_ts`, once in
-the same second as a `resume=True` run that had just written the record — and
-each goes red when its test is removed (the old `kept` comes back). What
-neither can see: a same-second re-run whose every landed shard is identical to
-what it replaced, killed before reaching the rest — its unreached entries read
-as the record's. That residue needs a per-invocation generation signal on
-shards and record, a shape change left to ADR-0023's named follow-up.
+**Why a present record is the current one.** Nothing read-side can make it
+so: two invocations can share a `run_ts` (one-second grain), and a re-run can
+rewrite a shard's artifacts without moving the metrics and artifact keys the
+record copies — both tried and retired in the accepting PR's review. The
+engine makes it so (owner's ruling, 2026-09-06): `Workflow.execute` removes
+the previous invocation's record before its first entry runs and writes its
+own last, on every invocation, resumed or not; only that roll-up is removed,
+shards and markers stay. A run killed anywhere in between leaves shards and
+no record, and reads as incomplete, `missing workflow.json`. Pinned through
+the real engine in `tests/test_from_scratch_guided_trace.py` by killing a
+forced re-run over a complete old run at three points — at its record write
+with a later `run_ts`, at its record write in the same second as a
+`resume=True` run that had just written the record, and after landing exactly
+one rewritten rollout shard under identical metadata — and each goes red when
+the retire-at-start is removed (the old `kept` comes back).
 
 Placement rule, in order:
 
-1. No workflow record → `IncompleteRun` missing `workflow.json`: the run never
-   reached the end of an invocation.
-2. A record older than a shard under the run → `IncompleteRun` naming
-   `workflow.json predates shards`: an earlier invocation's record, left in
-   place by a later one that was killed before writing its own.
-3. A record whose roll-up of some entry's final attempt has no matching shard
-   → `IncompleteRun` naming `workflow.json disagrees with shards`: the same,
-   when the later invocation shared the record's second.
-4. A grading key whose entry is absent from the record, never ran (blocked),
+1. No workflow record → `IncompleteRun` missing `workflow.json`: the run's
+   latest invocation never reached the end.
+2. A grading key whose entry is absent from the record, never ran (blocked),
    ended failed, or carries no `*.resolved` → `IncompleteRun` naming the
    key(s). **Counted and listed, never folded into a cell** — "not graded" and
    "graded as failing" are different facts, and only one of them is a zero.
-5. Otherwise a `RunPair`, carrying the record's `run_ts`, placed by
+3. Otherwise a `RunPair`, carrying the record's `run_ts`, placed by
    `cell_of(baseline_pass, guided_pass)`.
 
 Output, JSON on stdout:
@@ -244,10 +228,8 @@ workflow record, one per cell, one per kind of incompleteness — into a real
 `FilesystemStore` and asserts the cells, both marginals, the JSON, the table
 text, that an ungraded run is incomplete and not `unsolved`, that a record
 without the grading keys (another workflow's run under the same coordinates)
-is not this chain's run, that a record older than a shard under it — or one
-whose roll-up a same-second shard contradicts — is not the current run, that
-two rollouts of one instance are two pairs, and the command's stdout / stderr
-/ exit code including the empty-sweep refusal.
+is not this chain's run, that two rollouts of one instance are two pairs, and
+the command's stdout / stderr / exit code including the empty-sweep refusal.
 
 ## 6. Running it, and where things land
 
@@ -301,14 +283,18 @@ Tested, all without a container, a model or a credential:
   recorded edges equal the map, and the store holds both patches under both
   keys; the resulting records read as one `regressed` pair through
   `guided_gain`;
-- four re-runs over the same store through the same engine: a forced re-run
+- five re-runs over the same store through the same engine: a forced re-run
   after a two-attempt grading reads as the re-run's verdict, not the outlived
   `a1`'s; a re-run whose Oracle failed reads as incomplete, not as a pair
-  completed by the previous run's guided shard; a forced re-run killed before
-  its record write reads as incomplete (`workflow.json predates shards`), not
-  as the previous run's `kept`; the same kill in the same second as a
-  `resume=True` run that had just written the record reads as incomplete
-  (`workflow.json disagrees with shards`), not as that run's `kept`.
+  completed by the previous run's guided shard; and three killed re-runs — at
+  the record write with a later `run_ts`, at the record write in the same
+  second as a `resume=True` run that had just written the record, and after
+  landing one rewritten rollout shard under identical metadata — each read
+  as incomplete (`missing workflow.json`), not as the previous run's `kept`;
+- the engine side of that: `tests/test_workflow.py` kills an invocation at
+  its first entry, resumed and not, and the previous record is gone while
+  the shards beside it are untouched; `tests/test_store.py` covers
+  `Store.delete` on both stores.
 
 Not tested here, on purpose: **no live rollout or Oracle run**. A run is paid
 work at the consumer's expense and the owner's magnitude rule governs it; the
