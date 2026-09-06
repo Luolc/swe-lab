@@ -161,15 +161,31 @@ shapes are pinned on a real `FilesystemStore` through the real engine in
 `tests/test_from_scratch_guided_trace.py` (the two re-run tests), and both go
 red when the selection is put back to "highest attempt on disk".
 
+**Why the record's presence is not enough.** Nothing clears the previous
+invocation's `workflow.json` when a `resume=False` run starts; the engine
+overwrites it last. A run killed after its fresh shards landed and before its
+record leaves new shards under an old record, and reading that record would
+report the *previous* run's cell for an invocation that has no verdicts. So
+the record is consulted only if it is **current**: no shard under the run may
+carry a `run_ts` later than the record's (`run_ts` is sortable by
+construction). Not "all shards equal the record's `run_ts`" — a `--resume`d
+entry's shards and a completed forced re-run's outlived attempts are both
+legitimately *older* than their record. Pinned through the real engine by
+killing the record write of a forced re-run over a complete old run; red when
+the generation test is removed (the old `kept` comes back).
+
 Placement rule, in order:
 
 1. No workflow record → `IncompleteRun` missing `workflow.json`: the run never
    reached the end of an invocation.
-2. A grading key whose entry is absent from the record, never ran (blocked),
+2. A record older than a shard under the run → `IncompleteRun` naming
+   `workflow.json predates shards`: an earlier invocation's record, left in
+   place by a later one that was killed before writing its own.
+3. A grading key whose entry is absent from the record, never ran (blocked),
    ended failed, or carries no `*.resolved` → `IncompleteRun` naming the
    key(s). **Counted and listed, never folded into a cell** — "not graded" and
    "graded as failing" are different facts, and only one of them is a zero.
-3. Otherwise a `RunPair`, carrying the record's `run_ts`, placed by
+4. Otherwise a `RunPair`, carrying the record's `run_ts`, placed by
    `cell_of(baseline_pass, guided_pass)`.
 
 Output, JSON on stdout:
@@ -212,8 +228,9 @@ workflow record, one per cell, one per kind of incompleteness — into a real
 `FilesystemStore` and asserts the cells, both marginals, the JSON, the table
 text, that an ungraded run is incomplete and not `unsolved`, that a record
 without the grading keys (another workflow's run under the same coordinates)
-is not this chain's run, that two rollouts of one instance are two pairs, and
-the command's stdout / stderr / exit code including the empty-sweep refusal.
+is not this chain's run, that a record older than a shard under it is not the
+current run, that two rollouts of one instance are two pairs, and the
+command's stdout / stderr / exit code including the empty-sweep refusal.
 
 ## 6. Running it, and where things land
 
@@ -267,10 +284,12 @@ Tested, all without a container, a model or a credential:
   recorded edges equal the map, and the store holds both patches under both
   keys; the resulting records read as one `regressed` pair through
   `guided_gain`;
-- two re-runs over the same store through the same engine: a forced re-run
+- three re-runs over the same store through the same engine: a forced re-run
   after a two-attempt grading reads as the re-run's verdict, not the outlived
   `a1`'s; a re-run whose Oracle failed reads as incomplete, not as a pair
-  completed by the previous run's guided shard.
+  completed by the previous run's guided shard; a forced re-run killed before
+  its record write reads as incomplete (`workflow.json predates shards`), not
+  as the previous run's `kept`.
 
 Not tested here, on purpose: **no live rollout or Oracle run**. A run is paid
 work at the consumer's expense and the owner's magnitude rule governs it; the

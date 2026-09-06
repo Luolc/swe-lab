@@ -24,6 +24,22 @@ guidebook the current run never wrote. So the shards only say **which runs
 exist**; every verdict is read off the run's record, the same way the task
 runner reads its own terminal marker rather than the last shard on disk.
 
+The record has to be the **current** one, and a record's presence does not
+prove that: nothing clears the previous invocation's ``workflow.json`` when a
+``resume=False`` run starts — ``Workflow.execute`` overwrites it last — so a
+run killed after its fresh shards landed and before its record leaves new
+shards under an old record that describes a run which no longer exists. The
+test is generational: **a record older than any shard under its run predates
+the invocation those shards belong to**, and is read as no record. ``run_ts``
+is sortable by construction (``persist_wiring.run_ts``, a compact UTC
+timestamp), and this comparison is its one consumer. It is deliberately not
+"every shard's ``run_ts`` equals the record's": a ``resume=True`` invocation
+legitimately rolls up resumed entries whose shards carry an older ``run_ts``,
+and a completed forced re-run legitimately sits beside outlived older
+attempts — both are *older* than their record, which is exactly what a
+current record may have under it. Only a *newer* shard is evidence against
+the record.
+
 A run either grading entry left no verdict for is **incomplete**, counted and
 named rather than dropped: "not graded" and "graded as failing" are different
 facts, and only one of them is a zero.
@@ -47,6 +63,9 @@ _RESOLVED_SUFFIX = ".resolved"
 # The workflow record's word for an entry whose final attempt was valid; a
 # grading that ended any other way produced no verdict, whatever its metrics.
 _SUCCEEDED = "succeeded"
+# What an incomplete run lacks when its record is present but older than a
+# shard under the run: the invocation those shards belong to never wrote one.
+STALE_RECORD = f"{WORKFLOW_RECORD_NAME} predates shards"
 
 
 class Cell(StrEnum):
@@ -126,7 +145,10 @@ class IncompleteRun:
       record — an entry that never ran, ended failed, or reported no
       ``*.resolved`` — or the record's own name (``workflow.json``) when the
       run left shards but no record, because it never reached the end of an
-      invocation.
+      invocation; or :data:`STALE_RECORD` (``workflow.json predates shards``)
+      when a record is there but is older than a shard under the run — an
+      earlier invocation's record, left in place by a later one that was
+      killed before writing its own.
   """
 
   instance_id: str
@@ -144,7 +166,8 @@ class GuidedGain:
     guided_key: The entry key of the guided grading.
     runs: Every pair both entries graded, in store order.
     incomplete: Every ``(instance, rollout)`` whose record gives no verdict
-      for a grading key, or that has no record. Never folded into a cell.
+      for a grading key, or that has no current record. Never folded into a
+      cell.
   """
 
   sweep_id: str
@@ -238,26 +261,50 @@ class GuidedGain:
         f"incomplete, not counted above: {len(self.incomplete)}",
     ]
     lines.extend(
-        f"  {run.instance_id} r{run.rollout_id}: missing"
-        f" {', '.join(run.missing)}"
+        f"  {run.instance_id} r{run.rollout_id}:"
+        f" {', '.join(_lack(name) for name in run.missing)}"
         for run in self.incomplete
     )
     return "\n".join(lines) + "\n"
 
 
-def _runs_in(records: Iterable[AttemptRecord]) -> list[tuple[str, int]]:
-  """List the ``(instance, rollout)`` runs a sweep's shards belong to.
+def _lack(name: str) -> str:
+  """Phrase one entry of ``IncompleteRun.missing`` for the table."""
+  return name if name == STALE_RECORD else f"missing {name}"
+
+
+def _runs_in(
+    records: Iterable[AttemptRecord],
+) -> dict[tuple[str, int], list[AttemptRecord]]:
+  """Group a sweep's shards by the ``(instance, rollout)`` run they belong to.
 
   Args:
     records: The sweep's attempt records, any order.
 
   Returns:
-    Every distinct run, in the shards' identity order.
+    Every distinct run, in the shards' identity order, with its shards.
   """
-  runs: dict[tuple[str, int], None] = {}
+  runs: dict[tuple[str, int], list[AttemptRecord]] = {}
   for record in sorted(records, key=lambda r: r.sort_key):
-    runs.setdefault((record.instance_id, record.rollout_id), None)
-  return list(runs)
+    runs.setdefault((record.instance_id, record.rollout_id), []).append(record)
+  return runs
+
+
+def _predates(
+    record: Mapping[str, Any], shards: Iterable[AttemptRecord]
+) -> bool:
+  """Whether a shard under the run was written by a later invocation.
+
+  Args:
+    record: The run's workflow record.
+    shards: Every attempt shard under the run.
+
+  Returns:
+    ``True`` when any shard's ``run_ts`` sorts after the record's — the record
+    belongs to an earlier invocation than the shards do.
+  """
+  run_ts = str(record["run_ts"])
+  return any(shard.run_ts > run_ts for shard in shards)
 
 
 def _workflow_record(
@@ -330,12 +377,16 @@ def guided_gain(
   """
   runs: list[RunPair] = []
   incomplete: list[IncompleteRun] = []
-  for instance_id, rollout_id in _runs_in(store.read_manifests(sweep_id)):
+  runs_in_store = _runs_in(store.read_manifests(sweep_id))
+  for (instance_id, rollout_id), shards in runs_in_store.items():
     record = _workflow_record(store, sweep_id, instance_id, rollout_id)
     if record is None:
       incomplete.append(
           IncompleteRun(instance_id, rollout_id, (WORKFLOW_RECORD_NAME,))
       )
+      continue
+    if _predates(record, shards):
+      incomplete.append(IncompleteRun(instance_id, rollout_id, (STALE_RECORD,)))
       continue
     entries: dict[str, Mapping[str, Any]] = {
         entry["key"]: entry for entry in record.get("entries", [])
@@ -370,6 +421,7 @@ __all__ = [
     "GuidedGain",
     "IncompleteRun",
     "RunPair",
+    "STALE_RECORD",
     "cell_of",
     "guided_gain",
 ]

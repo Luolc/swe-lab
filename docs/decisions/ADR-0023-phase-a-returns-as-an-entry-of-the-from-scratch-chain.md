@@ -176,13 +176,30 @@ record is the same authority the task runner already uses for itself: its
 terminal marker names `run_ts` and the attempts spent, and resume reads that
 shard, never the last one on disk.
 
+The record must also be the **current** one, and its presence does not prove
+that: nothing clears the previous invocation's `workflow.json` when a
+`resume=False` run starts — `Workflow.execute` overwrites it last — so a run
+killed after its fresh shards landed and before its record leaves new shards
+under an old record describing a run that no longer exists. The reading's
+test is generational: **a record older than any shard under its run predates
+the invocation those shards belong to**, and is read as no record (`missing`
+names it `workflow.json predates shards`). `run_ts` is sortable by
+construction (`persist_wiring.run_ts`), and this is its one consumer. The
+test is deliberately *not* "every shard's `run_ts` equals the record's": a
+`resume=True` invocation legitimately rolls up resumed entries whose shards
+carry an older `run_ts`, and a completed forced re-run legitimately sits
+beside outlived older attempts — both are older than their record, which is
+exactly what a current record may have under it. Only a newer shard is
+evidence against the record.
+
 Four cells are counted — `kept`, `gained`, `regressed`, `unsolved` — plus the
 two marginals the chain is run for, **solved at baseline** (kept + regressed)
 and **gained with the guidebook**. A run whose record gives no verdict for a
 grading key — the entry absent, never run, ended failed, or without a
-`*.resolved` metric — or that has no record at all (shards from an invocation
-that never finished) is **incomplete**: counted, named with what it lacks, and
-never folded into a cell. The `guided-gain` subcommand prints the JSON (each
+`*.resolved` metric — or that has no current record (shards from an
+invocation that never finished, with or without an earlier invocation's
+record still in place) is **incomplete**: counted, named with what it lacks,
+and never folded into a cell. The `guided-gain` subcommand prints the JSON (each
 pair carrying its `run_ts`) to stdout and the table to stderr, and refuses a
 sweep with no runs rather than rendering four zeros.
 
@@ -238,6 +255,16 @@ record is that marker one level up, and the reading now uses it. Two
 regression tests pin both shapes (the outlived attempt, and a stopped-early
 re-run beside the previous run's downstream shard) through the real engine.
 
+### Have the runner clear the previous record when a forced run starts
+
+Rejected, for the killed-run case above. It would make the state after a kill
+"no record" rather than "a stale record", which the reading already treats
+identically — so it buys nothing the read-side generation test does not, and
+it costs an engine change: `Store` has no delete, and `Workflow.execute`'s
+persistence would be altered for one reader. A durable in-progress marker
+was rejected for the same reason plus one more: it changes the workflow
+record's shape, which is the report contract's.
+
 ### A `Rate` line (ADR-0015 §5 / ADR-0016) for the marginals
 
 Not adopted, deliberately. `Rate` reports a rate over counted runs with its
@@ -267,10 +294,10 @@ prints its counts: an absent measurement must not read as a low one.
 - The `_segmented_rollout`, rollout and grading entries are built by small
   factories taking a key, so a future chain that needs a third solve + grade
   pair adds a key rather than a copy.
-- **The reading needs the workflow record.** A run persisted by anything
-  other than `Workflow.execute` — attempt shards written by hand, or an
-  invocation killed before its record — reads as incomplete, `missing
-  workflow.json`, by design.
+- **The reading needs the current workflow record.** A run persisted by
+  anything other than `Workflow.execute` — attempt shards written by hand, or
+  an invocation killed before its record — reads as incomplete, `missing
+  workflow.json` or `workflow.json predates shards`, by design.
 - **What this does not decide.** Whether the guidebook helps is still the
   empirical question ADR-0018 left open; this chain produces the pair of
   verdicts that question needs and claims nothing about their difference.

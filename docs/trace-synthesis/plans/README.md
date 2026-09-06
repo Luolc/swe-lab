@@ -736,9 +736,10 @@ for counted as incomplete rather than dropped. The decision is
   path is byte-identical to before; every evaluation still passes with the
   verdict artifact added; the 2×2 places one fixture per cell and counts
   every kind of incomplete; five fake steps run end to end under the real
-  bindings, and a forced re-run or a re-run that stopped early is read from
-  the current invocation's workflow record, never from an outlived or stale
-  attempt shard.
+  bindings, and a forced re-run, a re-run that stopped early, or a re-run
+  killed before writing its record is read from the current invocation's
+  workflow record — never from an outlived or stale attempt shard, and never
+  from an earlier invocation's record.
 - **Verification:** `tests/test_from_scratch_guided_trace.py`,
   `tests/test_guided_gain.py`, and the verdict-artifact test in
   `tests/test_unit_test_method.py` — all declaration-level or fake-sandbox.

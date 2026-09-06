@@ -25,6 +25,7 @@ from swe_lab.trace_synthesis.guided_gain import (
     guided_gain,
     IncompleteRun,
     RunPair,
+    STALE_RECORD,
 )
 from swe_lab.workflow.workflow import WORKFLOW_RECORD_NAME
 
@@ -132,7 +133,7 @@ def store(tmp_path: Path) -> FilesystemStore:
 
 
 def _sweep(store: FilesystemStore) -> FilesystemStore:
-  """One run per cell, plus three runs the reading must not place."""
+  """One run per cell, plus four runs the reading must not place."""
   _run(store, "kept", baseline=1.0, guided=1.0)
   _run(store, "gained", baseline=0.0, guided=1.0)
   _run(store, "regressed", baseline=1.0, guided=0.0)
@@ -146,6 +147,18 @@ def _sweep(store: FilesystemStore) -> FilesystemStore:
   # incomplete, third kind: shards, but no workflow record — the run never
   # reached the end of an invocation
   _run(store, "unfinished", baseline=1.0, guided=1.0, record=False)
+  # incomplete, fourth kind: a complete old run, then a re-run that landed a
+  # fresh baseline shard and was killed before writing its record — the old
+  # record is still there and describes a run that no longer exists
+  _run(store, "interrupted", baseline=1.0, guided=1.0, run_ts="ts-0")
+  _run(
+      store,
+      "interrupted",
+      baseline=0.0,
+      guided="blocked",
+      run_ts="ts-1",
+      record=False,
+  )
   return store
 
 
@@ -183,6 +196,7 @@ def test_the_four_cells_and_every_kind_of_incomplete_are_told_apart(
   assert reading.gained_with_guidebook == 1
   # no incomplete run is in any cell, and each says what it lacks
   assert reading.incomplete == (
+      IncompleteRun("interrupted", 0, missing=(STALE_RECORD,)),
       IncompleteRun("no-guided-grading", 0, missing=(GUIDED,)),
       IncompleteRun("unfinished", 0, missing=(WORKFLOW_RECORD_NAME,)),
       IncompleteRun("ungraded", 0, missing=(GUIDED,)),
@@ -217,6 +231,11 @@ def test_the_json_carries_every_pair_its_cell_its_run_and_the_marginals(
   }
   assert payload["incomplete"] == [
       {
+          "instance_id": "interrupted",
+          "rollout_id": 0,
+          "missing": [STALE_RECORD],
+      },
+      {
           "instance_id": "no-guided-grading",
           "rollout_id": 0,
           "missing": [GUIDED],
@@ -244,7 +263,8 @@ def test_the_table_names_the_two_marginals_and_lists_the_incomplete(
   assert "gained with the guidebook (baseline fail, guided pass): 1 / 4" in (
       table
   )
-  assert "incomplete, not counted above: 3" in table
+  assert "incomplete, not counted above: 4" in table
+  assert "interrupted r0: workflow.json predates shards" in table
   assert "no-guided-grading r0: missing guided_unit_test" in table
   assert "unfinished r0: missing workflow.json" in table
   assert "ungraded r0: missing guided_unit_test" in table
@@ -348,7 +368,7 @@ def test_the_command_reads_a_store_root_and_prints_json_and_the_table(
   }
   assert payload["solved_at_baseline"] == 2
   assert "solved at baseline (kept + regressed): 2 / 4" in result.stderr
-  assert "incomplete, not counted above: 3" in result.stderr
+  assert "incomplete, not counted above: 4" in result.stderr
 
 
 def test_a_sweep_with_no_runs_is_refused_not_rendered_as_zeros(

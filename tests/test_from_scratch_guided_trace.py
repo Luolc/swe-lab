@@ -46,6 +46,7 @@ from swe_lab.trace_synthesis.guided_gain import (
     Cell,
     guided_gain,
     IncompleteRun,
+    STALE_RECORD,
 )
 from swe_lab.trace_synthesis.oracle import (
     oracle_prompt,
@@ -657,4 +658,64 @@ def test_a_rerun_that_stopped_early_is_not_completed_by_stale_shards(
       IncompleteRun(
           "acme__widget-1", 0, missing=(definitions.GUIDED_UNIT_TEST_KEY,)
       ),
+  )
+
+
+def test_a_run_killed_before_its_record_does_not_inherit_the_previous_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+  """A forced re-run leaves the old ``workflow.json`` in place until its end.
+
+  Nothing clears the previous invocation's record when a ``resume=False`` run
+  starts; ``Workflow.execute`` overwrites it last. So a run killed after its
+  fresh shards landed and before its record leaves the store holding new
+  shards beside an old record that describes a run which no longer exists.
+  The reading must not take that record as the current run: a record older
+  than a shard under it predates the invocation the shards belong to.
+
+  The kill is placed at exactly that boundary — every entry has run and
+  persisted, the record write is what dies — by making the write raise. A
+  task raising instead would not do: ``Task.execute`` turns a task's error
+  into a failed attempt, the run completes, and a fresh record gets written.
+  """
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  old = _steps(
+      baseline_grader=_grader(resolved=1.0), guided_grader=_grader(resolved=1.0)
+  )
+  assert (
+      _execute(
+          store, old, output_dir=tmp_path / "old", run_ts="20260906-010000"
+      ).succeeded
+      is True
+  )
+  rerun = _steps(
+      baseline_grader=_grader(resolved=0.0), guided_grader=_grader(resolved=0.0)
+  )
+
+  def _killed(*args: object, **kwargs: object) -> str:
+    del args, kwargs
+    raise RuntimeError("killed before the record")
+
+  monkeypatch.setattr(Workflow, "_write_record", _killed)
+  with pytest.raises(RuntimeError, match="killed before the record"):
+    _ = _execute(
+        store,
+        rerun,
+        output_dir=tmp_path / "new",
+        run_ts="20260906-020000",
+        resume=False,
+    )
+  # the state the kill leaves: the re-run's shards, under the old run's record
+  fresh = store.read_manifest(
+      "sw", "acme__widget-1", 0, definitions.BASELINE_UNIT_TEST_KEY
+  )
+  assert [(s.attempt, s.run_ts) for s in fresh] == [(0, "20260906-020000")]
+  record = json.loads(store.get_bytes("sw/acme__widget-1/r0/workflow.json"))
+  assert record["run_ts"] == "20260906-010000"
+
+  reading = _reading(store)
+
+  assert reading.runs == ()
+  assert reading.incomplete == (
+      IncompleteRun("acme__widget-1", 0, missing=(STALE_RECORD,)),
   )
