@@ -166,13 +166,26 @@ invocation's `workflow.json` when a `resume=False` run starts; the engine
 overwrites it last. A run killed after its fresh shards landed and before its
 record leaves new shards under an old record, and reading that record would
 report the *previous* run's cell for an invocation that has no verdicts. So
-the record is consulted only if it is **current**: no shard under the run may
-carry a `run_ts` later than the record's (`run_ts` is sortable by
-construction). Not "all shards equal the record's `run_ts`" — a `--resume`d
-entry's shards and a completed forced re-run's outlived attempts are both
-legitimately *older* than their record. Pinned through the real engine by
-killing the record write of a forced re-run over a complete old run; red when
-the generation test is removed (the old `kept` comes back).
+the record is consulted only if it is **current**, on two tests:
+
+- **no shard under the run carries a `run_ts` later than the record's**
+  (`run_ts` is sortable by construction) — not "all shards equal the
+  record's `run_ts`": a `--resume`d entry's shards and a completed forced
+  re-run's outlived attempts are both legitimately *older* than their record;
+- **the record agrees with the shards it rolls up** — the clock has one-second
+  grain, so two invocations can share a `run_ts`; but the record copies each
+  entry's final attempt (metrics, artifact keys), and for every entry it ran
+  the shard at that attempt must exist and match, or a later invocation
+  rewrote it.
+
+Both are pinned through the real engine by killing the record write of a
+forced re-run over a complete old run — once with a later `run_ts`, once in
+the same second as a `resume=True` run that had just written the record — and
+each goes red when its test is removed (the old `kept` comes back). What
+neither can see: a same-second re-run whose every landed shard is identical to
+what it replaced, killed before reaching the rest — its unreached entries read
+as the record's. That residue needs a per-invocation generation signal on
+shards and record, a shape change left to ADR-0023's named follow-up.
 
 Placement rule, in order:
 
@@ -181,11 +194,14 @@ Placement rule, in order:
 2. A record older than a shard under the run → `IncompleteRun` naming
    `workflow.json predates shards`: an earlier invocation's record, left in
    place by a later one that was killed before writing its own.
-3. A grading key whose entry is absent from the record, never ran (blocked),
+3. A record whose roll-up of some entry's final attempt has no matching shard
+   → `IncompleteRun` naming `workflow.json disagrees with shards`: the same,
+   when the later invocation shared the record's second.
+4. A grading key whose entry is absent from the record, never ran (blocked),
    ended failed, or carries no `*.resolved` → `IncompleteRun` naming the
    key(s). **Counted and listed, never folded into a cell** — "not graded" and
    "graded as failing" are different facts, and only one of them is a zero.
-4. Otherwise a `RunPair`, carrying the record's `run_ts`, placed by
+5. Otherwise a `RunPair`, carrying the record's `run_ts`, placed by
    `cell_of(baseline_pass, guided_pass)`.
 
 Output, JSON on stdout:
@@ -228,9 +244,10 @@ workflow record, one per cell, one per kind of incompleteness — into a real
 `FilesystemStore` and asserts the cells, both marginals, the JSON, the table
 text, that an ungraded run is incomplete and not `unsolved`, that a record
 without the grading keys (another workflow's run under the same coordinates)
-is not this chain's run, that a record older than a shard under it is not the
-current run, that two rollouts of one instance are two pairs, and the
-command's stdout / stderr / exit code including the empty-sweep refusal.
+is not this chain's run, that a record older than a shard under it — or one
+whose roll-up a same-second shard contradicts — is not the current run, that
+two rollouts of one instance are two pairs, and the command's stdout / stderr
+/ exit code including the empty-sweep refusal.
 
 ## 6. Running it, and where things land
 
@@ -284,12 +301,14 @@ Tested, all without a container, a model or a credential:
   recorded edges equal the map, and the store holds both patches under both
   keys; the resulting records read as one `regressed` pair through
   `guided_gain`;
-- three re-runs over the same store through the same engine: a forced re-run
+- four re-runs over the same store through the same engine: a forced re-run
   after a two-attempt grading reads as the re-run's verdict, not the outlived
   `a1`'s; a re-run whose Oracle failed reads as incomplete, not as a pair
   completed by the previous run's guided shard; a forced re-run killed before
   its record write reads as incomplete (`workflow.json predates shards`), not
-  as the previous run's `kept`.
+  as the previous run's `kept`; the same kill in the same second as a
+  `resume=True` run that had just written the record reads as incomplete
+  (`workflow.json disagrees with shards`), not as that run's `kept`.
 
 Not tested here, on purpose: **no live rollout or Oracle run**. A run is paid
 work at the consumer's expense and the owner's magnitude rule governs it; the

@@ -28,17 +28,31 @@ The record has to be the **current** one, and a record's presence does not
 prove that: nothing clears the previous invocation's ``workflow.json`` when a
 ``resume=False`` run starts — ``Workflow.execute`` overwrites it last — so a
 run killed after its fresh shards landed and before its record leaves new
-shards under an old record that describes a run which no longer exists. The
-test is generational: **a record older than any shard under its run predates
-the invocation those shards belong to**, and is read as no record. ``run_ts``
-is sortable by construction (``persist_wiring.run_ts``, a compact UTC
-timestamp), and this comparison is its one consumer. It is deliberately not
-"every shard's ``run_ts`` equals the record's": a ``resume=True`` invocation
-legitimately rolls up resumed entries whose shards carry an older ``run_ts``,
-and a completed forced re-run legitimately sits beside outlived older
-attempts — both are *older* than their record, which is exactly what a
-current record may have under it. Only a *newer* shard is evidence against
-the record.
+shards under an old record that describes a run which no longer exists. Two
+tests establish currency, both from what the store already holds:
+
+1. **No shard under the run postdates the record.** ``run_ts`` is sortable
+   by construction (``persist_wiring.run_ts``), and a shard written by a
+   later invocation sorts after a record that predates it. Deliberately not
+   "every shard's ``run_ts`` equals the record's": a ``resume=True``
+   invocation legitimately rolls up resumed entries whose shards carry an
+   older ``run_ts``, and a completed forced re-run legitimately sits beside
+   outlived older attempts — both are *older* than their record.
+2. **The record agrees with the shards it rolls up.** The clock has
+   one-second grain, so two invocations can share a ``run_ts`` and the first
+   test cannot tell them apart. But the record copies each entry's final
+   attempt — its metrics and artifact keys — and a later invocation that
+   rewrote that attempt's shard left one that no longer says what the record
+   says. For every entry the record ran, the shard at its final attempt must
+   exist and match; otherwise the record is a different invocation's.
+
+What the second test cannot see is a re-run whose every landed shard is
+identical, metric for metric, to the one it replaced — and for those entries
+the record's answer is the re-run's answer too. The residue is a re-run
+launched in the same second as the run that wrote the record, killed after
+landing only such shards: its unreached entries read as the record's. Closing
+that needs a per-invocation generation signal on the shards and the record,
+which changes their shape and is not done here.
 
 A run either grading entry left no verdict for is **incomplete**, counted and
 named rather than dropped: "not graded" and "graded as failing" are different
@@ -66,6 +80,9 @@ _SUCCEEDED = "succeeded"
 # What an incomplete run lacks when its record is present but older than a
 # shard under the run: the invocation those shards belong to never wrote one.
 STALE_RECORD = f"{WORKFLOW_RECORD_NAME} predates shards"
+# What it lacks when the record's roll-up of an entry's final attempt does not
+# match the shard at that attempt: a later invocation rewrote the shard.
+DISAGREEING_RECORD = f"{WORKFLOW_RECORD_NAME} disagrees with shards"
 
 
 class Cell(StrEnum):
@@ -145,10 +162,13 @@ class IncompleteRun:
       record — an entry that never ran, ended failed, or reported no
       ``*.resolved`` — or the record's own name (``workflow.json``) when the
       run left shards but no record, because it never reached the end of an
-      invocation; or :data:`STALE_RECORD` (``workflow.json predates shards``)
-      when a record is there but is older than a shard under the run — an
-      earlier invocation's record, left in place by a later one that was
-      killed before writing its own.
+      invocation; :data:`STALE_RECORD` (``workflow.json predates shards``)
+      when a record is there but is older than a shard under the run; or
+      :data:`DISAGREEING_RECORD` (``workflow.json disagrees with shards``)
+      when the record's roll-up of an entry's final attempt does not match
+      the shard at that attempt. The last two are an earlier invocation's
+      record, left in place by a later one that was killed before writing its
+      own.
   """
 
   instance_id: str
@@ -270,7 +290,9 @@ class GuidedGain:
 
 def _lack(name: str) -> str:
   """Phrase one entry of ``IncompleteRun.missing`` for the table."""
-  return name if name == STALE_RECORD else f"missing {name}"
+  if name in (STALE_RECORD, DISAGREEING_RECORD):
+    return name
+  return f"missing {name}"
 
 
 def _runs_in(
@@ -305,6 +327,39 @@ def _predates(
   """
   run_ts = str(record["run_ts"])
   return any(shard.run_ts > run_ts for shard in shards)
+
+
+def _disagrees(
+    record: Mapping[str, Any], shards: Iterable[AttemptRecord]
+) -> bool:
+  """Whether the record's roll-up no longer matches the shards it rolls up.
+
+  The record copies, per entry, the final attempt's metrics and artifact keys
+  (``Workflow._write_record``). A later invocation that rewrote that attempt
+  — a forced re-run launched in the same second, so the timestamp test is
+  blind to it — left a shard that says something else, or none at all.
+
+  Args:
+    record: The run's workflow record.
+    shards: Every attempt shard under the run.
+
+  Returns:
+    ``True`` when some entry the record ran has no shard at its final
+    attempt, or one whose metrics or artifact keys differ from the record's.
+  """
+  by_attempt = {(shard.task, shard.attempt): shard for shard in shards}
+  for entry in record.get("entries", []):
+    attempts = int(entry.get("attempts", 0))
+    if attempts == 0:
+      continue  # never ran; nothing in the store to agree with
+    shard = by_attempt.get((str(entry["key"]), attempts - 1))
+    if shard is None:
+      return True
+    if dict(shard.metrics) != dict(entry.get("metrics", {})):
+      return True
+    if dict(shard.artifact_keys) != dict(entry.get("artifact_keys", {})):
+      return True
+  return False
 
 
 def _workflow_record(
@@ -388,6 +443,11 @@ def guided_gain(
     if _predates(record, shards):
       incomplete.append(IncompleteRun(instance_id, rollout_id, (STALE_RECORD,)))
       continue
+    if _disagrees(record, shards):
+      incomplete.append(
+          IncompleteRun(instance_id, rollout_id, (DISAGREEING_RECORD,))
+      )
+      continue
     entries: dict[str, Mapping[str, Any]] = {
         entry["key"]: entry for entry in record.get("entries", [])
     }
@@ -418,6 +478,7 @@ def guided_gain(
 
 __all__ = [
     "Cell",
+    "DISAGREEING_RECORD",
     "GuidedGain",
     "IncompleteRun",
     "RunPair",

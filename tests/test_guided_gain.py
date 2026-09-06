@@ -22,6 +22,7 @@ from swe_lab.cli import app
 from swe_lab.sandbox import AttemptRecord, FilesystemStore
 from swe_lab.trace_synthesis.guided_gain import (
     Cell,
+    DISAGREEING_RECORD,
     guided_gain,
     IncompleteRun,
     RunPair,
@@ -133,7 +134,7 @@ def store(tmp_path: Path) -> FilesystemStore:
 
 
 def _sweep(store: FilesystemStore) -> FilesystemStore:
-  """One run per cell, plus four runs the reading must not place."""
+  """One run per cell, plus five runs the reading must not place."""
   _run(store, "kept", baseline=1.0, guided=1.0)
   _run(store, "gained", baseline=0.0, guided=1.0)
   _run(store, "regressed", baseline=1.0, guided=0.0)
@@ -157,6 +158,19 @@ def _sweep(store: FilesystemStore) -> FilesystemStore:
       baseline=0.0,
       guided="blocked",
       run_ts="ts-1",
+      record=False,
+  )
+  # incomplete, fifth kind: the same, but the killed re-run was launched in
+  # the same second as the run that wrote the record — no shard postdates it,
+  # yet the record's roll-up of the baseline grading no longer matches the
+  # shard it points at
+  _run(store, "same-second", baseline=1.0, guided=1.0, run_ts="ts-0")
+  _run(
+      store,
+      "same-second",
+      baseline=0.0,
+      guided="blocked",
+      run_ts="ts-0",
       record=False,
   )
   return store
@@ -198,6 +212,7 @@ def test_the_four_cells_and_every_kind_of_incomplete_are_told_apart(
   assert reading.incomplete == (
       IncompleteRun("interrupted", 0, missing=(STALE_RECORD,)),
       IncompleteRun("no-guided-grading", 0, missing=(GUIDED,)),
+      IncompleteRun("same-second", 0, missing=(DISAGREEING_RECORD,)),
       IncompleteRun("unfinished", 0, missing=(WORKFLOW_RECORD_NAME,)),
       IncompleteRun("ungraded", 0, missing=(GUIDED,)),
   )
@@ -241,6 +256,11 @@ def test_the_json_carries_every_pair_its_cell_its_run_and_the_marginals(
           "missing": [GUIDED],
       },
       {
+          "instance_id": "same-second",
+          "rollout_id": 0,
+          "missing": [DISAGREEING_RECORD],
+      },
+      {
           "instance_id": "unfinished",
           "rollout_id": 0,
           "missing": [WORKFLOW_RECORD_NAME],
@@ -263,8 +283,9 @@ def test_the_table_names_the_two_marginals_and_lists_the_incomplete(
   assert "gained with the guidebook (baseline fail, guided pass): 1 / 4" in (
       table
   )
-  assert "incomplete, not counted above: 4" in table
+  assert "incomplete, not counted above: 5" in table
   assert "interrupted r0: workflow.json predates shards" in table
+  assert "same-second r0: workflow.json disagrees with shards" in table
   assert "no-guided-grading r0: missing guided_unit_test" in table
   assert "unfinished r0: missing workflow.json" in table
   assert "ungraded r0: missing guided_unit_test" in table
@@ -290,9 +311,13 @@ def test_a_record_without_the_grading_key_at_all_is_incomplete(
     store: FilesystemStore,
 ):
   # The record is per (sweep, instance, rollout), whatever workflow wrote it:
-  # a `rollout_and_unit_test` run under the same coordinates has neither
-  # grading key, and must not read as anything but "not this chain's run".
+  # a later `rollout_and_unit_test` run under the same coordinates — its own
+  # shard in place, so the record is current — has neither grading key, and
+  # must not read as anything but "not this chain's run".
   _run(store, "x", baseline=1.0, guided=1.0)
+  store.append_manifest(
+      _shard("x", "unit_test", rollout_id=0, run_ts="ts-1", resolved=1.0)
+  )
   store.put_bytes(
       f"sw/x/r0/{WORKFLOW_RECORD_NAME}",
       json.dumps(
@@ -368,7 +393,7 @@ def test_the_command_reads_a_store_root_and_prints_json_and_the_table(
   }
   assert payload["solved_at_baseline"] == 2
   assert "solved at baseline (kept + regressed): 2 / 4" in result.stderr
-  assert "incomplete, not counted above: 4" in result.stderr
+  assert "incomplete, not counted above: 5" in result.stderr
 
 
 def test_a_sweep_with_no_runs_is_refused_not_rendered_as_zeros(

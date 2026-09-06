@@ -739,7 +739,8 @@ for counted as incomplete rather than dropped. The decision is
   bindings, and a forced re-run, a re-run that stopped early, or a re-run
   killed before writing its record is read from the current invocation's
   workflow record — never from an outlived or stale attempt shard, and never
-  from an earlier invocation's record.
+  from an earlier invocation's record, including one written in the same
+  wall-clock second.
 - **Verification:** `tests/test_from_scratch_guided_trace.py`,
   `tests/test_guided_gain.py`, and the verdict-artifact test in
   `tests/test_unit_test_method.py` — all declaration-level or fake-sandbox.

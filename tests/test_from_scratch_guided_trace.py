@@ -44,6 +44,7 @@ from swe_lab.sandbox.testing import FakeSandboxConfig
 from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
 from swe_lab.trace_synthesis.guided_gain import (
     Cell,
+    DISAGREEING_RECORD,
     guided_gain,
     IncompleteRun,
     STALE_RECORD,
@@ -718,4 +719,80 @@ def test_a_run_killed_before_its_record_does_not_inherit_the_previous_one(
   assert reading.runs == ()
   assert reading.incomplete == (
       IncompleteRun("acme__widget-1", 0, missing=(STALE_RECORD,)),
+  )
+
+
+def test_a_same_second_rerun_killed_before_its_record_is_not_the_resumed_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+  """Two invocations can share a ``run_ts``: the clock has one-second grain.
+
+  A complete old run; then a ``resume=True`` invocation that resumes every
+  entry and writes a fresh record at ``T`` over the older shards (legitimate);
+  then a forced re-run launched in the same second ``T``, which lands both
+  gradings as failures and is killed at its record write. Every shard and the
+  record now carry ``T``, so no shard *postdates* the record — the timestamp
+  test cannot see this one. What can: the record rolls up each entry's final
+  attempt, and the shards it claims to roll up no longer say what it says.
+  """
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  old = _steps(
+      baseline_grader=_grader(resolved=1.0), guided_grader=_grader(resolved=1.0)
+  )
+  assert (
+      _execute(
+          store, old, output_dir=tmp_path / "old", run_ts="20260906-010000"
+      ).succeeded
+      is True
+  )
+  resumed = _execute(
+      store,
+      _steps(
+          baseline_grader=_grader(resolved=1.0),
+          guided_grader=_grader(resolved=1.0),
+      ),
+      output_dir=tmp_path / "resume",
+      run_ts="20260906-020000",
+      resume=True,
+  )
+  assert resumed.succeeded is True
+  assert all(e.run is not None and e.run.resumed for e in resumed.entries)
+  # …and the resumed record is a legitimate current one: it reads as kept
+  assert [(run.cell, run.run_ts) for run in _reading(store).runs] == [
+      (Cell.KEPT, "20260906-020000")
+  ]
+
+  def _killed(*args: object, **kwargs: object) -> str:
+    del args, kwargs
+    raise RuntimeError("killed before the record")
+
+  monkeypatch.setattr(Workflow, "_write_record", _killed)
+  with pytest.raises(RuntimeError, match="killed before the record"):
+    _ = _execute(
+        store,
+        _steps(
+            baseline_grader=_grader(resolved=0.0),
+            guided_grader=_grader(resolved=0.0),
+        ),
+        output_dir=tmp_path / "new",
+        run_ts="20260906-020000",  # the same second as the resumed run
+        resume=False,
+    )
+  # the state the kill leaves: failing shards and a kept record, all at T
+  for key in (
+      definitions.BASELINE_UNIT_TEST_KEY,
+      definitions.GUIDED_UNIT_TEST_KEY,
+  ):
+    shards = store.read_manifest("sw", "acme__widget-1", 0, key)
+    assert [
+        (s.attempt, s.run_ts, s.metrics["unit_test.resolved"]) for s in shards
+    ] == [(0, "20260906-020000", 0.0)]
+  record = json.loads(store.get_bytes("sw/acme__widget-1/r0/workflow.json"))
+  assert record["run_ts"] == "20260906-020000"
+
+  reading = _reading(store)
+
+  assert reading.runs == ()
+  assert reading.incomplete == (
+      IncompleteRun("acme__widget-1", 0, missing=(DISAGREEING_RECORD,)),
   )
