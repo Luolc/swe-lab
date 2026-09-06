@@ -31,6 +31,15 @@ attacked is a wish (see the experiment playbook's entry on guards).
 - **No branch depends on two verdicts agreeing.** The judgement is a model
   call and is not a function; the pipeline is what must be correct under that.
   ``test_the_pipeline_is_correct_when_the_judge_disagrees_with_itself``.
+- **The judge is not told what the supervisor has already said**, by default:
+  ``observation.said`` reaches the writer's prompt and not the judge's, so the
+  judge's prompt does not depend on whether the supervisor has spoken. On the
+  first corpus that section moved the judge's ``off_track`` rate from 0/6
+  before its first correction to 104/134 after it, against 3/166 for a
+  supervisor that could not speak (issue #381, ADR-0024); ``said_visibility``
+  keeps the other two shapes as A/B arms.
+  ``test_the_judge_prompt_does_not_depend_on_what_was_said`` and
+  ``test_the_writer_prompt_carries_what_was_said_unless_told_not_to``.
 
 What each call records is fixed here rather than left to a caller: the model
 the **response** reports (never the requested alias, which stays correct when
@@ -63,6 +72,7 @@ from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
 from swe_lab.trace_synthesis.supervisor import (
     MAX_INTERVENTION_CHARS,
     Observation,
+    SaidVisibility,
     SpeakWhenOffTrack,
     Verdict,
 )
@@ -412,7 +422,8 @@ class ModelJudge:
     calls: What answered each request, in order.
     instructions: Optional system instructions for evaluation prompt variants.
       ``None`` preserves the guided or unguided default.
-    prompt_builder: How the user prompt is assembled from visible inputs.
+    prompt_builder: How the user prompt is assembled from visible inputs. The
+      default renders no prior interventions (ADR-0024).
   """
 
   model: str
@@ -512,7 +523,9 @@ class ModelWriter:
     calls: What answered each request, in order.
     instructions: Optional system instructions for writing prompt variants.
       ``None`` preserves the guided or unguided default.
-    prompt_builder: How the user prompt is assembled from visible inputs.
+    prompt_builder: How the user prompt is assembled from visible inputs. The
+      default renders the prior interventions, so the line written is not
+      the line already delivered.
   """
 
   model: str
@@ -522,7 +535,7 @@ class ModelWriter:
   instructions: str | None = None
   prompt_builder: PromptBuilder = dataclasses.field(
       default_factory=lambda: SupervisorPromptBuilder(
-          running_state_instructions=None
+          running_state_instructions=None, include_said=True
       )
   )
 
@@ -604,6 +617,7 @@ def supervising_policy(
     gold_patch: str | None = None,
     criterion_path: pathlib.Path | None = None,
     locate_deviation: bool = False,
+    said_visibility: SaidVisibility = "writer",
     instructions: str | None = None,
     writer_instructions: str | None = None,
     running_state_instructions: str | None = None,
@@ -631,6 +645,11 @@ def supervising_policy(
     locate_deviation: Ask the judge how far back the deviation started. Off by
       default, which leaves the A′ arms' prompt byte-identical; see
       :class:`ModelJudge`.
+    said_visibility: Which default prompt renders what the supervisor has
+      already said — the writer's alone (``"writer"``, the default), both
+      (``"both"``, the shape before ADR-0024) or neither (``"none"``); see
+      :data:`~swe_lab.trace_synthesis.supervisor.SaidVisibility`. Recorded on
+      the returned policy, and so on every decision row.
     instructions: Optional judge system instructions. ``None`` preserves the
       guided or unguided default.
     writer_instructions: Optional writer system instructions. ``None``
@@ -640,9 +659,16 @@ def supervising_policy(
     selector: Evidence selector override. ``None`` keeps complete-turn
       selection.
     renderer: Evidence renderer override used by the default prompt builder.
-    prompt_builder: Prompt-builder override. When supplied, it owns rendering
-      and decision text, so ``renderer`` and ``running_state_instructions`` are
-      ignored.
+    prompt_builder: Prompt-builder override, handed to both calls as-is. When
+      supplied, it owns rendering, decision text **and** whether prior
+      interventions are rendered, so ``renderer``,
+      ``running_state_instructions`` and ``said_visibility`` do not reach it —
+      ``said_visibility`` is still recorded, as the mode the default builders
+      would have run under, exactly as ``guidebook_context_mode`` names what
+      the default prompt consumes. A builder that needs to differ per call
+      is set on ``policy.judge.prompt_builder`` or
+      ``policy.writer.prompt_builder`` after construction; nothing shipped
+      needs two overrides here.
 
   Returns:
     The policy, holding a criterion whose digest is the pinned one.
@@ -661,9 +687,12 @@ def supervising_policy(
             if running_state_instructions is not None
             else RUNNING_STATE_INSTRUCTIONS
         ),
+        include_said=said_visibility == "both",
     )
     writer_prompt_builder = SupervisorPromptBuilder(
-        renderer=renderer, running_state_instructions=None
+        renderer=renderer,
+        running_state_instructions=None,
+        include_said=said_visibility in {"writer", "both"},
     )
   else:
     judge_prompt_builder = prompt_builder
@@ -687,4 +716,5 @@ def supervising_policy(
       cooldown=cooldown,
       window=window,
       selector=selector or CompleteAssistantTurnSelector(),
+      said_visibility=said_visibility,
   )

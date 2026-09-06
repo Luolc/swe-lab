@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import dataclasses
+import hashlib
 from typing import Any
 
 import pytest
@@ -737,3 +738,62 @@ def test_a_policy_is_replaceable_without_touching_anything_else() -> None:
     supervisor.observe(assistant_event("same event"))
   assert len(spoken) == 1
   assert not silent
+
+
+def test_decision_rows_record_said_visibility_count_and_prompt_digest() -> None:
+  """The three issue-#381 fields are on every row, read at judgement time.
+
+  ``said_count`` on a ``spoke`` row is the number of corrections the judge
+  was shown, not the number that exist once this one is delivered; the digest
+  is of the user prompt the verdict records, so rows judged on the same bytes
+  can be paired across arms.
+  """
+
+  def judge(observation: Observation, criterion: Criterion) -> Verdict:
+    del criterion
+    return Verdict(
+        off_track=True,
+        reason="drifting",
+        judge_input={
+            "messages": [
+                {"role": "user", "content": f"PROMPT-{observation.cursor}"}
+            ]
+        },
+    )
+
+  rows: list[dict[str, object]] = []
+  supervisor = Supervisor(
+      policy=SpeakWhenOffTrack(
+          judge=judge,
+          writer=lambda observation, criterion: "look again",
+          criterion=load_criterion(),
+          budget=2,
+          cooldown=0,
+          said_visibility="none",
+      ),
+      task="the task",
+      sink=lambda _: None,
+      log=lambda row: rows.append(dict(row)),
+  )
+  for text in ("one", "two", "three"):
+    _ = supervisor.observe(assistant_event(text))
+
+  assert [row["kind"] for row in rows] == ["spoke", "spoke", "silent"]
+  assert [row["said_visibility"] for row in rows] == ["none", "none", "none"]
+  assert [row["said_count"] for row in rows] == [0, 1, 2]
+  assert [row["judge_prompt_sha256"] for row in rows] == [
+      hashlib.sha256(f"PROMPT-{cursor}".encode()).hexdigest()
+      for cursor in (1, 2, 3)
+  ]
+
+  # A policy that consults no model has no prompt for the mode to describe.
+  quiet: list[dict[str, object]] = []
+  _ = Supervisor(
+      policy=NeverSpeak(),
+      task="the task",
+      sink=lambda _: None,
+      log=lambda row: quiet.append(dict(row)),
+  ).observe(assistant_event("one"))
+  assert quiet[0]["said_visibility"] is None
+  assert quiet[0]["said_count"] == 0
+  assert "judge_prompt_sha256" not in quiet[0]

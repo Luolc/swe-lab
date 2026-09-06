@@ -31,6 +31,7 @@ from swe_lab.conversation import Message
 from swe_lab.harnesses.claude_code.convert import event_to_message
 from swe_lab.trace_synthesis.judge import (
     JUDGE_INSTRUCTIONS,
+    JUDGE_TOOL_NAME,
     supervising_policy,
     Transport,
 )
@@ -400,15 +401,27 @@ def _verdict_fields(row: Mapping[str, Any]) -> dict[str, Any]:
     coerced: a non-boolean is left as `None`. Rows recorded before
     `self_correcting` was removed from the verdict also carry that field;
     `analyze.py` reads it as a legacy column, and nothing written here
-    revives it.
+    revives it. Two answer shapes are read: the text block the frozen runs
+    recorded, and the content list `ModelJudge` records under the tool
+    contract, whose answer is the input of its one matching tool call — a
+    driver reading only the first left every new row's `off_track` empty.
   """
   raw = row.get("judge_raw")
-  if not isinstance(raw, str):
-    return {"off_track": None, "judge_reason": None}
-  try:
-    answer = json.loads(raw)
-  except (json.JSONDecodeError, TypeError):
-    return {"off_track": None, "judge_reason": None}
+  answer: Any = None
+  if isinstance(raw, list):
+    tool_uses = [
+        block
+        for block in raw
+        if isinstance(block, dict)
+        and block.get("type") == "tool_use"
+        and block.get("name") == JUDGE_TOOL_NAME
+    ]
+    answer = tool_uses[0].get("input") if len(tool_uses) == 1 else None
+  elif isinstance(raw, str):
+    try:
+      answer = json.loads(raw)
+    except json.JSONDecodeError:
+      answer = None
   if not isinstance(answer, dict):
     return {"off_track": None, "judge_reason": None}
   return {

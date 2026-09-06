@@ -259,17 +259,29 @@ class PromptBuilder(ABC):
 class SupervisorPromptBuilder(PromptBuilder):
   """Assemble supervisor prompt sections with replaceable owned parts.
 
+  The defaults are the judge's request under the default said visibility:
+  state-update text on, prior interventions off. The writer's builder sets
+  both the other way.
+
   Attributes:
     renderer: How selected evidence is represented.
     running_state_instructions: State-update text for a judge request, or
       ``None`` for a writer request. Exact replacement keeps summary prompting
       independent of the judge's system instructions.
+    include_said: Whether ``observation.said`` — what this supervisor has
+      already said in the run — is rendered, as a ``# Prior supervisor
+      interventions`` section. Off, the section is absent rather than empty,
+      so a prompt built here does not depend on whether the supervisor has
+      spoken: a judge shown its own corrections read them as the actor's
+      record (issue #381, ADR-0024). ``supervising_policy`` sets it on each
+      call's builder from its ``said_visibility``.
   """
 
   renderer: EvidenceRenderer = dataclasses.field(
       default_factory=PairedToolEvidenceRenderer
   )
   running_state_instructions: str | None = RUNNING_STATE_INSTRUCTIONS
+  include_said: bool = False
 
   @override
   def build(self, observation: Observation, criterion: Criterion) -> str:
@@ -282,7 +294,12 @@ class SupervisorPromptBuilder(PromptBuilder):
     Returns:
       The prompt text.
     """
-    said = "\n".join(one.text for one in observation.said) or "(nothing yet)"
+    said = ""
+    if self.include_said:
+      spoken = (
+          "\n".join(one.text for one in observation.said) or "(nothing yet)"
+      )
+      said = f"\n# Prior supervisor interventions\n\n{spoken}\n"
     done = self.renderer.render(observation.evidence)
     guidebook = ""
     if observation.guidebook is not None:
@@ -296,8 +313,8 @@ class SupervisorPromptBuilder(PromptBuilder):
         f"# The task the engineer was given\n\n{observation.task}\n\n"
         "# Running state before this segment\n\n"
         f"{observation.running_state}\n\n"
-        f"# Latest completed segment\n\n{done}\n\n"
-        f"# Prior supervisor interventions\n\n{said}\n"
+        f"# Latest completed segment\n\n{done}\n"
+        f"{said}"
     )
     if self.running_state_instructions is not None:
       prompt += f"\n# Decision\n\n{self.running_state_instructions}\n"

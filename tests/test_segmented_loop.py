@@ -17,6 +17,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 import datetime
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -869,3 +870,59 @@ def test_an_anchored_run_says_so_on_every_resumed_segment():
   rows = _segment_rows(_run(actor, _supervision()))
 
   assert [row["anchored"] for row in rows] == [False, True]
+
+
+def test_segmented_decision_rows_record_said_visibility_count_and_digest():
+  """The second carrier records the same three issue-#381 fields."""
+
+  def judge(observation: Observation, criterion: Criterion) -> Verdict:
+    del criterion
+    return Verdict(
+        off_track=True,
+        reason="drifting",
+        running_state="Current checkpoint: test",
+        judge_input={
+            "messages": [
+                {"role": "user", "content": f"PROMPT-{observation.cursor}"}
+            ]
+        },
+    )
+
+  policy = SpeakWhenOffTrack(
+      judge=judge,
+      writer=lambda observation, criterion: "look again",
+      criterion=load_criterion(),
+      budget=2,
+      cooldown=0,
+      said_visibility="both",
+  )
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_CUT),
+          _segment(ids=["c"], subtype=_CUT),
+          _segment(ids=["d"], subtype=_DONE),
+      ]
+  )
+
+  rows = [
+      row
+      for row in _run(actor, _supervision(policy))
+      if row["kind"] in {LOG_KIND_SILENT, LOG_KIND_SPOKE}
+  ]
+
+  assert [row["kind"] for row in rows] == [
+      LOG_KIND_SPOKE,
+      LOG_KIND_SPOKE,
+      LOG_KIND_SILENT,
+  ]
+  assert [row["said_visibility"] for row in rows] == ["both", "both", "both"]
+  assert [row["said_count"] for row in rows] == [0, 1, 2]
+  digests = [row["judge_prompt_sha256"] for row in rows]
+  assert digests == [
+      hashlib.sha256(
+          row["judge_input"]["messages"][0]["content"].encode()
+      ).hexdigest()
+      for row in rows
+  ]
+  assert len(set(digests)) == 3
