@@ -87,6 +87,7 @@ research that preceded this index is not a task: its results are recorded in
 | 23 | **Bounded context components** — select complete assistant turns, render paired tool evidence with visible clipping, and expose replaceable selector / renderer / prompt-builder ABCs — [`task-23-bounded-context-components.md`](task-23-bounded-context-components.md) | ✅ Issue #430 stage 2 implements the default repair for issue #380; the replay path uses the same selector and prompt builder. Required running state continues in task 24; the compact rubric lands in task 25 |
 | 24 | **Required running state** — the existing judge call updates bounded observational state, the writer receives its structured verdict, and valid versions persist on existing decision rows — [`task-24-required-running-state.md`](task-24-required-running-state.md) | ✅ Issue #430 stage 3 (running-state half): strict tool output, previous-state handoff, writer context, exact latest-segment input, and both persistence carriers are covered by discriminating tests. The compact rubric lands in task 25 |
 | 25 | **Compact guidebook rubric** — new Oracle output keeps the tutorial and adds a compact supervisor representation, while legacy resume stays compatible and visibly stamped — [`task-25-compact-guidebook-rubric.md`](task-25-compact-guidebook-rubric.md) | ✅ Issue #430 final stage: strict new output, compatible legacy reads, default rubric delivery, tutorial coexistence, and both context-mode telemetry carriers have discriminating tests. The rubric dropped to five fields when ADR-0022 removed the self-correcting field from the verdict; everything else here stands |
+| 26 | **The from-scratch chain and its reading** — run the whole pipeline over a plain instance, A→B→C→grading, **unconditionally**, the two rollouts told apart by entry key alone; then read a sweep as a 2×2 of blind vs guided verdicts with an explicit incomplete count — [`task-26-from-scratch-guided-trace.md`](task-26-from-scratch-guided-trace.md) | 🔶 Workflow, the Oracle's edge inputs, the `unit_test.verdict.json` artifact, the `guided-gain` reading and their tests landed with [ADR-0023](../../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md); no live run yet — the first one is paid work under the owner's rollout magnitude, and the policy stamp on its B / C records remains task 07's |
 
 **Rows 17, 18 and 19 are not part of that set.** Row 17 comes from reading the
 pump during review of #348 rather than from the report below; rows 18 and 19
@@ -436,6 +437,10 @@ B / C record carries the oracle-guided **policy stamp**
 can never be pooled with benchmark numbers, and the
 [result verifier](../../horizontal/plans/task-26-result-verifier.md) is left
 free to flag them as contaminated — which is correct behaviour, not a bug.
+The form with A ahead of it is now its own registered workflow,
+`from_scratch_guided_trace`
+([task 26](#task-26-the-from-scratch-chain-and-its-reading)); the integrity
+half of this task covers its phase-B / phase-C records too.
 
 - **Acceptance:** a named test asserting the stamp is on the record and that
   aggregation across differing stamps still errors; the verifier's contaminated
@@ -703,6 +708,52 @@ design record is
   the same two failed tests the experiment's report diagnoses. Follow-ups are
   named in the design record: a blind run of the task — guided or not — must
   run `record.instance`, and the policy stamp on phase-B records is task 07's.
+
+## Task 26: The from-scratch chain and its reading
+
+**Description:** Run the whole pipeline over a **plain** instance rather than a
+cached failure: blind rollout → grading → the Oracle → guided rollout →
+grading, as one registered workflow, `from_scratch_guided_trace`, whose five
+entries are told apart by their keys alone (`baseline_rollout`,
+`baseline_unit_test`, `oracle_analysis`, `guided_rollout`, `guided_unit_test`
+— the store's task segment, so no artifact of one rollout can land on the
+other's). Every entry runs whatever the blind verdict was: the chain exists
+for the pairing of the two verdicts, and the cell where the guidebook made
+things worse is observable only if the guided half runs when the blind half
+passed. The Oracle takes the failure over workflow edges under the producers'
+own names, the grading entry persists its verdict whole so an edge can carry
+it, and a `guided-gain` reading turns a sweep's records into a 2×2 with the
+two marginals the chain is run for named in words — *solved at baseline* and
+*gained with the guidebook* — and every pair either grading left no verdict
+for counted as incomplete rather than dropped. The decision is
+[ADR-0023](../../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md); the design record is
+[`task-26-from-scratch-guided-trace.md`](task-26-from-scratch-guided-trace.md).
+
+- **Acceptance:** the five keys are distinct and every edge resolves to the
+  producer the definition intends, with two control arms (the guided grading
+  unbound is refused as ambiguous; two gradings under one key are refused as
+  duplicates); the Oracle reads a failure delivered by edge, and its staged
+  path is byte-identical to before; every evaluation still passes with the
+  verdict artifact added; the 2×2 places one fixture per cell and counts
+  every kind of incomplete; five fake steps run end to end under the real
+  bindings, and a forced re-run, a re-run that stopped early, or a re-run
+  killed before writing its record is read from the current invocation's
+  workflow record — never from an outlived or stale attempt shard, and never
+  from an earlier invocation's record, because the engine retires that record
+  before the first entry of every invocation runs (ADR-0023 §6, owner's
+  ruling 2026-09-06).
+- **Verification:** `tests/test_from_scratch_guided_trace.py`,
+  `tests/test_guided_gain.py`, and the verdict-artifact test in
+  `tests/test_unit_test_method.py` — all declaration-level or fake-sandbox.
+  **No live rollout or Oracle run is part of this task**: a run is paid work
+  under the owner's rollout magnitude (AGENTS.md, Boundaries), and the first
+  one is task 08's batch or the downstream consumer's.
+- **Dependencies:** 04, 11, 22 (all landed). **Scope:** M
+- **Outcome:** code landed; status is the table's. What it does not do: skip
+  on a passing baseline (a later, declared flag, if ever — and it will have
+  to say which cell it surrenders), stamp its records (task 07), or claim
+  anything about the guidebook's effect (ADR-0018's open question — this
+  chain produces the pair of verdicts that question needs).
 
 ---
 

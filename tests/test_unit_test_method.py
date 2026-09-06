@@ -580,3 +580,37 @@ def test_failing_every_attempt_is_still_a_succeeded_task(tmp_path: Path):
 def test_a_negative_budget_is_refused(tmp_path: Path):
   with pytest.raises(ValueError, match="retries"):
     _ = _run_eval(tmp_path, passes_on_attempt=1, retries=-1)
+
+
+def test_the_verdict_travels_whole_as_an_artifact(tmp_path: Path):
+  """The graded verdict is persisted as ``unit_test.verdict.json``.
+
+  The metrics keep only the verdict's scalars, so a consumer that has to know
+  *which* tests failed — the Oracle, fed a phase-A failure over a workflow
+  edge — needs the verdict itself. It travels in the one shape a verdict
+  leaves a process in (``Verdict.facts()``), the same shape an
+  ``oracle_failures`` record's verdict column carries, and it is a required
+  output: grading runs whatever the script did, and an attempt without a
+  verdict is already invalid.
+  """
+  result = _grade(
+      _fake(tmp_path), _unit_test_spec(["a", "b"], ["a"]), output_dir=tmp_path
+  )
+  verdict = verdict_of(result)
+  assert verdict is not None
+  artifact = result.run.artifacts["unit_test.verdict.json"]
+  facts = json.loads(artifact.read_text())
+  assert facts == verdict.facts()
+  assert facts == {
+      "resolved": False,
+      "score": 0.0,
+      "metrics": {"passed": 1.0, "missing": 1.0, "required": 2.0},
+      "summary": {
+          "output_state": OutputState.OK.value,
+          "first_missing": "b",
+          "passed": ["a"],
+          "missing": ["b"],
+      },
+  }
+  declared = {s.name: s for s in result.output_schema}
+  assert declared["unit_test.verdict.json"].required is True

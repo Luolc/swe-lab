@@ -75,6 +75,26 @@ class Verdict(ABC):
     """
     ...
 
+  def facts(self) -> dict[str, object]:
+    """Return the verdict as JSON-ready facts.
+
+    The one shape a verdict travels in when it leaves the process that graded
+    it — the eval task persists it as an artifact, and a cached failure's
+    record carries it as its verdict column — so a consumer that reads a
+    verdict back (the Oracle, reading which tests failed) sees the same four
+    keys whichever way it arrived. Concrete on the ABC, like ``resolved``, so
+    the projection is not restated per dataset (ADR-0006).
+
+    Returns:
+      ``resolved``, ``score``, the dataset's ``metrics`` and its ``summary``.
+    """
+    return {
+        "resolved": self.resolved,
+        "score": self.score,
+        "metrics": self.metrics(),
+        "summary": self.summary(),
+    }
+
 
 class Grader[V: Verdict](ABC):
   """Dataset-owned judgment: the files a run left → a verdict.
