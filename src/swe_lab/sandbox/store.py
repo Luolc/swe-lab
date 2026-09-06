@@ -68,6 +68,21 @@ class Store(ABC):
     ...
 
   @abstractmethod
+  def delete(self, key: str) -> None:
+    """Remove the object at ``key``; a key that is not there is not an error.
+
+    The one caller is the workflow runner retiring the previous invocation's
+    record before it runs anything (ADR-0023 §6): a record must never outlive
+    the run it describes into a later run's store state, and the runner
+    cannot know whether a previous invocation left one — so the operation is
+    idempotent, and "nothing to remove" is the ordinary first-run case.
+
+    Args:
+      key: The object to remove.
+    """
+    ...
+
+  @abstractmethod
   def append_manifest(self, record: AttemptRecord) -> None:
     """Write one run's manifest shard (``<run-key>/run.json``)."""
     ...
@@ -182,6 +197,11 @@ class FilesystemStore(Store):
     if not src.is_file():
       raise SandboxError(f"store key not found: {key}")
     return src.read_bytes()
+
+  @override
+  def delete(self, key: str) -> None:
+    """Remove ``root/key`` if it is there."""
+    self._path(key).unlink(missing_ok=True)
 
   @override
   def append_manifest(self, record: AttemptRecord) -> None:

@@ -7,6 +7,7 @@ dispatcher stays a thin table so it never grows into one giant file). Run it as
 
 import typer
 
+from .guided_gain import guided_gain_cmd
 from .host_env import adopt_host_scoped_credentials
 from .promote import promote_cmd
 from .run import run_cmd
@@ -39,5 +40,6 @@ _ = app.command(
     },
 )(run_cmd)
 _ = app.command("promote")(promote_cmd)
+_ = app.command("guided-gain")(guided_gain_cmd)
 
 __all__ = ["app"]

@@ -16,7 +16,13 @@ from __future__ import annotations
 
 import functools
 
-from swe_lab.evaluation.unit_test import gold_patch, UnitTestTask
+from swe_lab.conversation.observer import CONVERSATION_NAME
+from swe_lab.evaluation.unit_test import (
+    ARTIFACT_NAMESPACE,
+    gold_patch,
+    UnitTestTask,
+    VERDICT_NAME,
+)
 from swe_lab.git.audit import GitIntegrityAuditTask
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
@@ -34,7 +40,12 @@ from swe_lab.harnesses.claude_code.constants import (
 import swe_lab.harnesses.codex as _codex
 import swe_lab.harnesses.grok_build as _grok
 from swe_lab.rollout import CodingAgentTask, SupervisionFactory
-from swe_lab.sandbox import ArtifactSchema, DockerHostSandboxConfig
+from swe_lab.sandbox import (
+    ArtifactSchema,
+    DockerHostSandboxConfig,
+    qualified_name,
+)
+from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
 from swe_lab.trace_synthesis.channel import supervision
 from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
 from swe_lab.trace_synthesis.judge import (
@@ -64,6 +75,15 @@ ROLLOUT_KEY = "rollout"
 UNIT_TEST_KEY = "unit_test"
 GIT_INTEGRITY_KEY = "git_integrity"
 ORACLE_ANALYSIS_KEY = "oracle_analysis"
+# The from-scratch chain runs the solve + grade pair twice in one workflow, and
+# the key is what keeps the two apart: it is the task segment of every store
+# key, so the same `patch.diff` written by two rollouts lands under two
+# prefixes without any second naming scheme, and the workflow layer refuses a
+# repeated key outright (ADR-0023). Read the phase off the key.
+BASELINE_ROLLOUT_KEY = "baseline_rollout"
+BASELINE_UNIT_TEST_KEY = "baseline_unit_test"
+GUIDED_ROLLOUT_KEY = "guided_rollout"
+GUIDED_UNIT_TEST_KEY = "guided_unit_test"
 
 # One hour for the agent, half an hour for the suite. The agent's number is set
 # against a **p90 rollout wall clock of about one hour** measured by the owner
@@ -88,47 +108,73 @@ _GIT_INTEGRITY_TIMEOUT_S = 900.0
 # a document. The one live run so far finished in about five minutes.
 _ORACLE_ANALYSIS_TIMEOUT_S = 1800.0
 
-ROLLOUT: WorkflowDef = (
-    WorkflowEntry(
-        ROLLOUT_KEY,
-        CodingAgentTask(
-            # bare=False explicitly: bare mode reads neither OAuth nor the
-            # keychain (verified on 2.1.220 — a bare run with a valid
-            # CLAUDE_CODE_OAUTH_TOKEN still fails "Not logged in"), and this
-            # definition authenticates by that token. A composition using
-            # ANTHROPIC_API_KEY should leave the default alone.
-            harness=ClaudeCodeHarness(model=DEFAULT_MODEL, bare=False)
-        ),
-        timeout=_AGENT_TIMEOUT_S,
-        # The agent needs the network, and its credential travels by name so
-        # the value never reaches a command line.
-        sandbox=DockerHostSandboxConfig(
-            network=True, pass_env=(OAUTH_TOKEN_ENV,)
-        ),
-    ),
-)
 
-UNIT_TEST: WorkflowDef = (
-    WorkflowEntry(
-        UNIT_TEST_KEY,
-        # The task supplies **no** input of its own (`inputs_builder=None`),
-        # which is what lets this one entry serve both modes: run alone, its
-        # patch is the caller's (`execute(inputs=…)`); spliced into the chain
-        # below, the same entry takes the agent's by edge.
-        #
-        # Grading the *gold* patch is therefore a different definition, not a
-        # flag on this one: it needs `inputs_builder=gold_patch`, and a task
-        # that builds its own patch cannot also be handed one — the collision
-        # is refused on purpose. It lands with the command that invokes it.
-        UnitTestTask(),
-        timeout=_UNIT_TEST_TIMEOUT_S,
-        # Online, like every other entry: real suites fetch things, and a
-        # backend that cannot cut the network (the GH job is already running
-        # when we get it) could not honor an offline declaration anyway.
-        sandbox=DockerHostSandboxConfig(network=True),
-        retries=_UNIT_TEST_RETRIES,
-    ),
-)
+def _rollout_entry(key: str = ROLLOUT_KEY) -> WorkflowEntry:
+  """Build the plain, unsupervised rollout entry under ``key``.
+
+  Args:
+    key: The entry key — the task segment of every record the entry persists.
+
+  Returns:
+    The rollout entry.
+  """
+  return WorkflowEntry(
+      key,
+      CodingAgentTask(
+          # bare=False explicitly: bare mode reads neither OAuth nor the
+          # keychain (verified on 2.1.220 — a bare run with a valid
+          # CLAUDE_CODE_OAUTH_TOKEN still fails "Not logged in"), and this
+          # definition authenticates by that token. A composition using
+          # ANTHROPIC_API_KEY should leave the default alone.
+          harness=ClaudeCodeHarness(model=DEFAULT_MODEL, bare=False)
+      ),
+      timeout=_AGENT_TIMEOUT_S,
+      # The agent needs the network, and its credential travels by name so
+      # the value never reaches a command line.
+      sandbox=DockerHostSandboxConfig(
+          network=True, pass_env=(OAUTH_TOKEN_ENV,)
+      ),
+  )
+
+
+def _unit_test_entry(
+    key: str = UNIT_TEST_KEY, *, inputs: tuple[str, ...] = ()
+) -> WorkflowEntry:
+  """Build the grading entry under ``key``, optionally bound to a producer.
+
+  Args:
+    key: The entry key.
+    inputs: Explicit edge bindings (``"<producer key>/<input name>"``) —
+      needed where two earlier entries produce the same name.
+
+  Returns:
+    The grading entry.
+  """
+  return WorkflowEntry(
+      key,
+      # The task supplies **no** input of its own (`inputs_builder=None`),
+      # which is what lets this one entry serve both modes: run alone, its
+      # patch is the caller's (`execute(inputs=…)`); spliced into a chain,
+      # the same entry takes the agent's by edge.
+      #
+      # Grading the *gold* patch is therefore a different definition, not a
+      # flag on this one: it needs `inputs_builder=gold_patch`, and a task
+      # that builds its own patch cannot also be handed one — the collision
+      # is refused on purpose. It lands with the command that invokes it.
+      UnitTestTask(),
+      timeout=_UNIT_TEST_TIMEOUT_S,
+      # Online, like every other entry: real suites fetch things, and a
+      # backend that cannot cut the network (the GH job is already running
+      # when we get it) could not honor an offline declaration anyway.
+      sandbox=DockerHostSandboxConfig(network=True),
+      retries=_UNIT_TEST_RETRIES,
+      inputs=inputs,
+  )
+
+
+ROLLOUT: WorkflowDef = (_rollout_entry(),)
+
+UNIT_TEST: WorkflowDef = (_unit_test_entry(),)
 
 ROLLOUT_AND_UNIT_TEST: WorkflowDef = (*ROLLOUT, *UNIT_TEST)
 
@@ -262,18 +308,22 @@ CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
 # `--replay-user-messages` the event stream echoes the messages the actor
 # received, so an injected correction is visible in the trace beside what the
 # actor did next.
-def _segmented_rollout(*, guidebook_name: str | None = None) -> WorkflowDef:
+def _segmented_rollout(
+    *, guidebook_name: str | None = None, key: str = ROLLOUT_KEY
+) -> WorkflowDef:
   """Build the segmented rollout, optionally with a guidebook input.
 
   Args:
     guidebook_name: The phase-B artifact to give the supervisor, or ``None``.
+    key: The entry key; a chain that also runs an unguided rollout gives this
+      one its own.
 
   Returns:
     The one-entry segmented rollout definition.
   """
   return (
       WorkflowEntry(
-          ROLLOUT_KEY,
+          key,
           CodingAgentTask(
               harness=ClaudeCodeHarness(
                   model=DEFAULT_MODEL,
@@ -423,24 +473,40 @@ GIT_INTEGRITY_AUDIT: WorkflowDef = (
     ),
 )
 
-ORACLE_ANALYSIS: WorkflowDef = (
-    WorkflowEntry(
-        ORACLE_ANALYSIS_KEY,
-        # Phase B of trace synthesis, on its own: the instance is an
-        # `oracle_failures` record, which brings the failed conversation,
-        # verdict and patch along as its own mounts, so this one entry runs
-        # from a name alone — `run oracle_analysis <id> --dataset
-        # oracle_failures`. The agent is the same shipped harness, under the
-        # same authentication, as the rollout's.
-        OracleAnalysisTask(
-            harness=ClaudeCodeHarness(model=DEFAULT_MODEL, bare=False)
-        ),
-        timeout=_ORACLE_ANALYSIS_TIMEOUT_S,
-        sandbox=DockerHostSandboxConfig(
-            network=True, pass_env=(OAUTH_TOKEN_ENV,)
-        ),
-    ),
-)
+
+def _oracle_analysis_entry(
+    *, failure_inputs: bool = False, inputs: tuple[str, ...] = ()
+) -> WorkflowEntry:
+  """Build phase B's entry, reading the failure from where ``inputs`` says.
+
+  Args:
+    failure_inputs: Whether the failure arrives as declared inputs (a chain
+      that ran phase A first) rather than as the instance's own mounts.
+    inputs: Explicit edge bindings for those inputs.
+
+  Returns:
+    The Oracle entry. The agent is the same shipped harness, under the same
+    authentication, as the rollout's.
+  """
+  return WorkflowEntry(
+      ORACLE_ANALYSIS_KEY,
+      OracleAnalysisTask(
+          harness=ClaudeCodeHarness(model=DEFAULT_MODEL, bare=False),
+          failure_inputs=failure_inputs,
+      ),
+      timeout=_ORACLE_ANALYSIS_TIMEOUT_S,
+      sandbox=DockerHostSandboxConfig(
+          network=True, pass_env=(OAUTH_TOKEN_ENV,)
+      ),
+      inputs=inputs,
+  )
+
+
+# Phase B of trace synthesis, on its own: the instance is an `oracle_failures`
+# record, which brings the failed conversation, verdict and patch along as its
+# own mounts, so this one entry runs from a name alone — `run oracle_analysis
+# <id> --dataset oracle_failures`.
+ORACLE_ANALYSIS: WorkflowDef = (_oracle_analysis_entry(),)
 
 ORACLE_GUIDED_TRACE: WorkflowDef = (
     *ORACLE_ANALYSIS,
@@ -448,9 +514,60 @@ ORACLE_GUIDED_TRACE: WorkflowDef = (
     *UNIT_TEST,
 )
 
+
+def _edge(producer: str, name: str) -> str:
+  """Spell one explicit binding, ``"<producer key>/<input name>"``."""
+  return f"{producer}/{name}"
+
+
+# The whole pipeline from nothing, over a plain instance (ADR-0023): solve and
+# grade blind, let the Oracle explain that attempt, solve again under the
+# guidebook's supervision, grade again. **Unconditional** — an instance the
+# blind rollout already solves still gets its guidebook and its guided rollout,
+# because the reading this chain exists for is a 2×2 over the two verdicts, and
+# a chain that stopped early could never fill the cell where the guidebook made
+# things worse. `guided_gain` is that reading.
+#
+# Every binding is written out, including the ones name matching would have
+# resolved alone, so the graph can be read off the definition. Two of them the
+# engine *demands*: by the time the guided grading entry binds, two earlier
+# entries produce `patch.diff` and `patch.base_ref.txt`, and an unbound name
+# with two producers is refused rather than resolved nearest-wins.
+FROM_SCRATCH_GUIDED_TRACE: WorkflowDef = (
+    _rollout_entry(BASELINE_ROLLOUT_KEY),
+    _unit_test_entry(
+        BASELINE_UNIT_TEST_KEY,
+        inputs=(
+            _edge(BASELINE_ROLLOUT_KEY, PATCH_NAME),
+            _edge(BASELINE_ROLLOUT_KEY, BASE_REF_NAME),
+        ),
+    ),
+    _oracle_analysis_entry(
+        failure_inputs=True,
+        inputs=(
+            _edge(BASELINE_ROLLOUT_KEY, CONVERSATION_NAME),
+            _edge(BASELINE_ROLLOUT_KEY, PATCH_NAME),
+            _edge(BASELINE_ROLLOUT_KEY, BASE_REF_NAME),
+            _edge(
+                BASELINE_UNIT_TEST_KEY,
+                qualified_name(ARTIFACT_NAMESPACE, VERDICT_NAME),
+            ),
+        ),
+    ),
+    *_segmented_rollout(guidebook_name=GUIDEBOOK_NAME, key=GUIDED_ROLLOUT_KEY),
+    _unit_test_entry(
+        GUIDED_UNIT_TEST_KEY,
+        inputs=(
+            _edge(GUIDED_ROLLOUT_KEY, PATCH_NAME),
+            _edge(GUIDED_ROLLOUT_KEY, BASE_REF_NAME),
+        ),
+    ),
+)
+
 register_workflow("git_integrity_audit", GIT_INTEGRITY_AUDIT)
 register_workflow("oracle_analysis", ORACLE_ANALYSIS)
 register_workflow("oracle_guided_trace", ORACLE_GUIDED_TRACE)
+register_workflow("from_scratch_guided_trace", FROM_SCRATCH_GUIDED_TRACE)
 register_workflow("rollout", ROLLOUT)
 register_workflow("unit_test", UNIT_TEST)
 register_workflow("rollout_and_unit_test", ROLLOUT_AND_UNIT_TEST)
