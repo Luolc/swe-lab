@@ -574,7 +574,7 @@ def test_a_boundary_with_no_evidence_is_recorded_as_unjudged_not_silent() -> (
   def spy(observation: Observation, criterion: Criterion) -> Verdict:
     del criterion
     asked.append(observation)
-    return Verdict(off_track=False, self_correcting=False, reason="fine")
+    return Verdict(off_track=False, reason="fine")
 
   def never_written(observation: Observation, criterion: Criterion) -> str:
     del observation, criterion
@@ -606,9 +606,9 @@ def test_a_boundary_with_no_evidence_is_recorded_as_unjudged_not_silent() -> (
 def test_valid_verdict_fields_are_recorded_for_silence_and_speech() -> None:
   """Every valid judgement stays diagnosable regardless of the speech gate."""
   verdicts = [
-      Verdict(off_track=False, self_correcting=False, reason="on track"),
-      Verdict(off_track=True, self_correcting=True, reason="recovering"),
-      Verdict(off_track=True, self_correcting=False, reason="drifting"),
+      Verdict(off_track=False, reason="on track"),
+      Verdict(off_track=True, reason="recovering"),
+      Verdict(off_track=True, reason="drifting"),
   ]
 
   def judge(observation: Observation, criterion: Criterion) -> Verdict:
@@ -636,12 +636,10 @@ def test_valid_verdict_fields_are_recorded_for_silence_and_speech() -> None:
     _ = supervisor.observe(assistant_event(text))
 
   assert [row["kind"] for row in rows] == ["silent", "spoke", "silent"]
-  assert [
-      (row["off_track"], row["self_correcting"], row["reason"]) for row in rows
-  ] == [
-      (False, False, "on track"),
-      (True, True, "recovering"),
-      (True, False, "drifting"),
+  assert [(row["off_track"], row["reason"]) for row in rows] == [
+      (False, "on track"),
+      (True, "recovering"),
+      (True, "drifting"),
   ]
 
 
@@ -655,7 +653,6 @@ def test_valid_running_state_versions_persist_on_existing_decision_rows() -> (
     del observation, criterion
     return Verdict(
         off_track=False,
-        self_correcting=False,
         reason="on track",
         running_state=states.pop(0),
     )

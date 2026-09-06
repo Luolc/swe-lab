@@ -46,7 +46,7 @@ import dataclasses
 import json
 import os
 import pathlib
-from typing import Any, cast
+from typing import Any
 import urllib.request
 
 from swe_lab.trace_synthesis.context_components import (
@@ -97,7 +97,6 @@ JUDGE_TOOL: Mapping[str, Any] = {
         "type": "object",
         "properties": {
             "off_track": {"type": "boolean"},
-            "self_correcting": {"type": "boolean"},
             "reason": {"type": "string"},
             "running_state": {
                 "type": "string",
@@ -110,7 +109,6 @@ JUDGE_TOOL: Mapping[str, Any] = {
         },
         "required": [
             "off_track",
-            "self_correcting",
             "reason",
             "running_state",
         ],
@@ -166,34 +164,32 @@ def messages_transport(
 
 
 JUDGE_INSTRUCTIONS = """\
-You are watching an engineer work. Decide two things about the moment shown.
+You are watching an engineer work. Decide one thing about the moment shown.
 
 Judge only against the criterion given below. Do not use any other standard,
 and do not reason about what the correct fix would be.
 
 Answer with one JSON object and nothing else:
-{"off_track": bool, "self_correcting": bool,
+{"off_track": bool,
  "reason": "<one short sentence>",
  "running_state": "<bounded observational state>"}
 
 off_track: the work shown is off the criterion's path.
-self_correcting: left alone, the engineer is already returning to it.
 """
 
 #: The judge contract for a run whose observation carries a guidebook.
 GUIDED_JUDGE_INSTRUCTIONS = """\
-You are watching an engineer work. Decide two things about the moment shown.
+You are watching an engineer work. Decide one thing about the moment shown.
 
 Judge against the general-practice criterion and, when present, the guidebook
 given below. The guidebook says which instance-specific route is on track.
 
 Answer with one JSON object and nothing else:
-{"off_track": bool, "self_correcting": bool,
+{"off_track": bool,
  "reason": "<one short sentence>",
  "running_state": "<bounded observational state>"}
 
 off_track: the work shown is off the criterion's path.
-self_correcting: left alone, the engineer is already returning to it.
 """
 
 #: Appended to the selected judge instructions only when a judge is built with
@@ -302,7 +298,6 @@ def _verdict_from_answer(
   """Validate one tool input and return its verdict."""
   expected_fields = {
       "off_track",
-      "self_correcting",
       "reason",
       "running_state",
   }
@@ -323,21 +318,14 @@ def _verdict_from_answer(
     )
 
   off_track = answer["off_track"]
-  self_correcting = answer["self_correcting"]
   # Coercion here would read "false" as True — a verdict of *no* becoming a
   # correction — so the shape is required rather than converted.
-  for name, value in (
-      ("off_track", off_track),
-      ("self_correcting", self_correcting),
-  ):
-    if type(value) is not bool:
-      raise JudgeAnswerError(
-          "unusable judge answer:"
-          f" {name} must be a JSON boolean, got {type(value).__name__}",
-          finish_reason=finish_reason,
-      )
-  off_track = cast(bool, off_track)
-  self_correcting = cast(bool, self_correcting)
+  if type(off_track) is not bool:
+    raise JudgeAnswerError(
+        "unusable judge answer:"
+        f" off_track must be a JSON boolean, got {type(off_track).__name__}",
+        finish_reason=finish_reason,
+    )
 
   reason = answer["reason"]
   if type(reason) is not str:
@@ -382,7 +370,6 @@ def _verdict_from_answer(
     )
   return Verdict(
       off_track=off_track,
-      self_correcting=self_correcting,
       reason=reason,
       running_state=running_state,
       deviation_started_steps_ago=started,
@@ -392,7 +379,7 @@ def _verdict_from_answer(
 
 @dataclasses.dataclass
 class ModelJudge:
-  """Answers the two questions with one model call, and records what answered.
+  """Answers the off-track question with one call, and records what answered.
 
   Attributes:
     model: The model to ask. **No default**: a judge must name its model, for

@@ -496,7 +496,7 @@ def test_the_control_arm_pays_the_same_judge_calls_as_the_treatment():
     ) -> Verdict:
       del observation, criterion
       counted["judge"] += 1
-      return Verdict(off_track=True, self_correcting=False, reason="drifting")
+      return Verdict(off_track=True, reason="drifting")
 
     def writer(
         observation: Observation, criterion: Any, counted: Any = counted

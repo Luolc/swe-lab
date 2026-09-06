@@ -2,8 +2,14 @@
 
 ## Status
 
-Accepted. The owner approved the compatibility transition and telemetry shape
-on 2026-09-04; the implementation and trace-synthesis spec reconciliation land
+Accepted, **partly superseded**: the *Self-correction signals remain
+diagnostic* decision and the six-field rubric contract that rested on it by
+[ADR-0022](ADR-0022-self-correcting-leaves-the-verdict.md). The compatibility
+transition, the rubric-over-tutorial delivery and `guidebook_context_mode`
+stand.
+
+The owner approved the compatibility transition and telemetry shape on
+2026-09-04; the implementation and trace-synthesis spec reconciliation land
 with this record.
 
 ## Date

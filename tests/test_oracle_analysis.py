@@ -321,7 +321,7 @@ def test_default_oracle_instructions_are_pinned(
   assert hashlib.sha256(
       (workspace / "prompt.txt").read_bytes()
   ).hexdigest() == (
-      "eaa1e8a1e743f040903ae48f3eaf2cdd54f8c8dda1010dc76841ed5ce8172cd1"
+      "ce10aa9d12b4b9a4b24580d3ba2f55f3cdfdf26ba1ab87abf0808f51c26f78c5"
   )
 
 

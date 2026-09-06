@@ -244,15 +244,15 @@ run.** Returning `None` is the ordinary case and is not an error.
 
 A policy that speaks needs a judgement, and the judgement is a model call over
 the `Observation`: the task, a window of the actor's own records,
-and what has already been said. **It asks two questions, not one:**
+and what has already been said. **It asks one question:**
 
 1. **Is the actor off the criterion's path?**
-2. **Left alone, would it come back by itself?**
 
-Only the off-track answer controls speech. The self-correcting answer is
-recorded but never acted on. It remains in the verdict so telemetry can measure
-how often it would have vetoed an off-track judgement; that evidence can inform
-a later decision about removing the field in one breaking contract change.
+The design originally asked a second — *left alone, would it come back by
+itself?* — whose answer could veto speech. That veto was
+withdrawn, and the field itself is gone from the verdict; the reasoning and the
+downstream evidence behind the removal are in
+[ADR-0022](../../decisions/ADR-0022-self-correcting-leaves-the-verdict.md).
 
 **Precision comes from the bar; restraint comes from the budget; neither may
 come from delay.** The obvious way to buy precision is to debounce — require
@@ -477,12 +477,12 @@ validate it — and it can falsify it only on the paired dimension above.** If g
 way that matters; if it does not, we have removed one known failure and learned
 nothing about the rest.
 
-**Gate (a) alone is the whole check.** Question (b) — *would it self-correct* —
-has **no** supporting evidence at all, so it is recorded but never acted on.
-Retaining it as telemetry makes that missing evidence measurable before a later
-breaking change decides whether to remove the field; already-finished work is
-not a deviation under (a), and reaching for (b) to explain that would be fitting
-a second knob to the same data.
+**Gate (a) alone is the whole check.** The design once carried a question (b)
+— *would it self-correct* — with **no** supporting evidence at all; it is gone
+from the verdict entirely
+([ADR-0022](../../decisions/ADR-0022-self-correcting-leaves-the-verdict.md)).
+Already-finished work is not a deviation under (a), and reaching for a second
+knob to explain that would have been fitting it to the same data.
 
 **The inputs are read-only and carry operator PII, which constrains what the
 replay may emit.** The committed evidence carries each row's action, correction

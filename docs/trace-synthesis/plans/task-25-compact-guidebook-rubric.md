@@ -13,8 +13,11 @@ compatible.
 
 `guidebook.md` retains its complete staged tutorial and gains a single compact
 rubric section. The rubric lists checkpoints, on-track evidence, disallowed
-branches, off-track signals, self-correction signals, and the justification for
-a safe hint. Phase B requires all six fields from new output. Phase C accepts a
+branches, off-track signals, and the justification for a safe hint. Phase B
+requires all five fields from new output. (It required a sixth,
+`Self-correction signals`, until
+[ADR-0022](../../decisions/ADR-0022-self-correcting-leaves-the-verdict.md)
+removed the verdict field those signals explained.) Phase C accepts a
 tutorial-only legacy artifact, but a partial rubric is invalid.
 
 The public guidebook parser exposes the compact section without mutating the
@@ -31,7 +34,6 @@ temporary fallback a visible stratifying variable without adding a report
 field or artifact. ADR-0021 owns the compatibility rationale and its exit
 condition.
 
-`Self-correction signals` explain recorded `self_correcting` telemetry only.
 The implementation does not change the speaking state machine: `off_track`
 remains its only verdict gate.
 
@@ -56,7 +58,5 @@ remains its only verdict gate.
   when the rubric remains valid.
 - Removing `guidebook_context_mode`, or giving both guided modes one value,
   makes the two-mode decision-row test fail.
-- Restoring `self_correcting` as a speaking veto keeps its existing regression
-  test red; this task does not alter that path.
 - `git add -A && uv run pre-commit run --all-files`
 - `uv run pytest -m 'not docker'`

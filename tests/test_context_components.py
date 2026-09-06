@@ -224,7 +224,7 @@ class RecordingJudge:
     """Record one observation and return an on-track verdict."""
     del criterion
     self.observations.append(observation)
-    return Verdict(off_track=False, self_correcting=False)
+    return Verdict(off_track=False)
 
 
 def test_a_policy_can_replace_only_the_selector() -> None:
@@ -283,7 +283,6 @@ def test_the_standard_policy_can_replace_only_the_prompt_builder() -> None:
                 "name": "submit_supervision_verdict",
                 "input": {
                     "off_track": False,
-                    "self_correcting": False,
                     "reason": "fine",
                     "running_state": "Current checkpoint: inspect",
                 },
@@ -329,7 +328,6 @@ def test_the_standard_policy_can_replace_only_the_renderer() -> None:
                 "name": "submit_supervision_verdict",
                 "input": {
                     "off_track": False,
-                    "self_correcting": False,
                     "reason": "fine",
                     "running_state": "Current checkpoint: inspect",
                 },

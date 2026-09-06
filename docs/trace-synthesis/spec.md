@@ -183,9 +183,11 @@ Two rules on the guidebook:
    judgement, not a test.
 
 The compact `## Supervisor rubric` names checkpoints, on-track evidence,
-disallowed branches, off-track signals, self-correction signals, and the safe
-hint justification. New phase-B output must contain the complete tutorial and
-all six rubric fields. A phase-C read accepts a pre-rubric tutorial from a
+disallowed branches, off-track signals, and the safe hint justification. New
+phase-B output must contain the complete tutorial and all five rubric fields.
+A pre-[ADR-0022](../decisions/ADR-0022-self-correcting-leaves-the-verdict.md)
+rubric carrying a sixth `Self-correction signals` field still validates, since
+each field is checked for presence. A phase-C read accepts a pre-rubric tutorial from a
 supported resume, but never accepts a partial rubric; each supervisor decision
 row records which representation its default prompt used. That compatible-read
 / strict-write transition and its exit condition are fixed by
@@ -222,8 +224,7 @@ it considers, the Supervisor takes one of two branches:
 
 The compact guidebook rubric is visible to both the default judge and writer,
 beside the general-practice criterion. It names checkpoints, on-track evidence,
-disallowed branches, off-track signals, self-correction signals, and the safe
-hint justification. The detailed tutorial remains complete in the same stored
+disallowed branches, off-track signals, and the safe hint justification. The detailed tutorial remains complete in the same stored
 artifact. Raw gold patches, test patches, hidden tests and equivalent
 privileged artifacts have no independent input field. The remaining boundary
 is on speech: the writer is intended to point, question and suggest a way to

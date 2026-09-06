@@ -208,9 +208,9 @@ of `N` can rest on.**
    own counting trap, met again on production data.) Regenerate over
    `~/corpora/swe-lab/first-e2e-2026-09-02/r0/rollout/a0/claude_code.event_stream.jsonl`.
 2. **Which turn the judge believes the deviation started at.** **Not obtainable
-   from any interface we have** — `Verdict` carries `off_track`,
-   `self_correcting`, `reason`, and `WouldHaveSpoken` records where a deviation
-   was *found*, never where it began. So this one costs a change to shared code,
+   from any interface we have** — `Verdict` carries `off_track` and `reason`,
+   and `WouldHaveSpoken` records where a deviation was *found*, never where it
+   began. So this one costs a change to shared code,
    scoped so the A′ path cannot move:
 
    - `Verdict` gains `deviation_started_at_turn: int | None = None`, read from

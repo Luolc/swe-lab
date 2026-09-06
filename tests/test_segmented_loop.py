@@ -541,13 +541,11 @@ def test_segmented_rows_retain_valid_silent_and_speaking_verdicts():
   verdicts = [
       Verdict(
           off_track=False,
-          self_correcting=False,
           reason="on track",
           running_state="Current checkpoint: inspect",
       ),
       Verdict(
           off_track=True,
-          self_correcting=False,
           reason="drifting",
           running_state="Current checkpoint: test",
       ),
@@ -583,11 +581,9 @@ def test_segmented_rows_retain_valid_silent_and_speaking_verdicts():
   ]
 
   assert [row["kind"] for row in rows] == [LOG_KIND_SILENT, LOG_KIND_SPOKE]
-  assert [
-      (row["off_track"], row["self_correcting"], row["reason"]) for row in rows
-  ] == [
-      (False, False, "on track"),
-      (True, False, "drifting"),
+  assert [(row["off_track"], row["reason"]) for row in rows] == [
+      (False, "on track"),
+      (True, "drifting"),
   ]
   assert [row["running_state"] for row in rows] == [
       "Current checkpoint: inspect",
@@ -634,7 +630,6 @@ def test_each_judgement_receives_only_the_segment_that_just_completed():
     observations.append(observation)
     return Verdict(
         off_track=False,
-        self_correcting=False,
         reason="on track",
         running_state=f"Current checkpoint: segment {len(observations)}",
     )

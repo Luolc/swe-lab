@@ -298,6 +298,8 @@ def shared_cursor_agreement(
     out.append(
         {
             "cursor": row["cursor"],
+            # `self_correcting` is a legacy slot: absent from every row
+            # recorded after its removal, and `None` there.
             "left": (other.get("off_track"), other.get("self_correcting")),
             "right": (row.get("off_track"), row.get("self_correcting")),
             "same_evidence_in_window": (
@@ -332,9 +334,11 @@ def speech_blocks(rows: Iterable[Mapping[str, Any]]) -> dict[str, int]:
       counts["markers"] += 1
       spoken.append(row["cursor"])
       continue
-    if row.get("off_track") is not True or row.get("self_correcting") is not (
-        False
-    ):
+    # `self_correcting` was removed from the verdict; rows recorded before
+    # that still carry it, and a marker was withheld only when it was `True`.
+    # Written as `is not True` so a legacy row reads exactly as it did and a
+    # row without the field falls through to the `off_track`-only gate.
+    if row.get("off_track") is not True or row.get("self_correcting") is True:
       continue
     counts["markers"] += 1
     if len(spoken) >= BUDGET:
@@ -400,7 +404,7 @@ def summarize(
   markers = [
       r
       for r in answered
-      if r["off_track"] and r.get("self_correcting") is False
+      if r["off_track"] and r.get("self_correcting") is not True
   ]
   return {
       "arm": arm,
@@ -411,7 +415,13 @@ def summarize(
       "lapse": sum(1 for r in rows if r["kind"] == "lapse"),
       "gap": sum(1 for r in rows if r["kind"] == "gap"),
       "off_track": sum(1 for r in answered if r["off_track"]),
-      "self_correcting": sum(1 for r in answered if r["self_correcting"]),
+      # `None` when no answered row carries the legacy field, which is not
+      # the same reading as "every row answered false".
+      "self_correcting": (
+          sum(1 for r in answered if r.get("self_correcting"))
+          if any("self_correcting" in r for r in answered)
+          else None
+      ),
       "would_have_spoken": len(markers),
       "spoke": len(spoke),
       "spoke_cursors": [r["cursor"] for r in spoke],
@@ -500,7 +510,8 @@ def main() -> None:
     print(
         f"| {s['arm']:<9} | {s['pass']} | {s['boundaries']} | {s['answered']}"
         f" | {s['lapse']} | {s['gap']} | {s['off_track']}"
-        f" | {s['self_correcting']} | {s['would_have_spoken']} | {s['spoke']}"
+        f" | {'-' if s['self_correcting'] is None else s['self_correcting']}"
+        f" | {s['would_have_spoken']} | {s['spoke']}"
         f" | {s['cost_usd']:.3f} |"
     )
 
@@ -629,7 +640,14 @@ def main() -> None:
     Returns:
       `"k/n identical verdicts"` over the pairs where both answers parsed.
     """
-    both = [s for s in subset if None not in s["left"] + s["right"]]
+    # Comparability is decided on `off_track` alone: `self_correcting` is
+    # absent from every row recorded after its removal, and keying on it would
+    # report "no comparable pair" for a run that is entirely comparable.
+    both = [
+        s
+        for s in subset
+        if s["left"][0] is not None and s["right"][0] is not None
+    ]
     if not both:
       return "no comparable pair"
     same = sum(1 for s in both if s["left"] == s["right"])
@@ -682,7 +700,11 @@ def main() -> None:
     before = [s for s in shared if s["left_had_spoken"] == 0]
     after = [s for s in shared if s["left_had_spoken"] > 0]
     bad_window = [s for s in shared if not s["same_evidence_in_window"]]
-    comparable = [s for s in shared if None not in s["left"] + s["right"]]
+    comparable = [
+        s
+        for s in shared
+        if s["left"][0] is not None and s["right"][0] is not None
+    ]
     off_same = sum(1 for s in comparable if s["left"][0] == s["right"][0])
     print(
         f"- **{left[0]}/{left[1]}** vs **{right[0]}/{right[1]}** — {why}:"

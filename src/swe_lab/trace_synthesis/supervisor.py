@@ -327,14 +327,11 @@ class NeverSpeak:
 
 @dataclasses.dataclass(frozen=True)
 class Verdict:
-  """One judge call's answer: two questions, not one.
+  """One judge call's answer.
 
   Attributes:
-    off_track: Whether the actor has left the criterion's path.
-    self_correcting: Whether, left alone, it would come back by itself.
-      Recorded but never acted on. It remains in the verdict so telemetry can
-      measure how often it would have vetoed an off-track judgement before a
-      later breaking change decides whether to remove it from the contract.
+    off_track: Whether the actor has left the criterion's path. The only field
+      that opens the speaking path.
     reason: The judge's own words, recorded but never acted on.
     running_state: The bounded observational state after the evidence this
       verdict judged. The standard model judge requires it; the default keeps
@@ -357,7 +354,6 @@ class Verdict:
   """
 
   off_track: bool
-  self_correcting: bool
   reason: str = ""
   running_state: str = INITIAL_RUNNING_STATE
   deviation_started_steps_ago: int | None = None
@@ -525,7 +521,7 @@ class SpeakWhenOffTrack:
   beside one. What a judge then measures against is the judge's own invariant.
 
   Attributes:
-    judge: The off-track / self-correcting call.
+    judge: The off-track call.
     writer: The line-writing call.
     criterion: The loaded, digest-checked standard the judge measures against.
     budget: How many interventions a whole run may carry. **No default**: a
@@ -898,7 +894,6 @@ class Supervisor:
         "judge_input": verdict.judge_input,
         "judge_reason": verdict.reason,
         "off_track": verdict.off_track,
-        "self_correcting": verdict.self_correcting,
         "running_state": verdict.running_state,
     }
     if decision:

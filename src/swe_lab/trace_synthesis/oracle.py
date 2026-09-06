@@ -267,9 +267,6 @@ The rules:
 - **The rubric is compact and the tutorial stays complete.** Summarize the
   tutorial's checkpoints and observable signals; do not replace stages with
   the rubric or introduce a claim the tutorial does not support.
-- **Self-correction signals are diagnostic only.** They explain recorded
-  telemetry for later analysis. Only off-track signals bear on whether the
-  Supervisor speaks; self-correction signals never veto that decision.
 - **Never say or imply that you saw the answer.** No "the reference does X",
   no diff summary, no test names the blind agent could not have found. The
   guidebook reads as a tutorial written by someone who understands the

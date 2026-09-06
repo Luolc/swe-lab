@@ -6,6 +6,11 @@ Accepted. The owner decided the output and persistence shape on 2026-09-04;
 the implementation and trace-synthesis spec reconciliation land with this
 record.
 
+Accepted, **partly superseded**: the enumeration of the fields `running_state`
+sits alongside by [ADR-0022](ADR-0022-self-correcting-leaves-the-verdict.md),
+which removes `self_correcting` from the verdict. The requirement on
+`running_state` itself is unchanged.
+
 This decision resolves ADR-0018's open question about the persisted supervisor
 audit shape. It also supersedes that ADR's exact five-field `Observation`
 allowlist by adding the host-side `running_state` field; the privileged-input
