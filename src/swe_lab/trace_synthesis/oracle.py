@@ -1,13 +1,26 @@
 """Phase B of trace synthesis: the Oracle writes a guidebook for a failure.
 
 ``OracleAnalysisTask`` runs a harness against an instance whose failure is
-already in hand — an ``oracle_failures`` record, which stages the failed
-conversation, verdict and patch through its own ``mounts`` — with everything
-the actor never had: the reference patch (when the dataset records one), the
-exact grading procedure, and the repository's **unpurged** git history. Its one
-output is ``guidebook.md``: a staged tutorial for a future blind actor alongside
-a compact supervisor-facing rubric, checked against the schema in
-:mod:`swe_lab.trace_synthesis.guidebook`.
+already in hand, with everything the actor never had: the reference patch
+(when the dataset records one), the exact grading procedure, and the
+repository's **unpurged** git history. Its one output is ``guidebook.md``: a
+staged tutorial for a future blind actor alongside a compact supervisor-facing
+rubric, checked against the schema in :mod:`swe_lab.trace_synthesis.guidebook`.
+
+The failure reaches the Oracle one of two ways, and the task is the same class
+either way — the pattern the shipped ``unit_test`` entry set, where one task
+serves a standalone run and the tail of a chain:
+
+- **staged by the instance** (the default): an ``oracle_failures`` record
+  carries the failed conversation, verdict and patch through its own
+  ``mounts``, under the names in :mod:`swe_lab.trace_synthesis.sample`, so the
+  one-entry ``oracle_analysis`` workflow runs from a name alone;
+- **declared as inputs** (``failure_inputs=True``): the failure arrives as the
+  solving pipeline itself produced it — the rollout's ``conversation.json``,
+  ``patch.diff`` and ``patch.base_ref.txt``, the grading entry's
+  ``unit_test.verdict.json`` — fed by a workflow edge that ran phase A first,
+  or by a caller's own bytes. An edge matches by store name, so the Oracle's
+  input names *are* the producers' names; nothing is renamed on the way.
 
 The task is deliberately contaminated, and says so by construction rather than
 by flag: it composes no git-history purge, no diff extraction and no result
@@ -25,11 +38,15 @@ from dataclasses import dataclass, field
 import logging
 from typing import Any, override
 
+from swe_lab.conversation.observer import CONVERSATION_NAME
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.unit_test import (
+    ARTIFACT_NAMESPACE,
     BaselineVerifyObserver,
     ENTRYSCRIPT_NAME,
+    VERDICT_NAME,
 )
+from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.harnesses import Harness
 from swe_lab.rollout import outcome_of, PROMPT_NAME
 from swe_lab.sandbox import (
@@ -41,10 +58,11 @@ from swe_lab.sandbox import (
     merge_mounts,
     Mount,
     Mounts,
+    qualified_name,
     SandboxFs,
     SandboxObserver,
 )
-from swe_lab.sandbox.observers import BASE_REF_NAME
+from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
 from swe_lab.workflow import AttemptResult, InputsBuilder, Task
 
 from .guidebook import (
@@ -66,13 +84,82 @@ _logger = logging.getLogger(__name__)
 # records one; a dataset without it is a supported input, briefed as such.
 GOLD_PATCH_NAME = "gold_patch.diff"
 
+
+@dataclass(frozen=True)
+class FailureFiles:
+  """Where the failure the Oracle explains is, by workspace name.
+
+  The same three files under two sets of names — which set depends on who put
+  them there — plus whether the grading procedure has to be compiled against
+  the run's recorded pre-agent baseline.
+
+  Attributes:
+    conversation: The failed rollout's typed ``Conversation``, as JSON.
+    verdict: The grader's verdict on its patch (``Verdict.facts()``: its
+      ``summary`` names the tests it failed).
+    patch: The patch it submitted — also the file the grading procedure is
+      compiled to apply.
+    base_ref: The sha the patch was diffed against, when the grading procedure
+      must verify and reset to that tree (ADR-0014) before applying it;
+      ``None`` leaves the choice to the instance's own ``unit_test_spec``.
+  """
+
+  conversation: str
+  verdict: str
+  patch: str
+  base_ref: str | None = None
+
+
+# The failure as an ``oracle_failures`` record stages it (the sample
+# contract). The record's own ``unit_test_spec`` restores the recorded baseline
+# when it has one, so no base ref is asked for here.
+STAGED_FAILURE = FailureFiles(
+    conversation=FAILED_CONVERSATION_NAME,
+    verdict=FAILED_VERDICT_NAME,
+    patch=FAILED_PATCH_NAME,
+)
+# The failure as the solving pipeline produces it, for a chain that runs phase
+# A first: the rollout's three artifacts and the grading entry's verdict, under
+# the store names their producers declare. The base ref is required because
+# the shipped rollout diffs against the pre-agent baseline (ADR-0014), and a
+# grading procedure that reset to ``base_commit`` instead would grade a
+# different tree than the one the patch was taken from.
+PRODUCED_FAILURE = FailureFiles(
+    conversation=CONVERSATION_NAME,
+    verdict=qualified_name(ARTIFACT_NAMESPACE, VERDICT_NAME),
+    patch=PATCH_NAME,
+    base_ref=BASE_REF_NAME,
+)
+
 # Metric names, unqualified by any harness: one run has one guidebook.
 PRESENT_METRIC = "guidebook.present"
 VALID_METRIC = "guidebook.valid"
 STAGES_METRIC = "guidebook.stages"
 
 
-def privileged_mounts(instance: TaskInstance[Any]) -> Mounts:
+def _grading_spec(
+    instance: TaskInstance[Any], failure: FailureFiles
+) -> UnitTestSpec[Any]:
+  """Compile the grading procedure to apply the *failed* patch.
+
+  Args:
+    instance: The instance under analysis.
+    failure: Which workspace file holds the failed patch, and whether the
+      procedure resets to the recorded baseline first.
+
+  Returns:
+    The compiled spec — the script the grader ran, aimed at the failure.
+  """
+  if failure.base_ref is not None:
+    return instance.unit_test_spec(
+        apply_patch=True, patch_name=failure.patch, patch_baseline=True
+    )
+  return instance.unit_test_spec(apply_patch=True, patch_name=failure.patch)
+
+
+def privileged_mounts(
+    instance: TaskInstance[Any], *, failure: FailureFiles = STAGED_FAILURE
+) -> Mounts:
   """Stage what the Oracle may see and the actor never did.
 
   The grading procedure is compiled to apply the **failed** patch, so the
@@ -81,12 +168,13 @@ def privileged_mounts(instance: TaskInstance[Any]) -> Mounts:
 
   Args:
     instance: The instance under analysis.
+    failure: Where the failure is in the workspace.
 
   Returns:
     The compiled grading procedure and its files, plus the reference patch
     when the dataset has one.
   """
-  spec = instance.unit_test_spec(apply_patch=True, patch_name=FAILED_PATCH_NAME)
+  spec = _grading_spec(instance, failure)
   mounts = merge_mounts(
       dict(spec.mounts),
       {
@@ -103,7 +191,9 @@ def privileged_mounts(instance: TaskInstance[Any]) -> Mounts:
   return mounts
 
 
-def build_oracle_prompt(instance: TaskInstance[Any]) -> str:
+def build_oracle_prompt(
+    instance: TaskInstance[Any], *, failure: FailureFiles = STAGED_FAILURE
+) -> str:
   """Write the Oracle's brief for one failed instance.
 
   The brief carries the failed actor's task statement **verbatim and whole**,
@@ -116,6 +206,8 @@ def build_oracle_prompt(instance: TaskInstance[Any]) -> str:
 
   Args:
     instance: The instance under analysis.
+    failure: Where the failure is in the workspace — the brief names the
+      files by the names they actually have there.
 
   Returns:
     The brief, as Markdown.
@@ -132,31 +224,37 @@ def build_oracle_prompt(instance: TaskInstance[Any]) -> str:
   )
   files = [
       (
-          FAILED_CONVERSATION_NAME,
+          failure.conversation,
           "the failed agent's full conversation — every tool call and"
           " result, as typed JSON",
       ),
       (
-          FAILED_VERDICT_NAME,
+          failure.verdict,
           "the grader's verdict on its patch; `summary` names the tests it"
           " failed",
       ),
-      (FAILED_PATCH_NAME, "the patch it submitted"),
+      (failure.patch, "the patch it submitted"),
   ]
+  if failure.base_ref is not None:
+    files.append(
+        (
+            failure.base_ref,
+            "the commit the failed patch was diffed against — the grading"
+            " procedure verifies the tree and resets to it before applying",
+        )
+    )
   # A dataset without a reference patch gets a brief that says so — every
   # sentence below that mentions the reference is conditioned on this, so the
   # Oracle is never told to read a file it does not have.
   has_reference = instance.gold_patch() is not None
   if has_reference:
     files.append((GOLD_PATCH_NAME, "the reference solution"))
-  grading = instance.unit_test_spec(
-      apply_patch=True, patch_name=FAILED_PATCH_NAME
-  )
+  grading = _grading_spec(instance, failure)
   files.append(
       (
           ENTRYSCRIPT_NAME,
           "the exact grading procedure, as the grader runs it. It resets the"
-          f" repository, applies `{FAILED_PATCH_NAME}` and runs the graded"
+          f" repository, applies `{failure.patch}` and runs the graded"
           f' tests — run `bash "$SANDBOX_WORKSPACE/{ENTRYSCRIPT_NAME}"` to'
           " reproduce the failure (it discards any edits you made first)",
       )
@@ -300,7 +398,7 @@ The rules:
 def oracle_prompt(
     sb: SandboxFs, instance: TaskInstance[Any]
 ) -> Mapping[str, bytes]:
-  """Build the Oracle's brief as the task's prompt input.
+  """Build the Oracle's brief for a failure the instance stages itself.
 
   Args:
     sb: Unused — the brief is the instance's, not the workspace's.
@@ -311,6 +409,26 @@ def oracle_prompt(
   """
   del sb
   return {PROMPT_NAME: build_oracle_prompt(instance).encode("utf-8")}
+
+
+def produced_failure_prompt(
+    sb: SandboxFs, instance: TaskInstance[Any]
+) -> Mapping[str, bytes]:
+  """Build the Oracle's brief for a failure declared as inputs.
+
+  Args:
+    sb: Unused — the brief is the instance's, not the workspace's.
+    instance: The instance under analysis.
+
+  Returns:
+    The prompt input, by store name.
+  """
+  del sb
+  return {
+      PROMPT_NAME: build_oracle_prompt(
+          instance, failure=PRODUCED_FAILURE
+      ).encode("utf-8")
+  }
 
 
 @dataclass
@@ -380,10 +498,10 @@ class OracleAnalysisTask(Task):
 
   Composes the harness's own mounts, observers and assets around one main
   action, exactly as the rollout does, but with a different set of extras:
-  the instance's failure material (its own mounts), the grading procedure and
-  — when the dataset records one — the reference patch (``privileged_mounts``;
-  a dataset without one is supported and briefed as such), and a
-  ``GuidebookObserver``
+  the failure material (the instance's own mounts, or this task's declared
+  inputs — see ``failure_inputs``), the grading procedure and — when the
+  dataset records one — the reference patch (``privileged_mounts``; a dataset
+  without one is supported and briefed as such), and a ``GuidebookObserver``
   in place of the diff extractor. **No git-history purge and no result
   verifier** — see the module docstring, and the named test that pins it.
 
@@ -392,8 +510,18 @@ class OracleAnalysisTask(Task):
       observers, the main action, the trace conversion and the completion
       signal.
     inputs_builder: How the brief gets built when nothing else supplies it;
-      the default writes it from the instance. ``None`` in a chain whose
-      earlier task produces ``prompt.md``.
+      the default writes it from the instance, naming the failure's files
+      under whichever names ``failure_inputs`` puts them. ``None`` in a chain
+      whose earlier task produces ``prompt.md``.
+    failure_inputs: Where the failure comes from. ``False`` (the default): the
+      instance stages it through its own mounts under the sample contract's
+      names — an ``oracle_failures`` record — and this task declares only the
+      brief as an input. ``True``: the failure is declared as this task's
+      inputs under the names the solving pipeline produces
+      (:data:`PRODUCED_FAILURE`), for a workflow edge from a phase-A rollout
+      and its grading, or a caller's own bytes; the grading procedure is then
+      compiled against the recorded pre-agent baseline, which arrives as one
+      of those inputs.
     env: Extra environment for the agent process, handed to the harness. Not
       the place for a secret — use the sandbox's ``pass_env``.
     instructions: Optional model instructions for Oracle prompt variants.
@@ -406,42 +534,65 @@ class OracleAnalysisTask(Task):
   inputs_builder: InputsBuilder | None = field(
       default=oracle_prompt, kw_only=True
   )
+  failure_inputs: bool = False
   env: Mapping[str, str] | None = None
   instructions: str | None = None
+
+  def __post_init__(self) -> None:
+    """Aim the default brief at the failure this task actually reads.
+
+    The class default builder briefs the staged names; a task declaring the
+    failure as inputs gets the builder that briefs the produced names instead.
+    A builder the caller chose — or ``None``, for a chain that produces the
+    brief — is left alone.
+    """
+    if self.failure_inputs and self.inputs_builder is oracle_prompt:
+      self.inputs_builder = produced_failure_prompt
+
+  @property
+  def failure(self) -> FailureFiles:
+    """Where the failure is in the workspace, per ``failure_inputs``."""
+    return PRODUCED_FAILURE if self.failure_inputs else STAGED_FAILURE
 
   @override
   def mounts(self, instance: TaskInstance[Any]) -> Mounts:
     """Stage the failure, the harness's files, and the privileged material.
 
-    The failure has to come from the instance: an ordinary instance would
-    assemble just as well, with a brief that says three files exist that do
-    not, and the agent budget spent finding out. So the check happens here —
-    at assembly, before anything is staged or started — against the neutral
-    names of the failure-sample contract, not a concrete dataset.
+    When the instance is the failure's source, it has to actually carry one:
+    an ordinary instance would assemble just as well, with a brief that says
+    three files exist that do not, and the agent budget spent finding out. So
+    the check happens here — at assembly, before anything is staged or
+    started — against the neutral names of the failure-sample contract, not a
+    concrete dataset. A failure declared as inputs is the workflow's to
+    supply, and a missing one is its distinct edge failure (ADR-0007 §5) or,
+    standalone, the assembly error ``execute`` raises for any input nobody
+    staged.
 
     Args:
       instance: The instance under analysis; its own mounts carry the
-        failure.
+        failure unless ``failure_inputs`` says otherwise.
 
     Returns:
       The merged staging set (duplicate targets refused).
 
     Raises:
-      ValueError: If the instance stages no failure to analyze.
+      ValueError: If the instance is meant to stage the failure and does not.
     """
     own = super().mounts(instance)
-    missing = [name for name in FAILURE_NAMES if name not in own]
-    if missing:
-      raise ValueError(
-          f"instance {instance.instance_id!r} stages no failure to analyze"
-          f" (missing {missing}); oracle_analysis runs over a record that"
-          " carries a cached failure, such as an oracle_failures row"
-          " (--dataset oracle_failures)"
-      )
+    if not self.failure_inputs:
+      missing = [name for name in FAILURE_NAMES if name not in own]
+      if missing:
+        raise ValueError(
+            f"instance {instance.instance_id!r} stages no failure to analyze"
+            f" (missing {missing}); oracle_analysis runs over a record that"
+            " carries a cached failure, such as an oracle_failures row"
+            " (--dataset oracle_failures), or declares the failure as inputs"
+            " (failure_inputs=True)"
+        )
     return merge_mounts(
         own,
         self.harness.mounts(instance.sandbox_spec().workdir),
-        privileged_mounts(instance),
+        privileged_mounts(instance, failure=self.failure),
     )
 
   @override
@@ -453,14 +604,16 @@ class OracleAnalysisTask(Task):
   def observers(self, instance: TaskInstance[Any]) -> Sequence[SandboxObserver]:
     """Return baseline verification, harness observers and the collector.
 
-    A baseline-patched failure carries its recorded base ref as an instance
-    mount. Verify and restore that tree before the Oracle can run the exposed
-    grading procedure. Nothing else is added: in particular no history purge,
-    which would strip the material the Oracle is given, and no result verifier,
-    which would flag a run that is contaminated by design.
+    A baseline-patched failure carries its recorded base ref — as an instance
+    mount, or as one of the declared inputs. Verify and restore that tree
+    before the Oracle can run the exposed grading procedure. Nothing else is
+    added: in particular no history purge, which would strip the material the
+    Oracle is given, and no result verifier, which would flag a run that is
+    contaminated by design.
 
     Args:
-      instance: The failure record whose mounts identify baseline mode.
+      instance: The failure record whose mounts identify baseline mode when
+        the failure is staged.
 
     Returns:
       Optional baseline verification, the harness's observers, then a fresh
@@ -468,15 +621,42 @@ class OracleAnalysisTask(Task):
     """
     baseline = (
         (BaselineVerifyObserver(workdir=instance.sandbox_spec().workdir),)
-        if BASE_REF_NAME in instance.mounts()
+        if self.failure.base_ref is not None
+        or BASE_REF_NAME in instance.mounts()
         else ()
     )
     return (*baseline, *self.harness.observers(), GuidebookObserver())
 
   @override
   def input_schema(self) -> Sequence[ArtifactSchema]:
-    """Declare the brief as the one input."""
-    return (ArtifactSchema(PROMPT_NAME, description="the Oracle's brief"),)
+    """Declare the brief, and the failure when it is not the instance's.
+
+    Returns:
+      The brief alone for a staged failure; the brief plus the four produced
+      files for one declared as inputs.
+    """
+    brief = ArtifactSchema(PROMPT_NAME, description="the Oracle's brief")
+    if not self.failure_inputs:
+      return (brief,)
+    return (
+        brief,
+        ArtifactSchema(
+            PRODUCED_FAILURE.conversation,
+            description="the failed rollout's typed conversation",
+        ),
+        ArtifactSchema(
+            PRODUCED_FAILURE.patch,
+            description="the patch the rollout submitted",
+        ),
+        ArtifactSchema(
+            BASE_REF_NAME,
+            description="the sha the failed patch was diffed against",
+        ),
+        ArtifactSchema(
+            PRODUCED_FAILURE.verdict,
+            description="the grader's verdict on the failed patch",
+        ),
+    )
 
   @override
   def action(

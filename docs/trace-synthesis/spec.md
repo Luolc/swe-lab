@@ -122,15 +122,32 @@ failure through the instance's own `mounts()`, so every phase after A runs
 against it unchanged. A fresh phase-A rollout is needed only for an instance no
 sweep has failed on yet.
 
-**Phase A is not re-run by the pipeline** (owner's decision, 2026-09-01). A full
-rollout + eval sweep happens anyway, and its traces are cached, so the pipeline
-paying to reproduce a failure it already owns is waste. The pipeline's entry
-point is therefore **Phase B**, over a hand-assembled dataset row that carries
-the instance's fields *and* the failing run's typed conversation — a
-self-contained directory mounted into the sandbox, not a pointer into a run
-store. The layout, and the reasoning for each file in it, is
+**Phase A has two entry points, and the workflow's name says which one a run
+takes.** The owner ruled on 2026-09-01 that the pipeline does not re-run phase
+A to reproduce a failure it already owns: a full rollout + eval sweep happens
+anyway, its traces are cached, and paying twice is waste. So `oracle_analysis`
+and `oracle_guided_trace` enter at **Phase B**, over a hand-assembled dataset
+row that carries the instance's fields *and* the failing run's typed
+conversation — a self-contained directory mounted into the sandbox, not a
+pointer into a run store. The layout, and the reasoning for each file in it, is
 [REPORT §8 of the steered re-run](../../experiments/trace_synthesis/steered_rerun/REPORT.md#8-the-failure-sample-is-the-workflows-input-contract);
-it is a contract, and the workflow that mounts it is built against it.
+it is a contract, and the two workflows that mount it are built against it.
+
+`from_scratch_guided_trace`
+([ADR-0023](../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md),
+[task 26](plans/task-26-from-scratch-guided-trace.md)) is the form that
+**does** run phase A, as its first two entries, over a plain instance: blind
+rollout, grading, the Oracle, the guided rollout, grading — all five
+**unconditionally**, whatever the blind verdict was. It exists for the pairing
+of the two verdicts (solved at baseline, gained with the guidebook, regressed,
+unsolved), and the regression cell is why it cannot stop early. Its Oracle
+takes the failure over workflow edges under the producers' own names
+(`conversation.json`, `patch.diff`, `patch.base_ref.txt`,
+`unit_test.verdict.json`) instead of the row's staged names — the same task
+serves both forms, and the row contract above is untouched. Its two rollouts
+and two gradings are told apart by their entry keys alone — `baseline_rollout`,
+`baseline_unit_test`, `oracle_analysis`, `guided_rollout`, `guided_unit_test`,
+the store's task segment — and by nothing else.
 
 ### Phase B — the Oracle
 
@@ -972,8 +989,8 @@ from the store — so this is a workflow, not a new subsystem.
 
 | Phase | Reuses | New |
 |---|---|---|
-| A | `rollout_and_unit_test`, unchanged — or **skipped**: a cached failure enters as an `oracle_failures` record | the `oracle_failures` dataset and its builder ([task 11](plans/task-11-oracle-failures-dataset.md)) |
-| B | the `Task` layer; the record's mounts carry the failure | `OracleAnalysisTask` + the one-entry `oracle_analysis` workflow ([task 04](plans/task-04-oracle-analysis-task.md)): grading procedure staged, and the golden patch when the dataset records one; git-history purge **off**, declared output `guidebook.md` |
+| A | **skipped** in `oracle_analysis` / `oracle_guided_trace`: a cached failure enters as an `oracle_failures` record — or **run**, in `from_scratch_guided_trace`, as the `rollout_and_unit_test` pair under the keys `baseline_rollout` / `baseline_unit_test` | the `oracle_failures` dataset and its builder ([task 11](plans/task-11-oracle-failures-dataset.md)); the from-scratch chain and its `guided-gain` reading ([task 26](plans/task-26-from-scratch-guided-trace.md), [ADR-0023](../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md)) |
+| B | the `Task` layer; the record's mounts carry the failure — or, in the from-scratch chain, the edges from phase A do (`OracleAnalysisTask.failure_inputs`) | `OracleAnalysisTask` + the one-entry `oracle_analysis` workflow ([task 04](plans/task-04-oracle-analysis-task.md)): grading procedure staged, and the golden patch when the dataset records one; git-history purge **off**, declared output `guidebook.md` |
 | C | the rollout composition; `guidebook.md` arrives over the workflow's declared artifact edge | a host-side Supervisor whose default judge and writer receive the compact rubric, or the complete tutorial on an explicit legacy path, beside the general-practice criterion; a live correction channel on the actor's stdin ([ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)); `claude_code.supervisor.jsonl` records guidebook identity and context mode, judge request/reason, each valid running-state version, and emitted text for audit |
 | D | the `Conversation` converter + `Store` | — |
 | all | `register_workflow(...)` | the A→B→C→D edges |
@@ -1036,6 +1053,18 @@ state plus guidebook context mode on the existing diagnostic row do not add
 another harness, authorize trace training, decide the data mixture, change the
 report contract, or permit rewriting actor records; the scope below is
 unchanged.
+
+[ADR-0023](../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md)
+was re-checked too. Registering `from_scratch_guided_trace`, letting the Oracle
+take the failure over edges, persisting `unit_test.verdict.json` on every
+grading record, and adding the `guided-gain` reading add no harness, rewrite
+no actor record, decide no mixture and change no report contract (the verdict
+artifact is additive; the attempt record's schema is untouched); the scope
+below is unchanged. Against [§15](#15-success-criteria): no criterion is met
+or invalidated — the chain makes the paired verdicts criterion 5 needs
+**measurable** and measures nothing, and criterion 4's stamp is still task
+07's, so a from-scratch run's phase-B and phase-C records are as unstamped as
+an `oracle_guided_trace` run's.
 
 - **Harnesses other than `claude_code`.** The measured correction channel is
   Claude Code's — its stdin under `--input-format stream-json`

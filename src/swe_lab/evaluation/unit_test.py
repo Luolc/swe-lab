@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+import json
 from typing import Any, override
 
 from swe_lab.datasets.instance import TaskInstance
@@ -40,6 +41,12 @@ from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
 from swe_lab.workflow import AttemptResult, Task
 
 ENTRYSCRIPT_NAME = "entryscript.sh"
+# The graded verdict, persisted whole (``Verdict.facts()``) so it can travel a
+# workflow edge — the metrics carry only its scalars, and a consumer that needs
+# to know *which* tests failed (the Oracle, briefing itself on a failure) has
+# nothing else to read. Namespaced like every other artifact of this method:
+# ``unit_test.verdict.json``.
+VERDICT_NAME = "verdict.json"
 # The default observer name: namespaces this method's artifacts and metrics,
 # so `stdout.log` says whose it is and a second evaluation method cannot
 # collide. It is this method's name — the same word the store key, the
@@ -80,16 +87,23 @@ class UnitTestParseObserver[V: Verdict](SandboxObserver):
 
   @override
   def output_schema(self) -> tuple[ArtifactSchema, ...]:
-    """Declare the compiled script and the dataset's byproducts.
+    """Declare the script, the verdict, and the dataset's byproducts.
 
     The entryscript always lands (it was staged, so a run whose sandbox came
-    up has it); the dataset's outputs are best-effort, mirroring how they are
-    registered — a run that died mid-script produces fewer.
+    up has it), and so does the verdict — grading runs in ``before_destroy``
+    whatever the script did, and an attempt without a verdict is already an
+    invalid one (``UnitTestTask.outputs_valid``), so requiring it here changes
+    no attempt's fate. The dataset's outputs are best-effort, mirroring how
+    they are registered — a run that died mid-script produces fewer.
     """
     return (
         ArtifactSchema(
             qualified_name(self.name, ENTRYSCRIPT_NAME),
             description="the script that ran",
+        ),
+        ArtifactSchema(
+            qualified_name(self.name, VERDICT_NAME),
+            description="the graded verdict: resolved, score, metrics, summary",
         ),
         *(
             ArtifactSchema(
@@ -120,9 +134,17 @@ class UnitTestParseObserver[V: Verdict](SandboxObserver):
         for name, filename in self._declared_outputs().items()
         if sb.exists(filename)
     }
+    # The verdict is already in hand, so it is contributed inline like the
+    # exec output: nothing is written into the sandbox to be fetched back.
+    inline = {
+        qualified_name(self.name, VERDICT_NAME): json.dumps(
+            self.verdict.facts(), indent=2, sort_keys=True
+        ).encode("utf-8"),
+        **self._exec_output(),
+    }
     return Contribution(
         artifacts=artifacts,
-        inline_artifacts=self._exec_output(),
+        inline_artifacts=inline,
         metrics=self._metrics(),
     )
 
