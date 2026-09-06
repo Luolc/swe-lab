@@ -120,11 +120,8 @@ class CountingWriter:
     return self.line
 
 
-OFF_TRACK = Verdict(off_track=True, self_correcting=False, reason="wrong file")
-RECOVERING = Verdict(
-    off_track=True, self_correcting=True, reason="reconsidering"
-)
-ON_TRACK = Verdict(off_track=False, self_correcting=False, reason="fine")
+OFF_TRACK = Verdict(off_track=True, reason="wrong file")
+ON_TRACK = Verdict(off_track=False, reason="fine")
 
 
 def policy(
@@ -183,13 +180,6 @@ def test_an_actor_on_track_is_never_spoken_to() -> None:
   spoken = [speaker.consider(observation(index)) for index in range(1, 11)]
   assert spoken == [None] * 10
   assert speaker.markers == ()
-
-
-def test_an_off_track_actor_already_recovering_is_spoken_to() -> None:
-  """Self-correction telemetry does not veto an off-track judgement."""
-  speaker, _, _ = policy(RECOVERING)
-  assert speaker.consider(observation(1)) is not None
-  assert len(speaker.markers) == 1
 
 
 def test_budget_zero_speaks_nothing_and_still_marks_every_deviation() -> None:

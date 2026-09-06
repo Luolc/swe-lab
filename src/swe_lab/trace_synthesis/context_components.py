@@ -306,7 +306,6 @@ class SupervisorPromptBuilder(PromptBuilder):
     if verdict is not None:
       structured_verdict: dict[str, object] = {
           "off_track": verdict.off_track,
-          "self_correcting": verdict.self_correcting,
           "reason": verdict.reason,
           "running_state": verdict.running_state,
       }

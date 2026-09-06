@@ -396,27 +396,25 @@ def _verdict_fields(row: Mapping[str, Any]) -> dict[str, Any]:
     row: One replay row.
 
   Returns:
-    `off_track`, `self_correcting` and `reason` when the answer parsed, else
-    `None`s. Never coerced: a non-boolean is left as `None`.
+    `off_track` and `reason` when the answer parsed, else `None`s. Never
+    coerced: a non-boolean is left as `None`. Rows recorded before
+    `self_correcting` was removed from the verdict also carry that field;
+    `analyze.py` reads it as a legacy column, and nothing written here
+    revives it.
   """
   raw = row.get("judge_raw")
   if not isinstance(raw, str):
-    return {"off_track": None, "self_correcting": None, "judge_reason": None}
+    return {"off_track": None, "judge_reason": None}
   try:
     answer = json.loads(raw)
   except (json.JSONDecodeError, TypeError):
-    return {"off_track": None, "self_correcting": None, "judge_reason": None}
+    return {"off_track": None, "judge_reason": None}
   if not isinstance(answer, dict):
-    return {"off_track": None, "self_correcting": None, "judge_reason": None}
+    return {"off_track": None, "judge_reason": None}
   return {
       "off_track": (
           answer["off_track"]
           if type(answer.get("off_track")) is bool
-          else None
-      ),
-      "self_correcting": (
-          answer["self_correcting"]
-          if type(answer.get("self_correcting")) is bool
           else None
       ),
       "judge_reason": str(answer.get("reason", "")),
@@ -483,13 +481,13 @@ def _canned(payload: Mapping[str, Any]) -> Mapping[str, Any]:
     payload: The request body the real call would have sent.
 
   Returns:
-    A response of the shape `ModelJudge` and `ModelWriter` read. The judge is
-    always told the actor is off track and not recovering, so the policy's
-    speaking path — writer call, budget, cooldown — is exercised too.
+    A response of the shape `ModelJudge` and `ModelWriter` read. The judge
+    always answers off track, so the policy's speaking path — writer call,
+    budget, cooldown — is exercised too.
   """
   judging = payload["system"] == JUDGE_INSTRUCTIONS
   content = (
-      '{"off_track": true, "self_correcting": false, "reason": "stub",'
+      '{"off_track": true, "reason": "stub",'
       ' "running_state": "Current checkpoint: replay stub"}'
       if judging
       else "a stub line"

@@ -53,7 +53,6 @@ RUNNING_STATE = "Current checkpoint: inspect the observed failure"
 OFF_TRACK_JSON = json.dumps(
     {
         "off_track": True,
-        "self_correcting": False,
         "reason": "guessing",
         "running_state": RUNNING_STATE,
     }
@@ -61,7 +60,6 @@ OFF_TRACK_JSON = json.dumps(
 ON_TRACK_JSON = json.dumps(
     {
         "off_track": False,
-        "self_correcting": False,
         "reason": "fine",
         "running_state": RUNNING_STATE,
     }
@@ -305,7 +303,6 @@ def test_model_calls_use_the_anthropic_messages_wire_shape() -> None:
                   "type": "object",
                   "properties": {
                       "off_track": {"type": "boolean"},
-                      "self_correcting": {"type": "boolean"},
                       "reason": {"type": "string"},
                       "running_state": {
                           "type": "string",
@@ -318,7 +315,6 @@ def test_model_calls_use_the_anthropic_messages_wire_shape() -> None:
                   },
                   "required": [
                       "off_track",
-                      "self_correcting",
                       "reason",
                       "running_state",
                   ],
@@ -359,7 +355,6 @@ Unresolved contradictions or blockers: parser accepts the control input"""
           json.dumps(
               {
                   "off_track": False,
-                  "self_correcting": False,
                   "reason": "still investigating",
                   "running_state": state_one,
               }
@@ -367,7 +362,6 @@ Unresolved contradictions or blockers: parser accepts the control input"""
           json.dumps(
               {
                   "off_track": False,
-                  "self_correcting": False,
                   "reason": "comparison in progress",
                   "running_state": state_two,
               }
@@ -396,7 +390,6 @@ def test_running_state_update_instructions_are_independently_replaceable() -> (
   answer = json.dumps(
       {
           "off_track": False,
-          "self_correcting": False,
           "reason": "fine",
           "running_state": "Current checkpoint: inspect",
       }
@@ -446,11 +439,9 @@ def test_missing_running_state_and_invalid_verdict_have_distinct_lapses() -> (
     assert len(rows) == 1
     return rows[0]
 
-  missing = lapse_row(
-      '{"off_track": false, "self_correcting": false, "reason": "fine"}'
-  )
+  missing = lapse_row('{"off_track": false, "reason": "fine"}')
   invalid_verdict = lapse_row(
-      '{"off_track": 0, "self_correcting": false, "reason": "fine",'
+      '{"off_track": 0, "reason": "fine",'
       ' "running_state": "Current checkpoint: inspect"}'
   )
 
@@ -465,7 +456,6 @@ def test_an_overlong_running_state_is_rejected_not_silently_truncated() -> None:
   answer = json.dumps(
       {
           "off_track": False,
-          "self_correcting": False,
           "reason": "fine",
           "running_state": "x" * 4_001,
       }
@@ -492,7 +482,6 @@ Unresolved contradictions or blockers: failure remains"""
           json.dumps(
               {
                   "off_track": True,
-                  "self_correcting": False,
                   "reason": "the old assumption still drives the edit",
                   "running_state": updated_state,
               }
@@ -530,7 +519,6 @@ Unresolved contradictions or blockers: failure remains"""
   structured = json.loads(writer_prompt.split("# Judge verdict\n\n", 1)[1])
   assert structured == {
       "off_track": True,
-      "self_correcting": False,
       "reason": "the old assumption still drives the edit",
       "running_state": updated_state,
   }
@@ -545,7 +533,6 @@ def test_one_matching_tool_use_constructs_a_verdict() -> None:
   verdict = judge(observation(), load_criterion())
 
   assert verdict.off_track is True
-  assert verdict.self_correcting is False
   assert verdict.reason == "guessing"
   assert judge.calls[0].raw == [
       {
@@ -554,7 +541,6 @@ def test_one_matching_tool_use_constructs_a_verdict() -> None:
           "name": "submit_supervision_verdict",
           "input": {
               "off_track": True,
-              "self_correcting": False,
               "reason": "guessing",
               "running_state": RUNNING_STATE,
           },
@@ -586,7 +572,6 @@ def test_duplicate_matching_tool_calls_are_unusable() -> None:
       "name": "submit_supervision_verdict",
       "input": {
           "off_track": False,
-          "self_correcting": False,
           "reason": "fine",
       },
   }
@@ -607,7 +592,6 @@ def test_a_tool_call_with_the_wrong_name_is_unusable() -> None:
                   "name": "other_tool",
                   "input": {
                       "off_track": False,
-                      "self_correcting": False,
                       "reason": "fine",
                   },
               }
@@ -622,19 +606,16 @@ def test_a_tool_call_with_the_wrong_name_is_unusable() -> None:
 @pytest.mark.parametrize(
     "tool_input",
     [
-        {"off_track": False, "self_correcting": False},
+        {"off_track": False},
         {
             "off_track": False,
-            "self_correcting": False,
             "reason": "fine",
             "unexpected": "field",
         },
-        {"off_track": 0, "self_correcting": False, "reason": "fine"},
-        {"off_track": False, "self_correcting": 0, "reason": "fine"},
-        {"off_track": False, "self_correcting": False, "reason": 1},
+        {"off_track": 0, "reason": "fine"},
+        {"off_track": False, "reason": 1},
         {
             "off_track": False,
-            "self_correcting": False,
             "reason": "fine",
             "deviation_started_steps_ago": "3",
         },
@@ -660,10 +641,38 @@ def test_malformed_tool_input_is_unusable(tool_input: Any) -> None:
     ModelJudge(model="m", transport=transport)(observation(), load_criterion())
 
 
+def test_a_self_correcting_answer_is_unusable_not_ignored() -> None:
+  """The removed field is rejected, not tolerated as a leftover.
+
+  ``self_correcting`` was dropped from the verdict contract, so an answer
+  still carrying it was produced against a schema this judge no longer
+  publishes. Silently discarding it would make a stale provider
+  indistinguishable from a current one. This is also the arm that separates a
+  complete removal from one that dropped the field from ``required`` while
+  leaving it in ``properties``: only the second would accept this answer.
+  """
+  assert "self_correcting" not in JUDGE_TOOL["input_schema"]["properties"]
+  transport = RecordingTransport(
+      answers=[
+          json.dumps(
+              {
+                  "off_track": True,
+                  "self_correcting": True,
+                  "reason": "guessing",
+                  "running_state": RUNNING_STATE,
+              }
+          )
+      ]
+  )
+
+  with pytest.raises(JudgeAnswerError, match="unexpected.*self_correcting"):
+    ModelJudge(model="m", transport=transport)(observation(), load_criterion())
+
+
 def test_boolean_deviation_start_is_unusable_not_an_integer() -> None:
   """A boolean cannot wear an integer measurement's clothes."""
   answer = (
-      '{"off_track": true, "self_correcting": false, "reason": "guessing",'
+      '{"off_track": true, "reason": "guessing",'
       f' "running_state": "{RUNNING_STATE}",'
       ' "deviation_started_steps_ago": true}'
   )
@@ -964,7 +973,7 @@ def test_a_non_boolean_verdict_field_is_unusable_not_coerced() -> None:
   """
   transport = RecordingTransport(
       answers=[
-          '{"off_track": "false", "self_correcting": false, "reason": "x",'
+          '{"off_track": "false", "reason": "x",'
           f' "running_state": "{RUNNING_STATE}"}}'
       ]
   )
@@ -1033,8 +1042,6 @@ def test_the_compact_rubric_reaches_both_model_calls_without_the_tutorial() -> (
 **Disallowed branches.** Do not guess from the failing patch.
 
 **Off-track signals.** The actor edits before reading the caller.
-
-**Self-correction signals.** The actor returns to inspect the caller.
 
 **Safe hint justification.** The mismatch is observable in public code.
 
@@ -1158,18 +1165,17 @@ def test_default_unguided_model_system_instructions_are_pinned() -> None:
   off-track unguided call must not mention a guidebook it was never given.
   """
   expected_judge = """\
-You are watching an engineer work. Decide two things about the moment shown.
+You are watching an engineer work. Decide one thing about the moment shown.
 
 Judge only against the criterion given below. Do not use any other standard,
 and do not reason about what the correct fix would be.
 
 Answer with one JSON object and nothing else:
-{"off_track": bool, "self_correcting": bool,
+{"off_track": bool,
  "reason": "<one short sentence>",
  "running_state": "<bounded observational state>"}
 
 off_track: the work shown is off the criterion's path.
-self_correcting: left alone, the engineer is already returning to it.
 """
   expected_writer = """\
 Write one short line to the engineer, as someone watching over their shoulder.
@@ -1208,7 +1214,7 @@ def test_default_guided_model_system_instructions_are_pinned() -> None:
   assert hashlib.sha256(
       transport.payloads[0]["system"].encode()
   ).hexdigest() == (
-      "46878e43a79c6328a6d1e3a9bd534fa0254355df9d2c87e5db4a8789451b1949"
+      "600525d94f9d8cd5b2a8d6457974d772ca70d90ecf731525200b1020aa91af91"
   )
   assert hashlib.sha256(
       transport.payloads[1]["system"].encode()
@@ -1294,7 +1300,7 @@ def test_supervising_policy_routes_each_override_to_only_its_model_call() -> (
 def test_the_located_deviation_is_read_without_coercion() -> None:
   """An integer is carried directly as the optional measurement."""
   answered = (
-      '{"off_track": true, "self_correcting": false, "reason": "guessing",'
+      '{"off_track": true, "reason": "guessing",'
       f' "running_state": "{RUNNING_STATE}",'
       ' "deviation_started_steps_ago": 3}'
   )

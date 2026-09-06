@@ -36,7 +36,6 @@ RUBRIC_FIELDS: tuple[str, ...] = (
     "On-track evidence",
     "Disallowed branches",
     "Off-track signals",
-    "Self-correction signals",
     "Safe hint justification",
 )
 

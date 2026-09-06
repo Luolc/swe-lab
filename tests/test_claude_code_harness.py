@@ -1566,7 +1566,6 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
                 "name": JUDGE_TOOL_NAME,
                 "input": {
                     "off_track": True,
-                    "self_correcting": False,
                     "reason": "drift",
                     "running_state": "Current checkpoint: inspect parser",
                 },
@@ -1623,8 +1622,6 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
 **Disallowed branches.** Do not infer behavior from the failed patch.
 
 **Off-track signals.** The actor edits before inspecting both sides.
-
-**Self-correction signals.** The actor returns to inspect the caller.
 
 **Safe hint justification.** The mismatch is observable in public code.
 
