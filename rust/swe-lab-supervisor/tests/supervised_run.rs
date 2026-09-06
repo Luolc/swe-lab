@@ -243,10 +243,9 @@ fn supervise(blocking: &str) -> Run {
         actor: ACTOR,
         judge_every_n_assistant_messages: 2,
         answers: vec![
-            json!({"off_track": true, "self_correcting": false, "reason": MARKER}).to_string(),
+            json!({"off_track": true, "reason": MARKER}).to_string(),
             CORRECTION.to_string(),
-            json!({"off_track": false, "self_correcting": false, "reason": "the tests are running"})
-                .to_string(),
+            json!({"off_track": false, "reason": "the tests are running"}).to_string(),
         ],
         answer_delay: Duration::ZERO,
         stdout_cap: 1_048_576,
@@ -576,7 +575,7 @@ fn a_run_is_supervised_end_to_end_while_stopping_the_actor() {
     supervise_and_check("sigstop");
 }
 
-const SILENT: &str = r#"{"off_track": false, "self_correcting": false, "reason": "fine"}"#;
+const SILENT: &str = r#"{"off_track": false, "reason": "fine"}"#;
 
 /// An actor that writes a boundary line and the line after it in one
 /// `write`, then its result, and waits on stdin.
@@ -871,8 +870,7 @@ fn a_judge_is_not_asked_when_its_record_could_not_be_kept() {
 /// stays on record, and the run stays accounted for.
 #[test]
 fn a_boundary_row_that_would_cross_the_cap_keeps_the_call_and_drops_the_raw_answer() {
-    let long_reason =
-        json!({"off_track": false, "self_correcting": false, "reason": "x".repeat(20_000)});
+    let long_reason = json!({"off_track": false, "reason": "x".repeat(20_000)});
     let run = supervise_scenario(&Scenario {
         name: "reduced",
         blocking: "off",
@@ -931,7 +929,7 @@ fn a_cancellation_during_a_judgment_asks_the_writer_nothing_and_keeps_the_call_o
         actor: TERM_IGNORING_ACTOR,
         judge_every_n_assistant_messages: 1,
         answers: vec![
-            json!({"off_track": true, "self_correcting": false, "reason": MARKER}).to_string(),
+            json!({"off_track": true, "reason": MARKER}).to_string(),
             CORRECTION.to_string(),
         ],
         answer_delay: Duration::from_secs(1),
@@ -1085,8 +1083,7 @@ fn a_correction_is_delivered_only_once_its_row_is_committed_to() {
         actor: CORRECTED_ACTOR,
         judge_every_n_assistant_messages: 1,
         answers: vec![
-            json!({"off_track": true, "self_correcting": false, "reason": "m".repeat(20_000)})
-                .to_string(),
+            json!({"off_track": true, "reason": "m".repeat(20_000)}).to_string(),
             CORRECTION.to_string(),
         ],
         answer_delay: Duration::ZERO,
@@ -1152,8 +1149,7 @@ fn events_during_a_judgment_cannot_take_the_room_held_for_its_record() {
         actor: CHATTY_DURING_JUDGMENT_ACTOR,
         judge_every_n_assistant_messages: 1,
         answers: vec![
-            json!({"off_track": true, "self_correcting": false, "reason": "m".repeat(13_000)})
-                .to_string(),
+            json!({"off_track": true, "reason": "m".repeat(13_000)}).to_string(),
             CORRECTION.to_string(),
         ],
         answer_delay: Duration::from_secs(1),
@@ -1204,7 +1200,7 @@ fn a_correction_the_actor_would_not_take_is_a_gap_behind_its_record() {
         actor: STDIN_CLOSING_ACTOR,
         judge_every_n_assistant_messages: 1,
         answers: vec![
-            json!({"off_track": true, "self_correcting": false, "reason": MARKER}).to_string(),
+            json!({"off_track": true, "reason": MARKER}).to_string(),
             CORRECTION.to_string(),
         ],
         answer_delay: Duration::from_millis(200),

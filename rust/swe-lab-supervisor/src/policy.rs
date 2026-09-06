@@ -11,7 +11,7 @@
 //! empty window is [`Decision::Unjudged`]: there is nothing for the judge to
 //! measure against the criterion, so asking it yields an answer about a
 //! record it was never shown. Past that, the order is: the judge says off
-//! track, else silent; the judge says it will not self-correct, else silent;
+//! track, else silent — `off_track` is the whole gate (ADR-0022);
 //! the would-have-spoken marker is recorded, before any budget is consulted;
 //! budget left, else silent; cooldown satisfied, else silent; the writer
 //! produces a usable line, else a lapse bounded to this boundary. A failed
@@ -38,8 +38,8 @@ pub enum Decision {
     Unjudged(String),
     /// Judged, and nothing to say.
     Silent,
-    /// Judged off track and unlikely to recover, and a line was written.
-    /// Whether it is delivered is the loop's call.
+    /// Judged off track, and a line was written. Whether it is delivered is
+    /// the loop's call.
     Speak(String),
     /// A model call failed or produced an unusable answer. Bounded to this
     /// boundary: the next one is judged normally.
@@ -51,9 +51,9 @@ pub enum Decision {
 pub struct Judged {
     /// The decision.
     pub decision: Decision,
-    /// The judge's reason when it found a deviation the actor was not
-    /// correcting — the would-have-spoken marker, recorded whether or not
-    /// speech followed (the zero-budget control arm produces only these).
+    /// The judge's reason when it found a deviation — the would-have-spoken
+    /// marker, recorded whether or not speech followed (the zero-budget
+    /// control arm produces only these).
     pub marker: Option<String>,
     /// Every model call made, in order, for the log row.
     pub calls: Vec<Call>,
@@ -96,7 +96,7 @@ pub fn judge_boundary(
             };
         }
     };
-    if !verdict.off_track || verdict.self_correcting {
+    if !verdict.off_track {
         return Judged {
             decision: Decision::Silent,
             marker: None,
@@ -222,10 +222,15 @@ mod tests {
         )
     }
 
-    const OFF: &str =
-        "{\"off_track\": true, \"self_correcting\": false, \"reason\": \"blind edit\"}";
-    const RECOVERING: &str = "{\"off_track\": true, \"self_correcting\": true}";
-    const FINE: &str = "{\"off_track\": false, \"self_correcting\": false}";
+    const OFF: &str = "{\"off_track\": true, \"reason\": \"blind edit\"}";
+    /// Off track, and the judge's own words say the actor is already coming
+    /// back. Silent under the pre-ADR-0022 two-veto gate; `off_track` is the
+    /// whole gate now, so it speaks.
+    const OFF_BUT_RECOVERING: &str =
+        "{\"off_track\": true, \"reason\": \"blind edit, but already reverting it\"}";
+    const FINE: &str = "{\"off_track\": false}";
+    /// An answer written against the superseded contract.
+    const WITH_SELF_CORRECTING: &str = "{\"off_track\": true, \"self_correcting\": true}";
     const OPEN: Gates = Gates {
         budget_left: true,
         cooldown_satisfied: true,
@@ -260,7 +265,7 @@ mod tests {
     }
 
     #[test]
-    fn off_track_and_not_recovering_with_open_gates_speaks() {
+    fn off_track_with_open_gates_speaks() {
         let (model, seen) = scripted(vec![OFF, "Worth a look at the failure first?"]);
         let evidence = evidence();
         let judged = judge_boundary(&model, "C", &observe(&evidence), OPEN);
@@ -274,16 +279,51 @@ mod tests {
     }
 
     #[test]
-    fn on_track_or_recovering_is_silent_without_a_marker_or_a_writer_call() {
-        for answer in [FINE, RECOVERING] {
-            let (model, seen) = scripted(vec![answer]);
-            let evidence = evidence();
-            let judged = judge_boundary(&model, "C", &observe(&evidence), OPEN);
-            assert_eq!(judged.decision, Decision::Silent);
-            assert_eq!(judged.marker, None);
-            assert_eq!(judged.calls.len(), 1);
-            assert_eq!(*seen.lock().unwrap(), 1);
-        }
+    fn on_track_is_silent_without_a_marker_or_a_writer_call() {
+        let (model, seen) = scripted(vec![FINE]);
+        let evidence = evidence();
+        let judged = judge_boundary(&model, "C", &observe(&evidence), OPEN);
+        assert_eq!(judged.decision, Decision::Silent);
+        assert_eq!(judged.marker, None);
+        assert_eq!(judged.calls.len(), 1);
+        assert_eq!(*seen.lock().unwrap(), 1);
+    }
+
+    /// `off_track` is the only gate (ADR-0022, settled by #432): a deviation
+    /// the judge itself describes as already being corrected no longer
+    /// withholds the correction. Under the two-veto gate this boundary was
+    /// `Silent` with no marker and no writer call.
+    #[test]
+    fn an_off_track_boundary_speaks_even_when_the_judge_says_the_actor_is_recovering() {
+        let (model, seen) = scripted(vec![OFF_BUT_RECOVERING, "Worth a second look?"]);
+        let evidence = evidence();
+        let judged = judge_boundary(&model, "C", &observe(&evidence), OPEN);
+        assert_eq!(
+            judged.decision,
+            Decision::Speak("Worth a second look?".to_string())
+        );
+        assert_eq!(
+            judged.marker.as_deref(),
+            Some("blind edit, but already reverting it")
+        );
+        assert_eq!(*seen.lock().unwrap(), 2);
+    }
+
+    /// The other half of ADR-0022 at the boundary: an answer still carrying
+    /// `self_correcting` is a bounded lapse — the writer is never asked, and
+    /// the judge's call stays on record.
+    #[test]
+    fn a_judge_answer_still_carrying_self_correcting_is_a_bounded_lapse() {
+        let (model, seen) = scripted(vec![WITH_SELF_CORRECTING]);
+        let evidence = evidence();
+        let judged = judge_boundary(&model, "C", &observe(&evidence), OPEN);
+        let Decision::Lapse(why) = &judged.decision else {
+            panic!("expected a lapse, got {:?}", judged.decision);
+        };
+        assert!(why.contains("self_correcting"), "{why}");
+        assert_eq!(judged.marker, None);
+        assert_eq!(judged.calls.len(), 1);
+        assert_eq!(*seen.lock().unwrap(), 1);
     }
 
     #[test]

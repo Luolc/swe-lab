@@ -19,7 +19,7 @@ use crate::http;
 use crate::prompt::{JUDGE_INSTRUCTIONS, WRITER_INSTRUCTIONS};
 use crate::signals::Stop;
 
-/// The judge's completion ceiling. The judge answers with two booleans and a
+/// The judge's completion ceiling. The judge answers with one boolean and a
 /// sentence, but a reasoning model spends tokens before it answers: on the
 /// replay experiment (#383) successful calls used a median of 89 and at most
 /// 441 reasoning tokens, and every one of the 85 lapses was a 512-token
@@ -74,13 +74,12 @@ impl Call {
     }
 }
 
-/// One judge call's answer: two questions, not one.
+/// One judge call's answer: one question, and the words behind it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Verdict {
-    /// Whether the actor has left the criterion's path.
+    /// Whether the actor has left the criterion's path. The only field the
+    /// speak gate reads (ADR-0022).
     pub off_track: bool,
-    /// Whether, left alone, it would come back by itself.
-    pub self_correcting: bool,
     /// The judge's own words, recorded but never acted on.
     pub reason: String,
 }
@@ -120,10 +119,10 @@ impl Model {
     ///
     /// # Errors
     ///
-    /// The call failed, or its answer was not one JSON object with the two
-    /// booleans. A field that is not a JSON boolean is refused, never
-    /// coerced: `"false"` read as truth would turn a verdict of *no* into a
-    /// correction.
+    /// The call failed, or its answer was not one JSON object holding
+    /// `off_track` and nothing outside the contract. A field that is not a
+    /// JSON boolean is refused, never coerced: `"false"` read as truth would
+    /// turn a verdict of *no* into a correction.
     pub fn judge(&self, prompt: &str) -> Result<(Verdict, Call), Failed> {
         let call = self.complete("judge", JUDGE_INSTRUCTIONS, prompt, JUDGE_MAX_TOKENS)?;
         let Some(raw) = call.raw.as_deref() else {
@@ -253,13 +252,34 @@ impl Model {
     }
 }
 
-/// Parse the judge's answer: one JSON object with the two booleans.
+/// Every field a judge answer may carry. An answer carrying anything else is
+/// unusable rather than accepted-and-ignored: a judge still answering under
+/// the superseded contract — the one that asked for `self_correcting`, which
+/// ADR-0022 removed — would otherwise be indistinguishable from one answering
+/// under this contract. This mirrors the Python carrier, whose tool schema
+/// declares `additionalProperties: false` and whose decoder checks the same
+/// thing locally.
+const VERDICT_FIELDS: [&str; 2] = ["off_track", "reason"];
+
+/// Parse the judge's answer: one JSON object carrying `off_track`, an
+/// optional `reason`, and no other field.
 fn parse_verdict(raw: &str) -> Result<Verdict, String> {
     let answer: Value =
         serde_json::from_str(raw.trim()).map_err(|e| format!("unusable judge answer: {e}"))?;
     let object = answer
         .as_object()
         .ok_or_else(|| "unusable judge answer: not a JSON object".to_string())?;
+    let unexpected: Vec<&str> = object
+        .keys()
+        .map(String::as_str)
+        .filter(|name| !VERDICT_FIELDS.contains(name))
+        .collect();
+    if !unexpected.is_empty() {
+        return Err(format!(
+            "unusable judge answer: unexpected fields: {}",
+            unexpected.join(", ")
+        ));
+    }
     let boolean = |name: &str| -> Result<bool, String> {
         match object.get(name) {
             Some(Value::Bool(value)) => Ok(*value),
@@ -272,7 +292,6 @@ fn parse_verdict(raw: &str) -> Result<Verdict, String> {
     };
     Ok(Verdict {
         off_track: boolean("off_track")?,
-        self_correcting: boolean("self_correcting")?,
         reason: match object.get("reason") {
             None | Some(Value::Null) => String::new(),
             Some(Value::String(text)) => text.clone(),
@@ -324,7 +343,7 @@ mod tests {
     #[test]
     fn the_judge_sends_its_instructions_and_the_prompt_and_reads_the_verdict() {
         let reply = canned(
-            "{\"off_track\": true, \"self_correcting\": false, \"reason\": \"editing blind\"}",
+            "{\"off_track\": true, \"reason\": \"editing blind\"}",
             "stop",
         );
         let (endpoint, requests) = serve_once(Box::leak(reply.into_boxed_str()));
@@ -333,7 +352,6 @@ mod tests {
             verdict,
             Verdict {
                 off_track: true,
-                self_correcting: false,
                 reason: "editing blind".to_string()
             }
         );
@@ -354,20 +372,42 @@ mod tests {
     #[test]
     fn a_verdict_field_that_is_not_a_json_boolean_is_unusable_not_coerced() {
         for raw in [
-            "{\"off_track\": \"false\", \"self_correcting\": false}",
-            "{\"off_track\": 1, \"self_correcting\": false}",
-            "{\"self_correcting\": false}",
+            "{\"off_track\": \"false\"}",
+            "{\"off_track\": 1}",
+            "{\"reason\": \"no verdict\"}",
             "not json",
             "[true, false]",
         ] {
             assert!(parse_verdict(raw).is_err(), "{raw} was accepted");
         }
         assert_eq!(
-            parse_verdict(" {\"off_track\": false, \"self_correcting\": true} \n").unwrap(),
+            parse_verdict(" {\"off_track\": false} \n").unwrap(),
             Verdict {
                 off_track: false,
-                self_correcting: true,
                 reason: String::new()
+            }
+        );
+    }
+
+    /// ADR-0022 removed `self_correcting` from the verdict, and an answer
+    /// that still carries it is an *unusable* answer, not one field to
+    /// discard: accept-and-ignore would leave a judge answering under the
+    /// superseded contract indistinguishable from one answering under this
+    /// one. The named test of that decision for this carrier — putting the
+    /// field back on `VERDICT_FIELDS` turns it red.
+    #[test]
+    fn an_answer_still_carrying_self_correcting_is_unusable_not_ignored() {
+        let error =
+            parse_verdict("{\"off_track\": true, \"self_correcting\": true, \"reason\": \"r\"}")
+                .unwrap_err();
+        assert!(error.contains("unexpected"), "{error}");
+        assert!(error.contains("self_correcting"), "{error}");
+        // The control arm: the same answer without the field is usable.
+        assert_eq!(
+            parse_verdict("{\"off_track\": true, \"reason\": \"r\"}").unwrap(),
+            Verdict {
+                off_track: true,
+                reason: "r".to_string()
             }
         );
     }
