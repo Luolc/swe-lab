@@ -46,6 +46,7 @@ from swe_lab.trace_synthesis.supervisor import (
     LOG_KIND_LAPSE,
     LOG_KIND_SILENT,
     LOG_KIND_SPOKE,
+    LOG_KIND_UNJUDGED,
     NeverSpeak,
     Observation,
     PolicyLapseError,
@@ -962,3 +963,117 @@ def test_a_segmented_judge_lapse_row_still_carries_the_request_and_digest():
       hashlib.sha256(prompt.encode()).hexdigest()
   )
   assert rows[0]["finish_reason"] == "end_turn"
+
+
+def test_segmented_rows_without_a_request_carry_neither_request_field():
+  """The second carrier writes no request on a row that had none behind it.
+
+  Two such rows: a policy that makes no model call (``NeverSpeak``, the
+  silent row), and an unjudged seam — a segment that produced no actor
+  record, so the standard policy did not consult its judge. Both carry the
+  two mode fields and neither ``judge_input`` nor ``judge_prompt_sha256``.
+  """
+  quiet = [
+      row
+      for row in _run(
+          FakeActor(
+              segments=[
+                  _segment(ids=["a"], subtype=_CUT),
+                  _segment(ids=["b"], subtype=_DONE),
+              ]
+          ),
+          _supervision(),
+      )
+      if row["kind"] == LOG_KIND_SILENT
+  ]
+  assert len(quiet) == 1
+  assert (quiet[0]["said_visibility"], quiet[0]["said_count"]) == (None, 0)
+  assert "judge_input" not in quiet[0]
+  assert "judge_prompt_sha256" not in quiet[0]
+
+  def never_asked(observation: Observation, criterion: Criterion) -> Verdict:
+    del observation, criterion
+    raise AssertionError("the judge must not be consulted on empty evidence")
+
+  policy = SpeakWhenOffTrack(
+      judge=never_asked,
+      writer=lambda observation, criterion: "unused",
+      criterion=load_criterion(),
+      budget=1,
+  )
+  unjudged = [
+      row
+      for row in _run(
+          FakeActor(
+              segments=[
+                  _segment(ids=[], subtype=_CUT),
+                  _segment(ids=["b"], subtype=_DONE),
+              ]
+          ),
+          _supervision(policy),
+      )
+      if row["kind"] == LOG_KIND_UNJUDGED
+  ]
+  assert len(unjudged) == 1
+  assert (unjudged[0]["said_visibility"], unjudged[0]["said_count"]) == (
+      "writer",
+      0,
+  )
+  assert "judge_input" not in unjudged[0]
+  assert "judge_prompt_sha256" not in unjudged[0]
+
+
+def test_a_segmented_writer_lapse_row_keeps_the_valid_verdicts_request():
+  """The second carrier keeps the judge's request on a writer-caused lapse."""
+  payloads: list[dict[str, Any]] = []
+
+  def transport(payload: Mapping[str, Any]) -> dict[str, Any]:
+    payloads.append(dict(payload))
+    if "tools" in payload:
+      return {
+          "stop_reason": "tool_use",
+          "content": [
+              {
+                  "type": "tool_use",
+                  "id": "toolu_test",
+                  "name": "submit_supervision_verdict",
+                  "input": {
+                      "off_track": True,
+                      "reason": "guessing",
+                      "running_state": "Current checkpoint: inspect",
+                  },
+              }
+          ],
+      }
+    return {
+        "stop_reason": "end_turn",
+        "content": [{"type": "text", "text": "```python\nfix()\n```"}],
+    }
+
+  policy = supervising_policy(
+      model="m", transport=transport, budget=1, cooldown=0
+  )
+  rows = [
+      row
+      for row in _run(
+          FakeActor(
+              segments=[
+                  _segment(ids=["a"], subtype=_CUT),
+                  _segment(ids=["b"], subtype=_DONE),
+              ]
+          ),
+          _supervision(policy),
+      )
+      if row["kind"] == LOG_KIND_LAPSE
+  ]
+
+  assert len(rows) == 1
+  assert "writer produced no usable line" in str(rows[0]["reason"])
+  assert rows[0]["finish_reason"] is None
+  assert rows[0]["off_track"] is True
+  assert len(payloads) == 2
+  assert rows[0]["judge_input"] == payloads[0]
+  prompt = payloads[0]["messages"][0]["content"]
+  assert rows[0]["judge_prompt_sha256"] == (
+      hashlib.sha256(prompt.encode()).hexdigest()
+  )

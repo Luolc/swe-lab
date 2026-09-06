@@ -161,18 +161,20 @@ which a judge request was built**:
 - `judge_prompt_sha256` — beside `judge_input`, on every row behind which a
   judge request was built: the digest of the judge's user prompt, so rows
   judged on the same bytes can be paired across arms without re-reading the
-  prompt. That is a row with a valid verdict, and a **lapse** row whose
-  request went out and came back unusable — the judge carries the request on
-  its error and the row records `judge_input` and the digest all the same,
-  which matters because the rows where pairing is most needed are the ones
-  where the judge failed (29 and 31 of the treatment's boundaries on the
-  frozen record). A writer lapse keeps the valid verdict's fields, request
-  included. **Three kinds of row have no request behind them and carry
-  neither field**: a row written for a policy that makes no model call
-  (`NeverSpeak`, `SpeakAt`); an `unjudged` row, where the evidence window
-  was empty and the judge was not consulted; and a lapse whose transport
-  raised, where nothing answered. A consumer reads the absence of the two
-  fields on those rows as "no request", not as an older or broken row.
+  prompt. The request is built before the transport is called, so that is
+  three kinds of row: one with a valid verdict; a **lapse** whose request
+  came back unusable; and a **lapse** whose transport raised and nothing
+  answered. In both lapse cases the judge carries the request on its own
+  error (`JudgeAnswerError`, `JudgeTransportError`) and the row records
+  `judge_input` and the digest all the same — the rows where pairing is most
+  needed are the ones where the judge failed (29 and 31 of the treatment's
+  boundaries on the frozen record). A writer lapse keeps the valid verdict's
+  fields, request included. **Two kinds of row have no request behind them
+  and carry neither field**: a row written for a policy that makes no model
+  call (`NeverSpeak`, `SpeakAt`), and an `unjudged` row, where the evidence
+  window was empty and the judge was not consulted. A consumer reads the
+  absence of the two fields on those rows as "no request", not as an older
+  or broken row.
 
 This is the same mechanism as #431's verdict telemetry, ADR-0020's
 `running_state` and ADR-0021's `guidebook_context_mode`: an additive field on
@@ -203,13 +205,22 @@ the shipped segmented definition's factory with the constant patched, and
 the shipped arms and a channel factory with `os.environ` replaced by an
 object that fails on any read. The two A′ definitions captured the constant
 at import, so `test_the_shipped_channel_arms_carry_the_named_said_visibility`
-pins only that they agree with it and with each other. The lapse-row half of
-the telemetry is `test_a_judge_lapse_row_still_carries_the_request_and_its_digest`
-and its segmented twin; the three no-request rows are pinned as carrying
-`said_visibility` and `said_count` and no request by
-`test_decision_rows_record_said_visibility_count_and_prompt_digest` (the
-no-model row), `test_a_boundary_with_no_evidence_is_recorded_as_unjudged_not_silent`
-(the `unjudged` row) and `test_a_lapse_whose_transport_raised_carries_no_request`.
+pins only that they agree with it and with each other. The request-bearing
+lapse rows are pinned per carrier:
+`test_a_judge_lapse_row_still_carries_the_request_and_its_digest` /
+`test_a_segmented_judge_lapse_row_still_carries_the_request_and_digest` (an
+unusable answer), `test_a_lapse_whose_transport_raised_still_carries_the_request`
+(the transport raised; `test_a_transport_failure_carries_the_request_it_was_sent`
+pins the judge's side of it) and
+`test_a_writer_lapse_row_keeps_the_valid_verdicts_request` /
+`test_a_segmented_writer_lapse_row_keeps_the_valid_verdicts_request` (a
+writer lapse after a valid verdict). The two no-request rows are pinned per
+carrier as carrying `said_visibility` and `said_count` and **neither**
+request field: `test_decision_rows_record_said_visibility_count_and_prompt_digest`
+(the no-model row) and `test_a_boundary_with_no_evidence_is_recorded_as_unjudged_not_silent`
+(the `unjudged` row) on the channel carrier, and
+`test_segmented_rows_without_a_request_carry_neither_request_field` for both
+rows on the segmented one.
 
 ## Alternatives Considered
 

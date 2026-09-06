@@ -277,6 +277,34 @@ class JudgeAnswerError(ValueError):
     self.judge_input = judge_input
 
 
+class JudgeTransportError(RuntimeError):
+  """Raised when the judge's transport raised and no answer came back.
+
+  The request had already been built when the transport failed, so it is
+  carried out with the failure: the decision row for that boundary records
+  what was asked, exactly as it does for an answer that came back unusable
+  (:class:`JudgeAnswerError`) or valid — every row behind which a request was
+  built carries it (ADR-0024). Never retried, for the reason the answer-shape
+  error is not: a second ask would make the verdict a function of how many
+  times we asked.
+
+  Attributes:
+    judge_input: The credential-free request that got no answer.
+  """
+
+  judge_input: Mapping[str, Any]
+
+  def __init__(self, message: str, *, judge_input: Mapping[str, Any]) -> None:
+    """Record the transport failure together with the request it was sent.
+
+    Args:
+      message: What the transport raised, in its own words.
+      judge_input: See the class attribute.
+    """
+    super().__init__(message)
+    self.judge_input = judge_input
+
+
 @dataclasses.dataclass(frozen=True)
 class Call:
   """What answered one request, and how it was asked.
@@ -471,6 +499,8 @@ class ModelJudge:
     Raises:
       JudgeAnswerError: The answer was not exactly one matching tool call with
         valid input. Not retried.
+      JudgeTransportError: The transport raised before any answer came back;
+        the built request travels on it. Not retried.
     """
     instructions = self.instructions
     if instructions is None:
@@ -492,7 +522,12 @@ class ModelJudge:
         "tools": [JUDGE_TOOL],
         "tool_choice": {"type": "tool", "name": JUDGE_TOOL_NAME},
     }
-    response = self.transport(payload)
+    try:
+      response = self.transport(payload)
+    except Exception as error:  # noqa: BLE001 - re-raised with the request
+      raise JudgeTransportError(
+          f"judge transport failed: {error!r}", judge_input=payload
+      ) from error
     finish_reason = response.get("stop_reason")
     content = response.get("content")
     self.calls.append(

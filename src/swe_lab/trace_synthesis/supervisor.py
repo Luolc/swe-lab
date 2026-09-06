@@ -164,11 +164,13 @@ class PolicyLapseError(Exception):
       calls by hand (issue #383); this field is how ``supervisor.jsonl`` tells
       them apart without a rerun.
     judge_input: The credential-free judge request behind the lapse, when the
-      request was built — carried over from the same
-      :class:`~swe_lab.trace_synthesis.judge.JudgeAnswerError`, so a boundary
-      whose answer was unusable still records what was asked, exactly as a
-      boundary with a valid verdict does. ``None`` when the lapse did not come
-      from a judge answer at all.
+      request was built — carried over from the judge's own error, whether
+      the answer came back unusable
+      (:class:`~swe_lab.trace_synthesis.judge.JudgeAnswerError`) or never
+      came back at all
+      (:class:`~swe_lab.trace_synthesis.judge.JudgeTransportError`), so the
+      boundary records what was asked exactly as one with a valid verdict
+      does. ``None`` when the lapse did not come from a judge call at all.
   """
 
   finish_reason: str | None
@@ -771,11 +773,12 @@ def judge_prompt_sha256(judge_input: Mapping[str, Any] | None) -> str | None:
 def lapsed_judge_request(error: PolicyLapseError) -> dict[str, object]:
   """Return the request fields a judge lapse still carries, or nothing.
 
-  A judge whose answer was unusable built and sent its request all the same;
-  the row for that boundary records it, with its digest, so the pairing
-  across arms survives on exactly the rows where the judge failed. A lapse
-  that did not come from a judge answer carries nothing here — the writer's
-  lapse row takes those fields from the valid verdict that preceded it.
+  A judge whose answer was unusable, or whose transport raised, built its
+  request all the same; the row for that boundary records it, with its
+  digest, so the pairing across arms survives on exactly the rows where the
+  judge failed. A lapse that did not come from a judge call carries nothing
+  here — the writer's lapse row takes those fields from the valid verdict
+  that preceded it.
 
   Args:
     error: The bounded failure the policy raised.

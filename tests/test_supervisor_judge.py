@@ -33,6 +33,7 @@ from swe_lab.trace_synthesis.judge import (
     JUDGE_TOOL,
     JUDGE_TOOL_NAME,
     JudgeAnswerError,
+    JudgeTransportError,
     LOCATE_DEVIATION_INSTRUCTION,
     messages_transport,
     ModelJudge,
@@ -1526,3 +1527,26 @@ def test_the_default_builders_render_said_to_the_writer_only() -> None:
   assert writer_builder.build(quiet, criterion).endswith(
       "# Prior supervisor interventions\n\n(nothing yet)\n"
   )
+
+
+def test_a_transport_failure_carries_the_request_it_was_sent() -> None:
+  """The judge's request survives a transport that raised before answering.
+
+  Built before the transport is called, the request is what the decision
+  row pairs on; it travels on the error the way ``finish_reason`` travels on
+  an unusable answer, with the transport's own exception as the cause.
+  """
+  seen: list[Mapping[str, Any]] = []
+
+  def transport(payload: Mapping[str, Any]) -> dict[str, Any]:
+    seen.append(payload)
+    raise RuntimeError("upstream 503")
+
+  with pytest.raises(JudgeTransportError, match="upstream 503") as caught:
+    _ = ModelJudge(model="m", transport=transport)(
+        observation(), load_criterion()
+    )
+
+  assert len(seen) == 1
+  assert caught.value.judge_input == seen[0]
+  assert isinstance(caught.value.__cause__, RuntimeError)
