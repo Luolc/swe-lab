@@ -17,6 +17,31 @@ only**. The `oracle_guided_trace` and `oracle_analysis` workflows keep
 starting at phase B over an `oracle_failures` record, exactly as that
 paragraph describes, and nothing here changes them.
 
+It also **partly supersedes two accepted ADRs on the workflow record's
+lifecycle**, by the 2026-09-06 ruling recorded in §6; the older ADRs are not
+edited (an accepted ADR is superseded, never rewritten), and the sentences
+this ADR replaces are quoted here so the boundary is exact:
+
+- [ADR-0007 §10](ADR-0007-task-and-workflow-layer.md) describes the record's
+  discipline as *"Same discipline as a task's marker, one level up: written
+  **last**, after every task record is durable"*. The record is now written
+  last **and removed first**: `Workflow.execute` deletes the previous
+  invocation's record before its first entry runs. The "written last" half
+  stands; the discipline is no longer only a write.
+- [ADR-0009](ADR-0009-workflow-record-always-written.md) states the record's
+  absence semantics as *"Absence now means something stricter and more useful:
+  **the workflow never got past binding.** A `WorkflowError` from
+  `_resolve_edges` still raises before any entry runs, so nothing is written —
+  correct, since no work was attempted."* Absence now means **the latest
+  invocation never finished**: either it never got past binding (nothing is
+  written, and nothing is removed either), or it retired the previous record,
+  ran, and died before writing its own. ADR-0009's list of *"the two
+  properties that made it trustworthy"* — written last, atomically — gains a
+  third, removed first. Everything else in ADR-0009 stands: the record is
+  still written whatever the outcome, it still carries `succeeded` and each
+  entry's status and metrics, and resume is still task-marker driven and
+  reads no workflow record.
+
 ## Date
 
 2026-09-05

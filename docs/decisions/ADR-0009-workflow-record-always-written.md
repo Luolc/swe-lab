@@ -62,23 +62,14 @@ terminal marker for a failed task exactly as for a succeeded one (`TaskOutcome`
 - The two properties that made it trustworthy are unchanged: written **last**,
   after every entry has stopped, and **atomically**, so a torn write can never
   read as complete.
-- **Amended by [ADR-0023 §6](ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md)
-  (2026-09-06):** the previous invocation's record is **removed before the
-  first entry runs**, on every invocation. Written last alone left a window —
-  a run killed after its shards and before its record — in which the previous
-  record described a run that no longer existed and no reader could tell.
-  Shards and task markers are not touched; resume still reads them.
 
 **Resume is explicitly out of scope.** It stays task-marker driven, exactly as
 ADR-0007 §10 argues it should. This ADR does not give the workflow record a
 role in control flow; it makes it a reporting artifact and nothing more.
 
-Absence now means something stricter and more useful: **the latest
-invocation never finished.** Either it never got past binding — a
-`WorkflowError` from `_resolve_edges` still raises before any entry runs, so
-nothing is written, and nothing is removed either — or it retired the
-previous record, ran, and died before writing its own (the ADR-0023 §6
-amendment above).
+Absence now means something stricter and more useful: **the workflow never got
+past binding.** A `WorkflowError` from `_resolve_edges` still raises before any
+entry runs, so nothing is written — correct, since no work was attempted.
 
 ## Alternatives considered
 
