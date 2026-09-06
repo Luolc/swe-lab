@@ -4,6 +4,7 @@
 
 Accepted (supersedes the record-absence rule of
 [ADR-0007](ADR-0007-task-and-workflow-layer.md) §10; the rest of §10 stands)
+**Partly superseded** by [ADR-0023 §6](ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md): the absence semantics — the previous record is also removed before an invocation's first entry runs, so absence means "the latest invocation never finished" (2026-09-06).
 
 ## Date
 
