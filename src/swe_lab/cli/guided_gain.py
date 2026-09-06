@@ -45,8 +45,11 @@ def guided_gain_cmd(
 ) -> None:
   """Read a sweep's blind and guided verdicts into a 2×2 (JSON + a table).
 
+  Both verdicts of a pair are read off the run's workflow record — the
+  roll-up of one invocation — never off whichever attempt shard has the
+  highest number, which a forced re-run can leave behind from an older run.
   The JSON goes to stdout, the table to stderr, so the numbers can be piped
-  while a person still sees them. A sweep with no records at all is refused
+  while a person still sees them. A sweep with no runs at all is refused
   rather than rendered as four zeros: nothing measured is not a measurement
   of zero.
   """
@@ -55,19 +58,18 @@ def guided_gain_cmd(
       if store_root is not None
       else local_store(find_repo_root())
   )
-  records = store.read_manifests(sweep)
-  if not records:
-    print(
-        f"sweep {sweep!r} has no attempt records in the store; nothing to"
-        " read (a run lands there with `--persist --sweep <id>`)",
-        file=sys.stderr,
-    )
-    raise typer.Exit(1)
   reading = guided_gain(
-      records,
+      store,
       sweep_id=sweep,
       baseline_key=baseline_key,
       guided_key=guided_key,
   )
+  if not reading.runs and not reading.incomplete:
+    print(
+        f"sweep {sweep!r} has no runs in the store; nothing to read (a run"
+        " lands there with `--persist --sweep <id>`)",
+        file=sys.stderr,
+    )
+    raise typer.Exit(1)
   print(reading.render(), end="", file=sys.stderr)
   print(json.dumps(reading.to_json(), indent=2))

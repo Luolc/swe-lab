@@ -1,9 +1,10 @@
-"""The 2×2 reading over a from-scratch sweep's attempt records.
+"""The 2×2 reading over a from-scratch sweep, taken from its workflow records.
 
-Literal fixture records, one per cell and two kinds of incompleteness, so each
-assertion says which record it is about. Failure conditions, stated the way
-this repo requires: fold an incomplete run into a cell and the counts move;
-read the first attempt instead of the last and a retried pass reads as a fail;
+Literal fixture runs on a real ``FilesystemStore``, one per cell and one per
+kind of incompleteness, so each assertion says which run it is about. Failure
+conditions, stated the way this repo requires: fold an incomplete run into a
+cell and the counts move; read a verdict off a shard instead of the run's
+record and the rerun tests in ``test_from_scratch_guided_trace.py`` go red;
 drop a zero cell from the table and the render assertion goes red.
 """
 
@@ -11,8 +12,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Literal
 
 from etils import epath
+import pytest
 from typer.testing import CliRunner
 
 from swe_lab.cli import app
@@ -23,71 +26,151 @@ from swe_lab.trace_synthesis.guided_gain import (
     IncompleteRun,
     RunPair,
 )
+from swe_lab.workflow.workflow import WORKFLOW_RECORD_NAME
 
 BASELINE = "baseline_unit_test"
 GUIDED = "guided_unit_test"
 
+# What one grading entry did in a run: resolved or not (a float, as the metric
+# is), ran and ended failed with no verdict (``None``), or never ran because
+# an earlier entry failed (``"blocked"``).
+type Grading = float | None | Literal["blocked"]
+
 runner = CliRunner()
 
 
-def _record(
+def _shard(
     instance_id: str,
     task: str,
     *,
-    rollout_id: int = 0,
-    attempt: int = 0,
+    rollout_id: int,
+    run_ts: str,
     resolved: float | None,
 ) -> AttemptRecord:
-  """One grading attempt's shard; ``resolved=None`` means no verdict at all."""
   metrics = {} if resolved is None else {"unit_test.resolved": resolved}
   return AttemptRecord(
       sweep_id="sw",
       instance_id=instance_id,
       task=task,
       rollout_id=rollout_id,
-      attempt=attempt,
-      run_ts="ts-0",
-      status="success",
+      attempt=0,
+      run_ts=run_ts,
+      status="success" if resolved is not None else "run_error",
       tier="formal",
       backend="fake",
-      metrics={**metrics, "unit_test.score": resolved or 0.0},
+      metrics=metrics,
   )
 
 
-def _sweep() -> list[AttemptRecord]:
-  """One run per cell, plus two runs the reading must not place."""
-  return [
-      # kept: solved blind, solved guided
-      _record("kept", BASELINE, resolved=1.0),
-      _record("kept", GUIDED, resolved=1.0),
-      # gained: unsolved blind, solved guided
-      _record("gained", BASELINE, resolved=0.0),
-      _record("gained", GUIDED, resolved=1.0),
-      # regressed: solved blind, unsolved guided
-      _record("regressed", BASELINE, resolved=1.0),
-      _record("regressed", GUIDED, resolved=0.0),
-      # unsolved: neither
-      _record("unsolved", BASELINE, resolved=0.0),
-      _record("unsolved", GUIDED, resolved=0.0),
-      # incomplete, first kind: the guided grading never left a record
-      _record("no-guided-record", BASELINE, resolved=0.0),
-      # incomplete, second kind: a record exists, but grading produced no
-      # verdict (a setup failure persists a shard with no *.resolved)
-      _record("ungraded", BASELINE, resolved=1.0),
-      _record("ungraded", GUIDED, resolved=None),
-  ]
+def _run(
+    store: FilesystemStore,
+    instance_id: str,
+    *,
+    baseline: Grading,
+    guided: Grading,
+    rollout_id: int = 0,
+    run_ts: str = "ts-0",
+    record: bool = True,
+) -> None:
+  """Persist one invocation the way the engine leaves it.
+
+  An attempt shard per entry that ran, and the workflow record rolling them
+  up — the record's per-entry ``status`` / ``attempts`` / ``metrics`` are what
+  the reading consults. ``record=False`` leaves the shards without a record:
+  a run killed before it finished.
+  """
+  entries: list[dict[str, object]] = []
+  for key, grading in ((BASELINE, baseline), (GUIDED, guided)):
+    if isinstance(grading, str):  # "blocked"
+      entries.append(
+          {
+              "key": key,
+              "status": "blocked",
+              "attempts": 0,
+              "resumed": False,
+              "artifact_keys": {},
+              "metrics": {},
+          }
+      )
+      continue
+    shard = _shard(
+        instance_id, key, rollout_id=rollout_id, run_ts=run_ts, resolved=grading
+    )
+    store.append_manifest(shard)
+    entries.append(
+        {
+            "key": key,
+            "status": "succeeded" if grading is not None else "failed",
+            "attempts": 1,
+            "resumed": False,
+            "artifact_keys": {},
+            "metrics": dict(shard.metrics),
+        }
+    )
+  if record:
+    store.put_bytes(
+        f"sw/{instance_id}/r{rollout_id}/{WORKFLOW_RECORD_NAME}",
+        json.dumps(
+            {
+                "sweep_id": "sw",
+                "instance_id": instance_id,
+                "rollout_id": rollout_id,
+                "run_ts": run_ts,
+                "succeeded": all(
+                    g not in (None, "blocked") for g in (baseline, guided)
+                ),
+                "entries": entries,
+                "edges": {},
+            }
+        ).encode("utf-8"),
+    )
 
 
-def test_the_four_cells_and_both_kinds_of_incomplete_are_told_apart():
-  reading = guided_gain(
-      _sweep(), sweep_id="sw", baseline_key=BASELINE, guided_key=GUIDED
+@pytest.fixture
+def store(tmp_path: Path) -> FilesystemStore:
+  return FilesystemStore(epath.Path(tmp_path / "store"))
+
+
+def _sweep(store: FilesystemStore) -> FilesystemStore:
+  """One run per cell, plus three runs the reading must not place."""
+  _run(store, "kept", baseline=1.0, guided=1.0)
+  _run(store, "gained", baseline=0.0, guided=1.0)
+  _run(store, "regressed", baseline=1.0, guided=0.0)
+  _run(store, "unsolved", baseline=0.0, guided=0.0)
+  # incomplete, first kind: the guided grading never ran (an earlier entry
+  # failed, so the record lists it blocked with no attempts)
+  _run(store, "no-guided-grading", baseline=0.0, guided="blocked")
+  # incomplete, second kind: the guided grading ran and ended failed — a shard
+  # exists, the record says failed, and there is no verdict on either
+  _run(store, "ungraded", baseline=1.0, guided=None)
+  # incomplete, third kind: shards, but no workflow record — the run never
+  # reached the end of an invocation
+  _run(store, "unfinished", baseline=1.0, guided=1.0, record=False)
+  return store
+
+
+def _reading(store: FilesystemStore):
+  return guided_gain(
+      store, sweep_id="sw", baseline_key=BASELINE, guided_key=GUIDED
   )
+
+
+def test_the_four_cells_and_every_kind_of_incomplete_are_told_apart(
+    store: FilesystemStore,
+):
+  reading = _reading(_sweep(store))
 
   assert reading.runs == (
-      RunPair("gained", 0, baseline_pass=False, guided_pass=True),
-      RunPair("kept", 0, baseline_pass=True, guided_pass=True),
-      RunPair("regressed", 0, baseline_pass=True, guided_pass=False),
-      RunPair("unsolved", 0, baseline_pass=False, guided_pass=False),
+      RunPair(
+          "gained", 0, baseline_pass=False, guided_pass=True, run_ts="ts-0"
+      ),
+      RunPair("kept", 0, baseline_pass=True, guided_pass=True, run_ts="ts-0"),
+      RunPair(
+          "regressed", 0, baseline_pass=True, guided_pass=False, run_ts="ts-0"
+      ),
+      RunPair(
+          "unsolved", 0, baseline_pass=False, guided_pass=False, run_ts="ts-0"
+      ),
   )
   assert reading.cells() == {
       Cell.KEPT: 1,
@@ -98,17 +181,18 @@ def test_the_four_cells_and_both_kinds_of_incomplete_are_told_apart():
   # the two numbers the chain is run for, named rather than left to be added
   assert reading.solved_at_baseline == 2  # kept + regressed
   assert reading.gained_with_guidebook == 1
-  # neither incomplete run is in any cell, and each says what it lacks
+  # no incomplete run is in any cell, and each says what it lacks
   assert reading.incomplete == (
-      IncompleteRun("no-guided-record", 0, missing=(GUIDED,)),
+      IncompleteRun("no-guided-grading", 0, missing=(GUIDED,)),
+      IncompleteRun("unfinished", 0, missing=(WORKFLOW_RECORD_NAME,)),
       IncompleteRun("ungraded", 0, missing=(GUIDED,)),
   )
 
 
-def test_the_json_carries_every_pair_its_cell_and_the_named_marginals():
-  payload = guided_gain(
-      _sweep(), sweep_id="sw", baseline_key=BASELINE, guided_key=GUIDED
-  ).to_json()
+def test_the_json_carries_every_pair_its_cell_its_run_and_the_marginals(
+    store: FilesystemStore,
+):
+  payload = _reading(_sweep(store)).to_json()
 
   assert payload["sweep_id"] == "sw"
   assert (payload["baseline_key"], payload["guided_key"]) == (
@@ -125,24 +209,33 @@ def test_the_json_carries_every_pair_its_cell_and_the_named_marginals():
   assert payload["gained_with_guidebook"] == 1
   runs = payload["runs"]
   assert isinstance(runs, list)
-  assert {run["instance_id"]: run["cell"] for run in runs} == {
-      "kept": "kept",
-      "gained": "gained",
-      "regressed": "regressed",
-      "unsolved": "unsolved",
+  assert {run["instance_id"]: (run["cell"], run["run_ts"]) for run in runs} == {
+      "kept": ("kept", "ts-0"),
+      "gained": ("gained", "ts-0"),
+      "regressed": ("regressed", "ts-0"),
+      "unsolved": ("unsolved", "ts-0"),
   }
   assert payload["incomplete"] == [
-      {"instance_id": "no-guided-record", "rollout_id": 0, "missing": [GUIDED]},
+      {
+          "instance_id": "no-guided-grading",
+          "rollout_id": 0,
+          "missing": [GUIDED],
+      },
+      {
+          "instance_id": "unfinished",
+          "rollout_id": 0,
+          "missing": [WORKFLOW_RECORD_NAME],
+      },
       {"instance_id": "ungraded", "rollout_id": 0, "missing": [GUIDED]},
   ]
   # a plain JSON document, no enum or dataclass leaking through
   assert json.loads(json.dumps(payload)) == payload
 
 
-def test_the_table_names_the_two_marginals_and_lists_the_incomplete():
-  table = guided_gain(
-      _sweep(), sweep_id="sw", baseline_key=BASELINE, guided_key=GUIDED
-  ).render()
+def test_the_table_names_the_two_marginals_and_lists_the_incomplete(
+    store: FilesystemStore,
+):
+  table = _reading(_sweep(store)).render()
 
   assert "4 (instance, rollout) pair(s) graded by both" in table
   assert "kept 1" in table and "regressed 1" in table
@@ -151,79 +244,81 @@ def test_the_table_names_the_two_marginals_and_lists_the_incomplete():
   assert "gained with the guidebook (baseline fail, guided pass): 1 / 4" in (
       table
   )
-  assert "incomplete, not counted above: 2" in table
-  assert "no-guided-record r0: missing guided_unit_test" in table
+  assert "incomplete, not counted above: 3" in table
+  assert "no-guided-grading r0: missing guided_unit_test" in table
+  assert "unfinished r0: missing workflow.json" in table
   assert "ungraded r0: missing guided_unit_test" in table
 
 
-def test_an_ungraded_run_is_incomplete_not_unsolved():
-  """A record with no verdict is an absence, and an absence is not a zero.
+def test_an_ungraded_run_is_incomplete_not_unsolved(store: FilesystemStore):
+  """A grading that produced no verdict is an absence, and not a zero.
 
-  A grading entry whose sandbox never came up still persists a shard, with no
-  ``*.resolved`` on it. Reading that as "did not resolve" would put an
-  infrastructure failure in the ``unsolved`` cell — the substitution the
-  incomplete count exists to prevent — so the discriminating assertion is
-  that the cell stays empty.
+  A grading entry whose sandbox never came up still persists a shard, and the
+  record lists it failed with no ``*.resolved``. Reading that as "did not
+  resolve" would put an infrastructure failure in the ``unsolved`` cell — the
+  substitution the incomplete count exists to prevent — so the discriminating
+  assertion is that the cell stays empty.
   """
-  reading = guided_gain(
-      [
-          _record("x", BASELINE, resolved=0.0),
-          _record("x", GUIDED, resolved=None),
-      ],
-      sweep_id="sw",
-      baseline_key=BASELINE,
-      guided_key=GUIDED,
-  )
+  _run(store, "x", baseline=0.0, guided=None)
+  reading = _reading(store)
   assert reading.runs == ()
   assert reading.cells()[Cell.UNSOLVED] == 0
   assert reading.incomplete == (IncompleteRun("x", 0, missing=(GUIDED,)),)
 
 
-def test_the_final_attempt_decides_as_it_does_for_the_runner():
-  # A flaky suite: attempt 0 unresolved, attempt 1 resolved. The runner's
-  # terminal outcome is the last attempt's, so the reading agrees with it.
-  reading = guided_gain(
-      [
-          _record("x", BASELINE, attempt=0, resolved=0.0),
-          _record("x", BASELINE, attempt=1, resolved=1.0),
-          _record("x", GUIDED, resolved=1.0),
-      ],
-      sweep_id="sw",
-      baseline_key=BASELINE,
-      guided_key=GUIDED,
+def test_a_record_without_the_grading_key_at_all_is_incomplete(
+    store: FilesystemStore,
+):
+  # The record is per (sweep, instance, rollout), whatever workflow wrote it:
+  # a `rollout_and_unit_test` run under the same coordinates has neither
+  # grading key, and must not read as anything but "not this chain's run".
+  _run(store, "x", baseline=1.0, guided=1.0)
+  store.put_bytes(
+      f"sw/x/r0/{WORKFLOW_RECORD_NAME}",
+      json.dumps(
+          {
+              "sweep_id": "sw",
+              "instance_id": "x",
+              "rollout_id": 0,
+              "run_ts": "ts-1",
+              "succeeded": True,
+              "entries": [
+                  {
+                      "key": "unit_test",
+                      "status": "succeeded",
+                      "attempts": 1,
+                      "resumed": False,
+                      "artifact_keys": {},
+                      "metrics": {"unit_test.resolved": 1.0},
+                  }
+              ],
+              "edges": {},
+          }
+      ).encode("utf-8"),
   )
-  assert [run.cell for run in reading.runs] == [Cell.KEPT]
+  reading = _reading(store)
+  assert reading.runs == ()
+  assert reading.incomplete == (
+      IncompleteRun("x", 0, missing=(BASELINE, GUIDED)),
+  )
 
 
-def test_two_rollouts_of_one_instance_are_two_pairs():
-  reading = guided_gain(
-      [
-          _record("x", BASELINE, rollout_id=0, resolved=1.0),
-          _record("x", GUIDED, rollout_id=0, resolved=1.0),
-          _record("x", BASELINE, rollout_id=1, resolved=0.0),
-          _record("x", GUIDED, rollout_id=1, resolved=1.0),
-      ],
-      sweep_id="sw",
-      baseline_key=BASELINE,
-      guided_key=GUIDED,
-  )
+def test_two_rollouts_of_one_instance_are_two_pairs(store: FilesystemStore):
+  _run(store, "x", baseline=1.0, guided=1.0, rollout_id=0)
+  _run(store, "x", baseline=0.0, guided=1.0, rollout_id=1)
+  reading = _reading(store)
   assert [(run.rollout_id, run.cell) for run in reading.runs] == [
       (0, Cell.KEPT),
       (1, Cell.GAINED),
   ]
 
 
-def test_every_cell_and_the_incomplete_count_print_even_at_zero():
+def test_every_cell_and_the_incomplete_count_print_even_at_zero(
+    store: FilesystemStore,
+):
   # A clean sweep and an unreported one must not read the same.
-  table = guided_gain(
-      [
-          _record("x", BASELINE, resolved=1.0),
-          _record("x", GUIDED, resolved=1.0),
-      ],
-      sweep_id="sw",
-      baseline_key=BASELINE,
-      guided_key=GUIDED,
-  ).render()
+  _run(store, "x", baseline=1.0, guided=1.0)
+  table = _reading(store).render()
   assert "kept 1" in table
   assert "gained 0" in table
   assert "regressed 0" in table
@@ -235,14 +330,12 @@ def test_every_cell_and_the_incomplete_count_print_even_at_zero():
 
 
 def test_the_command_reads_a_store_root_and_prints_json_and_the_table(
-    tmp_path: Path,
+    store: FilesystemStore,
 ):
-  store = FilesystemStore(epath.Path(tmp_path / "store"))
-  for record in _sweep():
-    store.append_manifest(record)
+  _sweep(store)
 
   result = runner.invoke(
-      app, ["guided-gain", "sw", "--store-root", str(tmp_path / "store")]
+      app, ["guided-gain", "sw", "--store-root", str(store.root)]
   )
 
   assert result.exit_code == 0, result.output
@@ -255,10 +348,10 @@ def test_the_command_reads_a_store_root_and_prints_json_and_the_table(
   }
   assert payload["solved_at_baseline"] == 2
   assert "solved at baseline (kept + regressed): 2 / 4" in result.stderr
-  assert "incomplete, not counted above: 2" in result.stderr
+  assert "incomplete, not counted above: 3" in result.stderr
 
 
-def test_a_sweep_with_no_records_is_refused_not_rendered_as_zeros(
+def test_a_sweep_with_no_runs_is_refused_not_rendered_as_zeros(
     tmp_path: Path,
 ):
   # "Nothing measured" must not print as four zeros and a clean table.
@@ -266,5 +359,5 @@ def test_a_sweep_with_no_records_is_refused_not_rendered_as_zeros(
       app, ["guided-gain", "nothing", "--store-root", str(tmp_path / "empty")]
   )
   assert result.exit_code == 1
-  assert "has no attempt records" in result.stderr
+  assert "has no runs" in result.stderr
   assert result.stdout == ""

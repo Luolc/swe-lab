@@ -161,16 +161,30 @@ an attempt's `artifact_keys`.
 
 ### 6. The reading is a 2×2 with an explicit incomplete count
 
-`swe_lab.trace_synthesis.guided_gain` reads a sweep's attempt records
-(`Store.read_manifests`), pairs the final attempt of `baseline_unit_test`
-with the final attempt of `guided_unit_test` per `(instance, rollout)`, and
-counts four cells — `kept`, `gained`, `regressed`, `unsolved` — plus the two
-marginals the chain is run for, **solved at baseline** (kept + regressed) and
-**gained with the guidebook**. A run either grading key left no verdict for —
-no record, or a record without a `*.resolved` metric — is **incomplete**:
-counted, named with what it lacks, and never folded into a cell. The
-`guided-gain` subcommand prints the JSON to stdout and the table to stderr,
-and refuses a sweep with no records rather than rendering four zeros.
+`swe_lab.trace_synthesis.guided_gain` discovers a sweep's runs from its
+attempt shards (`Store.read_manifests`) and reads **both verdicts of each
+`(instance, rollout)` off that run's workflow record** — the roll-up
+`Workflow.execute` writes last for one invocation, naming the run (`run_ts`)
+and each entry's final-attempt metrics. The shards themselves are not the
+authority on a verdict. A store keeps every shard it was given, so a forced
+re-run (`resume=False`, the CLI's default) overwrites `a0` and leaves an older
+run's `a1` behind, and a re-run that stopped early leaves the previous run's
+downstream shards beside its own fresh upstream ones; reading by highest
+attempt number pairs a verdict with a run that no longer exists in the first
+case and grades a guidebook the current run never wrote in the second. The
+record is the same authority the task runner already uses for itself: its
+terminal marker names `run_ts` and the attempts spent, and resume reads that
+shard, never the last one on disk.
+
+Four cells are counted — `kept`, `gained`, `regressed`, `unsolved` — plus the
+two marginals the chain is run for, **solved at baseline** (kept + regressed)
+and **gained with the guidebook**. A run whose record gives no verdict for a
+grading key — the entry absent, never run, ended failed, or without a
+`*.resolved` metric — or that has no record at all (shards from an invocation
+that never finished) is **incomplete**: counted, named with what it lacks, and
+never folded into a cell. The `guided-gain` subcommand prints the JSON (each
+pair carrying its `run_ts`) to stdout and the table to stderr, and refuses a
+sweep with no runs rather than rendering four zeros.
 
 ## Alternatives Considered
 
@@ -212,6 +226,18 @@ directory — none of which an edge can carry into a sandbox. Persisting the
 verdict is one inline artifact, and it is useful to every consumer of a
 grading record, not only this chain.
 
+### Take each grading's verdict from its highest-numbered attempt shard
+
+Rejected — it was the first cut, and the review of the accepting PR showed
+on a real `FilesystemStore` what it gets wrong: an old run's baseline
+`a0=fail, a1=pass` and guided `a0=pass`, then a forced re-run overwriting both
+`a0` shards with fail / fail, reads back as new-`a0`, old-`a1`, new-`a0` and
+reports `regressed` where the current run is `unsolved`. The task runner
+solved the same problem for itself with its terminal marker; the workflow
+record is that marker one level up, and the reading now uses it. Two
+regression tests pin both shapes (the outlived attempt, and a stopped-early
+re-run beside the previous run's downstream shard) through the real engine.
+
 ### A `Rate` line (ADR-0015 §5 / ADR-0016) for the marginals
 
 Not adopted, deliberately. `Rate` reports a rate over counted runs with its
@@ -241,6 +267,10 @@ prints its counts: an absent measurement must not read as a low one.
 - The `_segmented_rollout`, rollout and grading entries are built by small
   factories taking a key, so a future chain that needs a third solve + grade
   pair adds a key rather than a copy.
+- **The reading needs the workflow record.** A run persisted by anything
+  other than `Workflow.execute` — attempt shards written by hand, or an
+  invocation killed before its record — reads as incomplete, `missing
+  workflow.json`, by design.
 - **What this does not decide.** Whether the guidebook helps is still the
   empirical question ADR-0018 left open; this chain produces the pair of
   verdicts that question needs and claims nothing about their difference.

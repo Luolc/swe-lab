@@ -11,13 +11,22 @@ two — kept, and regressed — are what makes the chain unconditional: a chain
 that skipped the guided half whenever the blind roll passed could never show
 the guidebook making things worse.
 
-The reading is taken off the sweep's persisted attempt records
-(``Store.read_manifests``), one pair per ``(instance, rollout)``, from the
-**final** attempt of each grading entry — the attempt that decided the
-verdict, exactly as the runner's terminal outcome does. A pair either grading
-entry left no verdict for is **incomplete**, counted and named rather than
-dropped: "not graded" and "graded as failing" are different facts, and only
-one of them is a zero.
+Both verdicts of a pair come from **one invocation** of the workflow, and the
+authority on what one invocation graded is its **workflow record** — the
+roll-up ``Workflow.execute`` writes last, naming the run (``run_ts``) and, per
+entry, the final attempt's metrics. The attempt shards are not that authority:
+a store keeps every shard it was given, so a forced re-run (``resume=False``,
+the CLI's default) overwrites ``a0`` and leaves an older run's ``a1`` behind,
+and a re-run that stopped early leaves the previous run's downstream shards
+beside its own fresh upstream ones. Read by highest attempt number, the first
+pairs a verdict with a run that no longer exists and the second grades a
+guidebook the current run never wrote. So the shards only say **which runs
+exist**; every verdict is read off the run's record, the same way the task
+runner reads its own terminal marker rather than the last shard on disk.
+
+A run either grading entry left no verdict for is **incomplete**, counted and
+named rather than dropped: "not graded" and "graded as failing" are different
+facts, and only one of them is a zero.
 """
 
 from __future__ import annotations
@@ -25,13 +34,19 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
+import json
+from typing import Any
 
-from swe_lab.sandbox import AttemptRecord
+from swe_lab.sandbox import AttemptRecord, SandboxError, Store
+from swe_lab.workflow.workflow import WORKFLOW_RECORD_NAME
 
 # The metric every evaluation method reports its answer under (`<method>.
 # resolved`) — read by suffix, as the CLI's exit code does, so the reading does
 # not depend on which grader an entry composed.
 _RESOLVED_SUFFIX = ".resolved"
+# The workflow record's word for an entry whose final attempt was valid; a
+# grading that ended any other way produced no verdict, whatever its metrics.
+_SUCCEEDED = "succeeded"
 
 
 class Cell(StrEnum):
@@ -74,7 +89,7 @@ def cell_of(*, baseline_pass: bool, guided_pass: bool) -> Cell:
 
 @dataclass(frozen=True)
 class RunPair:
-  """One run's two verdicts.
+  """One run's two verdicts, both from the same workflow invocation.
 
   Attributes:
     instance_id: The instance.
@@ -82,12 +97,15 @@ class RunPair:
       a sweep with one rollout per instance reads as one pair per instance.
     baseline_pass: The blind grading entry's verdict.
     guided_pass: The guided grading entry's verdict.
+    run_ts: The invocation both verdicts come from — the workflow record's
+      launch timestamp, so a reader can tell which run a pair describes.
   """
 
   instance_id: str
   rollout_id: int
   baseline_pass: bool
   guided_pass: bool
+  run_ts: str
 
   @property
   def cell(self) -> Cell:
@@ -99,13 +117,16 @@ class RunPair:
 
 @dataclass(frozen=True)
 class IncompleteRun:
-  """A run one or both grading entries left no verdict for.
+  """A run its workflow record cannot give both verdicts for.
 
   Attributes:
     instance_id: The instance.
     rollout_id: Which sample of it.
-    missing: The grading keys with no verdict — no attempt record at all, or
-      a record whose metrics carry no ``*.resolved`` (grading never ran).
+    missing: What the run lacks: the grading keys with no verdict in the
+      record — an entry that never ran, ended failed, or reported no
+      ``*.resolved`` — or the record's own name (``workflow.json``) when the
+      run left shards but no record, because it never reached the end of an
+      invocation.
   """
 
   instance_id: str
@@ -122,8 +143,8 @@ class GuidedGain:
     baseline_key: The entry key of the blind grading.
     guided_key: The entry key of the guided grading.
     runs: Every pair both entries graded, in store order.
-    incomplete: Every ``(instance, rollout)`` a grading key left no verdict
-      for. Never folded into a cell.
+    incomplete: Every ``(instance, rollout)`` whose record gives no verdict
+      for a grading key, or that has no record. Never folded into a cell.
   """
 
   sweep_id: str
@@ -153,8 +174,8 @@ class GuidedGain:
     """Return the reading as a JSON-ready object.
 
     Returns:
-      The header, every pair with its cell, the four counts, the two named
-      marginals, and every incomplete run with what it lacks.
+      The header, every pair with its cell and its run, the four counts, the
+      two named marginals, and every incomplete run with what it lacks.
     """
     return {
         "sweep_id": self.sweep_id,
@@ -164,6 +185,7 @@ class GuidedGain:
             {
                 "instance_id": run.instance_id,
                 "rollout_id": run.rollout_id,
+                "run_ts": run.run_ts,
                 "baseline_pass": run.baseline_pass,
                 "guided_pass": run.guided_pass,
                 "cell": run.cell.value,
@@ -223,20 +245,63 @@ class GuidedGain:
     return "\n".join(lines) + "\n"
 
 
-def _verdict(record: AttemptRecord) -> bool | None:
-  """Read a grading record's answer, or ``None`` when it recorded none.
+def _runs_in(records: Iterable[AttemptRecord]) -> list[tuple[str, int]]:
+  """List the ``(instance, rollout)`` runs a sweep's shards belong to.
 
   Args:
-    record: The grading entry's final attempt.
+    records: The sweep's attempt records, any order.
 
   Returns:
-    Whether every ``*.resolved`` metric says resolved; ``None`` when the
-    record carries no such metric, which is a grading that never produced a
-    verdict rather than one that said no.
+    Every distinct run, in the shards' identity order.
   """
+  runs: dict[tuple[str, int], None] = {}
+  for record in sorted(records, key=lambda r: r.sort_key):
+    runs.setdefault((record.instance_id, record.rollout_id), None)
+  return list(runs)
+
+
+def _workflow_record(
+    store: Store, sweep_id: str, instance_id: str, rollout_id: int
+) -> Mapping[str, Any] | None:
+  """Read one run's workflow record, or ``None`` when the run left none.
+
+  Args:
+    store: The store the sweep persisted through.
+    sweep_id: The sweep.
+    instance_id: The instance.
+    rollout_id: Which sample of it.
+
+  Returns:
+    The parsed record, or ``None`` — the run never reached the end of an
+    invocation (killed mid-way, or still running).
+  """
+  key = f"{sweep_id}/{instance_id}/r{rollout_id}/{WORKFLOW_RECORD_NAME}"
+  try:
+    body = store.get_bytes(key)
+  except SandboxError:
+    return None
+  return json.loads(body)
+
+
+def _verdict(entry: Mapping[str, Any] | None) -> bool | None:
+  """Read a grading entry's answer off the workflow record.
+
+  Args:
+    entry: The entry's roll-up in the record; ``None`` when the record has
+      no entry under the grading key.
+
+  Returns:
+    Whether every ``*.resolved`` metric of the entry's final attempt says
+    resolved; ``None`` when there is no such verdict — the entry is absent,
+    never ran, ended failed (an invalid final attempt is not a grading), or
+    reported no ``*.resolved``.
+  """
+  if entry is None or entry.get("status") != _SUCCEEDED:
+    return None
+  metrics: Mapping[str, float] = entry.get("metrics", {})
   answers = [
       value
-      for name, value in record.metrics.items()
+      for name, value in metrics.items()
       if name.endswith(_RESOLVED_SUFFIX)
   ]
   if not answers:
@@ -244,69 +309,51 @@ def _verdict(record: AttemptRecord) -> bool | None:
   return all(value >= 1.0 for value in answers)
 
 
-def _final_attempts(
-    records: Iterable[AttemptRecord],
-) -> dict[tuple[str, int], dict[str, AttemptRecord]]:
-  """Group a sweep's records into ``(instance, rollout) → task → last attempt``.
-
-  The last persisted attempt is the one whose verdict the runner reported:
-  every attempt persists before the terminal marker, and the marker's outcome
-  is the final attempt's.
-
-  Args:
-    records: The sweep's attempt records, any order.
-
-  Returns:
-    The final attempt of every task of every run.
-  """
-  grouped: dict[tuple[str, int], dict[str, AttemptRecord]] = {}
-  for record in sorted(records, key=lambda r: r.sort_key):
-    grouped.setdefault((record.instance_id, record.rollout_id), {})[
-        record.task
-    ] = record  # sorted by attempt, so the last write is the last attempt
-  return grouped
-
-
 def guided_gain(
-    records: Iterable[AttemptRecord],
+    store: Store,
     *,
     sweep_id: str,
     baseline_key: str,
     guided_key: str,
 ) -> GuidedGain:
-  """Take the 2×2 reading over a sweep's attempt records.
+  """Take the 2×2 reading over a sweep in the store.
 
   Args:
-    records: Every attempt record under the sweep (``read_manifests``).
-    sweep_id: The sweep, for the reading's header.
+    store: The store the sweep's runs persisted through.
+    sweep_id: The sweep, for discovering its runs and for the header.
     baseline_key: The entry key of the blind grading.
     guided_key: The entry key of the guided grading.
 
   Returns:
-    The reading: one pair per run both entries graded, and every run one of
-    them did not.
+    The reading: one pair per run whose workflow record grades both, and
+    every run it could not place, with what that run lacks.
   """
   runs: list[RunPair] = []
   incomplete: list[IncompleteRun] = []
-  for (instance_id, rollout_id), tasks in _final_attempts(records).items():
-    verdicts: Mapping[str, bool | None] = {
-        key: _verdict(tasks[key]) if key in tasks else None
-        for key in (baseline_key, guided_key)
+  for instance_id, rollout_id in _runs_in(store.read_manifests(sweep_id)):
+    record = _workflow_record(store, sweep_id, instance_id, rollout_id)
+    if record is None:
+      incomplete.append(
+          IncompleteRun(instance_id, rollout_id, (WORKFLOW_RECORD_NAME,))
+      )
+      continue
+    entries: dict[str, Mapping[str, Any]] = {
+        entry["key"]: entry for entry in record.get("entries", [])
+    }
+    verdicts = {
+        key: _verdict(entries.get(key)) for key in (baseline_key, guided_key)
     }
     missing = tuple(key for key, answer in verdicts.items() if answer is None)
     if missing:
       incomplete.append(IncompleteRun(instance_id, rollout_id, missing))
       continue
-    baseline_pass, guided_pass = (
-        verdicts[baseline_key] is True,
-        verdicts[guided_key] is True,
-    )
     runs.append(
         RunPair(
             instance_id=instance_id,
             rollout_id=rollout_id,
-            baseline_pass=baseline_pass,
-            guided_pass=guided_pass,
+            baseline_pass=verdicts[baseline_key] is True,
+            guided_pass=verdicts[guided_key] is True,
+            run_ts=str(record["run_ts"]),
         )
     )
   return GuidedGain(

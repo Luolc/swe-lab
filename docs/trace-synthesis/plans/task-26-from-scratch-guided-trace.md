@@ -138,27 +138,46 @@ against `facts()`.
 surfaced as `python -m swe_lab guided-gain`
 ([`cli/guided_gain.py`](../../../src/swe_lab/cli/guided_gain.py)).
 
-Input: a sweep's attempt records (`Store.read_manifests(sweep)`), grouped by
-`(instance, rollout)`; per group, the **final** attempt of the baseline
-grading key and of the guided grading key (default `baseline_unit_test` /
-`guided_unit_test`; both are options). A grading's answer is read off its
-`*.resolved` metric — by suffix, as the CLI's exit code reads it.
+Input: the store. The sweep's attempt shards (`Store.read_manifests(sweep)`)
+say which `(instance, rollout)` runs exist; for each, the reading opens the
+run's **workflow record** (`<sweep>/<instance>/r<n>/workflow.json`, the
+roll-up `Workflow.execute` writes last, whatever the outcome) and takes both
+verdicts from it — the entry under the baseline grading key and the entry
+under the guided grading key (defaults `baseline_unit_test` /
+`guided_unit_test`; both are options), each read off its final attempt's
+`*.resolved` metric (by suffix, as the CLI's exit code reads it) and only when
+the entry `succeeded`.
+
+**Why the record and not the shards.** The store keeps every shard it was
+given. `swe_lab run` defaults to `resume=False`, so a re-run overwrites `a0`
+and leaves an older run's `a1` behind; a re-run whose Oracle failed leaves the
+previous run's `guided_unit_test/a0` beside its own fresh
+`baseline_unit_test/a0`. Selecting by highest attempt number pairs the current
+baseline with a verdict from a run that no longer exists in the first case,
+and grades a guidebook the current run never wrote in the second. The record
+names the invocation (`run_ts`) and rolls up exactly the attempts it spent,
+which is how the task runner already reads its own terminal marker. Both
+shapes are pinned on a real `FilesystemStore` through the real engine in
+`tests/test_from_scratch_guided_trace.py` (the two re-run tests), and both go
+red when the selection is put back to "highest attempt on disk".
 
 Placement rule, in order:
 
-1. A group missing either key's record, **or** holding a record with no
-   `*.resolved` metric (grading never produced a verdict), is an
-   `IncompleteRun` naming what it lacks. It is **counted and listed, never
-   folded into a cell** — "not graded" and "graded as failing" are different
-   facts, and only one of them is a zero.
-2. Otherwise it is a `RunPair`, and `cell_of(baseline_pass, guided_pass)` places it.
+1. No workflow record → `IncompleteRun` missing `workflow.json`: the run never
+   reached the end of an invocation.
+2. A grading key whose entry is absent from the record, never ran (blocked),
+   ended failed, or carries no `*.resolved` → `IncompleteRun` naming the
+   key(s). **Counted and listed, never folded into a cell** — "not graded" and
+   "graded as failing" are different facts, and only one of them is a zero.
+3. Otherwise a `RunPair`, carrying the record's `run_ts`, placed by
+   `cell_of(baseline_pass, guided_pass)`.
 
 Output, JSON on stdout:
 
 ```json
 {
   "sweep_id": "…", "baseline_key": "baseline_unit_test", "guided_key": "guided_unit_test",
-  "runs": [{"instance_id": "…", "rollout_id": 0, "baseline_pass": true, "guided_pass": false, "cell": "regressed"}],
+  "runs": [{"instance_id": "…", "rollout_id": 0, "run_ts": "20260906-020000", "baseline_pass": true, "guided_pass": false, "cell": "regressed"}],
   "cells": {"kept": 0, "gained": 0, "regressed": 1, "unsolved": 0},
   "solved_at_baseline": 1,
   "gained_with_guidebook": 0,
@@ -188,12 +207,13 @@ records is refused with exit 1 rather than rendered as four zeros. Not a
 of ours, and `Rate`'s excluded slot would misname it
 ([ADR-0023, alternatives](../../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md#a-rate-line-adr-0015-5--adr-0016-for-the-marginals)).
 
-`tests/test_guided_gain.py` uses literal fixture records — one per cell, one
-per kind of incompleteness — and asserts the cells, both marginals, the JSON,
-the table text, that an ungraded run is incomplete and not `unsolved`, that
-the final attempt decides, that two rollouts of one instance are two pairs,
-and the command's stdout / stderr / exit code including the empty-sweep
-refusal.
+`tests/test_guided_gain.py` writes literal fixture runs — shards plus the
+workflow record, one per cell, one per kind of incompleteness — into a real
+`FilesystemStore` and asserts the cells, both marginals, the JSON, the table
+text, that an ungraded run is incomplete and not `unsolved`, that a record
+without the grading keys (another workflow's run under the same coordinates)
+is not this chain's run, that two rollouts of one instance are two pairs, and
+the command's stdout / stderr / exit code including the empty-sweep refusal.
 
 ## 6. Running it, and where things land
 
@@ -246,7 +266,11 @@ Tested, all without a container, a model or a credential:
   definition's bindings, asserting each grader saw its own rollout's patch, the
   recorded edges equal the map, and the store holds both patches under both
   keys; the resulting records read as one `regressed` pair through
-  `guided_gain`.
+  `guided_gain`;
+- two re-runs over the same store through the same engine: a forced re-run
+  after a two-attempt grading reads as the re-run's verdict, not the outlived
+  `a1`'s; a re-run whose Oracle failed reads as incomplete, not as a pair
+  completed by the previous run's guided shard.
 
 Not tested here, on purpose: **no live rollout or Oracle run**. A run is paid
 work at the consumer's expense and the owner's magnitude rule governs it; the

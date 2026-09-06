@@ -734,8 +734,11 @@ for counted as incomplete rather than dropped. The decision is
   unbound is refused as ambiguous; two gradings under one key are refused as
   duplicates); the Oracle reads a failure delivered by edge, and its staged
   path is byte-identical to before; every evaluation still passes with the
-  verdict artifact added; the 2×2 places one fixture per cell and counts both
-  kinds of incomplete; five fake steps run end to end under the real bindings.
+  verdict artifact added; the 2×2 places one fixture per cell and counts
+  every kind of incomplete; five fake steps run end to end under the real
+  bindings, and a forced re-run or a re-run that stopped early is read from
+  the current invocation's workflow record, never from an outlived or stale
+  attempt shard.
 - **Verification:** `tests/test_from_scratch_guided_trace.py`,
   `tests/test_guided_gain.py`, and the verdict-artifact test in
   `tests/test_unit_test_method.py` — all declaration-level or fake-sandbox.

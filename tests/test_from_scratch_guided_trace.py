@@ -42,7 +42,11 @@ from swe_lab.sandbox import (
 from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
 from swe_lab.sandbox.testing import FakeSandboxConfig
 from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
-from swe_lab.trace_synthesis.guided_gain import Cell, guided_gain
+from swe_lab.trace_synthesis.guided_gain import (
+    Cell,
+    guided_gain,
+    IncompleteRun,
+)
 from swe_lab.trace_synthesis.oracle import (
     oracle_prompt,
     OracleAnalysisTask,
@@ -52,6 +56,7 @@ from swe_lab.trace_synthesis.oracle import (
 )
 from swe_lab.trace_synthesis.sample import FAILURE_NAMES
 from swe_lab.workflow import (
+    AttemptResult,
     EntryStatus,
     Task,
     Workflow,
@@ -363,6 +368,12 @@ class _Step(Task):
   makes: dict[str, bytes] = field(default_factory=dict)
   metrics: dict[str, float] = field(default_factory=dict)
   seen: dict[str, bytes] = field(default_factory=dict)
+  # How many leading attempts to judge invalid — a flaky grading (retried) or
+  # a failing step (not retried), as the entry's retry budget decides. Keyed
+  # by the attempt's result, not by call: the runner judges one attempt twice
+  # (validity, then retry-desire), and both calls must agree.
+  invalid_attempts: int = 0
+  judged: list[int] = field(default_factory=list)
 
   @override
   def input_schema(self) -> tuple[ArtifactSchema, ...]:
@@ -387,6 +398,14 @@ class _Step(Task):
       self.seen[name] = sb.read(name)
     return sb.run_script("main.sh", timeout=timeout)
 
+  @override
+  def outputs_valid(self, result: AttemptResult) -> bool:
+    if id(result) not in self.judged:
+      self.judged.append(id(result))
+    if self.judged.index(id(result)) < self.invalid_attempts:
+      return False
+    return super().outputs_valid(result)
+
 
 def _solver(patch: bytes) -> _Step:
   return _Step(
@@ -398,11 +417,79 @@ def _solver(patch: bytes) -> _Step:
   )
 
 
-def _grader(*, resolved: float) -> _Step:
+def _grader(*, resolved: float, invalid_attempts: int = 0) -> _Step:
   return _Step(
       needs=(PATCH_NAME, BASE_REF_NAME),
       makes={VERDICT_ARTIFACT: b'{"resolved": true}'},
       metrics={"unit_test.resolved": resolved},
+      invalid_attempts=invalid_attempts,
+  )
+
+
+def _oracle(*, invalid_attempts: int = 0) -> _Step:
+  return _Step(
+      needs=(CONVERSATION_NAME, PATCH_NAME, BASE_REF_NAME, VERDICT_ARTIFACT),
+      makes={GUIDEBOOK_NAME: b"# Guidebook"},
+      invalid_attempts=invalid_attempts,
+  )
+
+
+def _steps(
+    *,
+    baseline_grader: _Step,
+    guided_grader: _Step,
+    oracle: _Step | None = None,
+) -> dict[str, _Step]:
+  """Build the five fakes, keyed as the definition keys them."""
+  return {
+      definitions.BASELINE_ROLLOUT_KEY: _solver(b"BASELINE PATCH"),
+      definitions.BASELINE_UNIT_TEST_KEY: baseline_grader,
+      definitions.ORACLE_ANALYSIS_KEY: oracle or _oracle(),
+      definitions.GUIDED_ROLLOUT_KEY: replace(
+          _solver(b"GUIDED PATCH"), needs=(GUIDEBOOK_NAME,)
+      ),
+      definitions.GUIDED_UNIT_TEST_KEY: guided_grader,
+  }
+
+
+def _execute(
+    store: FilesystemStore,
+    steps: dict[str, _Step],
+    *,
+    output_dir: Path,
+    run_ts: str,
+    retries: dict[str, int] | None = None,
+    resume: bool = True,
+):
+  """Run the five fakes under the shipped bindings, verbatim, over ``store``."""
+  real = {entry.key: entry for entry in definitions.FROM_SCRATCH_GUIDED_TRACE}
+  workflow = Workflow(
+      store=store,
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[
+          WorkflowEntry(
+              key,
+              task,
+              timeout=10.0,
+              sandbox=FakeSandboxConfig(),
+              inputs=real[key].inputs,  # the shipped bindings, verbatim
+              retries=(retries or {}).get(key, 0),
+          )
+          for key, task in steps.items()
+      ],
+  )
+  return workflow.execute(
+      _Underlying(), output_dir=output_dir, run_ts=run_ts, resume=resume
+  )
+
+
+def _reading(store: FilesystemStore):
+  return guided_gain(
+      store,
+      sweep_id="sw",
+      baseline_key=definitions.BASELINE_UNIT_TEST_KEY,
+      guided_key=definitions.GUIDED_UNIT_TEST_KEY,
   )
 
 
@@ -416,52 +503,27 @@ def test_five_fake_steps_run_end_to_end_under_the_real_bindings(
   patch — which is what the explicit binding is for. Then the 2×2 reading is
   taken from the very records the run left.
   """
-  real = {entry.key: entry for entry in definitions.FROM_SCRATCH_GUIDED_TRACE}
-  baseline_solver = _solver(b"BASELINE PATCH")
-  baseline_grader = _grader(resolved=1.0)
-  oracle = _Step(
-      needs=(CONVERSATION_NAME, PATCH_NAME, BASE_REF_NAME, VERDICT_ARTIFACT),
-      makes={GUIDEBOOK_NAME: b"# Guidebook"},
+  steps = _steps(
+      baseline_grader=_grader(resolved=1.0), guided_grader=_grader(resolved=0.0)
   )
-  guided_solver = replace(_solver(b"GUIDED PATCH"), needs=(GUIDEBOOK_NAME,))
-  guided_grader = _grader(resolved=0.0)
-  steps = {
-      "baseline_rollout": baseline_solver,
-      "baseline_unit_test": baseline_grader,
-      "oracle_analysis": oracle,
-      "guided_rollout": guided_solver,
-      "guided_unit_test": guided_grader,
-  }
   store = FilesystemStore(epath.Path(tmp_path / "store"))
-  workflow = Workflow(
-      store=store,
-      sweep_id="sw",
-      rollout_id=0,
-      entries=[
-          WorkflowEntry(
-              key,
-              task,
-              timeout=10.0,
-              sandbox=FakeSandboxConfig(),
-              inputs=real[key].inputs,  # the shipped bindings, verbatim
-          )
-          for key, task in steps.items()
-      ],
-  )
 
-  outcome = workflow.execute(
-      _Underlying(), output_dir=tmp_path / "out", run_ts="ts-0"
-  )
+  outcome = _execute(store, steps, output_dir=tmp_path / "out", run_ts="ts-0")
 
   assert outcome.succeeded is True
   assert [e.status for e in outcome.entries] == [EntryStatus.SUCCEEDED] * 5
   # each grader read its own rollout's patch — the second one the guided one
+  baseline_grader = steps[definitions.BASELINE_UNIT_TEST_KEY]
+  guided_grader = steps[definitions.GUIDED_UNIT_TEST_KEY]
   assert baseline_grader.seen[PATCH_NAME] == b"BASELINE PATCH"
   assert guided_grader.seen[PATCH_NAME] == b"GUIDED PATCH"
   # the Oracle read the blind pair
+  oracle = steps[definitions.ORACLE_ANALYSIS_KEY]
   assert oracle.seen[PATCH_NAME] == b"BASELINE PATCH"
   assert oracle.seen[VERDICT_ARTIFACT] == b'{"resolved": true}'
-  assert guided_solver.seen[GUIDEBOOK_NAME] == b"# Guidebook"
+  assert steps[definitions.GUIDED_ROLLOUT_KEY].seen[GUIDEBOOK_NAME] == (
+      b"# Guidebook"
+  )
   record = json.loads(store.get_bytes(outcome.record_key))
   assert record["edges"] == EXPECTED_EDGES
   # two `patch.diff`s in one run, under two task prefixes: the key is the
@@ -478,11 +540,121 @@ def test_five_fake_steps_run_end_to_end_under_the_real_bindings(
       "guided_rollout": "sw/acme__widget-1/r0/guided_rollout/a0/patch.diff",
   }
   # …and the reading places this run in the cell its two grades put it in
-  reading = guided_gain(
-      shards,
-      sweep_id="sw",
-      baseline_key=definitions.BASELINE_UNIT_TEST_KEY,
-      guided_key=definitions.GUIDED_UNIT_TEST_KEY,
-  )
-  assert [run.cell for run in reading.runs] == [Cell.REGRESSED]
+  reading = _reading(store)
+  assert [(run.cell, run.run_ts) for run in reading.runs] == [
+      (Cell.REGRESSED, "ts-0")
+  ]
   assert reading.incomplete == ()
+
+
+# ─── re-runs: the store keeps what earlier invocations left ──────────────────
+
+
+def test_a_forced_rerun_is_read_from_the_rerun_not_an_outlived_attempt(
+    tmp_path: Path,
+):
+  """A forced re-run overwrites ``a0`` and leaves an older run's ``a1`` behind.
+
+  ``swe_lab run`` defaults to ``resume=False`` against a T1 store that keeps
+  every shard, so after a two-attempt grading followed by a one-attempt
+  re-run the store holds the re-run's ``a0`` *and* the old run's ``a1``. The
+  reading must take the re-run's verdict — the workflow record's — and not
+  the highest attempt number on disk, which belongs to a run that no longer
+  exists. Old run: baseline flaky-then-pass, guided pass. Re-run: both fail.
+  Truth for the current run is ``unsolved``; the outlived ``a1`` would make it
+  ``regressed``.
+  """
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  old = _steps(
+      baseline_grader=_grader(resolved=1.0, invalid_attempts=1),
+      guided_grader=_grader(resolved=1.0),
+  )
+  first = _execute(
+      store,
+      old,
+      output_dir=tmp_path / "old",
+      run_ts="20260906-010000",
+      retries={definitions.BASELINE_UNIT_TEST_KEY: 1},
+  )
+  assert first.succeeded is True
+  rerun = _steps(
+      baseline_grader=_grader(resolved=0.0), guided_grader=_grader(resolved=0.0)
+  )
+  second = _execute(
+      store,
+      rerun,
+      output_dir=tmp_path / "new",
+      run_ts="20260906-020000",
+      resume=False,
+  )
+  assert second.succeeded is True
+  # the precondition the test is about: the outlived a1 really is still there
+  shards = store.read_manifest(
+      "sw", "acme__widget-1", 0, definitions.BASELINE_UNIT_TEST_KEY
+  )
+  assert [(s.attempt, s.run_ts) for s in shards] == [
+      (0, "20260906-020000"),
+      (1, "20260906-010000"),
+  ]
+
+  reading = _reading(store)
+
+  assert [(run.cell, run.run_ts) for run in reading.runs] == [
+      (Cell.UNSOLVED, "20260906-020000")
+  ]
+  assert reading.incomplete == ()
+
+
+def test_a_rerun_that_stopped_early_is_not_completed_by_stale_shards(
+    tmp_path: Path,
+):
+  """A re-run whose Oracle failed never graded a guided patch; the old one did.
+
+  The store still holds the previous run's ``guided_unit_test/a0`` beside the
+  re-run's fresh ``baseline_unit_test/a0``. Pairing them would grade a
+  guidebook the current run never wrote. The current run is incomplete, and
+  the reading must say so rather than borrow the stale half.
+  """
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  old = _steps(
+      baseline_grader=_grader(resolved=1.0), guided_grader=_grader(resolved=1.0)
+  )
+  assert (
+      _execute(
+          store, old, output_dir=tmp_path / "old", run_ts="20260906-010000"
+      ).succeeded
+      is True
+  )
+  rerun = _steps(
+      baseline_grader=_grader(resolved=0.0),
+      guided_grader=_grader(resolved=1.0),  # never reached
+      oracle=_oracle(invalid_attempts=1),
+  )
+  second = _execute(
+      store,
+      rerun,
+      output_dir=tmp_path / "new",
+      run_ts="20260906-020000",
+      resume=False,
+  )
+  assert [e.status for e in second.entries] == [
+      EntryStatus.SUCCEEDED,
+      EntryStatus.SUCCEEDED,
+      EntryStatus.FAILED,
+      EntryStatus.BLOCKED,
+      EntryStatus.BLOCKED,
+  ]
+  # the stale half is really in the store
+  stale = store.read_manifest(
+      "sw", "acme__widget-1", 0, definitions.GUIDED_UNIT_TEST_KEY
+  )
+  assert [s.run_ts for s in stale] == ["20260906-010000"]
+
+  reading = _reading(store)
+
+  assert reading.runs == ()
+  assert reading.incomplete == (
+      IncompleteRun(
+          "acme__widget-1", 0, missing=(definitions.GUIDED_UNIT_TEST_KEY,)
+      ),
+  )
