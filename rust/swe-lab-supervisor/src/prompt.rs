@@ -18,16 +18,15 @@ pub const MAX_INTERVENTION_CHARS: usize = 400;
 
 /// What the judge is told to do.
 pub const JUDGE_INSTRUCTIONS: &str = "\
-You are watching an engineer work. Decide two things about the moment shown.
+You are watching an engineer work. Decide one thing about the moment shown.
 
 Judge only against the criterion given below. Do not use any other standard,
 and do not reason about what the correct fix would be.
 
 Answer with one JSON object and nothing else:
-{\"off_track\": bool, \"self_correcting\": bool, \"reason\": \"<one short sentence>\"}
+{\"off_track\": bool, \"reason\": \"<one short sentence>\"}
 
 off_track: the work shown is off the criterion's path.
-self_correcting: left alone, the engineer is already returning to it.
 ";
 
 /// What the writer is told to do.
