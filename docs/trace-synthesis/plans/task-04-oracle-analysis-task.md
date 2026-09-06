@@ -204,7 +204,7 @@ None of the "does not show" items is claimed.
 judged failed, and its `guidebook.md`, conversation and event stream are the
 only record of what the brief produced. They were credential-scanned (32
 files, no hits) and copied to the stable artifacts path outside every
-checkout (`swe-lab-artifacts/trace_synthesis/oracle-analysis-qutebrowser-rollout-0-20260901T135011Z/`,
+checkout (`~/data/swe-lab/trace_synthesis/oracle-analysis-qutebrowser-rollout-0-20260901T135011Z/`,
 with a `PROVENANCE.txt`). Judging an attempt failed and discarding its output
 are two different acts and must never be merged: the run layout keeps every
 attempt's `a<N>/` whatever its validity, and nothing in this task or
