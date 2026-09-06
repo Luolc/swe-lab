@@ -603,6 +603,11 @@ def test_a_boundary_with_no_evidence_is_recorded_as_unjudged_not_silent() -> (
   # without it.
   assert len(asked) == 1
   assert rows[0]["cursor"] == 1
+  # No request was built for the unjudged boundary, so the row names the mode
+  # and the count and carries neither request field (ADR-0024).
+  assert (rows[0]["said_visibility"], rows[0]["said_count"]) == ("writer", 0)
+  assert "judge_input" not in rows[0]
+  assert "judge_prompt_sha256" not in rows[0]
 
 
 def test_valid_verdict_fields_are_recorded_for_silence_and_speech() -> None:
@@ -841,3 +846,35 @@ def test_a_judge_lapse_row_still_carries_the_request_and_its_digest() -> None:
   )
   assert rows[0]["finish_reason"] == "end_turn"
   assert "off_track" not in rows[0]
+
+
+def test_a_lapse_whose_transport_raised_carries_no_request() -> None:
+  """A judge call that never got an answer records no request either.
+
+  The third kind of row with no request behind it (after a policy with no
+  model call and an unjudged boundary): the transport raised, nothing
+  answered, and the digest pairs requests that were judged — so the row names
+  the mode and the count, carries ``finish_reason`` as an explicit ``None``,
+  and has neither ``judge_input`` nor ``judge_prompt_sha256``.
+  """
+
+  def transport(payload: Mapping[str, object]) -> dict[str, object]:
+    del payload
+    raise RuntimeError("upstream 503")
+
+  rows: list[dict[str, object]] = []
+  supervisor = Supervisor(
+      policy=supervising_policy(model="m", transport=transport, budget=1),
+      task="the task",
+      sink=lambda _: None,
+      log=lambda row: rows.append(dict(row)),
+  )
+
+  _ = supervisor.observe(assistant_event("editing blind"))
+
+  assert [row["kind"] for row in rows] == ["lapse"]
+  assert "upstream 503" in str(rows[0]["reason"])
+  assert rows[0]["finish_reason"] is None
+  assert (rows[0]["said_visibility"], rows[0]["said_count"]) == ("writer", 0)
+  assert "judge_input" not in rows[0]
+  assert "judge_prompt_sha256" not in rows[0]

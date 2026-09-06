@@ -146,28 +146,33 @@ the default arm ships with this record.
 
 ### Three additive fields on the decision row
 
-Every decision row of both carriers (`Supervisor._row`,
-`SegmentedRun._decision_row`) carries:
+Both carriers (`Supervisor._row`, `SegmentedRun._decision_row`) write two of
+the fields on **every** decision row, and the third on every row **behind
+which a judge request was built**:
 
-- `said_visibility` — the mode the policy ran under (`null` for a policy that
-  makes no model call);
-- `said_count` — how many corrections had been delivered before that
-  boundary: the length of the observation's `said`, so a `spoke` row does not
-  count its own. It is the same quantity under all three modes and on rows
-  written before this record; how many the judge was actually shown follows
-  from `said_visibility` on the same row — `said_count` under `"both"`, zero
-  under `"writer"` and `"none"`;
-- `judge_prompt_sha256` — the digest of the judge's user prompt, from the
-  `judge_input` the row already carries, so rows judged on the same bytes can
-  be paired across arms without re-reading the prompt. On a **lapse** row
-  too: when the request went out and the answer was unusable, the judge
-  carries the request on its error and the row records `judge_input` and the
-  digest all the same — the rows where pairing is most needed are the ones
+- `said_visibility` — on every row: the mode the policy ran under (`null` for
+  a policy that makes no model call);
+- `said_count` — on every row: how many corrections had been delivered before
+  that boundary, the length of the observation's `said`, so a `spoke` row
+  does not count its own. It is the same quantity under all three modes and
+  on rows written before this record; how many the judge was actually shown
+  follows from `said_visibility` on the same row — `said_count` under
+  `"both"`, zero under `"writer"` and `"none"`;
+- `judge_prompt_sha256` — beside `judge_input`, on every row behind which a
+  judge request was built: the digest of the judge's user prompt, so rows
+  judged on the same bytes can be paired across arms without re-reading the
+  prompt. That is a row with a valid verdict, and a **lapse** row whose
+  request went out and came back unusable — the judge carries the request on
+  its error and the row records `judge_input` and the digest all the same,
+  which matters because the rows where pairing is most needed are the ones
   where the judge failed (29 and 31 of the treatment's boundaries on the
-  frozen record). A lapse that is not a judge answer carries what it has: the
-  writer's lapse row keeps the valid verdict's fields; a lapse whose
-  transport raised carries no request, because nothing answered it and the
-  digest pairs requests that were judged.
+  frozen record). A writer lapse keeps the valid verdict's fields, request
+  included. **Three kinds of row have no request behind them and carry
+  neither field**: a row written for a policy that makes no model call
+  (`NeverSpeak`, `SpeakAt`); an `unjudged` row, where the evidence window
+  was empty and the judge was not consulted; and a lapse whose transport
+  raised, where nothing answered. A consumer reads the absence of the two
+  fields on those rows as "no request", not as an older or broken row.
 
 This is the same mechanism as #431's verdict telemetry, ADR-0020's
 `running_state` and ADR-0021's `guidebook_context_mode`: an additive field on
@@ -200,7 +205,11 @@ object that fails on any read. The two A′ definitions captured the constant
 at import, so `test_the_shipped_channel_arms_carry_the_named_said_visibility`
 pins only that they agree with it and with each other. The lapse-row half of
 the telemetry is `test_a_judge_lapse_row_still_carries_the_request_and_its_digest`
-and its segmented twin.
+and its segmented twin; the three no-request rows are pinned as carrying
+`said_visibility` and `said_count` and no request by
+`test_decision_rows_record_said_visibility_count_and_prompt_digest` (the
+no-model row), `test_a_boundary_with_no_evidence_is_recorded_as_unjudged_not_silent`
+(the `unjudged` row) and `test_a_lapse_whose_transport_raised_carries_no_request`.
 
 ## Alternatives Considered
 
