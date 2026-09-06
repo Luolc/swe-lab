@@ -13,6 +13,11 @@ these files **link** to it and never restate it.
 
 | Version | Date | Breaking | What it is |
 |---|---|---|---|
+| [v0.3.5](v0.3.5.md) | 2026-09-06 | **yes** — the judge's verdict contract | `self_correcting` leaves the supervision contract in both carriers; an answer still sending it is an unusable answer, and the Rust runtime — which kept the field as a live veto — now speaks where it was silent. |
+| [v0.3.4](v0.3.4.md) | 2026-09-05 | **yes** — judge input, required output, and when it speaks | The supervisor sees complete paired evidence, carries a required bounded running state, and `off_track` becomes the only gate on speaking. |
+| [v0.3.3](v0.3.3.md) | 2026-09-05 | **yes** — typed verdicts, gates that now refuse | The judge answers through a forced tool call with no text fallback; a missing or invalid guidebook is refused before the actor starts; `max_cost_usd` finally caps cumulative spend. |
+| [v0.3.2](v0.3.2.md) | 2026-09-03 | **yes** — supervision wire format and credentials | Both supervisor paths speak the Anthropic Messages API and name no provider: a base URL, an API key and a model are the whole configuration. |
+| [v0.3.1](v0.3.1.md) | 2026-09-03 | **yes** — supervision config, and what an exit code means | Oracle-guided trace synthesis end to end: a failure becomes a guidebook, the guidebook steers a segmented supervised rollout, and the rollout is graded, in one command. |
 | [v0.3.0](v0.3.0.md) | 2026-09-02 | **yes** — run output paths, the host-side capture proxy, a hash-gated dataset | Supervised rollouts a command can start (supervisor on the actor's live stdin, plus a paired control); `RolloutOutcome` and a rate that carries its two counts; the capture proxy moves into the sandbox; the pre-agent baseline and a one-hour agent budget become the defaults. |
 | [v0.2.14](v0.2.14.md) | 2026-08-26 | **small** — one moved module | DeepSWE 1.1 as a second fully-runnable dataset (113-task sweep clean); HOME defers to the image with per-agent pinned config; scoped `safe.directory` on every engine git command. |
 | [v0.2.13](v0.2.13.md) | 2026-08-25 | no | Two diff-extraction styles end to end: the classic `base_commit` round trip, plus an opt-in pre-agent baseline whose tree mismatch fails ungraded. |
