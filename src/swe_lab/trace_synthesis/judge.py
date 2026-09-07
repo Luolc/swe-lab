@@ -127,8 +127,17 @@ JUDGE_TOOL: Mapping[str, Any] = {
 }
 
 
+def _whole_value(raw: str) -> str:
+  """Return the environment value unchanged — the single-credential case."""
+  return raw
+
+
 def messages_transport(
-    payload: Mapping[str, Any], *, base_url: str, api_key_env: str
+    payload: Mapping[str, Any],
+    *,
+    base_url: str,
+    api_key_env: str,
+    select_key: Callable[[str], str] = _whole_value,
 ) -> Mapping[str, Any]:
   """Send one Anthropic Messages request and return the decoded answer.
 
@@ -142,6 +151,12 @@ def messages_transport(
     payload: The request body, already shaped by the caller.
     base_url: Upstream base URL; ``/v1/messages`` is appended.
     api_key_env: Environment variable containing the API key.
+    select_key: Turns the raw environment value into the key to send. The
+      default sends it whole; a provider whose variable holds a **pool** of
+      keys supplies a selector that splits it here, inside this process, and
+      picks a live member — see
+      :mod:`swe_lab.trace_synthesis.provider`. Splitting a pool in a shell
+      would put every key on a command line.
 
   Returns:
     The decoded response.
@@ -149,7 +164,8 @@ def messages_transport(
   Raises:
     RuntimeError: No key is present in the environment.
   """
-  api_key = os.environ.get(api_key_env, "")
+  raw = os.environ.get(api_key_env, "")
+  api_key = select_key(raw) if raw else ""
   if not api_key:
     raise RuntimeError(
         f"no provider key: {api_key_env} is unset or empty in this"

@@ -241,10 +241,11 @@ verified against `main` = `5145510` on 2026-09-02, after
    `SUPERVISOR_MODEL` are both pinned to Claude Sonnet 5 —
    `DEFAULT_MODEL = "claude-sonnet-5"`
    (`src/swe_lab/harnesses/claude_code/constants.py:114`, confirmed on
-   current `main`) and `SUPERVISOR_MODEL = "anthropic/claude-sonnet-5"` (the
-   same model, OpenRouter-qualified;
-   `src/swe_lab/workflow/definitions.py:126`, also confirmed on current
-   `main`). The pin is deliberate: it is what keeps a positive result from
+   current `main`) and `SUPERVISOR_MODEL = "claude-sonnet-5"`
+   (`src/swe_lab/workflow/definitions.py`; corrected 2026-09-07 — this line
+   read `"anthropic/claude-sonnet-5"`, "OpenRouter-qualified", which has not
+   been the constant since 0.3.2, and OpenRouter takes the bare name anyway:
+   `docs/conventions.md`, Secrets). The pin is deliberate: it is what keeps a positive result from
    being read two ways at once — "supervision worked" versus "a stronger
    model's reasoning leaked into the judge." `--rollout.harness.model=...`
    overrides only the actor's half and nothing refuses the resulting
