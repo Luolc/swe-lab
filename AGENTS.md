@@ -195,6 +195,20 @@ test for is a wish, and it silently decays into a lie.
   you are inside the magnitude is itself the trigger to ask** — a rule that
   asks for judgement owes you somewhere to go when you cannot make it, and
   asking costs a message where guessing wrong costs someone else's quota.
+
+  **What a paid run spends is the OpenRouter key pool** —
+  `op://dev-shared/openrouter-api-keys/credential`, the reference only, never a
+  value. Not the owner's Claude subscription and not a personal Anthropic key:
+  those are the owner's own quota, and an experiment that quietly draws on them
+  is spending something nobody budgeted for the experiment. The pool is
+  comma-separated and its members are separate accounts, so it is split
+  **inside the consuming program**, never in a shell, and a **live member is
+  sampled rather than assumed** — a rollout started on a dead key is paid for
+  before it fails. Report a key only by hash prefix or pool index, never its
+  value. The supervisor side honours this per invocation with
+  `--<entry>.harness.segmented.provider=openrouter`, which is written onto
+  every decision row; how, and what the actor side cannot do yet, is in
+  [`docs/conventions.md`](docs/conventions.md#secrets).
 - **Never:** commit secrets / OAuth tokens / `.envrc.local` (enforced by the
   gitleaks hook + the CI history scan — see [Quality bar](#quality-bar));
   commit dataset data files or large trace records (gitignored / off-repo on HF

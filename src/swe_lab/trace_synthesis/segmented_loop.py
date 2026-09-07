@@ -57,6 +57,7 @@ from typing import Any
 from swe_lab.sandbox import ExecResult
 
 from .guidebook import guidebook_context_mode
+from .provider import build_provider, Provider
 from .seam_shape import (
     DirtySeamError,
     read_seam,
@@ -105,12 +106,21 @@ class SegmentedSupervision:
   """How a run is cut, judged and resumed — and where it is made to stop.
 
   Attributes:
-    policy_factory: Builds the policy for one attempt. **A factory, not a
-      policy**, for the reason ``supervision()`` is one on the A′ side: a
-      judging policy carries per-run state — budget spent, cooldown, the
-      markers it has recorded — and these definitions are module-level, so a
-      shared instance would let one instance's spent budget silence the next
-      one's corrections with nothing to show for it.
+    policy_factory: Builds the policy for one attempt, given the cooldown and
+      the resolved :class:`~swe_lab.trace_synthesis.provider.Provider`. **A
+      factory, not a policy**, for the reason ``supervision()`` is one on the
+      A′ side: a judging policy carries per-run state — budget spent,
+      cooldown, the markers it has recorded — and these definitions are
+      module-level, so a shared instance would let one instance's spent budget
+      silence the next one's corrections with nothing to show for it. The
+      provider arrives the same way and for a second reason: it names the
+      upstream this invocation pays, which a module-level closure could not.
+    provider: Which upstream answers the supervisor, by registry name — see
+      :mod:`swe_lab.trace_synthesis.provider`. A name rather than a base URL so
+      an invocation can select one (``--rollout.harness.segmented.provider=…``)
+      and an unknown one is refused before a container is paid for; it is
+      written onto every decision row, so a later reader can tell which account
+      answered.
     max_segments: The hard ceiling on segments. The large default keeps normal
       rollouts away from it while remaining finite, because ``--max-turns``
       stops being the runaway guard here: on an
@@ -151,7 +161,8 @@ class SegmentedSupervision:
       ``None`` when this run uses only the general-practice criterion.
   """
 
-  policy_factory: Callable[[int], SpeakPolicy]
+  policy_factory: Callable[[int, Provider], SpeakPolicy]
+  provider: str = "anthropic"
   max_segments: int = 1_000
   wall_clock_seconds: float = 86_400.0
   max_cost_usd: float = 1_000.0
@@ -161,6 +172,19 @@ class SegmentedSupervision:
   guard_seam: bool = False
   neutral_continue: str = "Continue."
   guidebook_name: str | None = None
+
+  def __post_init__(self) -> None:
+    """Refuse an unknown provider name where the name is chosen.
+
+    Here rather than at the first judgement: an override is applied while the
+    command line is read, so a typo costs a construction instead of a
+    container — the same reasoning as
+    :meth:`~swe_lab.trace_synthesis.native_supervision.NativeSupervision.__post_init__`.
+
+    ``build_provider`` is what refuses it; the name resolved here is
+    discarded, since the loop resolves it again per run.
+    """
+    _ = build_provider(self.provider)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -457,7 +481,9 @@ class SegmentedRun:
     """
     # One policy per run, built here rather than shared by the definition —
     # see `SegmentedSupervision.policy_factory`.
-    self._policy = self.supervision.policy_factory(self.supervision.cooldown)
+    self._policy = self.supervision.policy_factory(
+        self.supervision.cooldown, build_provider(self.supervision.provider)
+    )
     started = self.now()
     prompt = self.task
     session_id: str | None = None
@@ -792,6 +818,11 @@ class SegmentedRun:
             "kind": kind,
             "at": self.now().isoformat(),
             "policy": self.policy.name,
+            # Which account answered this judgement. Recorded rather than
+            # inferred from the model name: the two providers spell one model
+            # differently today, and that is a fact about their catalogues, not
+            # a guarantee a reader may lean on.
+            "supervisor_provider": self.supervision.provider,
             "guidebook_sha256": self._guidebook_sha256(),
             "guidebook_context_mode": guidebook_context_mode(self.guidebook),
             "said_visibility": said_visibility_of(self.policy),

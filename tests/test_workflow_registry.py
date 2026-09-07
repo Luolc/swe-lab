@@ -38,6 +38,7 @@ from swe_lab.trace_synthesis.channel import supervision
 from swe_lab.trace_synthesis.context_components import SupervisorPromptBuilder
 from swe_lab.trace_synthesis.criterion import load_criterion
 from swe_lab.trace_synthesis.judge import ModelJudge, ModelWriter
+from swe_lab.trace_synthesis.provider import build_provider
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
 from swe_lab.trace_synthesis.supervisor import (
     Intervention,
@@ -623,7 +624,9 @@ def test_the_shipped_segmented_factory_reads_the_named_said_visibility(
   monkeypatch.setattr(definitions, "SUPERVISOR_SAID_VISIBILITY", "none")
   segmented = _segmented_supervision_of(definitions.SEGMENTED_ROLLOUT[0])
 
-  policy = segmented.policy_factory(segmented.cooldown)
+  policy = segmented.policy_factory(
+      segmented.cooldown, build_provider(segmented.provider)
+  )
 
   assert isinstance(policy, SpeakWhenOffTrack)
   assert policy.said_visibility == "none"
@@ -687,7 +690,9 @@ def test_nothing_in_building_a_supervision_reads_the_environment(
           definitions.SUPERVISOR_SAID_VISIBILITY
       )
     segmented = _segmented_supervision_of(definitions.SEGMENTED_ROLLOUT[0])
-    shipped = segmented.policy_factory(segmented.cooldown)
+    shipped = segmented.policy_factory(
+        segmented.cooldown, build_provider(segmented.provider)
+    )
     assert isinstance(shipped, SpeakWhenOffTrack)
     assert shipped.said_visibility == definitions.SUPERVISOR_SAID_VISIBILITY
     asked = supervision(
