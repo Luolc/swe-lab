@@ -13,6 +13,7 @@ these files **link** to it and never restate it.
 
 | Version | Date | Breaking | What it is |
 |---|---|---|---|
+| [v0.3.6](v0.3.6.md) | 2026-09-06 | **yes** — a `Store` abstract method, a widened callback, and the judge's prompt | `Store.delete` is abstract and `SegmentedSupervision.policy_factory` takes a second argument, so a subclass and a factory of your own stop working; the judge is no longer told what the supervisor already said. Plus the whole pipeline as one workflow (`from_scratch_guided_trace`), its 2×2 reading (`guided-gain`), a persisted verdict artifact, and a named choice of the supervisor's upstream whose default does not move. |
 | [v0.3.5](v0.3.5.md) | 2026-09-06 | **yes** — the judge's verdict contract | `self_correcting` leaves the supervision contract in both carriers; an answer still sending it is an unusable answer, and the Rust runtime — which kept the field as a live veto — now speaks where it was silent. |
 | [v0.3.4](v0.3.4.md) | 2026-09-05 | **yes** — judge input, required output, and when it speaks | The supervisor sees complete paired evidence, carries a required bounded running state, and `off_track` becomes the only gate on speaking. |
 | [v0.3.3](v0.3.3.md) | 2026-09-05 | **yes** — typed verdicts, gates that now refuse | The judge answers through a forced tool call with no text fallback; a missing or invalid guidebook is refused before the actor starts; `max_cost_usd` finally caps cumulative spend. |
