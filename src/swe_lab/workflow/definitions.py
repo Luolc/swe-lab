@@ -14,8 +14,6 @@ imports their own.
 
 from __future__ import annotations
 
-import functools
-
 from swe_lab.conversation.observer import CONVERSATION_NAME
 from swe_lab.evaluation.unit_test import (
     ARTIFACT_NAMESPACE,
@@ -26,7 +24,6 @@ from swe_lab.evaluation.unit_test import (
 from swe_lab.git.audit import GitIntegrityAuditTask
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
-    ANTHROPIC_API,
     DEFAULT_MODEL,
     OAUTH_TOKEN_ENV,
 )
@@ -48,10 +45,7 @@ from swe_lab.sandbox import (
 from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
 from swe_lab.trace_synthesis.channel import supervision
 from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
-from swe_lab.trace_synthesis.judge import (
-    messages_transport,
-    supervising_policy,
-)
+from swe_lab.trace_synthesis.judge import supervising_policy
 from swe_lab.trace_synthesis.native_supervision import (
     API_KEY_ENV as SUPERVISOR_API_KEY_ENV,
 )
@@ -60,8 +54,14 @@ from swe_lab.trace_synthesis.native_supervision import (
     NativeSupervision,
 )
 from swe_lab.trace_synthesis.oracle import OracleAnalysisTask
+from swe_lab.trace_synthesis.provider import (
+    ANTHROPIC,
+    build_provider,
+    Provider,
+    transport_for,
+)
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
-from swe_lab.trace_synthesis.supervisor import SaidVisibility
+from swe_lab.trace_synthesis.supervisor import SaidVisibility, SpeakPolicy
 
 from .registry import register_workflow, WorkflowDef
 from .workflow import WorkflowEntry
@@ -183,16 +183,23 @@ ROLLOUT_AND_UNIT_TEST: WorkflowDef = (*ROLLOUT, *UNIT_TEST)
 # comparable if the judge is pinned, exactly as the actor is (`agent_model`).
 # The two prior supervision measurements — the steered re-run and the
 # guidebook-as-criterion experiment — used this model through OpenRouter. The
-# model stays pinned for continuity of the model choice, while this transport
-# now uses Anthropic's native Messages wire and therefore is not the same
+# model stays pinned for continuity of the model choice, while the default
+# transport uses Anthropic's native Messages wire and therefore is not the same
 # measurement condition.
+#
+# **One name, either upstream.** OpenRouter's Messages endpoint takes this bare
+# name and namespaces it itself, so pointing a run at OpenRouter is a change of
+# endpoint and nothing else — measured 2026-09-07, evidence in
+# `docs/conventions.md` (Secrets).
 SUPERVISOR_MODEL = "claude-sonnet-5"
-SUPERVISOR_BASE_URL = ANTHROPIC_API
-SUPERVISOR_TRANSPORT = functools.partial(
-    messages_transport,
-    base_url=SUPERVISOR_BASE_URL,
-    api_key_env=SUPERVISOR_API_KEY_ENV,
-)
+# Which upstream the supervisor's calls go to by default. **Anthropic, and that
+# is not what a paid experiment spends** — the rule is in `AGENTS.md`
+# (Boundaries) and the way to honour it on an invocation is
+# `--<entry>.harness.segmented.provider=openrouter`, which also lands on every
+# decision row.
+SUPERVISOR_PROVIDER: Provider = build_provider(ANTHROPIC)
+SUPERVISOR_BASE_URL = SUPERVISOR_PROVIDER.base_url
+SUPERVISOR_TRANSPORT = transport_for(SUPERVISOR_PROVIDER)
 # How many corrections one run may carry. No measured value — task 05 owns that
 # question — so it is stated rather than derived, and stated once.
 SUPERVISOR_BUDGET = 3
@@ -297,6 +304,37 @@ CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
 )
 
 
+def _segmented_policy(cooldown: int, provider: Provider) -> SpeakPolicy:
+  """Build the segmented loop's policy for one run, against one provider.
+
+  A named function rather than the lambda this used to be: the provider is a
+  second per-run argument, and a two-argument lambda spanning a dozen lines
+  inside a nested constructor is where a reader stops being able to see which
+  values are per-run and which are the pinned ones. The model is one of the
+  pinned ones and stays so under either provider — see
+  :data:`SUPERVISOR_MODEL`.
+
+  Args:
+    cooldown: Boundaries required between two interventions, from the run's
+      :class:`~swe_lab.trace_synthesis.segmented_loop.SegmentedSupervision`.
+    provider: The upstream this invocation pays.
+
+  Returns:
+    The policy for this run.
+  """
+  return supervising_policy(
+      model=SUPERVISOR_MODEL,
+      transport=transport_for(provider),
+      budget=SUPERVISOR_BUDGET,
+      cooldown=cooldown,
+      window=SUPERVISOR_WINDOW,
+      said_visibility=SUPERVISOR_SAID_VISIBILITY,
+      # The one thing only a live run can record: how many turns late each
+      # correction was.
+      locate_deviation=True,
+  )
+
+
 # The second supervision carrier: the actor is stopped every configured number
 # of turns, judged, and resumed, instead of being spoken to on a live stdin. Its
 # own definition rather than a flag on the two above, for the same reason the
@@ -330,17 +368,7 @@ def _segmented_rollout(
                   bare=False,
                   capture="stream",
                   segmented=SegmentedSupervision(
-                      policy_factory=lambda cooldown: supervising_policy(
-                          model=SUPERVISOR_MODEL,
-                          transport=SUPERVISOR_TRANSPORT,
-                          budget=SUPERVISOR_BUDGET,
-                          cooldown=cooldown,
-                          window=SUPERVISOR_WINDOW,
-                          said_visibility=SUPERVISOR_SAID_VISIBILITY,
-                          # The one thing only a live run can record: how many
-                          # turns late each correction was.
-                          locate_deviation=True,
-                      ),
+                      policy_factory=_segmented_policy,
                       guidebook_name=guidebook_name,
                   ),
               ),
