@@ -38,12 +38,14 @@ from swe_lab.trace_synthesis.judge import (
     ModelJudge,
 )
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
-from swe_lab.trace_synthesis.supervisor import NeverSpeak, SpeakWhenOffTrack
+from swe_lab.trace_synthesis.supervisor import SpeakWhenOffTrack
 from swe_lab.workflow.definitions import (
     SEGMENTED_ROLLOUT,
     SUPERVISOR_BASE_URL,
     SUPERVISOR_MODEL,
 )
+
+from .policies import SilentPolicy
 
 # Somebody else's gateway. Deliberately a host this repo has never heard of:
 # that is the whole point, and a registry of blessed names cannot express it.
@@ -104,7 +106,7 @@ def _built() -> SegmentedSupervision:
     The plan.
   """
   return SegmentedSupervision(
-      policy_factory=lambda cooldown, url, variable: NeverSpeak()
+      policy_factory=lambda cooldown, url, variable: SilentPolicy()
   )
 
 

@@ -1,5 +1,20 @@
 # `N`-batching replay — what the supervisor says at each batch size
 
+> **2026-09-08 — the drivers were removed; the recorded results stand.**
+> `replay.py` and `analyze.py` are gone. They drove the streaming `Supervisor`,
+> which was deleted with the correction channel on the owner's ruling that the
+> segment loop is the only supervised carrier
+> ([ADR-0026](../../../docs/decisions/ADR-0026-the-correction-channel-is-removed.md)),
+> and a driver whose whole claim is equivalence to a deleted class cannot run or
+> be checked. **Nothing here is retracted.** `runs/`, `REPORT.md` and
+> `PREREGISTRATION.md` are the accurate record of replays that happened, against
+> the code as it stood, and they are unchanged. Every present-tense sentence
+> below describing what the drivers do should be read as what they did; the two
+> scripts are recoverable from git at `1c061ed`. Issue
+> [#381](https://github.com/Luolc/swe-lab/issues/381)'s follow-up 1, which asked
+> for a paid re-measurement through this driver, is no longer runnable as
+> written — said on the issue, which stays open.
+
 **Question.** Today's supervisor consults its judge at **every stream event**.
 The proposal in [issue #375](https://github.com/Luolc/swe-lab/issues/375) is to
 batch: judge once per `N` assistant messages. `N` has no measured value. This

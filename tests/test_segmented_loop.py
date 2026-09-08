@@ -43,18 +43,19 @@ from swe_lab.trace_synthesis.segmented_loop import (
 )
 from swe_lab.trace_synthesis.supervisor import (
     INTERVENTION_TAG,
+    LOG_KIND_GAP,
     LOG_KIND_LAPSE,
     LOG_KIND_SILENT,
     LOG_KIND_SPOKE,
     LOG_KIND_UNJUDGED,
-    NeverSpeak,
     Observation,
     PolicyLapseError,
-    SpeakAt,
     SpeakPolicy,
     SpeakWhenOffTrack,
     Verdict,
 )
+
+from .policies import SilentPolicy, SpeaksAt
 
 _CUT = "error_max_turns"
 _DONE = "success"
@@ -173,13 +174,13 @@ def _supervision(policy: Any = None, **overrides: Any) -> SegmentedSupervision:
   """Build a supervision config with roomy ceilings unless a test narrows one.
 
   Args:
-    policy: The policy; ``NeverSpeak()`` when not given.
+    policy: The policy; ``SilentPolicy()`` when not given.
     **overrides: Fields to replace.
 
   Returns:
     The config.
   """
-  built = policy or NeverSpeak()
+  built = policy or SilentPolicy()
 
   def policy_factory(
       _cooldown: int, _base_url: str, _api_key_env: str
@@ -387,9 +388,9 @@ def test_a_cooldown_override_reaches_the_policy_factory():
 
   def policy_factory(
       cooldown: int, _base_url: str, _api_key_env: str
-  ) -> NeverSpeak:
+  ) -> SilentPolicy:
     received.append(cooldown)
-    return NeverSpeak()
+    return SilentPolicy()
 
   actor = FakeActor(segments=[_segment(ids=["a"], subtype=_DONE)])
   _ = _run(
@@ -672,7 +673,7 @@ def test_a_correction_becomes_the_next_segments_prompt_tagged():
           _segment(ids=["b"], subtype=_DONE),
       ]
   )
-  policy = SpeakAt(cursors=frozenset({2}), text="check the failing test first")
+  policy = SpeaksAt(cursors=frozenset({2}), text="check the failing test first")
 
   rows = _run(actor, _supervision(policy))
 
@@ -758,6 +759,57 @@ def test_a_policy_lapse_is_bounded_to_its_seam_and_the_run_goes_on():
   assert lapses[0]["finish_reason"] == "length"
   assert actor.requests[1].prompt == "Continue."
   assert [row for row in rows if row["kind"] == LOG_KIND_SILENT]
+  assert len(actor.requests) == 3
+
+
+def test_a_failure_the_policy_did_not_bound_is_a_gap_and_the_run_goes_on():
+  """The two failure modes have to be distinguishable in the account.
+
+  A `PolicyLapseError` is the policy saying *this one seam went unsupervised*;
+  anything else is the policy's own state machine breaking, which it cannot
+  bound — so nothing is known about the seams after it either. Recorded as
+  different kinds, because a reader counting named holes must not count an
+  unbounded one among them, and a run carrying a gap is not evidence about
+  supervision at all.
+
+  The **control arm is the lapse test above**: the same shape, one seam, and a
+  `lapse` row rather than a `gap` one. Both are asserted here as well — a run
+  that recorded every failure as a gap would pass an assertion that only looked
+  for one.
+  """
+
+  @dataclass
+  class BreaksOnce:
+    seen: int = 0
+
+    @property
+    def name(self) -> str:
+      return "breaks-once"
+
+    def consider(self, observation: Observation) -> None:
+      del observation
+      self.seen += 1
+      if self.seen == 1:
+        raise RuntimeError("the gate order fell apart")
+      return None
+
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_CUT),
+          _segment(ids=["c"], subtype=_DONE),
+      ]
+  )
+
+  rows = _run(actor, _supervision(BreaksOnce()))
+
+  gaps = [row for row in rows if row["kind"] == LOG_KIND_GAP]
+  assert len(gaps) == 1
+  assert "the gate order fell apart" in str(gaps[0]["reason"])
+  # Not folded into the bounded kind…
+  assert [row for row in rows if row["kind"] == LOG_KIND_LAPSE] == []
+  # …and the run kept going, because the actor still needs a prompt.
+  assert actor.requests[1].prompt == "Continue."
   assert len(actor.requests) == 3
 
 
@@ -1002,10 +1054,54 @@ def test_a_segmented_judge_lapse_row_still_carries_the_request_and_digest():
   assert rows[0]["finish_reason"] == "end_turn"
 
 
+def test_a_segmented_lapse_whose_transport_raised_still_carries_the_request():
+  """A judge call that never got an answer still records what it asked.
+
+  The request is built before the transport is called, so a transport that
+  raises has received it; the row for that seam carries ``judge_input`` and its
+  digest like any other request-bearing row, ``finish_reason`` as an explicit
+  ``None`` (nothing answered), and the transport's own words in the reason.
+
+  Distinct from the lapse above, where a transport *answered* and the answer was
+  unusable — a row recording those two the same way cannot be read either way,
+  which is the whole reason `finish_reason` is on the row.
+  """
+  payloads: list[dict[str, Any]] = []
+
+  def transport(payload: Mapping[str, Any]) -> dict[str, Any]:
+    payloads.append(dict(payload))
+    raise RuntimeError("upstream 503")
+
+  policy = supervising_policy(model="m", transport=transport, budget=1)
+  actor = FakeActor(
+      segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_DONE),
+      ]
+  )
+
+  rows = [
+      row
+      for row in _run(actor, _supervision(policy))
+      if row["kind"] == LOG_KIND_LAPSE
+  ]
+
+  assert len(rows) == 1
+  assert "upstream 503" in str(rows[0]["reason"])
+  assert rows[0]["finish_reason"] is None
+  assert (rows[0]["said_visibility"], rows[0]["said_count"]) == ("writer", 0)
+  assert len(payloads) == 1
+  prompt = payloads[0]["messages"][0]["content"]
+  assert rows[0]["judge_input"] == payloads[0]
+  assert rows[0]["judge_prompt_sha256"] == (
+      hashlib.sha256(prompt.encode()).hexdigest()
+  )
+
+
 def test_segmented_rows_without_a_request_carry_neither_request_field():
   """The second carrier writes no request on a row that had none behind it.
 
-  Two such rows: a policy that makes no model call (``NeverSpeak``, the
+  Two such rows: a policy that makes no model call (``SilentPolicy``, the
   silent row), and an unjudged seam — a segment that produced no actor
   record, so the standard policy did not consult its judge. Both carry the
   two mode fields and neither ``judge_input`` nor ``judge_prompt_sha256``.

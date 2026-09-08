@@ -33,13 +33,13 @@ the difference is the whole of what you are inheriting:
   because a second copy of it is a second thing to update.
 - **One run proved the path, it did not exercise yours.** Three known gaps, each
   owned by a task row rather than restated here.
-  [Task 13](plans/README.md) is the one on your path: **every measurement of the
-  stdin correction channel is host-side**, against the host `claude` and the
-  host user-level `CLAUDE.md`, while a rollout runs the pinned binary in a
-  container with a pinned `CLAUDE_CONFIG_DIR` — which is the path you will run.
-  (What has been checked in-sandbox is the *fold* of an injected block,
-  [`sandbox_fold_check/`](../../experiments/trace_synthesis/sandbox_fold_check/REPORT.md);
-  the live channel itself has not.) [Task 18](plans/README.md) is throughput:
+The one that used to head this list — task 13, *confirm the stdin correction
+  channel in the sandbox* — **no longer applies to you**: that channel was
+  removed on 2026-09-08 ([ADR-0026](../decisions/ADR-0026-the-correction-channel-is-removed.md)) and the task retired with it. The carrier you
+  will run is the **segment loop**, which needs no such confirmation because it
+  holds nothing open across a turn: each segment is an ordinary `claude -p`
+  invocation reading an ordinary file. What it has instead is its own bring-up
+  run, still outstanding — [task 22](plans/README.md). [Task 18](plans/README.md) is throughput:
   the supervisor judges each evidence-bearing boundary with a synchronous model
   call and ran on after the actor stopped, at **~6.6 s per boundary** on the one
   run measured (170 boundaries, every one of them judged — that run predates the
@@ -134,11 +134,17 @@ Adopt or overturn deliberately; each of these cost an argument.
   rather than passed and ignored (owner ruling, 2026-09-01). If you extend the
   interface, extend it the same way: what must not leak must be **absent**, so
   that a leak is a type error rather than a discipline.
-- **Paired arms, per instance.** The control arm is the *same code path* with
-  the speaking budget set to zero — same judge calls, stdin held open the same
-  way, and a "would have spoken" marker recorded. What the arms are and are not
-  matched on is stated once, in `src/swe_lab/workflow/definitions.py` beside
-  `CONTROL_BUDGET`.
+- **Paired arms, per instance — and you will have to build the control arm.**
+  A shipped zero-budget control existed until 2026-09-08 and went with the
+  correction channel ([ADR-0026](../decisions/ADR-0026-the-correction-channel-is-removed.md)), along with the constant that stated what the arms
+  were matched on. **The property it rested on is still in the code**:
+  `SpeakWhenOffTrack` consults its judge before it consults its budget, so a
+  `budget=0` policy judges every evidence-bearing boundary and speaks at none —
+  same judge calls, same waits, same cost per boundary, differing only past the
+  point where a correction was decided on. Build the control by giving the
+  segmented definition a zero-budget policy, and keep that ordering property in
+  view: a policy that returned early instead would move the per-boundary calls
+  too, and a paired comparison would credit that to the corrections.
 - **Screening draws must not double as the unsupervised arm.** Selecting on a
   noisy measurement and then reusing those same draws biases the baseline toward
   the middle. Re-draw for the measured arm.
@@ -156,13 +162,19 @@ Adopt or overturn deliberately; each of these cost an argument.
   understate a rate; the opposite default lets the excluded set grow
   unwatched, in the direction that flatters results.
   ([ADR-0015](../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md))
-- **Today, a transient supervisor failure ends the whole rollout** as
-  `SUPERVISION_FAILED` — deliberately, for the reason above. At full scale
-  this turns ordinary upstream jitter into a visible exclusion rate that
-  reads as **our pipeline being unstable**, not as jitter. See
-  [`channel.py`](../../src/swe_lab/trace_synthesis/channel.py) for current
-  behavior — under active revision, so checked there rather than described
-  here.
+- **`SUPERVISION_FAILED` has no writer today, and that is a change in your
+  favour and a gap in equal measure.** The channel's observer raised
+  `supervision.unhealthy` on a supervisor lost mid-run, and a transient upstream
+  failure therefore ended the whole rollout — at full scale, ordinary jitter
+  rendered as a visible exclusion rate that reads as **our pipeline being
+  unstable**. That observer went with the channel ([ADR-0026](../decisions/ADR-0026-the-correction-channel-is-removed.md)). The segment loop
+  bounds what it can: a failed judge call is a `lapse` row and the run continues.
+  What it does **not** do is raise the metric when a failure is unbounded — it
+  writes a `gap` row and continues too — so a run of unknown supervision reach
+  no longer leaves your denominator on its own. **Read
+  `supervisor.jsonl` for `gap` rows and exclude those runs yourself** until a
+  carrier raises the metric again; the classification in
+  [`rollout.py`](../../src/swe_lab/rollout.py) is intact and waiting for it.
 - **Report every rate with its two counts** — how many runs were excluded as
   ours, and how many nobody could attribute:
   `resolved 12 / 40 (3 system failures excluded, 2 unclassified)`, never

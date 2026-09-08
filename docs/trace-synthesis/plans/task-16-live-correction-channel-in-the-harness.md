@@ -2,6 +2,14 @@
 
 **Status lives in [`plans/README.md`](README.md), not here.**
 
+> **Retired 2026-09-08, and its subject deleted** ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)). The channel this
+> document designed was built and then removed, on the owner's ruling that the
+> segment loop is the only supervised carrier. **This file is now a design
+> record, not guidance**: every present-tense sentence below describes code that
+> is no longer in the tree, and every file and line it cites was accurate when it
+> was written. Nothing in it is open work. The carrier that replaced it is
+> [task 22](task-22-segmented-supervision-loop.md).
+
 **Authorized and in progress as of 2026-09-01.** This document was written
 design-only, while the mechanism was conditional on a compliance test that
 returned `BELOW_BAR`; the attribution moved anyway on an owner ruling recorded

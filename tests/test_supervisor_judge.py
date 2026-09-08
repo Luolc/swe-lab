@@ -48,7 +48,6 @@ from swe_lab.trace_synthesis.supervisor import (
     Observation,
     PolicyLapseError,
     SaidVisibility,
-    Supervisor,
     Verdict,
     WriterOutputRejectedError,
 )
@@ -417,42 +416,33 @@ def test_running_state_update_instructions_are_independently_replaceable() -> (
 def test_missing_running_state_and_invalid_verdict_have_distinct_lapses() -> (
     None
 ):
-  """Two strict failures need different recorded reasons to be diagnosable."""
+  """Two strict failures need different recorded reasons to be diagnosable.
 
-  def lapse_row(answer: str) -> dict[str, object]:
-    rows: list[dict[str, object]] = []
-    supervisor = Supervisor(
-        policy=supervising_policy(
-            model="m",
-            transport=RecordingTransport(answers=[answer]),
-            budget=0,
-        ),
-        task="make the test pass",
-        sink=lambda _: None,
-        log=lambda row: rows.append(dict(row)),
-    )
-    _ = supervisor.observe(
-        {
-            "type": "assistant",
-            "message": {
-                "role": "assistant",
-                "content": [{"type": "text", "text": "inspect parser"}],
-            },
-        }
-    )
-    assert len(rows) == 1
-    return rows[0]
+  Asserted on the bounded error the policy raises, which is the whole of what
+  a carrier has to record it with: the segment loop copies `repr(error)` into
+  the lapse row's `reason` verbatim, and that copying is pinned in
+  `test_segmented_loop.py`.
+  """
 
-  missing = lapse_row('{"off_track": false, "reason": "fine"}')
-  invalid_verdict = lapse_row(
+  def lapse(answer: str) -> str:
+    policy = supervising_policy(
+        model="m",
+        transport=RecordingTransport(answers=[answer]),
+        budget=0,
+    )
+    with pytest.raises(PolicyLapseError) as raised:
+      _ = policy.consider(observation())
+    return repr(raised.value)
+
+  missing = lapse('{"off_track": false, "reason": "fine"}')
+  invalid_verdict = lapse(
       '{"off_track": 0, "reason": "fine",'
       ' "running_state": "Current checkpoint: inspect"}'
   )
 
-  assert missing["kind"] == invalid_verdict["kind"] == "lapse"
-  assert "running_state" in str(missing["reason"])
-  assert "off_track" in str(invalid_verdict["reason"])
-  assert missing["reason"] != invalid_verdict["reason"]
+  assert "running_state" in missing
+  assert "off_track" in invalid_verdict
+  assert missing != invalid_verdict
 
 
 def test_an_overlong_running_state_is_rejected_not_silently_truncated() -> None:
@@ -808,45 +798,34 @@ def test_a_token_budget_lapse_is_recorded_differently_from_a_bad_answer() -> (
   not use. Before issue #383, `supervisor.jsonl` recorded both the same way —
   which is how 85/85 lapses in a 902-call replay all turned out to be the
   former without anyone noticing from the log alone.
+
+  What separates them has to survive as far as the row, and the two halves of
+  that live in two places: the policy puts `finish_reason` on the bounded error
+  (here), and the carrier copies it onto the lapse row
+  (`test_segmented_loop.py`). Asserted here on the error, because a carrier can
+  only record what it is handed.
   """
 
-  def lapse_row(transport: RecordingTransport) -> dict[str, object]:
+  def lapse(transport: RecordingTransport) -> PolicyLapseError:
     policy = supervising_policy(
         model="anthropic/claude-sonnet-5", transport=transport, budget=1
     )
-    rows: list[dict[str, object]] = []
-    supervisor = Supervisor(
-        policy=policy,
-        task="make the test pass",
-        sink=lambda _: None,
-        log=lambda row: rows.append(dict(row)),
-    )
-    supervisor.observe(
-        {
-            "type": "assistant",
-            "message": {
-                "role": "assistant",
-                "content": [{"type": "text", "text": "editing blind"}],
-            },
-        }
-    )
-    assert len(rows) == 1
-    return rows[0]
+    with pytest.raises(PolicyLapseError) as raised:
+      _ = policy.consider(observation())
+    return raised.value
 
-  budget_row = lapse_row(
+  budget = lapse(
       RecordingTransport(
           answers=['{"off_track": tru'], finish_reason="max_tokens"
       )
   )
-  bad_answer_row = lapse_row(
+  bad_answer = lapse(
       RecordingTransport(answers=["not json at all"], finish_reason="stop")
   )
 
-  assert budget_row["kind"] == "lapse"
-  assert bad_answer_row["kind"] == "lapse"
-  assert budget_row["finish_reason"] == "max_tokens"
-  assert bad_answer_row["finish_reason"] == "stop"
-  assert budget_row["finish_reason"] != bad_answer_row["finish_reason"]
+  assert budget.finish_reason == "max_tokens"
+  assert bad_answer.finish_reason == "stop"
+  assert budget.finish_reason != bad_answer.finish_reason
 
 
 def test_an_over_long_line_from_the_writer_is_rejected_not_truncated() -> None:
@@ -1381,8 +1360,7 @@ def _two_arms(
   The shape of issue #381's measurement: both arms are shown the same evidence
   at every boundary, and the only thing that can differ between them is what
   each has already said — the speaking arm accumulates its own corrections
-  exactly as ``Supervisor`` does, and the silent arm (``budget=0``) never has
-  any.
+  exactly as a carrier does, and the silent arm (``budget=0``) never has any.
 
   Args:
     said_visibility: The mode both arms are built under.

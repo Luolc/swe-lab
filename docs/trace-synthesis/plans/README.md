@@ -14,6 +14,14 @@ deep design per task, indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L
 > rewritten on the owner's 2026-09-01 ruling; see [Task 01](#task-01-one-instance-end-to-end).
 
 > [!NOTE]
+> **The correction channel was removed on 2026-09-08** ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md), the owner's
+> ruling): the segment loop ([task 22](#)) is the only supervised carrier in the
+> tree. Tasks **13, 14, 16 and 17** were registered against the channel and are
+> retired unrun — each row below says so. Every other passage describing a live
+> stdin channel is a record of the design in force when it was written; the
+> measurements in them stand.
+
+> [!NOTE]
 > **Delivery moved off hooks on 2026-09-01**
 > ([ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)): a
 > correction is written on the actor's stdin, not returned from a hook. **Read
@@ -75,10 +83,10 @@ research that preceded this index is not a task: its results are recorded in
 | 10 | **Run the capture proxy inside the sandbox** — removes the host port scheme, the firewall dependency and the tailnet exposure | ✅ |
 | 11 | **Start from a cached failure** — the `oracle_failures` dataset: a record that delegates the instance and stages the failure, plus the builder from a finished run — [`task-11-oracle-failures-dataset.md`](task-11-oracle-failures-dataset.md) | ✅ First record built locally: the qutebrowser/9ed748ef baseline failure (data gitignored by design) |
 | 12 | **Fold a run's outcome over its segments** — `event_stream_outcome` reduces a run to its *last* `result`, so an interrupted or turn-limited segment is invisible behind a later success | ⬜ Registered, not started ([§13.5](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)). **Task 22 is the first thing that deliberately produces several `result` events**, and it does not fix this: it records each segment's own stop reason in its seam log and points here, so a mid-run `error_during_execution` segment hidden behind a later success stays this row's to fix |
-| 13 | **Confirm the stream-json correction channel in the sandbox** — every measurement of it so far is host-side, against the host `claude` and the host user-level `CLAUDE.md`; the rollout harness runs in a container with a pinned `CLAUDE_CONFIG_DIR` | ⬜ Registered, not started ([§11](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)) |
-| 14 | **The channel's edges that a real rollout will hit** — an interjection at turn 40 rather than turn 3, models other than `claude-sonnet-5`, non-text content blocks, and how several queued messages fold | ⬜ Registered, not started ([§11](../../../experiments/trace_synthesis/streamjson_input/REPORT.md), [§14.6](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)) |
-| 16 | **A live correction channel in the harness** — stdin from a file to a FIFO, and who may act while `run()` blocks — [`task-16-live-correction-channel-in-the-harness.md`](task-16-live-correction-channel-in-the-harness.md) | 🔶 Channel and wiring landed — the FIFO, the in-sandbox relay, the host-side pump, and `SupervisedRun` as the observer that brackets the blocked `run()` ([§9](task-16-live-correction-channel-in-the-harness.md#9-the-wiring-who-runs-the-supervisor-while-run-blocks)). What no test covers yet is a real actor being corrected mid-run, which is task 01's job and needs a constructible deviation-triggered policy |
-| 17 | **A missed reading and a slow actor render identically** — `SupervisorPump.at_rest` is `False` both for "not at rest yet" and for "never saw a `result` event", so an actor that produces events and never emits one leaves `_feed` holding the channel open: the run burns to the wall clock and reports `TIMED_OUT`, which [ADR-0011](../../decisions/ADR-0011-fair-retry.md) charges to the actor, while `supervision_accounted_for` stays true. **Ours, rendered as theirs** | ⬜ **Waits on the first run's reading, deliberately.** Whether it can happen at all is an empirical question about the actor's wind-down under `--input-format stream-json` with a live stdin — [task 16 §8.2](task-16-live-correction-channel-in-the-harness.md) says the actor does not exit but waits for more input, and nothing has observed what it emits first. **The first input is one line: does the first run's event stream contain a `result` event?** Designing a corroborating signal (exit code? stderr?) before that reading is choosing a mechanism for a failure nobody has seen. Not a gate on the first run: the [pre-registration](../../../experiments/trace_synthesis/pipeline_end_to_end/PREREGISTRATION.md#7-failure-classification) §7 already presumes a `TIMED_OUT` is **ours** unless the proxy log shows the actor working to the wall clock, so this failure stays readable — which is the standard a gate has to meet. **That reading is now in:** running the pre-registered read against `…/r0/rollout/a0` of the first end-to-end run gives `1 file(s), 170 events, 1 result` — the actor emitted a `result`, so **this failure did not occur on this run**. It stays open: one run that did not exhibit it is not a demonstration that it cannot happen |
+| 13 | **Confirm the stream-json correction channel in the sandbox** — every measurement of it so far is host-side, against the host `claude` and the host user-level `CLAUDE.md`; the rollout harness runs in a container with a pinned `CLAUDE_CONFIG_DIR` | ❌ **Retired 2026-09-08, unrun.** The channel it would have confirmed in the sandbox is gone ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)); there is nothing left to confirm |
+| 14 | **The channel's edges that a real rollout will hit** — an interjection at turn 40 rather than turn 3, models other than `claude-sonnet-5`, non-text content blocks, and how several queued messages fold | ⬜ Registered, not started ([§11](../../../experiments/trace_synthesis/streamjson_input/REPORT.md), [§14.6](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)). **❌ Retired 2026-09-08, unrun** — these are the channel's edges, and the channel is gone ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)). The segment loop has edges of its own; they are task 22's and are not these |
+| 16 | **A live correction channel in the harness** — stdin from a file to a FIFO, and who may act while `run()` blocks — [`task-16-live-correction-channel-in-the-harness.md`](task-16-live-correction-channel-in-the-harness.md) | ❌ **Retired 2026-09-08 and its subject removed.** The channel and its wiring did land — the FIFO, the in-sandbox relay, the host-side pump, and the observer that bracketed the blocked `run()` — and all of it was deleted by the owner's ruling ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)). Its plan below is kept as the design record of what was built; nothing in it is open work. What no test ever covered was a real actor being corrected mid-run on this carrier, and now none will |
+| 17 | **A missed reading and a slow actor render identically** — `SupervisorPump.at_rest` is `False` both for "not at rest yet" and for "never saw a `result` event", so an actor that produces events and never emits one leaves `_feed` holding the channel open: the run burns to the wall clock and reports `TIMED_OUT`, which [ADR-0011](../../decisions/ADR-0011-fair-retry.md) charges to the actor, while `supervision_accounted_for` stays true. **Ours, rendered as theirs** | ❌ **Retired 2026-09-08, unrun.** The reading it waited on was the first run's, and it came back clean — `1 file(s), 170 events, 1 result`, so the failure did not occur there. It stays unresolved rather than closed, and is retired anyway because the pump whose two readings were indistinguishable is gone ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)). The pre-registered read below and the test that pinned it went with it |
 | 15 | **Segmentation and interrupt edges** — MCP tool calls vs. the 2.1.246 interrupt claim, `cancel_queued: true`, `--max-turns` above 1, whether a parallel tool batch can be prevented, whether the two interrupt records can be suppressed | ⬜ **Parked, not merely unstarted** — this is the machinery [§14](../../../experiments/trace_synthesis/streamjson_input/REPORT.md) superseded; it becomes live only if segmentation or interrupt returns as a design |
 | 18 | **The supervisor ran on for up to 955 seconds after the actor stopped, and the run ended when it caught up** — measured on the first end-to-end run (2026-09-02, `main` at `3e97442`, actor pinned 2.1.212, all times UTC), read by the run's owner: the supervisor's first row (`cursor=1`) at **07:23:35.650**, the actor's last timestamped event at **07:26:19.485**, the supervisor's last row (`cursor=170`) at **07:42:14.572**. **Every figure derived from that middle instant is a bound, not a measurement**, because the `result` event carries no timestamp of its own: the anchor is the assistant event immediately before it, so the actor stopped then *or later*. The supervisor ran 1118.9 s (both ends are its own rows, so that one is measured); it overlapped the actor for **at least** 163.8 s and ran on **at most** 955.1 s after the actor stopped — **at most 84.9% of the rollout's 1124.47 s wall clock** (`claude_code.wall_seconds`). The denominator is the rollout's clock and not the supervisor's own span, because the sentence is about what this *run* spent; the same 955.1 s over the supervisor's span answers a different question, how much of its own time the supervisor worked alone. The mechanism is visible in the code rather than inferred from the timings: each boundary is a synchronous judge model call inside the poll loop, and `at_rest` is reached only when that backlog drains to the final `result`, so until then the channel stays open and the CLI waits on stdin. The run ended **normally** — `agent_complete: 1.0`, `claude_code.exit_code: 0.0`, `claude_code.timed_out: 0.0` — and the account was 170 boundaries = 151 silent + 16 lapse + 3 spoke, with no `supervision.unhealthy` | ⬜ **One run, bounded rather than measured, and what to do about it is not decided here.** The tail fit inside this run's budget; nothing in the design bounds how far the supervisor may fall behind, and one run fixes no rate — a different actor, task or judge latency moves it. Its second consequence — a correction is judged fresh at the cursor it was written for and delivered stale (the three went out at `cursor` 4 / 8 / 12, 07:23:47 / 07:24:04 / 07:24:23, under `speak-when-off-track`) — belongs to the first run's report, which owns that analysis; it is named here only so the two are known to be one mechanism |
 | 19 | **One judge answer in ten came back unparseable, and only in the second half of the run** — first end-to-end run, same coordinates as row 18: **16 of 170** judge calls raised `JudgeAnswerError: unusable judge answer`, and they are **two different failures wearing one message**: **11 returned nothing at all** — the decoder was handed `None` (`the JSON object must be str, bytes or bytearray, not NoneType`), at `cursor` 96, 98, 100, 106, 108, 109, 128, 134, 140, 158, 165 — and **5 returned text that would not parse** (`Unterminated string` at 110, 131, 136; `Expecting value` at 87; `Expecting ',' delimiter` at 101). The two interleave, and the distribution of their union is not uniform: **every one fell between `cursor` 87 and 165, and none before 87**. `#348` earned its keep here on its first real run — these were recorded as **lapses, not gaps**, so the run kept its evidence value while reporting honestly that 16 boundaries went unsupervised | ⬜ **Registered, not diagnosed, and deliberately not fixed.** For 11 of them nothing came back, so there is no returned text to reason about at all; for the other 5 what is established is only that the text was not the required JSON shape, since the decoder's messages do not name a mechanism. One explanation covering both is a guess, and the split is the reason to say so rather than a detail. The first input is the raw judge responses for those 16 calls — what was actually returned, and how it differs from the 154 that parsed. Choosing a fix now would be choosing an implementation for a failure nobody has diagnosed. **TODO — the trigger is the update that *populates* `experiments/trace_synthesis/pipeline_end_to_end/REPORT.md` with these readings, not #359 landing its skeleton: that same update reduces this row to a pointer.** Until then the report holds placeholders and there is nothing to point at, which is why the numbers are written out here. Measurements belong to the report and the task of diagnosing them belongs here; carrying them in both places is two copies free to drift. They are written out here only because the report does not exist yet |
@@ -105,7 +113,15 @@ is not a demonstration that it cannot happen.
 
 ### Task 17's first input — the read, fixed before the data exists
 
-Written now, not after the run, for the reason the pre-registration exists at
+> **Retired 2026-09-08 with task 17, and kept as a record.** The snippet below
+> and the table beside it were a pre-registration for a failure of the host-side
+> pump, which [ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md) removed along with the rest of the correction channel.
+> `tests/test_task_17_read.py`, which held the snippet and the table together
+> and checked the artifact name against the shipped harness, went with it.
+> **Nothing here is current guidance**: the third row's diagnosis names a
+> mechanism that no longer exists.
+
+Written then, not after the run, for the reason the pre-registration exists at
 all: **whoever invents the reading afterwards is the person who wants it to say
 something.** Separating *what to read* from *what it said* costs nothing today
 and cannot be done honestly tomorrow.
@@ -154,18 +170,19 @@ the record points at. Aiming it at the workspace name is a mistake that does
 **not** announce itself: it still finds a file and still prints a plausible
 line, it just read the copy that gets deleted.
 
-**Rows 12–16 are a registration, not a plan.** They come from the measurements
-in [`experiments/trace_synthesis/streamjson_input/REPORT.md`](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)
-(landed 2026-09-01) and are written down so they are not rediscovered as
-mysteries. **None is authorized to start**: the arm they serve is gated on a
-compliance test that has not run — whether an actor acts on a mid-turn
-correction at all — and engineering for A′ before that gate is a bet. Task 12 is
-the exception in kind rather than in status: it is a defect in a shipped
-collector, true regardless of which channel A′ ends up using — and task 16
-identifies it as a **prerequisite** rather than a neighbour, because a supervised
-run produces several `result` events in one process. Task 16 is the other
-exception in kind: it is a design document written *because* the gate may fail,
-and it authorizes nothing.
+**Rows 12–16 were a registration, not a plan.** They come from the
+measurements in [`experiments/trace_synthesis/streamjson_input/REPORT.md`](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)
+(landed 2026-09-01) and were written down so they were not rediscovered as
+mysteries. **None was authorized to start**: the arm they served was gated on a
+compliance test that had not run — whether an actor acts on a mid-turn
+correction at all — and engineering for A′ before that gate was a bet.
+
+**Of those five, 13, 14 and 16 are now retired** ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)): they are the
+channel's, and it is gone. **Task 12 survives them**, and did so from the start
+for a reason that has not changed: it is a defect in a shipped collector, true
+whatever carries a correction — `event_stream_outcome` folds a run to its last
+`result`, and the segment loop is the thing that deliberately produces several.
+Its status cell says how task 22 leaves it.
 
 ---
 
@@ -180,6 +197,15 @@ set by owner ruling. **That size is deliberately not written here**: restating
 a number in two documents is how a fact stops having one home. It lives, with
 its provenance, in the handoff note —
 [`downstream-scale-note.md`](../downstream-scale-note.md).
+
+> **Read this section as the record of a run that happened, on a carrier that
+> is gone.** The 2026-09-02 run was made on the correction channel; [ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)
+> removed it on 2026-09-08, together with several of the tests the acceptance
+> points below name as their evidence. Nothing here is retracted — the run
+> happened and the numbers are what they were — and nothing here is current
+> guidance about how a supervised run is made. **A repeat of this task on the
+> segment loop is a different run**, and would need its own evidence column;
+> the owner's paid smoke on the merged tree is the next reading of that kind.
 
 **What this replaces, and why.** The previous acceptance belonged to the
 **hint-injection arm**, closed by its own pre-registered kill condition

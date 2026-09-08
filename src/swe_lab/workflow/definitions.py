@@ -38,17 +38,15 @@ from swe_lab.harnesses.claude_code.constants import (
 # must not depend on whether some definition happens to mention it.
 import swe_lab.harnesses.codex as _codex
 import swe_lab.harnesses.grok_build as _grok
-from swe_lab.rollout import CodingAgentTask, SupervisionFactory
+from swe_lab.rollout import CodingAgentTask
 from swe_lab.sandbox import (
     ArtifactSchema,
     DockerHostSandboxConfig,
     qualified_name,
 )
 from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
-from swe_lab.trace_synthesis.channel import supervision
 from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
 from swe_lab.trace_synthesis.judge import (
-    DEFAULT_API_KEY_ENV,
     default_supervisor_base_url,
     messages_transport,
     supervising_policy,
@@ -196,114 +194,26 @@ SUPERVISOR_MODEL = "claude-sonnet-5"
 # Captured **here, as this module imports** — so is the identical default on
 # the shipped segmented plan below. A variable set after that does not reach
 # either; the contract and its reasoning are at `default_supervisor_base_url`.
+# Named rather than inlined because that import-time capture is the only thing
+# a test can compare the shipped plan's default against: re-reading the
+# environment later answers a different question. Read by
+# `tests/test_supervisor_upstream.py`'s control arm.
 SUPERVISOR_BASE_URL = default_supervisor_base_url()
-SUPERVISOR_TRANSPORT = functools.partial(
-    messages_transport,
-    base_url=SUPERVISOR_BASE_URL,
-    api_key_env=DEFAULT_API_KEY_ENV,
-)
 # How many corrections one run may carry. No measured value — task 05 owns that
 # question — so it is stated rather than derived, and stated once.
 SUPERVISOR_BUDGET = 3
 # Who is shown what the supervisor has already said: the writer, and not the
 # judge (ADR-0024). Named here and never read from the environment, because an
 # arm whose setting the record cannot show is not an arm: a definition wanting
-# another value states it in its own `supervision(...)` call, the way
-# `CONTROL_ROLLOUT` states its budget, and every decision row records which
-# one it ran under.
+# another value states it in its own policy, and every decision row records
+# which one it ran under.
 SUPERVISOR_SAID_VISIBILITY: SaidVisibility = "writer"
-# The control arm's budget. Zero rather than a silent policy, because
-# `SpeakWhenOffTrack` gates *speech* on the budget and never gates judgement:
-# it consults the judge on every boundary carrying evidence and records what it
-# would have said before the budget is looked at. (A boundary whose evidence
-# window is empty is judged in neither arm — that skip reads the evidence
-# window alone, so two arms fed one stream skip the same boundaries and the
-# matching below is untouched.) So the arms are matched on the *judging*
-# side — same calls, same waits, same cost per boundary — and differ on the
-# writing side, where a call is what a delivered correction is: the treatment
-# pays for the ones it makes and the control for none. That difference is the
-# treatment itself. A policy that returned early instead, consulting no judge
-# at all, would move the per-boundary calls too, and a paired comparison would
-# credit that to the corrections. **This is the one statement of how the arms
-# differ**; the other sites point here rather than repeating it, because a
-# repeated claim is one that goes stale in four places without failing in any.
-CONTROL_BUDGET = 0
 # Boundaries required between two interventions, and how many of the actor's
-# records the judge sees. Named here rather than left to `supervision()`'s
-# signature defaults, so that both carriers below read one value from one home:
-# a value with two homes is a value that drifts in one of them without failing
-# anywhere.
+# records the judge sees. Named here rather than left to the policy builder's
+# signature defaults, so the value has one home: a value with two homes is a
+# value that drifts in one of them without failing anywhere.
 SUPERVISOR_COOLDOWN = 4
 SUPERVISOR_WINDOW = 8
-
-
-def _supervised_rollout(supervision_factory: SupervisionFactory) -> WorkflowDef:
-  """Build a rollout entry whose actor can be spoken to while it runs.
-
-  The treatment arm and its control are given the same harness, the same flags
-  and the same invocation script, so nothing about the actor's environment
-  distinguishes them; how their supervision sides differ is stated once, at
-  :data:`CONTROL_BUDGET`. That is why this is a function of the supervision
-  rather than a flag on :data:`ROLLOUT`: a boolean would hide the difference
-  between the arms inside a parameter instead of leaving it in two readable
-  definitions.
-
-  Args:
-    supervision_factory: What watches the actor, given the task text.
-
-  Returns:
-    The one-entry definition.
-  """
-  return (
-      WorkflowEntry(
-          ROLLOUT_KEY,
-          CodingAgentTask(
-              # Proxy capture is a choice about evidence here, not something
-              # the channel requires (ADR-0017): a run from these two
-              # definitions is read as evidence *about* supervision, and the
-              # wire is the only record of the request bodies it produced.
-              harness=ClaudeCodeHarness(
-                  model=DEFAULT_MODEL,
-                  bare=False,
-                  capture="proxy",
-                  correction_channel=True,
-              ),
-              supervision_factory=supervision_factory,
-          ),
-          timeout=_AGENT_TIMEOUT_S,
-          sandbox=DockerHostSandboxConfig(
-              network=True, pass_env=(OAUTH_TOKEN_ENV,)
-          ),
-      ),
-  )
-
-
-SUPERVISED_ROLLOUT: WorkflowDef = _supervised_rollout(
-    supervision(
-        model=SUPERVISOR_MODEL,
-        transport=SUPERVISOR_TRANSPORT,
-        budget=SUPERVISOR_BUDGET,
-        cooldown=SUPERVISOR_COOLDOWN,
-        window=SUPERVISOR_WINDOW,
-        said_visibility=SUPERVISOR_SAID_VISIBILITY,
-    )
-)
-
-# The same policy, the same criterion, the same judge on every boundary either
-# arm judges at all — with nothing left to spend. What the actor experiences
-# differs by the corrections alone, and the supervision side differs only past
-# the point where a correction was decided on, which is the whole of what a
-# paired arm is for.
-CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
-    supervision(
-        model=SUPERVISOR_MODEL,
-        transport=SUPERVISOR_TRANSPORT,
-        budget=CONTROL_BUDGET,
-        cooldown=SUPERVISOR_COOLDOWN,
-        window=SUPERVISOR_WINDOW,
-        said_visibility=SUPERVISOR_SAID_VISIBILITY,
-    )
-)
 
 
 def _segmented_policy(
@@ -342,12 +252,11 @@ def _segmented_policy(
   )
 
 
-# The supervised carrier of record (ADR-0025): the actor is stopped every
-# configured number of turns, judged, and resumed, instead of being spoken to on
-# a live stdin. Its own definition rather than a flag on the two above, because
-# it takes no `supervision_factory` (the policy travels on the harness, since
-# the loop drives `run()` rather than bracketing it) and it cannot use the
-# correction channel, which owns the actor's stdin.
+# The supervised carrier (ADR-0025, ADR-0026): the actor is stopped every
+# configured number of turns, judged, and resumed. The policy travels on the
+# harness rather than beside it, because the loop *drives* `run()` instead of
+# bracketing it — which is why this is a definition of its own rather than a
+# flag on `ROLLOUT`.
 #
 # `capture="stream"`, which is also what makes the run readable: with
 # `--replay-user-messages` the event stream echoes the messages the actor
@@ -408,13 +317,6 @@ SEGMENTED_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (
     *UNIT_TEST,
 )
 
-
-SUPERVISED_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (
-    *SUPERVISED_ROLLOUT,
-    *UNIT_TEST,
-)
-
-CONTROL_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (*CONTROL_ROLLOUT, *UNIT_TEST)
 
 GOLD_UNIT_TEST: WorkflowDef = (
     WorkflowEntry(
@@ -548,10 +450,4 @@ register_workflow("gold_unit_test", GOLD_UNIT_TEST)
 register_workflow("segmented_rollout", SEGMENTED_ROLLOUT)
 register_workflow(
     "segmented_rollout_and_unit_test", SEGMENTED_ROLLOUT_AND_UNIT_TEST
-)
-register_workflow(
-    "supervised_rollout_and_unit_test", SUPERVISED_ROLLOUT_AND_UNIT_TEST
-)
-register_workflow(
-    "control_rollout_and_unit_test", CONTROL_ROLLOUT_AND_UNIT_TEST
 )

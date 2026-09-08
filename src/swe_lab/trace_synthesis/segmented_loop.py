@@ -642,8 +642,8 @@ class SegmentedRun:
   ) -> str:
     """Consult the policy at this seam and return the next segment's prompt.
 
-    Both failure modes the policy can declare are handled exactly as
-    :class:`~swe_lab.trace_synthesis.supervisor.Supervisor` handles them: a
+    Both failure modes the policy can declare are handled where the policy
+    declares them: a
     :class:`~swe_lab.trace_synthesis.supervisor.PolicyLapseError` is bounded to
     this seam and recorded as a lapse, and anything else is a gap of unknown
     reach. Neither ends the run — the actor still needs a prompt, and the

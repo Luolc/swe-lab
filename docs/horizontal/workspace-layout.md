@@ -106,17 +106,22 @@ Host root: `.cache/rollout_workspaces/<instance_id>/` · in-container:
 
 ### Staged before the run (mounts)
 
-**This table is the default configuration** — `stream` capture, no correction
-channel. Two harness settings change *which* file the agent reads on stdin, and
-nothing else in this section. All four combinations, from `_stdin_path` in
+**This table is the default configuration** — `stream` capture. One harness
+setting changes *which* file the agent reads on stdin, and nothing else in this
+section. Both combinations, from `_stdin_path` in
 `src/swe_lab/harnesses/claude_code/harness.py`:
 
-| capture | correction channel | the agent's stdin |
-|---|---|---|
-| `stream` (default) | off (default) | `prompt.stream.json` |
-| `stream` | on | the correction FIFO — the relay opens the run by `cat`-ing `prompt.stream.json` into it |
-| `proxy` | off | `prompt.txt`, **the one path on which the agent reads the plain file** |
-| `proxy` | on | the same FIFO |
+| capture | the agent's stdin |
+|---|---|
+| `stream` (default) | `prompt.stream.json` |
+| `proxy` | `prompt.txt`, **the one path on which the agent reads the plain file** |
+
+There used to be a second setting here — a correction channel whose FIFO
+replaced the file on either capture — and it was removed on 2026-09-08
+([ADR-0026](../decisions/ADR-0026-the-correction-channel-is-removed.md)). The
+segment loop, which is the supervised carrier that remains, changes nothing in
+this table: each segment is an ordinary invocation reading an ordinary file, and
+a correction is simply what that file says next.
 
 | File | In-container path | Written by | Read by | Content |
 |---|---|---|---|---|

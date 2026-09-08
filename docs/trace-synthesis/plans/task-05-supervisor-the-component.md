@@ -317,18 +317,24 @@ matched control §4.4 depends on. Past that precondition, `consider()` returns
 `None` unless every gate passes, in this order:
 
 1. the judge says off-track, else silent;
-2. **the would-have-spoken marker is recorded here**, before any budget is
-   consulted — this is what the control arm produces (what it buys is stated
-   once, at `workflow.definitions.CONTROL_BUDGET`);
-3. budget remaining, else silent (with the marker already recorded);
-4. cooldown elapsed since the last intervention, else silent (likewise);
-5. the writer produces a usable line, else **a recorded lapse** bounded to this
+2. budget remaining, else silent;
+3. cooldown elapsed since the last intervention, else silent;
+4. the writer produces a usable line, else **a recorded lapse** bounded to this
    boundary (§6.1) — never a retry.
+
+> **Amended 2026-09-08** ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)). A step 2 used to sit between the judgement
+> and the budget: *the would-have-spoken marker is recorded here*, which was
+> what the paired zero-budget control arm produced. The marker type, the arm and
+> the `CONTROL_BUDGET` constant that explained the pairing were all removed with
+> the correction channel; the **order** above is unchanged and still
+> load-bearing, for the reason §4.4 gives.
 
 The cost of this ordering is stated rather than hidden: **the judge runs on
 every boundary carrying evidence even after the budget is spent**, so a
-`budget=0` policy still pays for a judge it can never act on. Why that is worth paying is stated once,
-at `workflow.definitions.CONTROL_BUDGET`.
+`budget=0` policy still pays for a judge it can never act on. That was the price
+of a matched control arm; no shipped definition asks for one today (see the
+amendment above), and the order is kept because reversing it is what would make
+a control arm built later silently unmatched.
 
 A policy that speaks by default cannot be produced by omitting a parameter,
 because **`budget` has no default**: a policy that may speak must state how
@@ -360,9 +366,11 @@ cadence, zero corrections — and that is exactly `SpeakWhenOffTrack(budget=0)`,
 **which works only because §4.3 consults the budget after the judgement rather
 than before it.** Reverse those two and the control silently stops paying for
 its judge, at which point it is no longer the same run minus the corrections.
-It also produces something more useful than silence: a record of **where it
-would have spoken** on control traces; what that buys a comparison is stated
-once, at `workflow.definitions.CONTROL_BUDGET`.
+It also produced something more useful than silence: a record of **where it
+would have spoken** on control traces. That record went with the arm (see the
+amendment in §4.3); what survives, and is the half that matters here, is that a
+zero-budget policy still pays for its judge — so an arm built later is matched
+by construction rather than by remembering to.
 
 ### 4.5 What it writes
 

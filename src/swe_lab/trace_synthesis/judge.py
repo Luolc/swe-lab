@@ -743,10 +743,9 @@ def supervising_policy(
 ) -> SpeakWhenOffTrack:
   """Build the judging policy, or reject the artifact.
 
-  Called by :func:`~swe_lab.trace_synthesis.channel.supervision` while a
-  rollout assembles its observers — before the sandbox is created — so a forged
-  artifact stops the run rather than only this call, which is what acceptance
-  point 2b asks for. Pinned by
+  Called while a run's plan is built — before the sandbox is created — so a
+  forged artifact stops the run rather than only this call, which is what
+  acceptance point 2b asks for. Pinned by
   ``test_a_forged_criterion_stops_the_run_before_a_sandbox_exists``.
 
   Args:

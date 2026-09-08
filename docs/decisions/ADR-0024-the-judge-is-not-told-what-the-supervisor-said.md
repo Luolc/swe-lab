@@ -40,6 +40,33 @@ place:
   was compared against, so the sentence should now be read as history — the
   reason the shape was chosen, not a live pair of prompts to reconcile.
 
+## Amendment (2026-09-08, second)
+
+**The correction channel is gone too**, by the same owner's ruling, recorded in
+[ADR-0026](ADR-0026-the-correction-channel-is-removed.md). One carrier remains,
+and again the decision is unaffected — it is about the Python judge and writer
+prompts, which the segment loop runs unchanged. Two more sentences describe code
+that does not exist:
+
+- *"`channel.supervision()` forwards the argument, so both Python carriers
+  (`SupervisedRun` and `SegmentedSupervision.policy_factory`) run through it"* —
+  there is one Python carrier now, and `SegmentedSupervision.policy_factory` is
+  it. `supervising_policy` still owns the forwarding, which is the load-bearing
+  half; what is gone is the second caller.
+- The A/B arms this record kept (`both`, `none`) are still reachable and still
+  named per definition, but **no shipped definition names anything but
+  `writer`** now that the second and third arms' home — the channel's two
+  workflow definitions — is gone. That was already true of the value; it is now
+  true of the count of definitions that could differ.
+
+**Follow-up 1 is affected and is not withdrawn.** The paid re-measurement it
+asks for was to run through
+`experiments/trace_synthesis/n_batching_replay/replay.py`, which ADR-0026
+deletes, so it is **no longer runnable as written**. The question it asks — does
+showing the judge what the supervisor said confirm it into agreement — is
+unchanged and unanswered. Said on [#381](https://github.com/Luolc/swe-lab/issues/381),
+which stays open.
+
 ## Date
 
 2026-09-06 (amended 2026-09-08)
