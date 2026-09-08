@@ -191,9 +191,7 @@ class SegmentedSupervision:
     variable it could name, so the refusal is structural rather than a taste.
 
     Here rather than at the first judgement: an override is applied while the
-    command line is read, so it costs a construction instead of a container —
-    the same reasoning as
-    :meth:`~swe_lab.trace_synthesis.native_supervision.NativeSupervision.__post_init__`.
+    command line is read, so it costs a construction instead of a container.
 
     Raises:
       ValueError: ``api_key_env`` names no variable.

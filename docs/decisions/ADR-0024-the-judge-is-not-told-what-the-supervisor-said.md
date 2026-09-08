@@ -16,9 +16,33 @@ judge side that ADR-0020 did not enumerate.
 [ADR-0018](ADR-0018-the-supervisor-reads-the-guidebook-but-must-not-recite-the-answer.md)'s
 input and speech boundaries are untouched.
 
+## Amendment (2026-09-08)
+
+**The native runtime is gone**, by the owner's ruling recorded in
+[ADR-0025](ADR-0025-the-segment-loop-is-the-only-supervised-carrier.md). The
+decision this record makes is unaffected — it is about the Python judge and
+writer prompts, which both surviving carriers share — but two of its sentences
+now describe code that does not exist, and are amended rather than rewritten in
+place:
+
+- The rejected alternative *"Fix it only in the native runtime"* is settled by
+  the removal as well as by the ruling it already cited. Its factual clause —
+  *"the native runtime carries one hard-coded shape"* — was true of a runtime
+  the repository no longer has.
+- **Follow-up 2, "A config key for the native runtime", is withdrawn, not
+  outstanding.** There is no `prompt.rs` to add a key to, and no native arm to
+  join the A/B. Follow-ups 1 and 3 are untouched: the paid re-measurement and
+  the downstream pre-registration are about the Python prompts and stand
+  exactly as written.
+- The last rejected alternative observes that *"the native judge prompt omits
+  the section, and the Python judge prompt now matches it in that respect"*.
+  The Python prompt's shape is unchanged; what is gone is the second prompt it
+  was compared against, so the sentence should now be read as history — the
+  reason the shape was chosen, not a live pair of prompts to reconcile.
+
 ## Date
 
-2026-09-06
+2026-09-06 (amended 2026-09-08)
 
 ## Context
 
@@ -297,9 +321,13 @@ section, and the Python judge prompt now matches it in that respect.
    the un-frozen `budget=0` arm: the state channel's own stickiness, shared by
    all three modes. Prerequisite: the `replay.py` answer-shape fix in this
    record.
-2. **A config key for the native runtime.** `prompt.rs` is hard-coded to the
+2. ~~**A config key for the native runtime.** `prompt.rs` is hard-coded to the
    default shape; the three modes need a key there before a native arm can
-   join the A/B.
+   join the A/B.~~ **Withdrawn 2026-09-08** — the native runtime was removed
+   ([ADR-0025](ADR-0025-the-segment-loop-is-the-only-supervised-carrier.md)),
+   so there is no key to add and no arm to add it for. Kept struck through
+   rather than deleted: a follow-up that silently disappears is
+   indistinguishable from one nobody did.
 3. **The downstream A/B's pre-registration** is proposed, not frozen: per
    instance, one of the three modes, each paired with its control; primary
    statistic `Δ_m = solve(treatment_m) − solve(control_m)`; `"both"` replaces

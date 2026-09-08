@@ -3,12 +3,12 @@
 A leaf on purpose: it imports nothing from this package, so both ends can use
 it. :mod:`swe_lab.cli.host_env` performs the adoptions and records them here,
 and :mod:`swe_lab.rollout` reads them into the run record. Were this state to
-live in either of those, the other would have to import it, and either direction
-closes a loop: ``rollout`` → ``cli.host_env`` runs ``cli/__init__`` → ``run`` →
-``rollout``, and moving the state down instead only shifts the loop to
-``host_env`` → the harness constants → ``native_supervision`` → ``rollout``.
+live in either of those, the other would have to import it, and that closes a
+loop: ``rollout`` → ``cli.host_env`` runs ``cli/__init__`` → ``run`` →
+``rollout``. Pushing it down into a module either end already imports is the
+same trade rather than a way out — it buys a shorter cycle, not no cycle.
 
-**Both failures arrive as an `ImportError` about a "partially initialized
+**The failure arrives as an `ImportError` about a "partially initialized
 module", naming neither end of the cycle** — it does not read like an import
 loop, so it is written down here rather than rediscovered.
 

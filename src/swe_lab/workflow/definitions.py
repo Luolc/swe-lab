@@ -53,13 +53,6 @@ from swe_lab.trace_synthesis.judge import (
     messages_transport,
     supervising_policy,
 )
-from swe_lab.trace_synthesis.native_supervision import (
-    API_KEY_ENV as SUPERVISOR_API_KEY_ENV,
-)
-from swe_lab.trace_synthesis.native_supervision import (
-    Blocking,
-    NativeSupervision,
-)
 from swe_lab.trace_synthesis.oracle import OracleAnalysisTask
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
 from swe_lab.trace_synthesis.supervisor import SaidVisibility, SpeakPolicy
@@ -237,9 +230,9 @@ SUPERVISOR_SAID_VISIBILITY: SaidVisibility = "writer"
 CONTROL_BUDGET = 0
 # Boundaries required between two interventions, and how many of the actor's
 # records the judge sees. Named here rather than left to `supervision()`'s
-# signature defaults because the native runtime needs the same two numbers and
-# takes them as required arguments: a value with two homes is a value that
-# drifts in one of them without failing anywhere.
+# signature defaults, so that both carriers below read one value from one home:
+# a value with two homes is a value that drifts in one of them without failing
+# anywhere.
 SUPERVISOR_COOLDOWN = 4
 SUPERVISOR_WINDOW = 8
 
@@ -349,12 +342,12 @@ def _segmented_policy(
   )
 
 
-# The second supervision carrier: the actor is stopped every configured number
-# of turns, judged, and resumed, instead of being spoken to on a live stdin. Its
-# own definition rather than a flag on the two above, for the same reason the
-# native runtime has one: it takes no `supervision_factory` (the policy travels
-# on the harness, since the loop drives `run()` rather than bracketing it) and
-# it cannot use the correction channel, which owns the actor's stdin.
+# The supervised carrier of record (ADR-0025): the actor is stopped every
+# configured number of turns, judged, and resumed, instead of being spoken to on
+# a live stdin. Its own definition rather than a flag on the two above, because
+# it takes no `supervision_factory` (the policy travels on the harness, since
+# the loop drives `run()` rather than bracketing it) and it cannot use the
+# correction channel, which owns the actor's stdin.
 #
 # `capture="stream"`, which is also what makes the run readable: with
 # `--replay-user-messages` the event stream echoes the messages the actor
@@ -415,68 +408,6 @@ SEGMENTED_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (
     *UNIT_TEST,
 )
 
-
-# How many of the actor's assistant messages pass between judgements on the
-# native runtime. One — the setting that judges the most — because whether
-# batching them is worth anything is the open question #382 is measuring, and a
-# shipped definition is the wrong place to quietly answer it.
-NATIVE_JUDGE_EVERY_N = 1
-
-
-# The wrapper watches the actor from inside the sandbox instead of from the
-# host. **Its own definition rather than a flag on the two above**, because it
-# is not those arms with a different supervisor: it cannot use the correction
-# channel (the wrapper owns the actor's stdin, and so does the channel's FIFO),
-# it takes no `supervision_factory`, and its sandbox must carry a second
-# credential. A boolean on `_supervised_rollout` would have to switch all three
-# and would read as a smaller difference than it is.
-#
-# The knob values are the ones the prior supervision measurements used, so the
-# first native runs are read against calls of the same shape rather than a new
-# unknown. That is the same reasoning as `SUPERVISOR_MODEL` and **not** a claim
-# that the two runtimes agree: they deliberately diverge (#380, #383).
-NATIVE_SUPERVISED_ROLLOUT: WorkflowDef = (
-    WorkflowEntry(
-        ROLLOUT_KEY,
-        CodingAgentTask(
-            harness=ClaudeCodeHarness(
-                model=DEFAULT_MODEL,
-                bare=False,
-                # Proxy capture for the same reason as the arms above: the wire
-                # is the only record of the request bodies a run produced. The
-                # supervisor's own calls go through a second instance of it.
-                capture="proxy",
-                native_supervision=NativeSupervision(
-                    model=SUPERVISOR_MODEL,
-                    budget=SUPERVISOR_BUDGET,
-                    cooldown=SUPERVISOR_COOLDOWN,
-                    window=SUPERVISOR_WINDOW,
-                    judge_every_n_assistant_messages=NATIVE_JUDGE_EVERY_N,
-                    # Stop reading the actor's stdout while a judgement is in
-                    # flight: the pipe fills and the actor waits. The absence
-                    # of a read, so it self-releases if the wrapper dies —
-                    # unlike SIGSTOP, which leaves a state someone must undo.
-                    block_actor_while_judging=Blocking.STDOUT,
-                ),
-            ),
-        ),
-        timeout=_AGENT_TIMEOUT_S,
-        sandbox=DockerHostSandboxConfig(
-            # Two credentials now, both by name: the actor's and the
-            # supervisor's. The supervisor's endpoint is *not* here — the
-            # harness exports it, because it addresses a forwarder the harness
-            # starts inside this sandbox and a host variable of that name could
-            # otherwise aim a credential-bearing request anywhere.
-            network=True,
-            pass_env=(OAUTH_TOKEN_ENV, SUPERVISOR_API_KEY_ENV),
-        ),
-    ),
-)
-
-NATIVE_SUPERVISED_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (
-    *NATIVE_SUPERVISED_ROLLOUT,
-    *UNIT_TEST,
-)
 
 SUPERVISED_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (
     *SUPERVISED_ROLLOUT,
@@ -623,8 +554,4 @@ register_workflow(
 )
 register_workflow(
     "control_rollout_and_unit_test", CONTROL_ROLLOUT_AND_UNIT_TEST
-)
-register_workflow(
-    "native_supervised_rollout_and_unit_test",
-    NATIVE_SUPERVISED_ROLLOUT_AND_UNIT_TEST,
 )
