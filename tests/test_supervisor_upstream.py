@@ -18,6 +18,8 @@ import dataclasses
 import io
 import json
 import os
+import subprocess
+import sys
 from typing import Any
 from unittest import mock
 import urllib.request
@@ -36,7 +38,11 @@ from swe_lab.trace_synthesis.judge import (
 )
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
 from swe_lab.trace_synthesis.supervisor import NeverSpeak, SpeakWhenOffTrack
-from swe_lab.workflow.definitions import SEGMENTED_ROLLOUT, SUPERVISOR_MODEL
+from swe_lab.workflow.definitions import (
+    SEGMENTED_ROLLOUT,
+    SUPERVISOR_BASE_URL,
+    SUPERVISOR_MODEL,
+)
 
 # Somebody else's gateway. Deliberately a host this repo has never heard of:
 # that is the whole point, and a registry of blessed names cannot express it.
@@ -121,10 +127,81 @@ def test_the_default_upstream_does_not_move() -> None:
   This is what makes the test above a check rather than an observation — the
   two arms give different answers, so the assertion reads the choice and not a
   constant.
+
+  Against the shipped constant rather than the Anthropic root, deliberately.
+  The shipped plan resolved its default while this module's ``definitions``
+  import ran, so on a box whose environment names an upstream that default *is*
+  that upstream; asserting the root here would be asserting a property of
+  whoever ran the tests. What the default resolves to is pinned where the
+  environment is controlled instead —
+  ``test_the_fallback_is_the_anthropic_root_when_nothing_says`` in this process
+  and ``test_the_shipped_default_is_captured_when_the_definitions_import`` in a
+  fresh one.
   """
   judge = _judge_of(_supervision())
 
-  assert _upstream_of(judge) == (ANTHROPIC_API, DEFAULT_API_KEY_ENV)
+  assert _upstream_of(judge) == (SUPERVISOR_BASE_URL, DEFAULT_API_KEY_ENV)
+
+
+# What a fresh interpreter prints: the upstream the shipped segmented plan ended
+# up with, given a variable set either side of the import that reads it.
+_TIMING_PROBE = """\
+import os
+import sys
+
+when, url = sys.argv[1], sys.argv[2]
+if when == "before":
+  os.environ["ANTHROPIC_BASE_URL"] = url
+
+import swe_lab.workflow.definitions as definitions
+
+if when == "after":
+  os.environ["ANTHROPIC_BASE_URL"] = url
+
+print(definitions.SEGMENTED_ROLLOUT[0].task.harness.segmented.base_url)
+"""
+
+
+def _captured(when: str) -> str:
+  """Return the shipped plan's upstream in a process that set the variable then.
+
+  Args:
+    when: ``"before"`` or ``"after"``, relative to importing ``definitions``.
+
+  Returns:
+    What that process resolved the default to.
+  """
+  # The parent's own value is removed so the child starts from silence: an
+  # inherited one would make both arms answer it and the contrast vanish.
+  environment = dict(os.environ)
+  _ = environment.pop(ANTHROPIC_BASE_URL_ENV, None)
+  finished = subprocess.run(
+      [sys.executable, "-c", _TIMING_PROBE, when, _THIRD_PARTY],
+      capture_output=True,
+      text=True,
+      check=True,
+      env=environment,
+  )
+  return finished.stdout.strip()
+
+
+def test_the_shipped_default_is_captured_when_the_definitions_import() -> None:
+  """The timing is a contract, so both sides of it are pinned.
+
+  A shipped plan is a module-level value, so its default resolves while that
+  module imports — which is the moment a process's environment is already
+  settled. Set the variable before that and the plan follows it; set it after
+  and the plan does not move, because a run's upstream is fixed and recorded
+  before the run rather than re-read while it is going.
+
+  Two fresh processes rather than ``monkeypatch``, because the thing under test
+  is what happens *at import*, and this process imported ``definitions`` long
+  ago. The two arms answer differently, which is what makes this a check: an
+  assertion green under both orders would say nothing about when the read
+  happens.
+  """
+  assert _captured("before") == _THIRD_PARTY
+  assert _captured("after") == ANTHROPIC_API
 
 
 def test_the_key_variable_is_the_callers_choice_too() -> None:

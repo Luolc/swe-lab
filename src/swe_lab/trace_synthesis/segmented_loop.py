@@ -120,7 +120,11 @@ class SegmentedSupervision:
       and the closed registry that briefly stood here made that impossible
       without a fork. Defaults to ``ANTHROPIC_BASE_URL`` and falls back to the
       Anthropic API root, so a sandbox that already exports that variable for
-      its agent has already pointed the supervisor at the same place. Written
+      its agent has already pointed the supervisor at the same place. **That
+      default is resolved when the plan is constructed**, which for a
+      module-level definition is when its module imports — see
+      :func:`~swe_lab.trace_synthesis.judge.default_supervisor_base_url` for
+      why a run's upstream is fixed then rather than re-read later. Written
       onto every decision row.
     api_key_env: The **name** of the environment variable holding the key —
       never the key. Read at call time, so nothing puts a credential on a

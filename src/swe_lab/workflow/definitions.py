@@ -200,6 +200,9 @@ SUPERVISOR_MODEL = "claude-sonnet-5"
 # spends** — the rule is in `AGENTS.md` (Boundaries) and an invocation honours
 # it by naming the pool's endpoint and a variable holding one live key, both of
 # which reach a command line through `--<entry>.harness.segmented.…`.
+# Captured **here, as this module imports** — so is the identical default on
+# the shipped segmented plan below. A variable set after that does not reach
+# either; the contract and its reasoning are at `default_supervisor_base_url`.
 SUPERVISOR_BASE_URL = default_supervisor_base_url()
 SUPERVISOR_TRANSPORT = functools.partial(
     messages_transport,

@@ -146,6 +146,18 @@ def default_supervisor_base_url() -> str:
   registry of blessed upstreams behind this: any URL a caller supplies is
   legitimate, and this function only answers "what if they supply none".
 
+  **It reads the environment when it is called, and the caller decides when
+  that is.** A plan resolves it while it is constructed, so a module-level
+  definition — every shipped one — resolves it while that module imports, and a
+  variable set afterwards does not reach it. That is the intended contract, not
+  an accident of import order: an upstream is part of a run's configuration, so
+  it is fixed and recorded before the run rather than re-read mid-flight, which
+  is what would let two segments of one run be pointed at different places
+  while their decision rows disagreed about which. A process gets its
+  environment before Python starts, which is the moment this reads.
+  ``test_the_shipped_default_is_captured_when_the_definitions_import`` holds
+  both arms of that up.
+
   The **deferred import** is why this is a function rather than a module
   constant: the Anthropic root has one home, in the ``claude_code`` harness's
   constants, and that package imports this one. Copying the URL here would
