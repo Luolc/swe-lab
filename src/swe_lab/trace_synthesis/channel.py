@@ -62,9 +62,9 @@ from .supervisor import (
     Supervisor,
 )
 
-# These name the run, not this runtime: they live in a leaf module so the
-# harness and the native runtime can use them without importing this one,
-# which is a cycle through the claude_code package.
+# These name the run, not this carrier: they live in a leaf module so the
+# harness can use them without importing this one, which is a cycle through the
+# claude_code package.
 from .vocabulary import (
     BOUNDARIES_METRIC,
     CORRECTIONS_METRIC,

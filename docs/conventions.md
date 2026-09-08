@@ -25,10 +25,6 @@ uv run pytest                        # run the test suite
 git add -A                           # --all-files means all TRACKED files
 uv run pre-commit run --all-files    # the full hook set — see Formatting & lint
 
-# The Rust runtime (rust/swe-lab-supervisor/): its README lists the four gates
-# CI runs and the static build. Needs the pinned toolchain via rustup.
-(cd rust/swe-lab-supervisor && cargo test)
-
 # The engine CLI — one entry point, per-subcommand modules (cli/<name>.py).
 # `run` takes a REGISTERED WORKFLOW and an instance; any field of it is
 # adjustable for that invocation by naming its path.
@@ -415,7 +411,7 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | `src/swe_lab/harnesses/` | The **harness axis**: `base.py` (the `Harness` ABC) + `registry.py`, then one package per agent — `claude_code/` (invocation, `convert`/`capture`, and the runner utilities `binary`/`proxy`/`errors` — `proxy` *builds* the in-sandbox capture proxy, it no longer runs one), `codex/`, `grok_build/`. |
 | `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus one package per dataset (`swebench_pro/`, `deepswe/`: record, run setup, unit-test compile + grader; `oracle_failures/`: a cached failure of another dataset's instance, delegating the runnable surface to it and staging the failure through `mounts()`, with `build.py` making rows from finished runs). `verify.py` is the dataset-agnostic golden sweep (`--dataset <name>`). |
 | `src/swe_lab/evaluation/` | The **evaluation axis**: the `verdict` contract + one module per method (`unit_test`). |
-| `src/swe_lab/workflow/` | The **task layer** above the engine ([ADR-0007](decisions/ADR-0007-task-and-workflow-layer.md)): `task.py` (the generic `Task` — one sandbox, three hooks, one `execute`), `workflow.py` (chains tasks by matching output to input store name), `registry.py` + `definitions.py` (the workflows `run --list` names: `rollout`, `unit_test`, `rollout_and_unit_test`, `gold_unit_test`, `git_integrity_audit`, `oracle_analysis`, `oracle_guided_trace`, `from_scratch_guided_trace`, and the `segmented_*` / `supervised_*` / `native_supervised_*` / `control_*` solve-and-grade variants; an entry's key is the store's task segment, so two entries never share one), `run_task.py` (executes one and writes its record). |
+| `src/swe_lab/workflow/` | The **task layer** above the engine ([ADR-0007](decisions/ADR-0007-task-and-workflow-layer.md)): `task.py` (the generic `Task` — one sandbox, three hooks, one `execute`), `workflow.py` (chains tasks by matching output to input store name), `registry.py` + `definitions.py` (the workflows `run --list` names: `rollout`, `unit_test`, `rollout_and_unit_test`, `gold_unit_test`, `git_integrity_audit`, `oracle_analysis`, `oracle_guided_trace`, `from_scratch_guided_trace`, and the `segmented_*` / `supervised_*` / `control_*` solve-and-grade variants; an entry's key is the store's task segment, so two entries never share one), `run_task.py` (executes one and writes its record). |
 | `src/swe_lab/trace_synthesis/` | The **trace-synthesis component** ([docs/trace-synthesis/](trace-synthesis/)): `oracle.py` is phase B (`OracleAnalysisTask` — the Oracle writes `guidebook.md` for a failure, either staged by an `oracle_failures` record or delivered over edges from a phase-A rollout (`failure_inputs=True`); git-history purge off), `guidebook.py` its schema check, `sample.py` the names a staged failure is mounted under, `guided_gain.py` the from-scratch chain's 2×2 reading of a sweep's blind vs guided verdicts ([ADR-0023](decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md)). |
 | `src/swe_lab/rollout.py` | The **rollout composition** (`CodingAgentTask`): a harness solves the bound instance under the shared observers, with optional proxy capture. Backend-, dataset- and harness-agnostic. |
 | `src/swe_lab/conversation/` | The provider-neutral typed `Conversation` + the shared conversation observer. |
@@ -432,7 +428,6 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | `.cache/` | **Gitignored** — cloned repos, the pinned Claude Code linux-x64 binary, batch logs. Reproducible, never committed. |
 | `packaging/claude-code-bundle/` | Builds the portable Claude Code tarball (agent + glibc + loader + `rg`) that runs on musl/Alpine, ancient glibc and distroless. `build.sh` resolves + pins the version, `Dockerfile.bundle` is the hermetic builder, `smoke-test.sh` is the target matrix. Output lands in `dist/` (**gitignored**). The artifact is **internal-use only** — private channels, never published. Design: [task 24](horizontal/plans/task-24-claude-code-portable-bundle.md). |
 | `tests/` | pytest suite over the engine, axes, and tasks. |
-| `rust/swe-lab-supervisor/` | The **in-sandbox supervision runtime** ([issue #375](https://github.com/Luolc/swe-lab/issues/375)), a static musl binary that wraps the actor and runs the trace-synthesis supervision policy where the actor runs. Its own [README](../rust/swe-lab-supervisor/README.md) has the CLI, config schema, build and checks; its design record is [task 20](trace-synthesis/plans/task-20-native-supervisor-runtime.md). Pure-Rust dependencies only, plain HTTP to the model endpoint, checked by CI's `rust` job. |
 
 ## What may be committed as evidence
 

@@ -64,10 +64,6 @@ from swe_lab.sandbox import (
     SandboxSpec,
 )
 from swe_lab.sandbox.testing import FakeSandbox
-from swe_lab.trace_synthesis.native_supervision import (
-    Blocking,
-    NativeSupervision,
-)
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
 from swe_lab.trace_synthesis.supervisor import NeverSpeak
 from swe_lab.trace_synthesis.vocabulary import SUPERVISOR_LOG_NAME
@@ -172,58 +168,6 @@ def test_invocation_script_shape_and_quoting():
   # stream-json message the run opens with
   assert '< "$SANDBOX_WORKSPACE"/prompt.stream.json' in script
   assert '> "$SANDBOX_WORKSPACE"/claude.event_stream.jsonl' in script
-
-
-def test_two_proxy_instances_share_no_shell_variable() -> None:
-  """A second instance can be started beside the first without colliding.
-
-  Both instances register with the script's one `EXIT` trap, so each needs its
-  own pid variable: a second start reusing the first's would leave the trap
-  reaping one process twice and the other never — a proxy outliving the run,
-  with its log still open.
-  """
-  from swe_lab.harnesses.claude_code.harness import _proxy_start_lines
-
-  first = _proxy_start_lines(
-      target="https://api.anthropic.com",
-      port=9527,
-      log_name="a.jsonl",
-      own_log_name="a.log",
-      name="proxy",
-      label="capture",
-  )
-  second = _proxy_start_lines(
-      target="https://openrouter.ai/api",
-      port=9528,
-      log_name="b.jsonl",
-      own_log_name="b.log",
-      name="supervisor_proxy",
-      label="supervisor",
-  )
-
-  def shell_variables(lines: list[str]) -> set[str]:
-    return {
-        line.split("=", 1)[0]
-        for line in lines
-        if "=" in line and line[:1].isalpha()
-    }
-
-  # `reaped_pids` is the one trap's list and is shared on purpose; everything
-  # else has to be per-instance.
-  shared = {"reaped_pids"}
-  mine, theirs = (
-      shell_variables(first) - shared,
-      shell_variables(second) - shared,
-  )
-
-  # Asserted as equalities, not as "no overlap": two empty sets are disjoint
-  # too, and would pass this silently.
-  assert mine == {"proxy_pid", "proxy_wait"}
-  assert theirs == {"supervisor_proxy_pid", "supervisor_proxy_wait"}
-  assert not mine & theirs
-  # Each still hands its own pid to the one trap, which is what reaps it.
-  assert _reap("proxy_pid") in first
-  assert _reap("supervisor_proxy_pid") in second
 
 
 _ARGV_CONFIGURATIONS = (
@@ -921,7 +865,7 @@ def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
   and pass this by accident; and the pids travel through a file rather than a
   pipe, so nothing here waits on a descriptor a child might hold open.
   """
-  from swe_lab.harnesses.claude_code.harness import _reap, _reaper_lines
+  from swe_lab.harnesses.claude_code.harness import _reaper_lines
 
   pid_file = tmp_path / "pids"
   script = "\n".join(
@@ -1344,22 +1288,10 @@ def _segmented(*, turns_per_segment: int = 5) -> SegmentedSupervision:
   )
 
 
-def test_segmented_supervision_refuses_the_two_mechanisms_it_cannot_share():
-  """Three components deciding when the actor stops is not a configuration."""
+def test_segmented_supervision_refuses_the_mechanism_it_cannot_share():
+  """Two components deciding when the actor stops is not a configuration."""
   with pytest.raises(ValueError, match="segmented supervision"):
     _ = ClaudeCodeHarness(segmented=_segmented(), correction_channel=True)
-  with pytest.raises(ValueError, match="segmented supervision"):
-    _ = ClaudeCodeHarness(
-        segmented=_segmented(),
-        native_supervision=NativeSupervision(
-            model="m",
-            budget=1,
-            cooldown=1,
-            window=1,
-            judge_every_n_assistant_messages=1,
-            block_actor_while_judging=Blocking.STDOUT,
-        ),
-    )
   # The control arm: on its own it is a valid configuration, so the refusal
   # above is about the combination and not about the field existing.
   assert ClaudeCodeHarness(segmented=_segmented()).segmented is not None
@@ -1487,8 +1419,19 @@ def test_a_segmented_run_runs_one_script_per_segment_and_records_its_seams(
   # keeps the seam free of a fabricated assistant turn.
   assert "--resume-session-at msg-1-uuid" in staged
   # And the run's own account is registered as an artifact, so it leaves the
-  # sandbox with the trace rather than dying with the container.
-  assert "supervisor.jsonl" in harness.native_outputs()
+  # sandbox with the trace rather than dying with the container. Asserted as
+  # the **exact** set: membership alone would stay green if a segmented run
+  # started writing a second, unregistered artifact beside it, and the spec's
+  # "creates no separate sandbox artifact" invariant is the half that needs a
+  # test able to go red.
+  assert harness.native_outputs() == {
+      "proxy_log.jsonl": PROXY_LOG_NAME,
+      "proxy_stderr.log": PROXY_STDERR_NAME,
+      "event_stream.jsonl": EVENT_STREAM_NAME,
+      "supervisor.jsonl": SUPERVISOR_LOG_NAME,
+      "stderr.log": "claude.stderr.log",
+      "exit_code.txt": "claude.exit_code",
+  }
 
 
 def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(

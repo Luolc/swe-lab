@@ -1,13 +1,21 @@
 # Task 20: The native supervisor runtime — a static binary that wraps the actor
 
+> **Retired 2026-09-08.** The owner ruled that the segment loop
+> ([task 22](task-22-segmented-supervision-loop.md)) is the only supervised
+> carrier, and this one was removed in full —
+> [ADR-0025](../../decisions/ADR-0025-the-segment-loop-is-the-only-supervised-carrier.md).
+> This document stays as the point-in-time design record of what was built. It
+> is not open work, and the `rust/swe-lab-supervisor/` paths it names no longer
+> resolve: that code lives in git history, at `9f39348`.
+
 **The design of record is [issue #375](https://github.com/Luolc/swe-lab/issues/375)**,
 including its three follow-up comments (the blocking mechanism and the
 batching requirement; the `N = 5 / 6` correction; the withdrawal of the
 evidence-count analysis). This document does not restate it. What it holds is
 the set of decisions the implementation had to make where #375 leaves a
 choice open, so that each is written down once, where a reviewer of the crate
-can find it. The code is [`rust/swe-lab-supervisor/`](../../../rust/swe-lab-supervisor/);
-its README owns the CLI, the config schema and the build.
+can find it. The code was `rust/swe-lab-supervisor/`; its README owned the CLI, the
+config schema and the build.
 
 Status lives in [`README.md`](README.md), not here.
 

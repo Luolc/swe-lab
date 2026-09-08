@@ -1,10 +1,18 @@
 # Task 21: Native supervision, the Python side
 
+> **Retired 2026-09-08.** The owner ruled that the segment loop
+> ([task 22](task-22-segmented-supervision-loop.md)) is the only supervised
+> carrier, and this one was removed in full —
+> [ADR-0025](../../decisions/ADR-0025-the-segment-loop-is-the-only-supervised-carrier.md).
+> This document stays as the point-in-time design record of what was built. It
+> is not open work, and the `rust/swe-lab-supervisor/` paths it names no longer
+> resolve: that code lives in git history, at `9f39348`.
+
 The design of record is
 [issue #375](https://github.com/Luolc/swe-lab/issues/375).
-[Task 20](task-20-native-supervisor-runtime.md) is the binary — the crate under
-[`rust/swe-lab-supervisor/`](../../../rust/swe-lab-supervisor/), its tests and
-its CI — and its §8 lists what it deliberately leaves out. This document is that
+[Task 20](task-20-native-supervisor-runtime.md) is the binary — the crate that
+lived under `rust/swe-lab-supervisor/`, its tests and its CI — and its §8 lists
+what it deliberately leaves out. This document is that
 list: the Python half of the same migration, which is everything outside
 `rust/`.
 

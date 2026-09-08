@@ -96,14 +96,20 @@ every caller of it are untouched by this task.
 
 ## 3. Where the loop lives: a field on the harness, not a new harness
 
-`ClaudeCodeHarness` already carries two mutually-exclusive supervision
-mechanisms as fields (`correction_channel: bool`, `native_supervision:
-NativeSupervision | None`), with `__post_init__` refusing the combination in
-which two components own the actor's stdin. This is the third, and it follows
-the same shape for the same reason stated at `correction_channel`: a forked
-harness is a standing invitation for the supervised and unsupervised paths to
-drift in flags, denied tools or capture wiring — **drift that would be invisible
-in the traces it produces**.
+`ClaudeCodeHarness` already carries a mutually-exclusive supervision mechanism
+as a field (`correction_channel: bool`), with `__post_init__` refusing the
+combination in which two components own the actor's stdin. This is the second,
+and it follows the same shape for the same reason stated at
+`correction_channel`: a forked harness is a standing invitation for the
+supervised and unsupervised paths to drift in flags, denied tools or capture
+wiring — **drift that would be invisible in the traces it produces**.
+
+> **Historical (2026-09-08).** When this plan was written there was a third
+> field, `native_supervision: NativeSupervision | None`, for the in-sandbox Rust
+> carrier. It was removed with that carrier
+> ([ADR-0025](../../decisions/ADR-0025-the-segment-loop-is-the-only-supervised-carrier.md)),
+> so every "three mechanisms" reading below is now two. The shape argument is
+> unchanged — it was never about how many there are.
 
 ```python
 @dataclasses.dataclass(frozen=True)
@@ -118,8 +124,9 @@ class SegmentedSupervision:
 ```
 
 - New harness field `segmented: SegmentedSupervision | None = None`.
-- `__post_init__` refuses `segmented` together with `correction_channel` or
-  `native_supervision` — three owners of one actor is not a configuration.
+- `__post_init__` refuses `segmented` together with `correction_channel` — two
+  owners of one actor is not a configuration. (It refused
+  `native_supervision` too until that carrier was removed; see the note above.)
 - `actor_argv()` gains a keyword-only `resume_session_id: str | None = None`
   and uses `segmented.turns_per_segment` for `--max-turns` when segmented.
 - **`max_turns` changes meaning under segmentation** — today it is the whole
@@ -156,9 +163,9 @@ and for one more reason than they have.** Their reason is that the wire is the
 only record of the request bodies a run produced; ours adds that §6.4's
 condition 3 needs the **captured API responses** as its independent oracle, and
 the proxy log is where they are. `_narrates_event_stream` gains
-`segmented is not None` — exactly as it already carries `correction_channel` and
-`native_supervision` — so the actor still narrates the event stream the loop
-reads its `result` events from. Both artifacts exist, as they do on the A′ arms.
+`segmented is not None` — exactly as it already carries `correction_channel` —
+so the actor still narrates the event stream the loop reads its `result` events
+from. Both artifacts exist, as they do on the A′ arms.
 
 ### The flag composition this rests on, measured free
 
@@ -349,12 +356,29 @@ which is the residual value of the seam record now that the artifact is not
 supposed to exist at all: it is how a *reader* checks, independently of our
 guard, that it does not.
 
-### 6.6 The transcript leg, and exactly how far it reaches
+### 6.6 The transcript leg, and exactly how far it reached — removed
 
-`transcript_marks.py` reconciles the driver's seam count against what the CLI's
-own session persistence marks. **It is not a provenance check and cannot become
-one**: every field it reads is the candidate record's self-report, and
-`test_a_forged_record_passes_the_chain` asserts that a record simply claiming a
+> **Removed 2026-09-08, and this subsection is now history.** The module below
+> was built and is gone: nothing under `src/` ever imported it, so it was a leg
+> the loop never actually stood on, and it was deleted in the pass that removed
+> the native carrier
+> ([ADR-0025](../../decisions/ADR-0025-the-segment-loop-is-the-only-supervised-carrier.md)).
+> **What the loop's seam evidence is today**: the wire check of
+> [§6.3](#63-the-wire-check--recorded-not-enforced) and the driver's own seam
+> record of [§6.5](#65-what-the-driver-records-at-each-seam), both of which are
+> in the tree. The count-reconciliation described here has no implementation,
+> and this removes no acceptance point — the owner fixed the bring-up run's
+> scope on 2026-09-03 to two points, with §6 *"recorded, never enforced"*
+> rationale rather than acceptance criteria (see the task 22 row in
+> [`README.md`](README.md)). Read the rest of this subsection in the past tense;
+> the reasoning is kept because it is the correction in the second paragraph
+> that has lasting value, and because rebuilding this leg without reading it
+> would repeat the mistake it documents.
+
+`transcript_marks.py` reconciled the driver's seam count against what the CLI's
+own session persistence marks. **It was not a provenance check and could not
+become one**: every field it read was the candidate record's self-report, and
+`test_a_forged_record_passes_the_chain` asserted that a record simply claiming a
 model and a request id passes. Its name was narrowed from `model_authored` for
 that reason.
 
@@ -371,8 +395,9 @@ and it is the kind of sentence a later reader builds on.
 
 Under the anchored flag the fabricated record should not exist anywhere, and the
 guard checks the wire. What the bring-up run adds is the **live control arm** of
-§6.3, plus the transcript leg's agreement with the driver's seam count, plus the
-first §5 latency numbers on a real task.
+§6.3, plus the first §5 latency numbers on a real task. (It was also to add the
+transcript leg's agreement with the driver's seam count; that leg is gone —
+§6.6.)
 
 ## 7. No ADR, and why not
 
@@ -408,11 +433,11 @@ pointer here, so the fact does not fall between the two tasks.
 |---|---|
 | `src/swe_lab/trace_synthesis/segmented_loop.py` | `SegmentedSupervision`, the loop, the seam record of §6.3, the caps, and §5's cost note in its module docstring |
 | `src/swe_lab/trace_synthesis/seam_shape.py` | the guard of §6.3, and `DirtySeamError` |
-| `src/swe_lab/trace_synthesis/transcript_marks.py` | the transcript leg, narrowed to what it covers (§6.6) |
+| ~~`src/swe_lab/trace_synthesis/transcript_marks.py`~~ | the transcript leg, narrowed to what it covers (§6.6) — **removed 2026-09-08**, never imported by `src/` |
 | `tests/test_seam_shape.py` + `tests/data/proxy_seam_{dirty,anchored}.jsonl` | the guard's arms and its premises |
 | `tests/test_segmented_loop.py` | the loop against a fake `SandboxFs` (`sandbox/testing.py` already scripts successive `run_script` results) |
-| `tests/test_transcript_marks.py` | the two arms, plus the forged-record limitation asserted |
-| `tests/data/assistant_record_shapes.json` | the committed shape fixture |
+| ~~`tests/test_transcript_marks.py`~~ | the two arms, plus the forged-record limitation asserted — **removed 2026-09-08** with the module it was the only importer of |
+| ~~`tests/data/assistant_record_shapes.json`~~ | the committed shape fixture — **removed 2026-09-08**, read only by the test above |
 | this file + its row in `README.md` | |
 
 **Extended**
@@ -425,17 +450,20 @@ pointer here, so the fact does not fall between the two tasks.
 | `workflow/definitions.py` | one `SEGMENTED_ROLLOUT` definition, `capture="proxy"`, with the segmented controls late-bound by CLI overrides |
 | `docs/trace-synthesis/plans/README.md` | task 12's pointer (§8) |
 
-**Not touched:** `channel.py` and every caller; `rust/`;
-`experiments/trace_synthesis/resume_loop_feasibility/`; any frozen
-`PREREGISTRATION.md`.
+**Not touched:** `channel.py` and every caller; `rust/` (which no longer
+exists — ADR-0025); `experiments/trace_synthesis/resume_loop_feasibility/`; any
+frozen `PREREGISTRATION.md`.
 
 ---
 
 ## 10. Order of work
 
-1. **Done** — the transcript leg and its two arms (§6.6). The mutant that
+1. ~~**Done** — the transcript leg and its two arms (§6.6). The mutant that
    reports every record fails exactly `test_a_real_assistant_record_is_not_reported`
-   and `test_records_of_other_types_are_never_reported`; 5 tests stay green.
+   and `test_records_of_other_types_are_never_reported`; 5 tests stay green.~~
+   **Undone 2026-09-08**: the leg was removed (§6.6), so this step's work is no
+   longer in the tree. Struck through rather than deleted — a step that
+   disappears reads as one nobody did.
 2. **Done** — `SegmentedSupervision`, `actor_argv`, the `__post_init__` refusal,
    unit-tested against a scripted fake sandbox: no container, no model.
 3. **Done** — the loop, its three ceilings, and the per-segment account.
