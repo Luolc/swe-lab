@@ -407,7 +407,9 @@ checkable ones are stated as checks and the rest is stated as unenforced:
 
 The writer takes its reason primarily from `Justification`; `Goal`, `Actions`
 and `Expected observations` locate the current stage, while `Edits` and `Tests`
-inform private judgement rather than text to relay. That source discipline is
+— labels the brief no longer offers
+([#453](https://github.com/Luolc/swe-lab/issues/453)), and which a guidebook may
+still carry — inform private judgement rather than text to relay. That source discipline is
 intended, not mechanically parsed. §5 fixes what *any* intervention must
 satisfy — the length cap, the tag, and the ban on fabricating an observation.
 The writer adds two checks that rule out failures a length cap does not:
