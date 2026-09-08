@@ -833,14 +833,25 @@ class OracleAnalysisTask(Task):
     What is left is the baseline — a run that ended anything but ``SUCCESS``,
     or produced no guidebook **at all**, which is a missing declared output
     rather than a judgement about one — plus the harness's own retryable
-    endings, which are the exceptional cases this method exists for: a
-    container that would not start, a network failure, a crash.
+    endings: a container that would not start, a network failure, a crash.
+
+    **This is the policy, not what the shipped entries do.** Every entry
+    carrying this task runs at the default ``retries=0``
+    (``test_the_shipped_oracle_entries_carry_no_retry_budget``), so
+    ``run_task`` runs one attempt and this answer only decides whether to
+    break out of a loop that has already ended: **by default, an Oracle run
+    is never retried, whatever happened to it.** That is a decision about
+    spending someone else's quota rather than a claim that those endings are
+    unworthy of another attempt — they are exactly the ones that are. A
+    caller who wants the behaviour above asks for it per run
+    (``--oracle_analysis.retries=N``, which reaches the entry field), and
+    then gets this policy instead of the base class's.
 
     Args:
       result: The attempt to judge.
 
     Returns:
-      Whether another attempt is owed.
+      Whether another attempt is owed, if anyone is spending.
     """
     if super().should_retry(result):
       return True

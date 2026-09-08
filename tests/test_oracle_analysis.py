@@ -656,6 +656,49 @@ def test_a_schema_result_never_buys_another_paid_attempt():
   assert _task().should_retry(result) is False
 
 
+def test_the_shipped_oracle_entries_carry_no_retry_budget():
+  """The policy above is dormant on every path we ship.
+
+  `should_retry` describes endings worth another attempt, and `run_task`
+  loops `range(retries + 1)` — so with a budget of 0 the answer is never
+  acted on. Pinned rather than described, because a docstring that promises
+  behaviour the shipped entry cannot reach is the defect this test exists to
+  keep from coming back; if someone gives an Oracle entry a budget, they have
+  to come here and say so.
+  """
+  entries = [
+      *workflow_definition("oracle_analysis"),
+      *(
+          entry
+          for entry in workflow_definition("from_scratch_guided_trace")
+          if isinstance(entry.task, OracleAnalysisTask)
+      ),
+  ]
+
+  assert [entry.retries for entry in entries] == [0, 0]
+
+
+def test_a_caller_who_pays_for_a_retry_gets_this_policy():
+  """The control arm: the budget is the only thing keeping it dormant.
+
+  An operator raises it per run — the entry field is overridable — and the
+  policy is then reachable exactly as written, which is why the method stays
+  rather than being deleted as unreachable.
+  """
+  (entry,) = apply_overrides(
+      workflow_definition("oracle_analysis"),
+      parse_overrides(["--oracle_analysis.retries=1"]),
+  )
+
+  assert entry.retries == 1
+  assert isinstance(entry.task, OracleAnalysisTask)
+  crashed = _attempt(
+      outcome=AgentOutcome.EXECUTION_ERROR,
+      guidebook=GuidebookObserver(guidebook=_guidebook()),
+  )
+  assert entry.task.should_retry(crashed) is True
+
+
 def test_an_ending_that_happened_to_the_agent_is_retried():
   # The exceptional case retrying still exists for — and the control arm of
   # the test above: an invalid guidebook, so the only thing that differs is

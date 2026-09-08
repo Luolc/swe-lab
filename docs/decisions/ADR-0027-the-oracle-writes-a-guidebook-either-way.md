@@ -114,8 +114,15 @@ the baseline (a run that ended anything but `SUCCESS`, or produced no
 guidebook at all) plus the harness's retryable endings: things that happened
 *to* the agent — a container that would not start, a network failure, a crash.
 
-The entry's retry budget stays **0**. It is not raised as a way of softening
-item 4; no exceptional case has been named that it would rescue.
+The entry's retry budget stays **0**, which means the policy above is dormant
+on every shipped path: `run_task` loops `range(retries + 1)`, so an Oracle
+attempt is never retried today, whatever happened to it. That is a decision
+about spending, not a claim that those endings are unworthy — they are the
+ones that are. Raising the default is a separate call with its own money
+attached, and an operator who wants it asks per run
+(`--oracle_analysis.retries=N` reaches the entry field). The method stays
+because that path is real, and because whoever pays should get this ruling's
+behaviour rather than the base class's.
 
 ## Alternatives Considered
 
@@ -144,7 +151,12 @@ observable, and a chain that stops early cannot observe it.
 ### Raise the retry budget instead of removing the schema clause
 
 Rejected, and explicitly out of scope. It pays for re-rolls of the same writer
-and hides the design question behind a number.
+and hides the design question behind a number. Note what this does **not**
+say: the exceptional endings `should_retry` names are real and would warrant
+another attempt if anyone were paying for one. The budget is 0 because nobody
+has decided to, not because there is nothing there to rescue — and the two
+sentences are kept apart deliberately, since collapsing them is how a
+docstring starts describing behaviour its only entry cannot reach.
 
 ## Consequences
 
@@ -161,6 +173,12 @@ and hides the design question behind a number.
   would have had no caller. ADR-0021's legacy read path is unaffected — it
   lives in `guidebook_context_mode` / `extract_guidebook_rubric`, which are
   about which representation a prompt consumes, not about validity.
+- No Oracle attempt is retried on any shipped path, and two tests say so
+  together: `test_the_shipped_oracle_entries_carry_no_retry_budget` pins the
+  budget at 0 for both entries that carry the task, and
+  `test_a_caller_who_pays_for_a_retry_gets_this_policy` shows the policy is
+  reachable the moment someone raises it. Neither alone distinguishes "the
+  policy is dormant" from "the policy is dead code".
 - An Oracle run over a record with no readable verdict now fails at input
   build rather than producing a brief. The `oracle_failures` contract already
   requires the verdict file, so this reaches only malformed rows.
