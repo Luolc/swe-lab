@@ -814,15 +814,19 @@ believe this result*; the cross-repo statement of the invariant itself is in
   staleness: **a reading can invert** — one path, read at two times, two
   opposite facts — **and an absence needs a time coordinate exactly as a
   value does**, because "not there now" and "never will be" look identical.
-  Two instances. Any failure-closed marker has the first shape: while the
-  thing it guards is running its presence is the normal state, and only
-  afterwards is its presence the failure (this repo's is the correction
-  channel's unclean marker; the semantics have one home, on
-  `CorrectionChannel.closed_uncleanly`). The second is sharper, from the
-  first supervised run: a missing `corrections/done` was read as *the channel
-  was never closed*, when what held at that moment was *not closed yet* — the
-  file appeared sixteen minutes later, and the two are indistinguishable
-  while you are standing in the middle of them. Ask what a path means *at the
+  Two instances, and **both are now history rather than code** — the
+  correction channel they came from was removed on 2026-09-08
+  ([ADR-0026](decisions/ADR-0026-the-correction-channel-is-removed.md)). The
+  lesson is not: it is about how to read a path, and the next failure-closed
+  marker anyone writes will have the same shape. Any failure-closed marker has
+  the first shape: while the thing it guards is running its presence is the
+  normal state, and only afterwards is its presence the failure (that channel's
+  was an unclean marker written before its relay existed and removed only on a
+  deliberate close). The second is sharper, from the first supervised run: a
+  missing `corrections/done` sentinel was read as *the channel was never
+  closed*, when what held at that moment was *not closed yet* — the file
+  appeared sixteen minutes later, and the two are indistinguishable while you
+  are standing in the middle of them. Ask what a path means *at the
   time you are reading it*; the name answers only half of that.
 
   One layer harder than writing the coordinate down: **ask whether the number
@@ -944,11 +948,18 @@ believe this result*; the cross-repo statement of the invariant itself is in
   fine. What hides it is that the container usually creates the directory
   defensively too, and that `mkdir -p` succeeds either way, so the losing order
   looks exactly like the winning one until something on the host tries to
-  write. The *behaviour* is guarded by
-  `test_the_supervised_script_carries_a_correction_to_a_stub_agent`, which
-  asserts that a correction is delivered when the host creates the directory
-  first. The two readings above are this entry's own evidence for the rule —
-  no test asserts them, so this is the only place they exist.
+  write. **Not guarded by a test today** — it was, by
+  `test_the_supervised_script_carries_a_correction_to_a_stub_agent`, which drove
+  the whole staged script in a container and asserted a correction arrived when
+  the host created the drop directory first; that test went with the correction
+  channel on 2026-09-08
+  ([ADR-0026](decisions/ADR-0026-the-correction-channel-is-removed.md)), and no
+  path in the tree now has the host writing into a container-shared directory
+  mid-run. The rule survives the loss of its example: it is about a bind mount
+  and two uids, not about that channel, and it will bite again the first time
+  something host-side needs to write into a running sandbox. The two readings
+  above are this entry's own evidence — no test asserts them, so this is the
+  only place they exist.
 - **The W1 annotation path runs its capture proxy host-side, and two of its
   prerequisites fail silently.** The rollout path does not: its proxy moved
   *into* the sandbox

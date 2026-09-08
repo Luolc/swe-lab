@@ -54,14 +54,6 @@ See ``CodingAgentTask.proxy_factory``: a factory rather than a recorder,
 because a task is executed as many times as it is invoked.
 """
 
-type SupervisionFactory = Callable[[str], SandboxObserver]
-"""Builds one run's supervision, given the task text.
-
-See ``CodingAgentTask.supervision_factory``. An observer, because the sandbox
-lifecycle already brackets the action — which keeps this module free of any
-knowledge of what a supervisor is.
-"""
-
 
 def instance_prompt(
     sb: SandboxFs, instance: TaskInstance[Any]
@@ -147,14 +139,6 @@ class CodingAgentTask(Task):
       executed any number of times — a registered definition is executed once
       per instance — while a recorder is single-use. One execution, one
       recorder, and the declaration stays reusable.
-    supervision_factory: Builds the observer that watches the actor's live
-      stream and may speak to it, given the task text. ``None`` runs the actor
-      unsupervised, which is the default — and is *not* the paired control,
-      which is supervised with a zero speaking budget
-      (:data:`swe_lab.workflow.definitions.CONTROL_BUDGET`). A factory for the
-      same reason ``proxy_factory`` is one, and it hands back an *observer*
-      because the sandbox lifecycle already brackets the action — nothing here
-      needs to know what supervision is made of.
   """
 
   harness: Harness
@@ -173,29 +157,6 @@ class CodingAgentTask(Task):
   verify_result: bool = True
   env: Mapping[str, str] | None = None
   proxy_factory: ProxyFactory | None = None
-  supervision_factory: SupervisionFactory | None = None
-
-  def __post_init__(self) -> None:
-    """Refuse a supervised run the actor could not hear.
-
-    Supervision on a harness with no live channel is not a degraded run, it is
-    a silent one: the corrections are written, nothing reads them, and the
-    result is indistinguishable from an unsupervised rollout — including in
-    the record. Refused where the two are composed, which is the first place
-    both are known.
-
-    Raises:
-      ValueError: A supervisor is configured on a harness that cannot receive
-        a correction mid-run.
-    """
-    if self.supervision_factory is not None and not (
-        self.harness.accepts_corrections
-    ):
-      raise ValueError(
-          f"supervision needs a harness that accepts corrections;"
-          f" {type(self.harness).__name__} does not (for claude_code, that is"
-          " correction_channel=True)"
-      )
 
   @override
   def mounts(self, instance: TaskInstance[Any]) -> Mounts:
@@ -271,15 +232,8 @@ class CodingAgentTask(Task):
         if self.verify_result
         else None
     )
-    supervision = (
-        self.supervision_factory(instance.prompt())
-        if self.supervision_factory is not None
-        else None
-    )
     return tuple(
-        o
-        for o in (purge, *from_harness, supervision, diff, verify)
-        if o is not None
+        o for o in (purge, *from_harness, diff, verify) if o is not None
     )
 
   @override
@@ -452,22 +406,6 @@ class CodingAgentTask(Task):
 # recorded number into a branch.
 OOM_METRIC = "sandbox.oom_kills"
 
-#: Set to 1.0 when a supervised run lost its supervisor part-way *and the reach
-#: of that loss cannot be named* — the pump died, the correction channel closed
-#: without being told to, or the policy broke in a way it could not bound. A
-#: metric rather than an observer field so that `rollout_outcome` stays readable
-#: from the run alone, exactly as the out-of-memory signal is.
-SUPERVISION_METRIC = "supervision.unhealthy"
-
-#: How many boundaries went unsupervised for a reason the policy *could* bound
-#: to them — a failed model call, a line the writer could not make usable. Each
-#: one is named in the supervisor's own log; this is the count a reader needs to
-#: weigh a run without opening it, and the reason it is not folded into
-#: `SUPERVISION_METRIC`: a run with named holes is still evidence, carrying
-#: them, while a run of unknown reach is not evidence at all. An event, so a run
-#: that had none leaves no key rather than a zero.
-SUPERVISION_LAPSE_METRIC = "supervision.lapses"
-
 
 class RolloutOutcome(StrEnum):
   """What the rollout *stage* produced — the word that decides what follows.
@@ -504,14 +442,6 @@ class RolloutOutcome(StrEnum):
       the denominator like any unclassified ending, but it is **counted
       separately**, so an ending nobody could attribute is a number rather than
       silence inside :attr:`NO_PATCH` (ADR-0016).
-    SUPERVISION_FAILED: A supervised run lost its supervisor part-way, with no
-      bound on where. Ours, and its own word: a run that was meant to be
-      supervised and was not for an unknown part of its length is **not
-      evidence about supervision**, and pooling it with "supervised, and the
-      actor did not comply" would put our own breakage inside the very
-      comparison the supervision is being judged by. A run whose unsupervised
-      boundaries are each named — `SUPERVISION_LAPSE_METRIC` — does not land
-      here: it is evidence, and it carries the count.
   """
 
   OOM_KILLED = "oom_killed"
@@ -520,7 +450,6 @@ class RolloutOutcome(StrEnum):
   NO_PATCH = "no_patch"
   PATCH_PRODUCED = "patch_produced"
   UNCLASSIFIED = "unclassified"
-  SUPERVISION_FAILED = "supervision_failed"
 
   @property
   def ours(self) -> bool:
@@ -566,13 +495,12 @@ class RolloutOutcome(StrEnum):
     return self is RolloutOutcome.UNCLASSIFIED
 
 
-# The only two endings that are ours rather than the actor's. Kept beside the
-# enum, like `_RETRYABLE_OUTCOMES`, so the policy reads as one table.
+# The endings that are ours rather than the actor's. Kept beside the enum, like
+# `_RETRYABLE_OUTCOMES`, so the policy reads as one table.
 _OURS: frozenset[RolloutOutcome] = frozenset(
     {
         RolloutOutcome.OOM_KILLED,
         RolloutOutcome.SYSTEM_FAILED,
-        RolloutOutcome.SUPERVISION_FAILED,
     }
 )
 
@@ -594,11 +522,6 @@ def rollout_outcome(result: AttemptResult) -> RolloutOutcome:
   """
   if result.run.metrics.get(OOM_METRIC, 0.0) > 0.0:
     return RolloutOutcome.OOM_KILLED
-  if result.run.metrics.get(SUPERVISION_METRIC, 0.0) > 0.0:
-    # Before the wall clock on purpose: a stalled channel is one of the ways a
-    # supervised run reaches its timeout, and reporting that as `TIMED_OUT`
-    # would hand a budget the actor never got to spend back to the actor.
-    return RolloutOutcome.SUPERVISION_FAILED
   if result.run.status is RunStatus.TIMEOUT:
     return RolloutOutcome.TIMED_OUT
   if result.run.status is not RunStatus.SUCCESS:

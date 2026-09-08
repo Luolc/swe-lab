@@ -10,6 +10,16 @@ which designed the terminated hint-injection arm around a person hand-steering a
 re-run. The deliverable now is a **pipeline that runs unattended**, on the stdin
 channel of [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md).
 
+> **The run this designed happened on 2026-09-02; the carrier it names was
+> removed on 2026-09-08** ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)). **This file is a design record, not
+> guidance.** Rows 3, 4b and 5 of the table below name `SupervisedRun`,
+> `channel.py`, `CodingAgentTask.supervision_factory`,
+> `ClaudeCodeHarness(correction_channel=True)` and the `supervised_` /
+> `control_rollout_and_unit_test` definitions — all deleted — and the commands
+> further down name workflows that no longer resolve. The run and its readings
+> stand; **repeating this task on the segment loop is a different run**, and
+> would need its own design and its own evidence.
+
 ## What the task is
 
 One rollout of one real instance in which **every stage actually runs**:

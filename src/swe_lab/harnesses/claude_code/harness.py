@@ -66,11 +66,6 @@ from .constants import (
     AGENT_STDERR_NAME,
     ANTHROPIC_API,
     BINARY_AT,
-    CORRECTION_DONE_NAME,
-    CORRECTION_DROP_NAME,
-    CORRECTION_FIFO_NAME,
-    CORRECTION_RELAY_LOG_NAME,
-    CORRECTION_UNCLEAN_NAME,
     DEFAULT_MODEL,
     EVENT_STREAM_NAME,
     INFO_ARTIFACT,
@@ -248,79 +243,6 @@ def _proxy_start_lines(
   ]
 
 
-_RELAY_POLL_INTERVAL_S = 0.1
-
-
-def _relay_start_lines() -> list[str]:
-  """Return the script lines that open the correction channel and hold it.
-
-  The relay is the only thing holding the FIFO's write end, which makes it the
-  thing that decides when the run ends. Three properties follow, and each is a
-  line here rather than an assumption:
-
-  - **It starts before the agent.** A shell redirect from a FIFO blocks until a
-    writer opens the other end, so an agent started first would hang forever.
-    The proxy's readiness wait is the precedent.
-  - **It closes the write end only on the sentinel.** Closing is the intended
-    termination mechanism (the CLI exits on stdin EOF), so it must be produced
-    deliberately by whoever decides the task is over.
-  - **It is failure-closed.** The unclean marker is written at start and removed
-    only on that deliberate close, so anything else that ends the relay — a
-    crash, a kill, the container going away — leaves the marker behind. A relay
-    that is killed cannot write a marker; it also cannot remove one.
-
-  Returns:
-    The lines, in order.
-  """
-  fifo = f'"$SANDBOX_WORKSPACE"/{CORRECTION_FIFO_NAME}'
-  drop = f'"$SANDBOX_WORKSPACE"/{CORRECTION_DROP_NAME}'
-  unclean = f'"$SANDBOX_WORKSPACE"/{CORRECTION_UNCLEAN_NAME}'
-  log = f'"$SANDBOX_WORKSPACE"/{CORRECTION_RELAY_LOG_NAME}'
-  return [
-      f"mkdir -p {drop}",
-      f"rm -f {fifo}",
-      f"mkfifo {fifo}",
-      # Present from before the relay exists until it closes on purpose.
-      f"touch {unclean}",
-      "(",
-      # Blocks until the agent opens the read end, which is why this whole
-      # subshell is backgrounded and the agent is started after it.
-      f"  exec 3> {fifo}",
-      # The prompt is just the first message on this channel.
-      f'  cat "$SANDBOX_WORKSPACE"/{STREAM_JSON_PROMPT_NAME} >&3',
-      f"  while [ ! -e {drop}/{CORRECTION_DONE_NAME} ]; do",
-      f"    for message in {drop}/*.json; do",
-      '      [ -e "$message" ] || continue',
-      '      cat "$message" >&3',
-      '      mv "$message" "$message.sent"',
-      "    done",
-      f"    sleep {_RELAY_POLL_INTERVAL_S}",
-      "  done",
-      # Drain whatever arrived in the same tick as the sentinel, so a
-      # correction and the end of the run cannot race each other away.
-      f"  for message in {drop}/*.json; do",
-      '    [ -e "$message" ] || continue',
-      '    cat "$message" >&3',
-      '    mv "$message" "$message.sent"',
-      "  done",
-      # Cleared **before** the close, not after: closing makes the reader see
-      # EOF, the script then exits, and its EXIT trap kills this relay — which
-      # would race the removal and leave the marker behind on an ordinary,
-      # deliberate ending. The marker means "the relay never saw a deliberate
-      # end", so seeing the sentinel is the moment it stops being true.
-      f"  rm -f {unclean}",
-      "  exec 3>&-",
-      f") > {log} 2>&1 &",
-      "relay_pid=$!",
-      _reap("relay_pid"),
-      '  if ! kill -0 "$relay_pid" 2>/dev/null; then',
-      f'    echo "FATAL: the correction relay exited before the agent started;'
-      f' see {CORRECTION_RELAY_LOG_NAME}" >&2',
-      f"    exit {_MISCONFIGURED_EXIT}",
-      "  fi",
-  ]
-
-
 @dataclass(frozen=True)
 class ClaudeCodeHarness(Harness):
   """The Claude Code agent as a sandbox-engine harness plug.
@@ -387,30 +309,18 @@ class ClaudeCodeHarness(Harness):
       ``None``, which leaves the agent's own ten-minute default in place.
       Letting the run bound itself yields a clean exit and a complete trace
       where an external kill would truncate mid-write.
-    correction_channel: Run the agent with a **live** stdin channel — a FIFO
-      fed by an in-sandbox relay from a bind-mounted drop directory — so a
-      host-side supervisor can write a correction while the agent is still
-      working (ADR-0013). Off by default: it removes the ordinary termination
-      mechanism (stdin reaching EOF) and replaces it with a deliberate close,
-      which only a caller that owns a supervisor can produce.
-
-      A **field rather than a subclass** on purpose: a supervised rollout must
-      differ from an unsupervised one *only* by the corrections, and a forked
-      harness is a standing invitation for the two to drift in flags, denied
-      tools or capture wiring — drift that would be invisible in the traces it
-      produces. That reasoning expires the moment the supervised path needs a
-      genuinely different invocation rather than an extended one.
     segmented: Cut the run into segments of
       :attr:`~swe_lab.trace_synthesis.segmented_loop.SegmentedSupervision.turns_per_segment`
       turns, consult a policy at each cut, and resume — the supervision carrier
       of record (task 22, ADR-0025). ``None`` runs the actor once, which is what
       every shipped definition but the segmented arm takes.
 
-      **A field, for the reason stated at** ``correction_channel``: a supervised
-      run must differ from an unsupervised one only by the supervision, and a
-      forked harness lets them drift in flags, denied tools or capture wiring
-      invisibly. Mutually exclusive with ``correction_channel`` — see
-      :meth:`__post_init__`.
+      **A field rather than a subclass** on purpose: a supervised run must
+      differ from an unsupervised one *only* by the supervision, and a forked
+      harness is a standing invitation for the two to drift in flags, denied
+      tools or capture wiring — drift that would be invisible in the traces it
+      produces. That reasoning expires the moment the supervised path needs a
+      genuinely different invocation rather than an extended one.
   """
 
   model: str = DEFAULT_MODEL
@@ -422,37 +332,14 @@ class ClaudeCodeHarness(Harness):
   max_turns: int = 500
   max_budget_usd: float | None = None
   subagent_wait_ceiling_ms: int | None = None
-  correction_channel: bool = False
   segmented: SegmentedSupervision | None = None
-
-  def __post_init__(self) -> None:
-    """Refuse the one configuration in which two components own the actor.
-
-    The segmented loop decides **when the actor stops and starts**, running the
-    CLI once per segment; the correction channel attaches to one long-lived
-    actor process and owns its stdin — a FIFO the in-sandbox relay holds open,
-    whose deliberate close is what ends the run. Two components deciding when
-    the run ends is refused where the pair is named rather than discovered as a
-    run that ended at a moment neither chose.
-
-    Raises:
-      ValueError: Both supervision mechanisms are on.
-    """
-    if self.segmented is not None and self.correction_channel:
-      raise ValueError(
-          "segmented supervision runs the actor once per segment and decides"
-          " when it stops; correction_channel attaches to one long-lived actor"
-          " process, so the two do not compose"
-      )
 
   @property
   def _stdin_is_stream_json(self) -> bool:
     """Whether this run feeds the agent JSON lines rather than a plain file.
 
-    Two independent reasons land on the same wire format. The channel needs it
-    because a correction is a message and messages on that stdin are JSON
-    lines. ``STREAM`` capture needs it because ``--replay-user-messages`` is
-    only accepted alongside stream-json on **both** sides — the pinned 2.1.212
+    ``STREAM`` capture needs it because ``--replay-user-messages`` is only
+    accepted alongside stream-json on **both** sides — the pinned 2.1.212
     binary exits 1 with *"--replay-user-messages requires both
     --input-format=stream-json and --output-format=stream-json"*.
 
@@ -463,7 +350,7 @@ class ClaudeCodeHarness(Harness):
     Returns:
       Whether the run's stdin carries stream-json.
     """
-    return self.correction_channel or self.capture != "proxy"
+    return self.capture != "proxy"
 
   @property
   def _narrates_event_stream(self) -> bool:
@@ -484,7 +371,6 @@ class ClaudeCodeHarness(Harness):
     """
     return (
         self.capture != "proxy"
-        or self.correction_channel
         # The segmented loop reads each segment's terminal ``result`` event to
         # learn whether the cut was the turn budget or the actor finishing, and
         # that event exists only in the agent's own narration. Under ``PROXY``
@@ -492,17 +378,6 @@ class ClaudeCodeHarness(Harness):
         # alive beside it, exactly as the mechanism above does.
         or self.segmented is not None
     )
-
-  @property
-  @override
-  def accepts_corrections(self) -> bool:
-    """Whether this run has the live stdin channel.
-
-    Returns:
-      Whether :attr:`correction_channel` is on — the FIFO and the in-sandbox
-      relay are the whole of what makes the actor reachable mid-run.
-    """
-    return self.correction_channel
 
   @property
   @override
@@ -836,9 +711,9 @@ class ClaudeCodeHarness(Harness):
     consumer of these tokens rather than a second place they are assembled: a
     second construction beside this one would be a supervised run differing
     from an unsupervised one by more than the supervision — the drift
-    ``correction_channel`` is a field rather than a subclass to avoid, and the
-    same drift a segment's ``--resume`` would introduce if the loop assembled
-    its own command.
+    ``segmented`` is a field rather than a subclass to avoid, and the same
+    drift a segment's ``--resume`` would introduce if the loop assembled its
+    own command.
 
     Tokens, so nothing here needs a shell to be meaningful: no redirect, no
     variable, no quoting. The run's redirects and its stdin belong to the
@@ -913,15 +788,12 @@ class ClaudeCodeHarness(Harness):
   def _stdin_path(self) -> str:
     """Return the workspace file the agent reads its input from.
 
-    Three sources, one reason each: the FIFO when a supervisor may write to it
-    mid-run, the stream-json prompt when the run's stdin is that format but
-    nothing will write to it again, and the plain prompt otherwise.
+    Two sources, one reason each: the stream-json prompt when the run's stdin
+    is that format, and the plain prompt otherwise.
 
     Returns:
       The shell-quoted path, relative to ``$SANDBOX_WORKSPACE``.
     """
-    if self.correction_channel:
-      return f'"$SANDBOX_WORKSPACE"/{CORRECTION_FIFO_NAME}'
     if self._stdin_is_stream_json:
       return f'"$SANDBOX_WORKSPACE"/{STREAM_JSON_PROMPT_NAME}'
     return f'"$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}'
@@ -1045,10 +917,6 @@ class ClaudeCodeHarness(Harness):
           "fi",
       ]
 
-    if self.correction_channel:
-      # Before the agent: a redirect from a FIFO blocks until a writer opens
-      # the other end, so an agent started first would wait forever.
-      lines += _relay_start_lines()
     stdin_source = self._stdin_path()
 
     exit_file = f'"$SANDBOX_WORKSPACE"/{AGENT_EXIT_CODE_NAME}'

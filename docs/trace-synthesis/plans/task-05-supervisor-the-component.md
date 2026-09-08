@@ -317,18 +317,24 @@ matched control §4.4 depends on. Past that precondition, `consider()` returns
 `None` unless every gate passes, in this order:
 
 1. the judge says off-track, else silent;
-2. **the would-have-spoken marker is recorded here**, before any budget is
-   consulted — this is what the control arm produces (what it buys is stated
-   once, at `workflow.definitions.CONTROL_BUDGET`);
-3. budget remaining, else silent (with the marker already recorded);
-4. cooldown elapsed since the last intervention, else silent (likewise);
-5. the writer produces a usable line, else **a recorded lapse** bounded to this
+2. budget remaining, else silent;
+3. cooldown elapsed since the last intervention, else silent;
+4. the writer produces a usable line, else **a recorded lapse** bounded to this
    boundary (§6.1) — never a retry.
+
+> **Amended 2026-09-08** ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)). A step 2 used to sit between the judgement
+> and the budget: *the would-have-spoken marker is recorded here*, which was
+> what the paired zero-budget control arm produced. The marker type, the arm and
+> the `CONTROL_BUDGET` constant that explained the pairing were all removed with
+> the correction channel; the **order** above is unchanged and still
+> load-bearing, for the reason §4.4 gives.
 
 The cost of this ordering is stated rather than hidden: **the judge runs on
 every boundary carrying evidence even after the budget is spent**, so a
-`budget=0` policy still pays for a judge it can never act on. Why that is worth paying is stated once,
-at `workflow.definitions.CONTROL_BUDGET`.
+`budget=0` policy still pays for a judge it can never act on. That was the price
+of a matched control arm; no shipped definition asks for one today (see the
+amendment above), and the order is kept because reversing it is what would make
+a control arm built later silently unmatched.
 
 A policy that speaks by default cannot be produced by omitting a parameter,
 because **`budget` has no default**: a policy that may speak must state how
@@ -360,9 +366,11 @@ cadence, zero corrections — and that is exactly `SpeakWhenOffTrack(budget=0)`,
 **which works only because §4.3 consults the budget after the judgement rather
 than before it.** Reverse those two and the control silently stops paying for
 its judge, at which point it is no longer the same run minus the corrections.
-It also produces something more useful than silence: a record of **where it
-would have spoken** on control traces; what that buys a comparison is stated
-once, at `workflow.definitions.CONTROL_BUDGET`.
+It also produced something more useful than silence: a record of **where it
+would have spoken** on control traces. That record went with the arm (see the
+amendment in §4.3); what survives, and is the half that matters here, is that a
+zero-budget policy still pays for its judge — so an arm built later is matched
+by construction rather than by remembering to.
 
 ### 4.5 What it writes
 
@@ -590,14 +598,24 @@ The gate arithmetic between them is unwrapped on purpose, and
 `test_a_break_in_the_policys_own_state_is_not_bounded` is what keeps it that
 way.
 
-**The count is consumed, not just recorded.** A lapse leaves the run's
-denominator containing a boundary nobody watched, so
-`SUPERVISION_LAPSE_METRIC` carries the count out of the log and into the run's
-metrics, which `run_task` copies verbatim into `AttemptRecord.metrics` — the
-path `SUPERVISION_METRIC` already takes, and where a reader of the outcome is
-standing. It stays separate from `SUPERVISION_METRIC`, which is the one that
-changes the outcome word. A count that lived only in `supervisor.jsonl` would
-be one more fact recorded and never read.
+**The count was consumed, not just recorded.** A lapse leaves the run's
+denominator containing a boundary nobody watched, so `SUPERVISION_LAPSE_METRIC`
+carried the count out of the log and into the run's metrics, which `run_task`
+copies verbatim into `AttemptRecord.metrics` — the path `SUPERVISION_METRIC`
+took, and where a reader of the outcome is standing. It stayed separate from
+`SUPERVISION_METRIC`, which was the one that changed the outcome word. A count
+that lives only in `supervisor.jsonl` is one more fact recorded and never read.
+
+> **Amended 2026-09-08** ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)).
+> Both metrics, the `rollout_outcome` branch and `RolloutOutcome.SUPERVISION_FAILED`
+> are gone: their only writer was the correction channel's observer, and a name
+> nothing can produce is not a contract. **The paragraph's own argument is why
+> this is a real loss rather than a tidy-up** — the count is back to living only
+> in `supervisor.jsonl`, which is precisely the shape it calls "recorded and
+> never read". The account still distinguishes a bounded `lapse` from an
+> unbounded `gap`, and `downstream-scale-note.md` now tells a consumer to read
+> those rows and do the exclusion themselves. Restoring the hop means a carrier
+> raising a metric and saying so.
 
 **Both hops are tested, and the second one had to be.** The observer's half is
 `test_a_bounded_lapse_is_counted_where_the_outcome_is_read`; the runner's half

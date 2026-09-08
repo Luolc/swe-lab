@@ -86,30 +86,39 @@ Almost all of it. The new code is a driver and a seam record.
 | `_invocation_script` / `mounts` / `observers` / `native_outputs` / `to_conversation` / `outcome` / `usage` | unchanged code paths; see §4 for the two one-character edits | extended |
 | `NativeTranscriptObserver` | already archives the actor's own session record on every run — the second leg of §6.4's join | yes |
 
-**What is *not* reused, and why.** `channel.py` — the FIFO, the relay, the
-`SupervisorPump`, `SupervisedRun`. Not because it is wrong but because it cannot
-be the seam here: `SupervisedRun` is an observer that brackets **one blocked
-`run()`**, and this loop has to *drive* `run()` several times. `channel.py` and
-every caller of it are untouched by this task.
+**What was *not* reused, and why.** `channel.py` — the FIFO, the relay, the
+host-side pump, the observer that bracketed the blocked `run()`. Not because it
+was wrong but because it could not be the seam here: that observer brackets
+**one blocked `run()`**, and this loop has to *drive* `run()` several times.
+
+> **Superseded 2026-09-08** ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)): `channel.py` and every caller of it were
+> untouched by *this task* and were then deleted outright, on the owner's ruling
+> that this loop is the only supervised carrier. The paragraph above stays
+> because the reasoning is why the loop looks the way it does; **there is no
+> longer another carrier to be untouched.**
 
 ---
 
 ## 3. Where the loop lives: a field on the harness, not a new harness
 
-`ClaudeCodeHarness` already carries a mutually-exclusive supervision mechanism
-as a field (`correction_channel: bool`), with `__post_init__` refusing the
-combination in which two components own the actor's stdin. This is the second,
-and it follows the same shape for the same reason stated at
-`correction_channel`: a forked harness is a standing invitation for the
-supervised and unsupervised paths to drift in flags, denied tools or capture
-wiring — **drift that would be invisible in the traces it produces**.
+When this plan was written, `ClaudeCodeHarness` already carried a
+mutually-exclusive supervision mechanism as a field (`correction_channel: bool`),
+with `__post_init__` refusing the combination in which two components own the
+actor's stdin. This was the second, and it follows the same shape for the same
+reason: a forked harness is a standing invitation for the supervised and
+unsupervised paths to drift in flags, denied tools or capture wiring — **drift
+that would be invisible in the traces it produces**.
 
-> **Historical (2026-09-08).** When this plan was written there was a third
-> field, `native_supervision: NativeSupervision | None`, for the in-sandbox Rust
-> carrier. It was removed with that carrier
+> **Current as of 2026-09-08: `segmented` is the only supervision field on the
+> harness.** The third field this plan was written beside
+> (`native_supervision`) went with the native carrier
 > ([ADR-0025](../../decisions/ADR-0025-the-segment-loop-is-the-only-supervised-carrier.md)),
-> so every "three mechanisms" reading below is now two. The shape argument is
-> unchanged — it was never about how many there are.
+> and `correction_channel` went with the channel ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)) — taking the
+> mutual-exclusion refusal in `__post_init__` with it, since there is no longer
+> a pair to refuse. **The shape argument is unchanged and is now the whole
+> reason the field exists**: it was never about how many mechanisms there are,
+> it is about a supervised run differing from an unsupervised one only by the
+> supervision.
 
 ```python
 @dataclasses.dataclass(frozen=True)
@@ -124,9 +133,9 @@ class SegmentedSupervision:
 ```
 
 - New harness field `segmented: SegmentedSupervision | None = None`.
-- `__post_init__` refuses `segmented` together with `correction_channel` — two
-  owners of one actor is not a configuration. (It refused
-  `native_supervision` too until that carrier was removed; see the note above.)
+- ~~`__post_init__` refuses `segmented` together with `correction_channel`~~ —
+  two owners of one actor was not a configuration. Both other mechanisms are
+  gone and so is the refusal; see the note above.
 - `actor_argv()` gains a keyword-only `resume_session_id: str | None = None`
   and uses `segmented.turns_per_segment` for `--max-turns` when segmented.
 - **`max_turns` changes meaning under segmentation** — today it is the whole
@@ -158,14 +167,16 @@ segment gets its own argv while the argv is still built in one place.
    (`reverse_proxy.go:266`), so a restart appends. Regenerate with
    `grep -n "O_APPEND" ~/dev/cc-reverse-proxy/reverse_proxy.go`.
 
-**So the segmented arm runs on `capture="proxy"`, like the two shipped A′ arms
-and for one more reason than they have.** Their reason is that the wire is the
-only record of the request bodies a run produced; ours adds that §6.4's
+**So the segmented arm runs on `capture="proxy"`, as the two shipped A′ arms
+did and for one more reason than they had.** Their reason was that the wire is
+the only record of the request bodies a run produced; ours adds that §6.4's
 condition 3 needs the **captured API responses** as its independent oracle, and
 the proxy log is where they are. `_narrates_event_stream` gains
-`segmented is not None` — exactly as it already carries `correction_channel` —
-so the actor still narrates the event stream the loop reads its `result` events
-from. Both artifacts exist, as they do on the A′ arms.
+`segmented is not None`, so the actor still narrates the event stream the loop
+reads its `result` events from, and both artifacts exist. (It carried
+`correction_channel` for the same purpose until [ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md); `segmented is not None`
+is now the only clause that turns the narration on under proxy capture, which
+makes it load-bearing rather than one of two.)
 
 ### The flag composition this rests on, measured free
 
@@ -450,9 +461,11 @@ pointer here, so the fact does not fall between the two tasks.
 | `workflow/definitions.py` | one `SEGMENTED_ROLLOUT` definition, `capture="proxy"`, with the segmented controls late-bound by CLI overrides |
 | `docs/trace-synthesis/plans/README.md` | task 12's pointer (§8) |
 
-**Not touched:** `channel.py` and every caller; `rust/` (which no longer
-exists — ADR-0025); `experiments/trace_synthesis/resume_loop_feasibility/`; any
-frozen `PREREGISTRATION.md`.
+**Not touched** *(as of this task; both entries have since changed)*:
+`channel.py` and every caller — deleted by [ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md); `rust/` — deleted by
+[ADR-0025](../../decisions/ADR-0025-the-segment-loop-is-the-only-supervised-carrier.md).
+Still untouched and still true: `experiments/trace_synthesis/resume_loop_feasibility/`
+and every frozen `PREREGISTRATION.md`.
 
 ---
 
@@ -488,7 +501,7 @@ quietly absorbs its own corrections teaches nobody what to look for next time.
 |---|---|---|
 | 1 | a positive-chain filter over the trace meets the hard requirement | **Wrong, and the most important finding here.** The identifying fields are transcript fields; the corpus is the event stream / proxy log (`spec.md:476`), where they do not exist and where the wire record has no marker at all. Independently reproduced from the other direction in #412 — the canonical `Message` keeps only `role` and `content`, and the briefed filter returns a real dirty-seam conversation unchanged. And the half neither of us had: those fields are the record's **own** self-report, so provenance cannot come from them at all. Replaced by the gate of §6.4 |
 | 2 | "filter" | **Accepted as a wording fix, applied everywhere:** it is a *label* over an unedited trace, answering "may this record carry SFT loss?" — `spec.md` §6 forbids deleting a turn, and deleting this one leaves narration whose cause is gone |
-| 3 | A′-specific is only `channel.py`, so replace that | **Brief conceded.** True of the delivery mechanism, but `SupervisedRun` brackets *one* blocked `run()` and this loop drives several. The seam is `run()` |
+| 3 | A′-specific is only `channel.py`, so replace that | **Brief conceded.** True of the delivery mechanism, but the channel's observer brackets *one* blocked `run()` and this loop drives several. The seam is `run()`. (A point-in-time record of a 2026-09-03 ruling; `channel.py` was deleted five days later.) |
 | 4 | requirement C is free | Costs a shared-code change; the narrowest form (§5) is accepted **on condition of the byte-identity control test**. A second judge call per seam was considered and rejected as more expensive and worse |
 | 5 | "a cost cap, any cap" | **Brief conceded**: `--max-budget-usd` is a treatment, not a guard (report Amendment 1). Host-side accumulation instead |
 | 6 | reuse `max_turns` | Superseded by the owner's 2026-09-03 launch ruling: keep a large finite `max_segments` default, and write the meaning change into the docstring |

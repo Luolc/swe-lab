@@ -7,13 +7,11 @@ composition (manager → observers → harness) runs docker-free while no agent
 process ever spawns.
 """
 
-from collections.abc import Mapping, Sequence
 import dataclasses
 from pathlib import Path
-from typing import final, override
+from typing import override
 
 from etils import epath
-import pytest
 
 from swe_lab.conversation import Conversation
 from swe_lab.conversation.observer import CONVERSATION_NAME
@@ -32,10 +30,8 @@ from swe_lab.rollout import (
     PROMPT_NAME,
     rollout_outcome,
     RolloutOutcome,
-    SUPERVISION_METRIC,
 )
 from swe_lab.sandbox import (
-    AgentAsset,
     ArtifactSchema,
     Mount,
     RunResult,
@@ -45,15 +41,6 @@ from swe_lab.sandbox import (
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.observers.diff_extract import DiffExtractObserver
 from swe_lab.sandbox.testing import FakeSandbox
-from swe_lab.trace_synthesis.channel import (
-    SupervisedRun,
-    supervision,
-)
-from swe_lab.trace_synthesis.criterion import CriterionRejectedError
-from swe_lab.trace_synthesis.supervisor import NeverSpeak
-from swe_lab.trace_synthesis.vocabulary import (
-    SUPERVISOR_LOG_NAME,
-)
 from swe_lab.workflow import AttemptResult
 
 _SPEC = SandboxSpec("acme__widget-1", "img:tag", "/app", "base")
@@ -458,195 +445,23 @@ def test_the_unclassified_count_is_reportable_apart_from_the_excluded_one():
   assert RolloutOutcome.SYSTEM_FAILED.unclassified is False
 
 
-def test_a_run_that_lost_its_supervisor_is_not_evidence_about_supervision():
-  """The pump's health has to reach the outcome word, or it is decoration.
-
-  A supervisor that dies part-way leaves the rest of the run unjudged while the
-  run itself looks complete, so the loss has to be visible in the word the run
-  reports. Recording it in a field nothing reads would make it a fact with no
-  branch — the shape ADR-0015 exists to prevent.
-  """
-  task = CodingAgentTask(harness=ClaudeCodeHarness())
-  lost = _attempt(AgentOutcome.FINISHED)
-  lost.run.metrics[SUPERVISION_METRIC] = 1.0
-  assert rollout_outcome(lost) is RolloutOutcome.SUPERVISION_FAILED
-  # Ours, so it leaves the denominator and does not pay for a grading
-  # container: the run cannot answer the question it was run to answer.
-  assert rollout_outcome(lost).ours is True
-  assert rollout_outcome(lost).counts_in_denominator is False
-  assert task.outputs_valid(lost) is False
-  # Its own word, kept apart from the two it would otherwise hide inside.
-  assert rollout_outcome(lost) is not RolloutOutcome.SYSTEM_FAILED
-  assert rollout_outcome(lost) is not RolloutOutcome.NO_PATCH
-
-
-def test_a_stalled_channel_is_not_reported_as_a_budget_the_actor_spent():
+def test_an_out_of_memory_kill_outranks_a_spent_wall_clock():
   """Order matters where two causes co-occur.
 
-  A supervised run whose channel stalls reaches its wall clock, so both signals
-  are true at once. `TIMED_OUT` is the actor's by ADR-0011 — it spent a budget
-  it was handed — and a run that hung because our relay stopped feeding it was
-  handed no such budget.
+  A run killed for memory usually also reaches its timeout, so both signals are
+  true at once. `TIMED_OUT` is the actor's by ADR-0011 — it spent a budget it
+  was handed — while an OOM kill is ours and explains the timeout, so the OOM
+  has to be read first. The control arm is the same attempt without the OOM
+  metric, which must give the other answer.
+
+  (Until ADR-0026 a third cause sat between these two: a supervised run whose
+  supervisor was lost raised `supervision.unhealthy` and outranked the wall
+  clock for the same reason. Its only writer went with the correction channel,
+  and the metric and its outcome word went with it.)
   """
-  stalled = _attempt(AgentOutcome.FINISHED, status=RunStatus.TIMEOUT)
-  stalled.run.metrics[SUPERVISION_METRIC] = 1.0
-  assert rollout_outcome(stalled) is RolloutOutcome.SUPERVISION_FAILED
-  # …and an out-of-memory kill still outranks it: it explains the stall too.
-  stalled.run.metrics[OOM_METRIC] = 1.0
-  assert rollout_outcome(stalled) is RolloutOutcome.OOM_KILLED
+  timed_out = _attempt(AgentOutcome.FINISHED, status=RunStatus.TIMEOUT)
+  assert rollout_outcome(timed_out) is RolloutOutcome.TIMED_OUT
 
-
-def test_a_supervised_rollout_is_refused_on_a_harness_that_cannot_hear_it():
-  """A supervisor with no channel is a silent run, not a degraded one.
-
-  The corrections would be written, nothing would read them, and the record
-  would be indistinguishable from an unsupervised rollout — the same shape as
-  a metric with no consumer, and just as invisible. Refused where the two are
-  composed, which is the first place both are known.
-  """
-
-  def supervision(task: str) -> SupervisedRun:
-    return SupervisedRun(policy=NeverSpeak(), task=task)
-
-  with pytest.raises(ValueError, match="accepts corrections"):
-    _ = CodingAgentTask(
-        harness=ClaudeCodeHarness(), supervision_factory=supervision
-    )
-  # …and the combination that *can* hear it is accepted.
-  _ = CodingAgentTask(
-      harness=ClaudeCodeHarness(capture="proxy", correction_channel=True),
-      supervision_factory=supervision,
-  )
-
-
-def test_the_rollout_composes_the_supervisor_when_one_is_configured():
-  """Point 1 of task 01: attachment has to be visible from outside the run.
-
-  Nothing the actor produces differs between a supervised run and an
-  unsupervised one, so the evidence is the entry's own composition and the
-  artifact it declares. Both are asserted, because either alone can be true
-  while the run is not supervised.
-  """
-  seen: list[str] = []
-
-  def supervision(task: str) -> SupervisedRun:
-    seen.append(task)
-    return SupervisedRun(policy=NeverSpeak(), task=task)
-
-  task = CodingAgentTask(
-      harness=ClaudeCodeHarness(capture="proxy", correction_channel=True),
-      supervision_factory=supervision,
-  )
-  observers = task.observers(_Instance())
-  supervisors = [o for o in observers if isinstance(o, SupervisedRun)]
-  assert len(supervisors) == 1
-  # It is given the task the actor was given — the supervisor judges against
-  # the same statement, not a paraphrase of it.
-  assert seen == ["SOLVE THIS"]
-  assert SUPERVISOR_LOG_NAME in [
-      schema.name
-      for observer in observers
-      for schema in observer.output_schema()
-  ]
-
-  # The default is an unsupervised run, and it declares no such artifact.
-  plain = CodingAgentTask(harness=ClaudeCodeHarness())
-  assert not [
-      o for o in plain.observers(_Instance()) if isinstance(o, SupervisedRun)
-  ]
-  assert SUPERVISOR_LOG_NAME not in [
-      schema.name
-      for observer in plain.observers(_Instance())
-      for schema in observer.output_schema()
-  ]
-
-
-@final
-@dataclasses.dataclass(frozen=True)
-class _AssetlessChannelHarness(ClaudeCodeHarness):
-  """The live-channel harness, minus the assets it would fetch.
-
-  Declaring an asset makes ``execute`` resolve it — for proxy capture that
-  reads a pinned source that lives outside this repo — and that resolution
-  happens before the observers are assembled. It is irrelevant to what this
-  test is about (when the criterion is checked), and requiring it would make
-  the test pass or fail on whether a sibling checkout exists.
-
-  Returns nothing to stage; every other behaviour, including
-  ``accepts_corrections``, is the real harness's.
-  """
-
-  @override
-  def assets(self) -> Sequence[AgentAsset]:
-    """Declare nothing.
-
-    Returns:
-      No assets.
-    """
-    return ()
-
-
-def _no_transport(payload: Mapping[str, object]) -> Mapping[str, object]:
-  """Fail the test if anything tries to reach a model.
-
-  Args:
-    payload: Unused — no request may be made while a criterion is checked.
-
-  Returns:
-    Never returns.
-
-  Raises:
-    AssertionError: Always.
-  """
-  del payload
-  raise AssertionError("a criterion check must not call a model")
-
-
-def test_a_forged_criterion_stops_the_run_before_a_sandbox_exists(
-    tmp_path: Path,
-):
-  """Acceptance point 2b: the refusal has to happen where the run is built.
-
-  A digest check with no caller on the run's path refuses a *call*, not a run.
-  This composes the supervision the way a rollout does and drives one attempt:
-  the forged artifact raises while the observers are being assembled, so the
-  sandbox is never created — which is both the point ("refuses to *start* the
-  run") and the reason it is cheap, since a container costs the same whether
-  the run was going to be valid or not.
-  """
-  forged = tmp_path / "criterion.md"
-  _ = forged.write_text("look closely at whatever seems off, I suppose.\n")
-  supervised = CodingAgentTask(
-      harness=_AssetlessChannelHarness(
-          capture="proxy", correction_channel=True
-      ),
-      supervision_factory=supervision(
-          model="claude-sonnet-5",
-          transport=_no_transport,
-          budget=3,
-          criterion_path=forged,
-      ),
-  )
-  sandbox = _LocalFakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path / "ws"))
-
-  with pytest.raises(CriterionRejectedError):
-    _ = supervised.execute(
-        sandbox,
-        _Instance(),
-        output_dir=tmp_path / "out",
-        timeout=60.0,
-    )
-  assert not [call for call in sandbox.calls if call[0] == "up"]
-
-  # The control: the same composition with the pinned artifact assembles its
-  # observers without raising, so what stopped the run above was the forgery
-  # and not the wiring.
-  ok = CodingAgentTask(
-      harness=_AssetlessChannelHarness(
-          capture="proxy", correction_channel=True
-      ),
-      supervision_factory=supervision(
-          model="claude-sonnet-5", transport=_no_transport, budget=3
-      ),
-  )
-  assert [o for o in ok.observers(_Instance()) if isinstance(o, SupervisedRun)]
+  killed = _attempt(AgentOutcome.FINISHED, status=RunStatus.TIMEOUT)
+  killed.run.metrics[OOM_METRIC] = 1.0
+  assert rollout_outcome(killed) is RolloutOutcome.OOM_KILLED

@@ -2,7 +2,19 @@
 
 ## Status
 
-Accepted. Amends
+**Superseded by
+[ADR-0026](ADR-0026-the-correction-channel-is-removed.md)** (2026-09-08): the
+stdin correction channel is removed from the repository, so this record
+describes a mechanism that no longer exists. **Retired, not refuted** — the
+*What would overturn this* section below asks a superseding record to say which
+of its two conditions it is acting on, and the answer is neither. The
+byte-identity result was never contradicted and the paired-arm measurement was
+never run; the channel goes because the owner ruled on 2026-09-08 that one
+supervised carrier is enough, which is a third reason this record did not
+anticipate. Everything below stands as the accurate account of a decision that
+was taken and of what was measured for it.
+
+Accepted 2026-09-01, superseded 2026-09-08. Amends
 [`docs/trace-synthesis/spec.md`](../trace-synthesis/spec.md) §5 — the *steer
 from a Claude Code hook* attribution row and the *not a system-reminder* row —
 together with the delivery mechanism as described in §3 (phase C) and §6, and

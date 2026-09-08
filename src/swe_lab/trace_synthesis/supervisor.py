@@ -1,9 +1,11 @@
 """The supervisor: what it may see, when it speaks, what it may say.
 
-The component behind task 05 (``docs/trace-synthesis/plans/``). It consumes the
-actor's live output stream and, when its policy says the moment has come, writes
-one short user message into a sink that reaches the actor's stdin — the channel
-decided by ADR-0013 (``docs/decisions/``).
+The component behind task 05 (``docs/trace-synthesis/plans/``). It is the
+supervision itself and not a way of reaching the actor: what the policy may
+look at, when it is allowed to speak, what it may say, and what the account of
+a run records. The one carrier that drives it is the segment loop
+(:mod:`~swe_lab.trace_synthesis.segmented_loop`), which stops the actor, asks
+this policy, and resumes — ADR-0026.
 
 Three properties are structural rather than advisory, and each has a test:
 
@@ -23,22 +25,18 @@ Three properties are structural rather than advisory, and each has a test:
 - **When to speak is a seam.** It is the open variable of the design, so a
     :class:`SpeakPolicy` is replaceable without touching the consumer, the
     intervention, or the log.
-- **The sink is borrowed, never owned.** The CLI exits when its stdin reaches
-  EOF, so closing the sink *is* the termination mechanism and belongs to
-  whoever owns the process. This component only writes.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 import dataclasses
-import datetime
 import hashlib
 import json
 import re
 from typing import Any, Literal, Protocol
 
-from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
+from swe_lab.conversation import Message, Role, ToolResultBlock
 from swe_lab.trace_synthesis.context_components import (
     CompleteAssistantTurnSelector,
     EvidenceSelector,
@@ -50,7 +48,6 @@ from swe_lab.trace_synthesis.criterion import (
     CriterionRejectedError,
     shingles,
 )
-from swe_lab.trace_synthesis.guidebook import guidebook_context_mode
 
 # The cap is the enforceable part of the intervention's shape. "Short,
 # directional, not a solution" is read by a human and deliberately not asserted
@@ -103,9 +100,6 @@ LOG_KIND_SILENT = "silent"
 #: boundary that should have been covered and was not, this is one there was
 #: nothing to cover at.
 LOG_KIND_UNJUDGED = "unjudged"
-
-#: Where a correction is written. A borrowed callable — see the module note.
-Sink = Callable[[str], None]
 
 #: Where the account of the run is written, one JSON object per call.
 LogWriter = Callable[[Mapping[str, Any]], None]
@@ -320,40 +314,6 @@ class SpeakPolicy(Protocol):
 
 
 @dataclasses.dataclass(frozen=True)
-class NeverSpeak:
-  """A policy that consults nothing and never speaks.
-
-  For plumbing: it exercises the channel, the pump and the record without a
-  model behind them. It is **not** the paired control — that arm is
-  `SpeakWhenOffTrack` with a budget of zero, which judges every boundary it
-  has evidence for and has nothing left to spend. Why it has to be that one and
-  not this one is stated once, at
-  :data:`swe_lab.workflow.definitions.CONTROL_BUDGET`.
-  """
-
-  @property
-  def name(self) -> str:
-    """Return the policy's name.
-
-    Returns:
-      ``"never-speak"``.
-    """
-    return "never-speak"
-
-  def consider(self, observation: Observation) -> Intervention | None:
-    """Stay silent.
-
-    Args:
-      observation: Ignored.
-
-    Returns:
-      ``None``, always.
-    """
-    del observation
-    return None
-
-
-@dataclasses.dataclass(frozen=True)
 class Verdict:
   """One judge call's answer.
 
@@ -366,10 +326,9 @@ class Verdict:
       lightweight custom judges source-compatible.
     deviation_started_steps_ago: How many of the shown steps ago the judge
       believes the deviation began, or ``None`` when it was not asked — which
-      is the default, and every A′ run. **Never acted on**, exactly like
-      ``reason``: it exists so a segmented run can record how many turns late
-      its correction was, which is the only evidence a choice of segment length
-      could ever rest on.
+      is the default. **Never acted on**, exactly like ``reason``: it exists so
+      a segmented run can record how many turns late its correction was, which
+      is the only evidence a choice of segment length could ever rest on.
 
       **The unit is a rendered step, not a turn**, and the two differ: one turn
       emits several stream events (59 events for 32 turns on the first
@@ -440,74 +399,6 @@ class Writer(Protocol):
     ...
 
 
-@dataclasses.dataclass(frozen=True)
-class WouldHaveSpoken:
-  """A deviation the judge found, recorded whether or not speech followed.
-
-  This is what the control arm produces: ``SpeakWhenOffTrack(budget=0)`` judges
-  every boundary it has evidence for and speaks at none, so its markers are the
-  points at which the treatment arm would have intervened. What that buys a
-  comparison is stated once, at
-  :data:`swe_lab.workflow.definitions.CONTROL_BUDGET`.
-
-  Attributes:
-    cursor: Where the deviation was found.
-    reason: The judge's stated reason.
-    deviation_started_steps_ago: Where the judge believes it *began*, in the
-      unit :class:`Verdict` defines — ``None`` unless the judge was asked. Two
-      different quantities: this record is written where a deviation was
-      noticed, and a supervisor that only knows that cannot say how late it
-      was.
-    judge_input: The exact credential-free model request behind the judgement,
-      when available.
-  """
-
-  cursor: int
-  reason: str
-  deviation_started_steps_ago: int | None = None
-  judge_input: Mapping[str, Any] | None = None
-
-
-@dataclasses.dataclass(frozen=True)
-class SpeakAt:
-  """Speaks a fixed line at fixed cursors, with no judge at all.
-
-  The timing knob in isolation: it varies *when* while holding *what* and
-  *whether* constant. A policy whose trigger is entangled with its criterion
-  cannot isolate timing at all — the two move together, so no comparison
-  between its arms can attribute a difference to either one.
-
-  Attributes:
-    cursors: The cursor values at which to speak.
-    text: The line, identical at every one of them.
-  """
-
-  cursors: frozenset[int]
-  text: str
-
-  @property
-  def name(self) -> str:
-    """Return the policy's name.
-
-    Returns:
-      ``"speak-at"``.
-    """
-    return "speak-at"
-
-  def consider(self, observation: Observation) -> Intervention | None:
-    """Speak if this cursor is one of the fixed points.
-
-    Args:
-      observation: Read only for its cursor.
-
-    Returns:
-      The fixed line, or ``None``.
-    """
-    if observation.cursor not in self.cursors:
-      return None
-    return Intervention(text=self.text)
-
-
 @dataclasses.dataclass
 class SpeakWhenOffTrack:
   """Judges what it has evidence for; speaks when off track and affordable.
@@ -525,20 +416,17 @@ class SpeakWhenOffTrack:
   ``consider`` returns ``None`` unless every gate passes, in this order:
 
   1. the judge says off track, else silent;
-  2. the would-have-spoken marker is recorded — *before* any budget is
-     consulted;
-  3. budget remaining, else silent;
-  4. cooldown elapsed since the last intervention, else silent;
-  5. the writer produces a usable line, else the failure is bounded to this
+  2. budget remaining, else silent;
+  3. cooldown elapsed since the last intervention, else silent;
+  4. the writer produces a usable line, else the failure is bounded to this
      boundary and recorded as a lapse. Never a retry.
 
   The cost of that order is stated rather than hidden: the judge runs on every
   boundary carrying evidence even after the budget is spent, so a ``budget=0``
-  policy still pays for a judge it can never act on. The precondition above
-  does not touch that matching — it depends on the evidence window alone, so
-  two arms fed the same stream skip the same boundaries. Why that cost is worth
-  paying — what the two supervised definitions are and are not matched on — is
-  stated once, at :data:`swe_lab.workflow.definitions.CONTROL_BUDGET`.
+  policy still pays for a judge it can never act on. That is a property of the
+  gate order rather than something any shipped definition asks for: the
+  would-have-spoken markers a zero-budget arm existed to collect went with the
+  correction channel (ADR-0026), and no definition ships a zero budget today.
 
   The criterion is a constructor argument rather than a field on
   :class:`Observation`, so it never travels the channel the actor's records
@@ -583,7 +471,6 @@ class SpeakWhenOffTrack:
   )
   said_visibility: SaidVisibility = "writer"
 
-  _markers: list[WouldHaveSpoken] = dataclasses.field(default_factory=list)
   _spoken_at: list[int] = dataclasses.field(default_factory=list)
   _verdicts: list[Verdict] = dataclasses.field(default_factory=list)
   _running_state: str = INITIAL_RUNNING_STATE
@@ -609,16 +496,6 @@ class SpeakWhenOffTrack:
       ``"speak-when-off-track"``.
     """
     return "speak-when-off-track"
-
-  @property
-  def markers(self) -> tuple[WouldHaveSpoken, ...]:
-    """Return every deviation found, spoken or not.
-
-    Returns:
-      The markers in the order they were recorded. A non-zero count on a
-      ``budget=0`` run is what proves the judge still ran.
-    """
-    return tuple(self._markers)
 
   @property
   def verdicts(self) -> tuple[Verdict, ...]:
@@ -691,15 +568,6 @@ class SpeakWhenOffTrack:
     self._running_state = verdict.running_state
     if not verdict.off_track:
       return None
-
-    self._markers.append(
-        WouldHaveSpoken(
-            cursor=observation.cursor,
-            reason=verdict.reason,
-            deviation_started_steps_ago=verdict.deviation_started_steps_ago,
-            judge_input=verdict.judge_input,
-        )
-    )
 
     if len(self._spoken_at) >= self.budget:
       return None
@@ -794,253 +662,6 @@ def lapsed_judge_request(error: PolicyLapseError) -> dict[str, object]:
   }
 
 
-# How a message was dispositioned, recorded so the account of a run says why
-# something was not judged rather than leaving it missing.
-ADMITTED_ASSISTANT = "assistant"
-ADMITTED_TOOL_RESULT = "tool-result"
-EXCLUDED_OWN_INTERVENTION = "excluded-own-intervention"
-EXCLUDED_EXTERNAL_TEXT = "excluded-external-text"
-EXCLUDED_NOTHING_TO_KEEP = "excluded-nothing-to-keep"
-
-
-@dataclasses.dataclass
-class EvidenceFilter:
-  """Decides what reaches the supervisor — by **origin**, not by role.
-
-  The barrier keeps out the solution, not the goal. The goal does not travel
-  this path at all: the task statement is handed to the supervisor at
-  construction, by whoever wrote the prompt, so it needs no rule here and
-  cannot be confused with anything else on the stream.
-
-  What this filter admits is therefore exactly what the *actor* produced — its
-  assistant messages and the results of its own tool calls. Every user text is
-  excluded, distinguished only so the record can say which kind it was: text
-  carrying the intervention tag came from this supervisor, and anything else is
-  an outside interjection. Neither is an observation of what the actor did.
-
-  Stateless by construction: a supervisor attached mid-run reaches the same
-  verdict on a message as one that watched from the first event.
-  """
-
-  def admit(self, message: Message | None) -> tuple[Message | None, str]:
-    """Decide whether one message becomes evidence.
-
-    Args:
-      message: A converted stream message, or ``None``.
-
-    Returns:
-      The record to keep (or ``None``), and the disposition that says why.
-    """
-    if message is None:
-      return None, EXCLUDED_NOTHING_TO_KEEP
-
-    if message.role == Role.ASSISTANT:
-      return message, ADMITTED_ASSISTANT
-
-    results = [b for b in message.content if isinstance(b, ToolResultBlock)]
-    if results:
-      return Message(role=message.role, content=list(results)), (
-          ADMITTED_TOOL_RESULT
-      )
-
-    text = "".join(b.text for b in message.content if isinstance(b, TextBlock))
-    if not text:
-      return None, EXCLUDED_NOTHING_TO_KEEP
-    if f"<{INTERVENTION_TAG}>" in text:
-      return None, EXCLUDED_OWN_INTERVENTION
-    return None, EXCLUDED_EXTERNAL_TEXT
-
-
-@dataclasses.dataclass
-class Supervisor:
-  """Consumes the actor's stream, consults a policy, writes what it decides.
-
-  Attributes:
-    policy: When to speak.
-    task: What the actor was asked to do; see :class:`Observation`.
-    sink: Where a correction is written. Borrowed: never closed here.
-    log: Where the account of the run is written, one row per event consumed.
-    guidebook: The phase-B artifact, when this is a guidebook-guided run.
-    now: Clock, injected so the log is testable.
-  """
-
-  policy: SpeakPolicy
-  task: str
-  sink: Sink
-  log: LogWriter
-  guidebook: str | None = None
-  now: Callable[[], datetime.datetime] = lambda: datetime.datetime.now(
-      datetime.UTC
-  )
-
-  _evidence: list[Message] = dataclasses.field(default_factory=list)
-  _said: list[Intervention] = dataclasses.field(default_factory=list)
-  _filter: EvidenceFilter = dataclasses.field(default_factory=EvidenceFilter)
-  _cursor: int = 0
-  _mute: bool = False
-  _disposition: str = EXCLUDED_NOTHING_TO_KEEP
-  _said_count: int = 0
-
-  def observe(self, event: Mapping[str, Any]) -> Intervention | None:
-    """Consume one stream event and act on it.
-
-    Every call writes exactly one log row, so the account of a run has no
-    silent gaps: a judgement, a silence, a boundary the policy took no decision
-    at, a lapse the policy bounded to this one boundary, or a gap of unknown
-    reach.
-
-    Args:
-      event: One decoded ``stream-json`` event.
-
-    Returns:
-      What was said at this event, or ``None``.
-    """
-    # Imported here, not at module scope: the `claude_code` package's
-    # ``__init__`` imports its harness, and the harness takes a
-    # ``SegmentedSupervision`` from this package — so a module-level import
-    # closes a cycle whenever a trace-synthesis module is imported first. The
-    # same reasoning `vocabulary.py`'s docstring gives for existing at all.
-    from swe_lab.harnesses.claude_code.convert import event_to_message
-
-    self._cursor += 1
-    record, self._disposition = self._filter.admit(event_to_message(event))
-    if record is not None:
-      self._evidence.append(record)
-
-    # Read before the policy answers: a delivered correction is appended
-    # below, and the row counts the corrections delivered *before* this
-    # boundary — what the observation carries, whichever call is shown it.
-    self._said_count = len(self._said)
-    observation = Observation(
-        task=self.task,
-        evidence=tuple(self._evidence),
-        cursor=self._cursor,
-        said=tuple(self._said),
-        guidebook=self.guidebook,
-    )
-    verdict_count = (
-        len(self.policy.verdicts)
-        if isinstance(self.policy, SpeakWhenOffTrack)
-        else 0
-    )
-    try:
-      decision = self.policy.consider(observation)
-    except PolicyLapseError as error:
-      # The policy bounded this one; the run keeps its evidence value and the
-      # next boundary is judged normally. finish_reason distinguishes a
-      # token-budget lapse ("length") from an unparseable-answer one (any
-      # other value, or None when the lapse was not a judge answer at all) —
-      # see PolicyLapseError.
-      self._row(
-          LOG_KIND_LAPSE,
-          reason=f"policy lapsed: {error!r}",
-          finish_reason=error.finish_reason,
-          **(
-              lapsed_judge_request(error)
-              | self._verdict_audit_after(verdict_count)
-          ),
-      )
-      return None
-    except Exception as error:  # noqa: BLE001 - recorded, never swallowed
-      self._row(
-          LOG_KIND_GAP,
-          reason=f"policy raised: {error!r}",
-          **self._verdict_audit_after(verdict_count),
-      )
-      return None
-
-    if isinstance(decision, Unjudged):
-      # Not a silence: nothing was judged here, and the reason says what the
-      # policy had instead of a decision.
-      self._row(LOG_KIND_UNJUDGED, reason=decision.reason)
-      return None
-    if decision is None:
-      self._row(
-          LOG_KIND_SILENT,
-          **self._verdict_audit_after(verdict_count, decision=True),
-      )
-      return None
-    intervention = decision
-    if self._mute:
-      self._row(
-          LOG_KIND_GAP,
-          reason="sink unusable; not attempted",
-          text=intervention.text,
-          **self._verdict_audit_after(verdict_count),
-      )
-      return None
-
-    try:
-      self.sink(intervention.rendered())
-    except Exception as error:  # noqa: BLE001 - recorded, never swallowed
-      # The channel is gone, but the run is not ours to end: stop speaking and
-      # keep accounting for every later event.
-      self._mute = True
-      self._row(
-          LOG_KIND_GAP,
-          reason=f"sink raised: {error!r}",
-          text=intervention.text,
-          **self._verdict_audit_after(verdict_count),
-      )
-      return None
-
-    self._said.append(intervention)
-    self._row(
-        LOG_KIND_SPOKE,
-        text=intervention.text,
-        **self._verdict_audit_after(verdict_count, decision=True),
-    )
-    return intervention
-
-  def _verdict_audit_after(
-      self, count: int, *, decision: bool = False
-  ) -> dict[str, object]:
-    """Return audit fields for the valid verdict created by this decision."""
-    if not isinstance(self.policy, SpeakWhenOffTrack):
-      return {}
-    verdicts = self.policy.verdicts
-    if len(verdicts) <= count:
-      return {}
-    verdict = verdicts[-1]
-    audit: dict[str, object] = {
-        "judge_input": verdict.judge_input,
-        "judge_prompt_sha256": judge_prompt_sha256(verdict.judge_input),
-        "judge_reason": verdict.reason,
-        "off_track": verdict.off_track,
-        "running_state": verdict.running_state,
-    }
-    if decision:
-      audit["reason"] = verdict.reason
-    return audit
-
-  def _row(self, kind: str, **extra: object) -> None:
-    """Write one row of the run's account.
-
-    Args:
-      kind: ``"spoke"``, ``"silent"``, ``"unjudged"``, ``"lapse"`` or
-        ``"gap"``.
-      **extra: Fields specific to the kind.
-    """
-    self.log(
-        {
-            "cursor": self._cursor,
-            "at": self.now().isoformat(),
-            "policy": self.policy.name,
-            "kind": kind,
-            "evidence": self._disposition,
-            "guidebook_sha256": (
-                hashlib.sha256(self.guidebook.encode()).hexdigest()
-                if self.guidebook is not None
-                else None
-            ),
-            "guidebook_context_mode": guidebook_context_mode(self.guidebook),
-            "said_visibility": said_visibility_of(self.policy),
-            "said_count": self._said_count,
-            **extra,
-        }
-    )
-
-
 def jsonl_writer(path: Any) -> LogWriter:
   """Return a writer appending one JSON object per line to ``path``.
 
@@ -1058,6 +679,39 @@ def jsonl_writer(path: Any) -> LogWriter:
   return write
 
 
+def _admit(message: Message | None) -> Message | None:
+  """Decide whether one converted message becomes evidence, by **origin**.
+
+  The barrier keeps out the solution, not the goal. The goal does not travel
+  this path at all: the task statement is handed to the supervisor by whoever
+  wrote the prompt, so it needs no rule here and cannot be confused with
+  anything else on the stream.
+
+  What this admits is therefore exactly what the *actor* produced — its
+  assistant messages and the results of its own tool calls. Every user text is
+  excluded: text carrying the intervention tag came from the supervisor, and
+  anything else is an outside interjection. Neither is an observation of what
+  the actor did.
+
+  Stateless by construction: a supervisor attached mid-run reaches the same
+  answer on a message as one that watched from the first event.
+
+  Args:
+    message: A converted stream message, or ``None``.
+
+  Returns:
+    The record to keep, or ``None``.
+  """
+  if message is None:
+    return None
+  if message.role == Role.ASSISTANT:
+    return message
+  results = [b for b in message.content if isinstance(b, ToolResultBlock)]
+  if results:
+    return Message(role=message.role, content=list(results))
+  return None
+
+
 def evidence_of(events: Sequence[Mapping[str, Any]]) -> tuple[Message, ...]:
   """Build the evidence a supervisor would have seen over a whole stream.
 
@@ -1067,9 +721,12 @@ def evidence_of(events: Sequence[Mapping[str, Any]]) -> tuple[Message, ...]:
   Returns:
     The messages a supervisor would have seen.
   """
-  # Function-local for the reason given in ``Supervisor.observe``.
+  # Imported here, not at module scope: the `claude_code` package's
+  # ``__init__`` imports its harness, and the harness takes a
+  # ``SegmentedSupervision`` from this package — so a module-level import
+  # closes a cycle whenever a trace-synthesis module is imported first. The
+  # same reasoning `vocabulary.py`'s docstring gives for existing at all.
   from swe_lab.harnesses.claude_code.convert import event_to_message
 
-  evidence_filter = EvidenceFilter()
-  kept = [evidence_filter.admit(event_to_message(e))[0] for e in events]
+  kept = [_admit(event_to_message(e)) for e in events]
   return tuple(m for m in kept if m is not None)

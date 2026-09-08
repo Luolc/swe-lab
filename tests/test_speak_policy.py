@@ -2,8 +2,9 @@
 
 Each test pins a sentence from §4 of the plan
 (``docs/trace-synthesis/plans/task-05-supervisor-the-component.md``). The order
-of the gates is itself an invariant: judging before budgeting is what makes
-``SpeakWhenOffTrack(budget=0)`` a matched control rather than a cheaper run.
+of the gates is itself an invariant: judging before budgeting is what makes a
+low-budget arm cost the same per boundary as a generous one, so a comparison
+between them reads the corrections rather than the calls.
 """
 
 from __future__ import annotations
@@ -22,12 +23,10 @@ from swe_lab.trace_synthesis.criterion import (
     load_criterion,
 )
 from swe_lab.trace_synthesis.supervisor import (
-    Intervention,
     InterventionTooLongError,
     MAX_INTERVENTION_CHARS,
     Observation,
     PolicyLapseError,
-    SpeakAt,
     SpeakWhenOffTrack,
     Unjudged,
     Verdict,
@@ -179,22 +178,6 @@ def test_an_actor_on_track_is_never_spoken_to() -> None:
   speaker, _, _ = policy(ON_TRACK)
   spoken = [speaker.consider(observation(index)) for index in range(1, 11)]
   assert spoken == [None] * 10
-  assert speaker.markers == ()
-
-
-def test_budget_zero_speaks_nothing_and_still_marks_every_deviation() -> None:
-  """The marker is recorded before the budget is consulted.
-
-  So the control arm judges every boundary it has evidence for and records
-  where it would have spoken; what that buys is stated once, at
-  `workflow.definitions.CONTROL_BUDGET`.
-  """
-  speaker, _, _ = policy(OFF_TRACK, budget=0)
-  spoken = [speaker.consider(observation(index)) for index in range(1, 6)]
-
-  assert spoken == [None] * 5
-  assert len(speaker.markers) == 5
-  assert [marker.cursor for marker in speaker.markers] == [1, 2, 3, 4, 5]
 
 
 def test_the_judge_runs_at_every_evidence_bearing_boundary_unbudgeted() -> None:
@@ -204,9 +187,9 @@ def test_the_judge_runs_at_every_evidence_bearing_boundary_unbudgeted() -> None:
   population the claim is about: a boundary with none is not judged in either
   arm, and that is pinned separately above.
 
-  Call counts only, on the policy alone — no arm is built here. What matched
-  judge calls buy a comparison is stated once, at
-  `workflow.definitions.CONTROL_BUDGET`.
+  Call counts only, on the policy alone. Two budgets that give the *same*
+  judge-call count and *different* writer-call counts is the whole reading:
+  either half alone is satisfiable by a policy that short-circuits.
   """
   control, control_judge, control_writer = policy(OFF_TRACK, budget=0)
   treatment, treatment_judge, treatment_writer = policy(OFF_TRACK, budget=1)
@@ -225,7 +208,6 @@ def test_a_budget_of_k_speaks_at_most_k_times() -> None:
   spoken = [speaker.consider(observation(index)) for index in range(1, 11)]
 
   assert sum(one is not None for one in spoken) == 2
-  assert len(speaker.markers) == 10
 
 
 def test_the_first_intervention_is_never_delayed_by_the_cooldown() -> None:
@@ -248,7 +230,6 @@ def test_the_cooldown_separates_later_interventions() -> None:
   assert first is not None
   assert too_soon is None
   assert far_enough is not None
-  assert len(speaker.markers) == 3
 
 
 def test_a_boundary_with_no_evidence_is_never_put_to_the_judge() -> None:
@@ -260,9 +241,9 @@ def test_a_boundary_with_no_evidence_is_never_put_to_the_judge() -> None:
   first correction was written at a boundary with zero admitted records, and
   the actor rebutted it.
 
-  The accounting is pinned with it: such a boundary produces no
-  would-have-spoken marker, spends no budget and starts no cooldown, so the
-  first boundary that does carry evidence is still spoken at.
+  The accounting is pinned with it: such a boundary spends no budget and
+  starts no cooldown, so the first boundary that does carry evidence is still
+  spoken at.
   """
   speaker, judge, writer = policy(OFF_TRACK, budget=1, cooldown=4)
 
@@ -271,11 +252,9 @@ def test_a_boundary_with_no_evidence_is_never_put_to_the_judge() -> None:
   assert judge.calls == []
   assert writer.calls == 0
   assert all(isinstance(one, Unjudged) for one in empty)
-  assert speaker.markers == ()
   # The budget is whole and the cooldown never started, so the first boundary
   # carrying evidence is judged and spoken at.
   assert speaker.consider(observation(3)) is not None
-  assert [marker.cursor for marker in speaker.markers] == [3]
 
 
 def test_the_judge_sees_only_the_window() -> None:
@@ -394,18 +373,17 @@ def test_a_failed_judge_call_is_bounded_to_the_boundary_it_happened_at() -> (
   assert "503 from upstream" in str(raised.value)
 
   # The state the failed call would have used is intact: the deviation at the
-  # next boundary is found, marked and spoken, with the budget still whole.
+  # next boundary is found and spoken at, with the budget still whole.
   assert speaker.consider(observation(2)) is not None
-  assert [marker.cursor for marker in speaker.markers] == [2]
   assert writer.calls == 1
 
 
-def test_a_writer_lapse_keeps_the_marker_and_the_budget() -> None:
-  """A lapse that happens after the judgement keeps the judgement.
+def test_a_writer_lapse_spends_no_budget() -> None:
+  """A lapse that happens after the judgement charges nothing.
 
-  The deviation was found; only the sentence about it could not be written. So
-  the marker stands — a control arm and a treatment arm still see the same
-  deviations — and nothing was said, so nothing is charged to the budget.
+  The deviation was found; only the sentence about it could not be written.
+  Nothing was said, so nothing is charged to the budget — the next boundary
+  still gets its attempt.
   """
 
   def failing_writer(observation: Observation, criterion: Criterion) -> str:
@@ -422,11 +400,10 @@ def test_a_writer_lapse_keeps_the_marker_and_the_budget() -> None:
   with pytest.raises(PolicyLapseError):
     speaker.consider(observation(1))
 
-  assert [marker.cursor for marker in speaker.markers] == [1]
-  # The budget of one is unspent, so the next boundary can still be spoken at.
+  # The budget of one is unspent, so the next boundary is still attempted —
+  # it reaches the writer again, which is what raises a second time.
   with pytest.raises(PolicyLapseError):
     speaker.consider(observation(2))
-  assert [marker.cursor for marker in speaker.markers] == [1, 2]
 
 
 def test_a_break_in_the_policys_own_state_is_not_bounded() -> None:
@@ -448,27 +425,6 @@ def test_a_break_in_the_policys_own_state_is_not_bounded() -> None:
   )
   with pytest.raises(TypeError):
     speaker.consider(observation(1))
-
-
-def test_speak_at_varies_when_while_holding_what_and_whether_constant() -> None:
-  """The timing knob in isolation: no judge, one line, fixed cursors."""
-  speaker = SpeakAt(cursors=frozenset({2, 5}), text="have another look at that")
-  spoken = [speaker.consider(observation(index)) for index in range(1, 7)]
-
-  assert [index for index, one in enumerate(spoken, 1) if one] == [2, 5]
-  assert {one.text for one in spoken if one} == {"have another look at that"}
-
-
-def test_speak_at_needs_no_judge() -> None:
-  """It is constructible from cursors and a line alone.
-
-  That is the point of having it: a judge is what entangles timing with
-  criterion.
-  """
-  assert isinstance(
-      SpeakAt(cursors=frozenset({1}), text="ok").consider(observation(1)),
-      Intervention,
-  )
 
 
 def test_a_forged_criterion_cannot_build_the_policy() -> None:

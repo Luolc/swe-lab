@@ -743,11 +743,18 @@ def supervising_policy(
 ) -> SpeakWhenOffTrack:
   """Build the judging policy, or reject the artifact.
 
-  Called by :func:`~swe_lab.trace_synthesis.channel.supervision` while a
-  rollout assembles its observers — before the sandbox is created — so a forged
-  artifact stops the run rather than only this call, which is what acceptance
-  point 2b asks for. Pinned by
-  ``test_a_forged_criterion_stops_the_run_before_a_sandbox_exists``.
+  **Loading and digest-checking the criterion happens here**, so a forged
+  artifact stops the run rather than only this call. *When* that is depends on
+  the carrier, and the honest statement of it changed with ADR-0026: the
+  correction channel built its policy while a rollout assembled its observers,
+  so a forgery was refused **before a sandbox existed**. The segment loop calls
+  its ``policy_factory`` inside
+  :meth:`~swe_lab.trace_synthesis.segmented_loop.SegmentedRun.run`, so a forgery
+  now stops the run **after** the sandbox is up. The refusal is unchanged; the
+  cost of it is a container. Pinned on the shipped path by
+  ``test_every_supervised_route_a_command_can_name_is_registered``, which builds
+  each registered route's policy and asserts the pinned digest, and on this
+  function by ``test_a_forged_criterion_cannot_build_the_policy``.
 
   Args:
     model: The model for both calls; named explicitly, never defaulted.
@@ -759,8 +766,8 @@ def supervising_policy(
       overlap half of the criterion check can run.
     criterion_path: The artifact to load; production leaves it unset.
     locate_deviation: Ask the judge how far back the deviation started. Off by
-      default, which leaves the A′ arms' prompt byte-identical; see
-      :class:`ModelJudge`.
+      default, which leaves the prompt byte-identical to a policy that never
+      asks; see :class:`ModelJudge`.
     said_visibility: Which default prompt renders what the supervisor has
       already said — the writer's alone (``"writer"``, the default), both
       (``"both"``, the shape before ADR-0024) or neither (``"none"``); see

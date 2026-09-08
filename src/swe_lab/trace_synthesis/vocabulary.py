@@ -1,18 +1,16 @@
 """The names a supervised run is recorded under, whatever carried it.
 
 A leaf: it imports nothing of this package's own, and nothing that reaches
-back into it. That is the whole reason it exists as a module. Both carriers
-report under these names — the correction channel in
-:mod:`~swe_lab.trace_synthesis.channel` and the segment loop through the
-``claude_code`` harness, which writes the log itself — so any home that also
-holds behavior puts the harness and the supervision on a cycle through each
-other.
+back into it. That is the whole reason it exists as a module. The segment loop
+reports under these names through the ``claude_code`` harness, which writes the
+log itself, so any home that also holds behavior puts the harness and the
+supervision on a cycle through each other.
 
-Keeping the vocabulary shared is deliberate and is not a claim that the two
-carriers do the same thing: they differ in when the actor is judged and in what
-a row of the account describes. What a reader of a finished run must not have
-to know is which of them produced it, so ``supervision.boundaries`` counts
-boundaries either way.
+Still *the names a supervised run is recorded under* rather than the segment
+loop's own names, and the distinction is not pedantry: a reader of a finished
+run must not have to know what carried it, so ``supervision.boundaries`` counts
+boundaries whatever did. One carrier ships today (ADR-0026); the vocabulary
+does not encode that.
 """
 
 from __future__ import annotations

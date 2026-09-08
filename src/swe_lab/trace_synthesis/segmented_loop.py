@@ -1,12 +1,14 @@
 """The segmented supervision loop: stop every N turns, judge, resume.
 
-The second carrier for the supervision stack of
-:mod:`~swe_lab.trace_synthesis.supervisor`. A′ (ADR-0013) writes a correction
-onto the actor's live stdin while one ``run()`` blocks; this one cuts the run
-into segments with ``--max-turns``, consults the same policy at each cut, and
-resumes. **Everything above the delivery mechanism is shared** — the judge, the
-writer, the criterion pin, the evidence filter, the intervention rendering and
-the log vocabulary are the ones A′ uses, unchanged.
+**The** carrier for the supervision stack of
+:mod:`~swe_lab.trace_synthesis.supervisor`, and since ADR-0026 the only one: it
+cuts a run into segments with ``--max-turns``, consults the policy at each cut,
+and resumes. **Everything above the delivery mechanism is the supervision
+itself** — the judge, the writer, the criterion pin, the evidence rule, the
+intervention rendering and the log vocabulary — and none of it is this module's.
+That separation is why two carriers could share it, and why removing the other
+one (a live stdin channel that spoke to the actor while a single ``run()``
+blocked, ADR-0013) took nothing from the supervision.
 
 The design record is
 ``docs/trace-synthesis/plans/task-22-segmented-supervision-loop.md``. Three
@@ -108,13 +110,12 @@ class SegmentedSupervision:
   Attributes:
     policy_factory: Builds the policy for one attempt, called as
       ``policy_factory(cooldown, base_url, api_key_env)``. **A factory, not a
-      policy**, for the reason ``supervision()`` is one on the A′ side: a
-      judging policy carries per-run state — budget spent, cooldown, the
-      markers it has recorded — and these definitions are module-level, so a
-      shared instance would let one instance's spent budget silence the next
-      one's corrections with nothing to show for it. The two upstream strings
-      arrive the same way and for a second reason: they are per-invocation, and
-      a module-level closure could not carry them.
+      policy**: a judging policy carries per-run state — budget spent, cooldown,
+      the running state it has accumulated — and these definitions are
+      module-level, so a shared instance would let one instance's spent budget
+      silence the next one's corrections with nothing to show for it. The two
+      upstream strings arrive the same way and for a second reason: they are
+      per-invocation, and a module-level closure could not carry them.
     base_url: Where the supervisor's model calls go. **Any URL, no allow-list**
       — a consumer pointing this at their own endpoint is the ordinary case,
       and the closed registry that briefly stood here made that impossible
@@ -642,8 +643,8 @@ class SegmentedRun:
   ) -> str:
     """Consult the policy at this seam and return the next segment's prompt.
 
-    Both failure modes the policy can declare are handled exactly as
-    :class:`~swe_lab.trace_synthesis.supervisor.Supervisor` handles them: a
+    Both failure modes the policy can declare are handled where the policy
+    declares them: a
     :class:`~swe_lab.trace_synthesis.supervisor.PolicyLapseError` is bounded to
     this seam and recorded as a lapse, and anything else is a gap of unknown
     reach. Neither ends the run — the actor still needs a prompt, and the

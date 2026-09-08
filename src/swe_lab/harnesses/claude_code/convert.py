@@ -372,7 +372,7 @@ def user_event_line(text: str) -> str:
   ``--input-format stream-json``, and it is the shape the compliance experiment
   measured, so it is reproduced rather than re-derived.
 
-  It belongs here, not in ``harness``: ``trace_synthesis.channel`` needs it and
+  It belongs here, not in ``harness``: ``trace_synthesis`` needs it and
   ``harness`` imports ``trace_synthesis``, so defining it there makes the
   import graph cyclic.
 
