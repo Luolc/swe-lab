@@ -36,7 +36,7 @@ vertical). An active component owns a
 | `docs/workstreams/<w>/` | A vertical's design / history — the component layout above when active, just a `README` when dormant (most are) | horizontal / shared design |
 | `docs/releases/vX.Y.Z.md` | I depend on swe-lab and am upgrading to this version — what broke, and what do I change? | design (link to the ADR/plan); the exhaustive commit list (the Release's generated notes own that) |
 | `docs/releases/README.md` | The release-note index + what belongs in one | the note bodies |
-| `docs/reviews/` | A dated engineering audit (a snapshot, not a spec) | design; status |
+| `docs/reviews/` | A dated engineering audit, or a postmortem of how a decision actually went (a snapshot, not a spec) | design; status; a decision (an ADR owns that) |
 | `docs/research/` | What does the outside world already know? (a dated survey of external sources, with its own claim/inference/not-found marking) | our own empirical results (an experiment `REPORT.md` owns those); a decision (an ADR does) |
 | `docs/experiments/` | An empirical question → logged run → `REPORT.md` | production design |
 
@@ -58,6 +58,7 @@ into three files (they drift):
 | a fact that is recorded but changes no branch (a metric nobody reads, a default-off remedy, a listed-but-unenforced limitation) | `docs/conventions.md` → Hazards | the hazard entry, naming the branch it should change |
 | a naming / interface-style / comment-content rule | `docs/conventions.md` (or an ADR — e.g. ADR-0002) | a convention |
 | what a **downstream consumer** needs to run something at a scale we deliberately do not | that component's handoff note (e.g. [`trace-synthesis/downstream-scale-note.md`](trace-synthesis/downstream-scale-note.md)) | measured numbers + decisions with their reasons |
+| how a decision or an episode actually unfolded, reconstructed afterwards | `docs/reviews/<YYYY-MM-DD>-<topic>.md` | a dated postmortem, marking record apart from inference |
 | an empirical / ML finding | an experiment `REPORT.md` | hypothesis → result |
 | what an **external** source (a paper, a vendor audit, an upstream issue) already established | `docs/research/<topic>.md` | a survey, every claim cited and dated |
 | a change a **consumer** must react to (removed name, changed default, shifted results) | `docs/releases/vX.Y.Z.md` for the version shipping it | what changed / why / what you must do |
