@@ -18,6 +18,7 @@ import dataclasses
 import io
 import json
 import os
+import pathlib
 import subprocess
 import sys
 from typing import Any
@@ -162,11 +163,26 @@ print(definitions.SEGMENTED_ROLLOUT[0].task.harness.segmented.base_url)
 """
 
 
-def _captured(when: str) -> str:
+#: How long the probe may take. The child imports `swe_lab.workflow.definitions`
+#: and prints one line — 0.5 s here — so this is a runaway bound, not a budget:
+#: it is what turns "the import blocks" into a failed test rather than a test
+#: run that never ends.
+_PROBE_TIMEOUT_SECONDS = 60.0
+
+
+def _captured(when: str, sink: pathlib.Path) -> str:
   """Return the shipped plan's upstream in a process that set the variable then.
+
+  The one line comes back **through a file, never a pipe** — the repo's
+  subprocess rule (``docs/conventions.md``, Hazards): a parent holding a pipe
+  it is not draining is how an early run hung for 13 hours. Bounded as well,
+  since a file does not stop a child that never exits. The probe starts no
+  children of its own, so ``run``'s own kill reaches everything it started; the
+  ``killpg`` half of that rule is for runners that spawn a tree.
 
   Args:
     when: ``"before"`` or ``"after"``, relative to importing ``definitions``.
+    sink: Where the child's stdout is written.
 
   Returns:
     What that process resolved the default to.
@@ -175,17 +191,23 @@ def _captured(when: str) -> str:
   # inherited one would make both arms answer it and the contrast vanish.
   environment = dict(os.environ)
   _ = environment.pop(ANTHROPIC_BASE_URL_ENV, None)
-  finished = subprocess.run(
-      [sys.executable, "-c", _TIMING_PROBE, when, _THIRD_PARTY],
-      capture_output=True,
-      text=True,
-      check=True,
-      env=environment,
-  )
-  return finished.stdout.strip()
+  with sink.open("wb") as out:
+    # stderr is left inherited rather than captured: pytest already collects it
+    # to a file of its own and shows it on failure, so a child that dies during
+    # import is diagnosable without this holding a second pipe open.
+    _ = subprocess.run(
+        [sys.executable, "-c", _TIMING_PROBE, when, _THIRD_PARTY],
+        stdout=out,
+        check=True,
+        timeout=_PROBE_TIMEOUT_SECONDS,
+        env=environment,
+    )
+  return sink.read_text().strip()
 
 
-def test_the_shipped_default_is_captured_when_the_definitions_import() -> None:
+def test_the_shipped_default_is_captured_when_the_definitions_import(
+    tmp_path: pathlib.Path,
+) -> None:
   """The timing is a contract, so both sides of it are pinned.
 
   A shipped plan is a module-level value, so its default resolves while that
@@ -200,8 +222,8 @@ def test_the_shipped_default_is_captured_when_the_definitions_import() -> None:
   assertion green under both orders would say nothing about when the read
   happens.
   """
-  assert _captured("before") == _THIRD_PARTY
-  assert _captured("after") == ANTHROPIC_API
+  assert _captured("before", tmp_path / "before.out") == _THIRD_PARTY
+  assert _captured("after", tmp_path / "after.out") == ANTHROPIC_API
 
 
 def test_the_key_variable_is_the_callers_choice_too() -> None:
