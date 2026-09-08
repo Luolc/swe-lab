@@ -327,11 +327,33 @@ it rather than asserting it.
 
   ```sh
   rev=9f39348; paths=("docs/*.md" "docs/**/*.md" "experiments/**/*.md")
-  git grep -lEi 'correction[ _-]channel|CorrectionChannel'            $rev -- "${paths[@]}" > a; echo $?   # 0, 19 files
-  git grep -lEi 'native[ _-](supervis|runtime)|swe-lab-supervisor'    $rev -- "${paths[@]}" > b; echo $?   # 0, 11 files
-  git grep -lEi 'segment(ed)?[ _-](loop|supervision)'                 $rev -- "${paths[@]}" > c; echo $?   # 0, 12 files
-  comm -12 a  b > ab;  echo $?                                                                  # 0,  4 files
-  comm -12 ab c > all; echo $?                                                                  # 0,  2 files
+  git grep -lEi 'correction[ _-]channel|CorrectionChannel'         $rev -- "${paths[@]}" > a; echo $?
+  git grep -lEi 'native[ _-](supervis|runtime)|swe-lab-supervisor' $rev -- "${paths[@]}" > b; echo $?
+  git grep -lEi 'segment(ed)?[ _-](loop|supervision)'              $rev -- "${paths[@]}" > c; echo $?
+  comm -12 a  b > ab;  echo $?
+  comm -12 ab c > all; echo $?
+  wc -l a b c ab all;  echo $?
+  cat all
+  ```
+
+  which prints, verbatim — five statuses, then the counts with `wc`'s own
+  status, then the intersection:
+
+  ```
+  0
+  0
+  0
+  0
+  0
+    19 a
+    11 b
+    12 c
+     4 ab
+     2 all
+    48 total
+  0
+  9f39348:docs/trace-synthesis/plans/README.md
+  9f39348:docs/trace-synthesis/plans/task-22-segmented-supervision-loop.md
   ```
 
   Each stage is materialized and counted rather than piped into the next,
@@ -341,9 +363,10 @@ it rather than asserting it.
   `git grep -l` **exits 1 when nothing matches**, so its `echo $?` separates a
   genuine empty result from a broken invocation, while `comm` **exits 0 on an
   empty intersection too**, so at those two stages the exit status only says the
-  stage ran and the **count** is what carries the answer. Both are printed for
-  that reason. The intersection is **two files**, and neither compares the
-  carriers:
+  stage ran. There the **count** is what carries the answer, which is why the
+  block ends by printing every stage's line count rather than annotating them in
+  a comment: a number in a comment is a claim about a command, not its output.
+  The intersection is **two files**, and neither compares the carriers:
   [`plans/README.md`](../trace-synthesis/plans/README.md), a task index, and
   [task 22](../trace-synthesis/plans/task-22-segmented-supervision-loop.md),
   whose §9 lists the other two under *"Not touched"*. The same three commands at
@@ -371,10 +394,28 @@ it rather than asserting it.
 
   ```sh
   tree=$(mktemp)
-  git ls-tree -r --name-only origin/main > "$tree"; echo $?                        # 0, 4890 paths
-  grep -c '^experiments/trace_synthesis/resume_loop_feasibility/' "$tree"; echo $? # 0,  exit 1
-  grep -c '^experiments/trace_synthesis/streamjson_input/'        "$tree"; echo $? # 41, exit 0
+  git ls-tree -r --name-only origin/main > "$tree"; echo $?
+  wc -l < "$tree"; echo $?
+  grep -c '^experiments/trace_synthesis/resume_loop_feasibility/' "$tree"; echo $?
+  grep -c '^experiments/trace_synthesis/streamjson_input/'        "$tree"; echo $?
   ```
+
+  which prints, verbatim — `ls-tree`'s status, the path count and `wc`'s status,
+  then each `grep -c` count followed by its own status:
+
+  ```
+  0
+  4890
+  0
+  0
+  1
+  41
+  0
+  ```
+
+  The third and fourth lines are the claim: **0** matches, and `grep`'s exit
+  **1** saying it found none rather than that it failed to run. The last pair is
+  the control arm.
 
   `ls-tree` rather than `ls-files --with-tree`, which
   [`evidence.md`](../evidence.md) records as unioning the tree with the current
