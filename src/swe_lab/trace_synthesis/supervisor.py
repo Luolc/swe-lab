@@ -244,9 +244,11 @@ class Unjudged:
 class Observation:
   """Everything a policy is allowed to see.
 
-  A guidebook-guided workflow validates and supplies the complete phase-B
-  artifact here so the judge and writer can steer toward its instance-specific
-  route. Workflows without one leave :attr:`guidebook` unset and retain the
+  A guidebook-guided workflow supplies the complete phase-B artifact here so
+  the judge and writer can steer toward its instance-specific route. What
+  arrives is whatever the Oracle wrote — the schema measures it and does not
+  gate it (ADR-0027), so a builder reads the representation it finds.
+  Workflows without one leave :attr:`guidebook` unset and retain the
   general-practice criterion alone. Raw gold/reference/test patches and hidden
   tests have no separate field.
 

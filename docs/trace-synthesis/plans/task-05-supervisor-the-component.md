@@ -104,8 +104,13 @@ Two inputs, and they are different in kind:
   would let it read its output as the actor's behaviour. The filter is
   **stateless**, so where a supervisor attached cannot change its verdict on a
   message.
-- **Guidebook — the validated phase-B artifact.** `Observation.guidebook`
-  carries the complete Markdown to both judge and writer. The constructor's
+- **Guidebook — the phase-B artifact, whatever shape it has.**
+  `Observation.guidebook` carries the complete Markdown to both judge and
+  writer. It was *validated* until
+  [ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)
+  (2026-09-08) made the schema a measurement; what is still refused before an
+  actor starts is a guidebook that is **absent**, not one whose labels a regex
+  did not recognize. The constructor's
   exact allowlist is `task`, `evidence`, `cursor`, `said`, `guidebook`; its
   negative-control test separately attempts `gold_patch`, `reference_patch`,
   `test_patch`, `hidden_tests`, `fail_to_pass`, `pass_to_pass` and
@@ -119,8 +124,9 @@ Two inputs, and they are different in kind:
 **The barrier's claim, stated plainly because one described more strongly than
 it is, is worse than none:**
 
-> The supervisor receives the complete validated guidebook but has no separate
-> input for the gold patch, reference patch, test patch or hidden tests. What
+> The supervisor receives the complete guidebook as phase B wrote it — its
+> shape measured, not enforced (ADR-0027) — but has no separate input for the
+> gold patch, reference patch, test patch or hidden tests. What
 > crosses into the actor is only the writer's tagged correction. The writer is
 > intended to teach rather than recite; shallow checks cover named surface
 > forms, while semantic paraphrase remains a human-audit question.
@@ -159,9 +165,14 @@ scope, the second half has the same four parts as the first:
 | **named test** | `test_a_criterion_quoting_the_gold_patch_is_rejected` — a criterion that quotes the fix must make the check fail |
 
 **The startup gates are wired.** `supervising_policy` loads the pinned criterion,
-and a guidebook-guided harness validates the declared guidebook before its first
-actor script is launched. Missing or malformed guidebooks raise
-`GuidebookRejectedError`; they never select the unguided prompt as a fallback.
+and a guidebook-guided harness requires the declared guidebook to be there
+before its first actor script is launched. A **missing** guidebook raises
+`GuidebookMissingError`; it never selects the unguided prompt as a fallback. A
+*malformed* one did too until
+[ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)
+(2026-09-08) made the schema a measurement — its shape is recorded and the run
+proceeds, because a label a regex missed is not evidence the prose is
+unusable.
 `SpeakWhenOffTrack` passes the criterion and the observation carrying the
 guidebook to both model calls.
 `SpeakAt` takes none and judges nothing — it is the timing knob, and applying a
@@ -202,8 +213,14 @@ needs a test or the sentence is downgraded):
   acceptance does not pass merely because the guidebook arm passes.
 - `test_a_criterion_quoting_the_gold_patch_is_rejected` — §3.1's criterion
   half: the loader rejects rather than recording a gap.
-- `test_a_guided_run_rejects_an_unusable_guidebook_before_actor_start` — both
-  missing and malformed guidebooks refuse the run before an actor script.
+- `test_a_guided_run_with_no_guidebook_at_all_refuses_to_start` — a run with
+  no artifact refuses before an actor script; its control arm,
+  `test_a_guided_run_starts_with_a_guidebook_the_schema_would_reject`, shows a
+  *malformed* one now reaching the actor. Both replace
+  `test_a_guided_run_rejects_an_unusable_guidebook_before_actor_start`, which
+  refused either, until
+  [ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)
+  made the schema a measurement.
 - `test_a_forged_criterion_cannot_build_the_policy` and
   `test_the_judge_is_handed_the_canonical_criterion_every_call` — what *is*
   enforced today: `SpeakWhenOffTrack` refuses any criterion whose digest is not
@@ -711,7 +728,7 @@ that added it).
 **Dependencies:** [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
 for attribution, [ADR-0018](../../decisions/ADR-0018-the-supervisor-reads-the-guidebook-but-must-not-recite-the-answer.md)
 for the speech boundary, and
-[task 04](task-04-oracle-analysis-task.md) for the validated phase-B artifact.
+[task 04](task-04-oracle-analysis-task.md) for the phase-B artifact.
 It is not blocked on task 16 because the segmented harness already owns its
 delivery seam.
 **Scope:** L.

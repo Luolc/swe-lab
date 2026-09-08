@@ -1271,30 +1271,71 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
   ) - shingles(task)
 
 
-@pytest.mark.parametrize(
-    "guidebook",
-    [None, "# Guidebook\n\n## Stage 1\n\n**Goal.** Missing fields.\n"],
-)
-def test_a_guided_run_rejects_an_unusable_guidebook_before_actor_start(
-    tmp_path: Path, guidebook: str | None
-) -> None:
-  """Missing and malformed phase-B outputs never degrade to unguided runs."""
-  from swe_lab.trace_synthesis.guidebook import (
-      GUIDEBOOK_NAME,
-      GuidebookRejectedError,
-  )
+def _guided_harness() -> ClaudeCodeHarness:
+  """Build a segmented harness that reads its guidebook from the workspace.
 
-  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
-  if guidebook is not None:
-    sb.write(GUIDEBOOK_NAME, guidebook.encode())
-  harness = ClaudeCodeHarness(
+  Returns:
+    The harness, pointed at the workspace name phase B writes.
+  """
+  from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
+
+  return ClaudeCodeHarness(
       capture="proxy",
       segmented=dataclasses.replace(
           _segmented(), guidebook_name=GUIDEBOOK_NAME
       ),
   )
 
-  with pytest.raises(GuidebookRejectedError, match="before actor start"):
-    _ = harness.run(sb, prompt="solve it", timeout=100.0)
+
+def test_a_guided_run_starts_with_a_guidebook_the_schema_would_reject(
+    tmp_path: Path,
+) -> None:
+  """An imperfect guidebook is supervision material, not a stop (ADR-0027).
+
+  The label check used to stand here as a gate, and a real Oracle run was
+  discarded by it over two stage labels. What the Oracle wrote now reaches
+  the actor and the supervisor, and its shape is recorded rather than
+  enforced — the loop's own rows carry the identity of the artifact it read.
+  """
+  from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
+
+  # Missing every field the schema asks for: no rubric, and one stage that
+  # names only its goal.
+  malformed = "# Guidebook\n\n## Stage 1\n\n**Goal.** Missing fields.\n"
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+  sb.write(GUIDEBOOK_NAME, malformed.encode())
+
+  _ = _guided_harness().run(sb, prompt="solve it", timeout=100.0)
+
+  assert AGENT_SCRIPT_NAME in sb.scripts
+  rows = [
+      json.loads(line)
+      for line in sb.read(SUPERVISOR_LOG_NAME).decode().splitlines()
+  ]
+  assert rows
+  # The identity on every row is the malformed artifact's own: what the
+  # Oracle wrote is what the supervised run read.
+  digest = hashlib.sha256(malformed.encode()).hexdigest()
+  assert {row["guidebook_sha256"] for row in rows} == {digest}
+  assert any(
+      command.startswith("rm -f") and GUIDEBOOK_NAME in command
+      for command in sb.commands
+  )
+
+
+def test_a_guided_run_with_no_guidebook_at_all_refuses_to_start(
+    tmp_path: Path,
+) -> None:
+  """The control arm: absence is not an imperfect guidebook, it is none.
+
+  A guided run that starts without one is a second blind run under the guided
+  entry key, and the chain's 2×2 would read it as guided.
+  """
+  from swe_lab.trace_synthesis.guidebook import GuidebookMissingError
+
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+
+  with pytest.raises(GuidebookMissingError, match="before actor start"):
+    _ = _guided_harness().run(sb, prompt="solve it", timeout=100.0)
 
   assert AGENT_SCRIPT_NAME not in sb.scripts

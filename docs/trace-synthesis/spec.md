@@ -153,7 +153,7 @@ the store's task segment — and by nothing else.
 
 A fresh agent with **privileged access** to:
 
-- the full conversation of the failed rollout — what went wrong, in detail,
+- the full conversation of the blind rollout — what it did, in detail,
 - the golden test patch — and the golden patch **when the dataset records
   one**; a dataset without a reference patch is a supported input, and the
   Oracle is then briefed without it,
@@ -167,6 +167,20 @@ compiled to apply the failed patch, so the verdict can be reproduced in
 place — and, when the dataset records one, the golden patch; the git history
 is left unpurged. Without a reference patch the brief says so and drops every
 instruction that would read one — that branch is tested, not tolerated.
+
+**The brief branches on the graded verdict, and the Oracle always writes**
+([ADR-0027](../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md),
+the owner's 2026-09-08 ruling). A failed attempt is diagnosed: find the
+decision that went wrong, and teach the fork that resolves it. A *passed*
+attempt is not narrated as a failure — it is read for the steps that were
+**guessed rather than derived**, which the guidebook then makes deliberate and
+reproducible. The chain runs phase B whatever the blind verdict was
+([ADR-0023](../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md)
+§2), so a single-premise brief was a claim the run could contradict: one live
+Oracle refused it, asked an operator who was not there, and wrote nothing.
+There is **no refusal path** in either brief, and the `resolved` flag is read
+from the staged verdict rather than defaulted — an unreadable verdict refuses
+the run before the agent starts.
 
 It produces one artifact: a **guidebook**. The artifact keeps two
 representations alongside each other: a staged, step-by-step tutorial telling
@@ -192,27 +206,35 @@ Two rules on the guidebook:
    Supervisor in phase C can only produce an honest nudge toward a step if a
    derivable reason for that step exists. A guidebook that says "open
    `foo/bar.py`" with no reachable *why* leaves the Supervisor nothing to say
-   except the answer. The schema enforces that the field **exists** — a
-   guidebook whose stage lacks it is rejected
-   ([task 04](plans/task-04-oracle-analysis-task.md#the-guidebook-schema)),
-   as bold labels inside `## Stage N` sections, with `edits` / `tests` left
-   optional; whether the reason is genuinely derivable is again a reader's
-   judgement, not a test.
+   except the answer. The schema **measures** whether the field exists — as
+   bold labels inside `## Stage N` sections, with `edits` / `tests` left
+   optional ([task 04](plans/task-04-oracle-analysis-task.md#the-guidebook-schema))
+   — and **gates nothing**
+   ([ADR-0027](../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)):
+   what it finds lands in `guidebook.valid` and `guidebook_problems`, the
+   guidebook goes downstream either way, and nothing is retried over a label.
+   Whether the reason is genuinely derivable is again a reader's judgement,
+   not a test.
 
 The compact `## Supervisor rubric` names checkpoints, on-track evidence,
 disallowed branches, off-track signals, and the safe hint justification. New
 phase-B output must contain the complete tutorial and all five rubric fields.
 A pre-[ADR-0022](../decisions/ADR-0022-self-correcting-leaves-the-verdict.md)
-rubric carrying a sixth `Self-correction signals` field still validates, since
-each field is checked for presence. A phase-C read accepts a pre-rubric tutorial from a
-supported resume, but never accepts a partial rubric; each supervisor decision
-row records which representation its default prompt used. That compatible-read
-/ strict-write transition and its exit condition are fixed by
-[ADR-0021](../decisions/ADR-0021-compact-guidebook-rubric-has-a-legacy-read-path.md).
+rubric carrying a sixth `Self-correction signals` field still measures clean,
+since each field is checked for presence. **Phase C validates nothing**
+([ADR-0027](../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)):
+it reads whichever representation the artifact carries — the compact rubric,
+or a pre-rubric tutorial from a supported resume — and each supervisor
+decision row records which one its default prompt used. The one thing it still
+refuses is **absence**: a guided run with no guidebook at all is an unguided
+run under the guided entry key. The strict-write half of that transition, its
+exit condition and the representation telemetry are
+[ADR-0021](../decisions/ADR-0021-compact-guidebook-rubric-has-a-legacy-read-path.md)'s;
+its read-time validation half is superseded.
 
 The guidebook is **private from the actor, not from the Supervisor**: phase C's
-default Supervisor receives the compact rubric from a schema-validated
-artifact, with the complete tutorial retained beside it for human audit. A
+default Supervisor receives the compact rubric from whatever artifact phase B
+produced, with the complete tutorial retained beside it for human audit. A
 pre-rubric artifact follows the explicit legacy full-tutorial path described by
 [ADR-0021](../decisions/ADR-0021-compact-guidebook-rubric-has-a-legacy-read-path.md).
 Neither representation enters the actor's context or the training trace. The
@@ -994,7 +1016,8 @@ is tuned by reading traces, not asserted by a test.
 | Intended invariant | Test that must pin it |
 |---|---|
 | The guidebook never enters the actor's context or the training trace | ✅ `test_the_registered_guided_harness_hands_the_guidebook_to_both_calls`: the harness removes the workspace input before launch; in the serialized `Conversation`, guidebook 12-word shingles are counted only after subtracting shingles also present in the task prompt, with both a shared-source control and a guidebook-only contamination control |
-| New phase-B output contains both the complete tutorial and a complete supervisor rubric; phase C accepts an absent legacy rubric but rejects a partial one; default prompts consume the rubric and decision rows identify the representation | ✅ `test_the_complete_tutorial_is_collected_beside_the_rubric`, `test_new_oracle_output_without_a_rubric_fails_the_attempt`, `test_a_legacy_tutorial_remains_a_valid_phase_c_input`, `test_a_partial_rubric_is_invalid_even_on_the_legacy_read_path`, `test_the_compact_rubric_reaches_both_model_calls_without_the_tutorial`, and `test_segmented_decision_rows_distinguish_both_guidebook_modes` |
+| Phase B asks for both the complete tutorial and a complete supervisor rubric, and **measures** what it got; phase C reads whichever representation arrived and validates none of it, refusing only absence; default prompts consume the rubric and decision rows identify the representation | ✅ `test_the_complete_tutorial_is_collected_beside_the_rubric`, `test_oracle_output_without_a_rubric_is_measured_and_kept`, `test_a_legacy_tutorial_still_names_its_representation`, `test_a_partial_rubric_is_named_field_by_field`, `test_the_compact_rubric_reaches_both_model_calls_without_the_tutorial`, and `test_segmented_decision_rows_distinguish_both_guidebook_modes`. The gate half is pinned by its own two arms since [ADR-0027](../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md): `test_a_guided_run_starts_with_a_guidebook_the_schema_would_reject` (a malformed artifact reaches the actor and its digest is on every supervisor row) against `test_a_guided_run_with_no_guidebook_at_all_refuses_to_start` |
+| The brief the Oracle is given matches the verdict of the attempt it explains, and it always asks for a guidebook | ✅ `test_a_failed_attempt_gets_the_brief_that_diagnoses_it` and `test_a_passed_attempt_gets_the_brief_that_finds_the_guesswork` are each other's control arm — same instance and files, opposite verdict, and each asserts the other brief's sentences are **absent**; `test_default_oracle_instructions_are_pinned` pins both by digest, and `test_an_unreadable_verdict_stops_the_run_instead_of_guessing` covers the case where the flag cannot be read |
 | Running state remains host-side and creates no separate sandbox artifact: valid versions are fields on the existing supervisor decision rows | ✅ `test_segmented_rows_retain_valid_silent_and_speaking_verdicts` asserts each valid version on the `silent` and `spoke` row it belongs to (it replaces `test_valid_running_state_versions_persist_on_existing_decision_rows`, which asserted the same of the correction channel [ADR-0026](../decisions/ADR-0026-the-correction-channel-is-removed.md) removed); `test_a_segmented_run_runs_one_script_per_segment_and_records_its_seams` asserts the exact native-output set of a supervised run and therefore fails if a separate state artifact appears. (It replaces `test_the_wrappers_artifacts_are_registered_so_the_run_outlives_the_box`, which asserted the same thing about the native carrier [ADR-0025](../decisions/ADR-0025-the-segment-loop-is-the-only-supervised-carrier.md) removed.) |
 | Every phase B / C record carries the oracle-guided policy stamp | a test asserting the stamp is present on the record and that aggregation across differing stamps still errors |
 | A dropped or timed-out Supervisor decision is recorded, never silently ignored | a test asserting the run record shows the drop |
@@ -1004,7 +1027,7 @@ is tuned by reading traces, not asserted by a test.
 | Conversion neither drops nor synthesizes turns: the training trace is exactly the actor's turns plus the interventions the actor received | a test comparing the converted `Conversation` against the capture and the hint log, asserting equality of the turn sequence — no extra turn, no missing one |
 | Phase D never collects an exchange the actor was not part of: a request whose body carries a `[SUGGESTION MODE: …]` message, or any other side call the front end makes, is excluded from the conversation | a test over a captured TUI session asserting the collected `Conversation` is built from the agent-loop request and that a trailing prompt-suggestion request is not selected |
 | A hint never alters what the actor observed: the Supervisor emits its own message and never a tool result, an assistant turn, or an edit of either | a test over the Supervisor's emitter asserting every value it can produce is its own tagged message, and that no code path writes into a captured record |
-| The Supervisor's input has exactly `task`, `evidence`, `cursor`, `said`, the validated `guidebook`, and host-side `running_state`; raw gold/reference/test patches, hidden tests and their named equivalents have no separate constructor channel | ✅ `test_a_policy_may_see_exactly_these_six_things` asserts the exact six-field allowlist, and `test_segmented_decision_rows_distinguish_both_guidebook_modes` the artifact's positive handoff on a real run; `test_supervisor_input_rejects_separate_privileged_material` supplies every named negative control and requires constructor rejection |
+| The Supervisor's input has exactly `task`, `evidence`, `cursor`, `said`, the `guidebook` as phase B wrote it (measured, not validated — [ADR-0027](../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)), and host-side `running_state`; raw gold/reference/test patches, hidden tests and their named equivalents have no separate constructor channel | ✅ `test_a_policy_may_see_exactly_these_six_things` asserts the exact six-field allowlist, and `test_segmented_decision_rows_distinguish_both_guidebook_modes` the artifact's positive handoff on a real run; `test_supervisor_input_rejects_separate_privileged_material` supplies every named negative control and requires constructor rejection |
 | The judge's default prompt does not depend on what the supervisor has already said, the writer's carries it unless the definition says `none`, and the mode reaches the builders from the definition and not from the environment. Every decision row names the mode it ran under and the corrections delivered before it; every row behind which a judge request was built — a valid verdict, a lapse whose answer was unusable, or a lapse whose transport raised — carries the request and its digest, and a writer lapse keeps the valid verdict's; the two kinds of row with no request behind them (a policy with no model call, an `unjudged` boundary) carry the two mode fields and neither request field | ✅ `test_the_judge_prompt_does_not_depend_on_what_was_said` (a speaking arm and a silent arm send one set of judge bytes under `writer` and `none`, and different bytes under `both` — the positive arm), `test_the_writer_prompt_carries_what_was_said_unless_told_not_to`, `test_the_policy_records_the_said_visibility_its_builders_were_given`; the routing by `test_the_shipped_segmented_factory_reads_the_named_said_visibility` (which sets the constant to a non-default mode, so it tells a definition that passes it from one that omits it) and `test_nothing_in_building_a_supervision_policy_reads_the_environment`; the rows with a request by `test_segmented_decision_rows_record_said_visibility_count_and_digest` (valid verdicts), `test_a_segmented_judge_lapse_row_still_carries_the_request_and_digest` (an unusable answer), `test_a_segmented_lapse_whose_transport_raised_still_carries_the_request` (the transport raised) and `test_a_segmented_writer_lapse_row_keeps_the_valid_verdicts_request` (a writer lapse); the two no-request rows by `test_segmented_rows_without_a_request_carry_neither_request_field`. **"Either carrier" was two carriers until 2026-09-08**; the correction channel's half of every pair above went with it ([ADR-0026](../decisions/ADR-0026-the-correction-channel-is-removed.md)), and the segment loop's half is what remains |
 | A recent-evidence limit never splits an assistant tool call from its following result; genuine missing results and every prompt-only truncation are explicit, reasoning is omitted without hiding the positive tool evidence, and clipping leaves the raw values complete | ✅ `test_a_raw_record_boundary_never_splits_a_tool_call_from_its_result`, `test_a_genuinely_missing_result_is_marked`, `test_truncation_is_visible_and_short_values_are_unmarked`, `test_oversized_structured_input_has_its_own_visible_marker`, `test_visible_text_can_be_bounded_or_disabled_without_hiding_tools`, `test_tool_evidence_is_rendered_while_reasoning_is_omitted`, and `test_prompt_clipping_does_not_change_the_complete_raw_values` |
 | Phase B runs with the git-history purge **off** and composes no result verifier — the Oracle sees the history it is meant to see, and a run contaminated by declaration is not put through the detector — while the solving definitions keep purging | ✅ `test_the_oracle_task_composes_no_purge_no_extractor_and_no_verifier` and its converse `test_the_rollout_definitions_still_purge` (`tests/test_oracle_analysis.py`) |
