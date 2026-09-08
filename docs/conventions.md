@@ -188,19 +188,23 @@ Steps (the agent drives all of it):
    the new version is listed **with both distribution files**, the wheel and
    the sdist — `latest` alone is a weaker fact than the file list. Anything
    else is **pending**, which is neither confirmed nor failed:
-   - **Re-read**, about a minute apart, for up to ten minutes. That bound is
-     **stated, not measured** (see below), so treat it as a convention rather
-     than a threshold fitted to anything.
+   - **Re-read**, about a minute apart, for up to ten minutes. **Both numbers
+     are stated, not measured** — the cadence and the limit alike. Neither
+     comes from the observation below, which recorded no duration at all, so
+     read them as a convention and never as a finding.
    - **If it converges, the release is done** and the earlier misses mean
      nothing at all.
-   - **If the bound passes with the version still absent, stop and report it
+   - **If the limit passes with the version still absent, stop and report it
      unresolved.** Do not report a failed publish, and do not report a
-     successful one. Name the two possibilities that are still open and hand
-     over the evidence: the run id, the run's conclusion, and each read with
-     its wall-clock time. **Unresolved is a real outcome and this step exists
-     to make it reportable** — guessing between the two is the thing being
-     prevented, and a step that says "retry" without saying when to stop has
-     only moved the guess to whoever gets tired first.
+     successful one. Name **both** possibilities that remain open — the
+     publish failed, or the index is still behind — **without preferring
+     either**, and hand over the evidence: the run id, the run's conclusion,
+     and each read with its wall-clock time. Write it so that an operator can
+     reach a conclusion from it that we could not. **Unresolved is a real
+     outcome and this step exists to make it reportable** — guessing between
+     the two is the thing being prevented, and a step that says "retry"
+     without saying when to stop has only moved the guess to whoever gets
+     tired first.
 
 **Steps 4 and 5 are two facts on two clocks, and 5 must not be chained onto
 4's.** Measured 2026-09-08, releasing 0.3.7: the publish run exited 0, and a
