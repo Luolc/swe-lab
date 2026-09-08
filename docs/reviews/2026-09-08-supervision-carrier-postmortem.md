@@ -36,11 +36,12 @@ Three kinds of sentence, kept apart on purpose:
 A third form appears where it matters most: **"the record does not say."** Those
 are findings, not gaps in this write-up.
 
-**Every absence claim below carries the search that produced it** — the exact
-command, the revision it ran at, and a control arm that returns a non-empty
-result — because a search that finds nothing and a search that looks in the
-wrong place produce the same output. Each also states what its terms cannot
-cover.
+**Every absence claim below carries the search that produced it** — the runnable
+command, the revision it ran at, **each stage's exit status read on its own**,
+and a control arm that returns a non-empty result — because a search that finds
+nothing and a search that looks in the wrong place produce the same output, and
+a search whose first stage failed produces that output too. Each also states
+what its terms cannot cover.
 
 **One boundary is deliberately not crossed.** Where a record says what somebody
 did, that is taken as first-hand. Where the same record explains *why the system
@@ -325,19 +326,28 @@ it rather than asserting it.
 
 - **The only side-by-side comparison of the three carriers was written in order
   to remove two of them.** ADR-0025's Context table gives each carrier a row —
-  how the actor is reached, and its record. Searching the tracked Markdown under
-  `docs/` and `experiments/` at `9f39348`, the commit before the first removal,
-  for files naming all three carriers (`correction[ _-]channel|CorrectionChannel`
-  **and** `native[ _-](supervis|runtime)|swe-lab-supervisor` **and**
-  `segment(ed)?[ _-](loop|supervision)`, case-insensitive) returns exactly two
-  files, and neither compares them:
+  how the actor is reached, and its record. The search behind that sentence,
+  at `9f39348` — the commit before the first removal — is the intersection of
+  three `git grep -l` runs over the tracked Markdown, each exiting on its own:
+
+  ```sh
+  rev=9f39348; paths=("docs/*.md" "docs/**/*.md" "experiments/**/*.md")
+  git grep -lEi 'correction[ _-]channel|CorrectionChannel'            $rev -- "${paths[@]}" > a; echo $?   # 0, 19 files
+  git grep -lEi 'native[ _-](supervis|runtime)|swe-lab-supervisor'    $rev -- "${paths[@]}" > b; echo $?   # 0, 11 files
+  git grep -lEi 'segment(ed)?[ _-](loop|supervision)'                 $rev -- "${paths[@]}" > c; echo $?   # 0, 12 files
+  comm -12 a b | comm -12 - c
+  ```
+
+  `git grep -l` exits 1 when nothing matches, so each `echo $?` above tells a
+  real empty result from a broken invocation. The intersection is **two files**,
+  and neither compares the carriers:
   [`plans/README.md`](../trace-synthesis/plans/README.md), a task index, and
   [task 22](../trace-synthesis/plans/task-22-segmented-supervision-loop.md),
-  whose §9 lists the other two under *"Not touched"*. The same search at
-  `origin/main` returns seven, five of which are the removal PRs' own output.
-  **What this search cannot cover:** it is token-based, so a document that
-  compared the three without using any of those spellings would not appear in
-  it.
+  whose §9 lists the other two under *"Not touched"*. The same three commands at
+  `origin/main` intersect to **seven**, five of which are the removal PRs' own
+  output (ADR-0024, ADR-0025, ADR-0026, `releases/v0.3.7.md`, task 21) plus the
+  same two. **What this cannot cover:** it is token-based, so a document that
+  compared the three without any of those spellings would not appear in it.
 - **The surviving carrier has no design decision record of its own.** Task 22 §7
   is titled *"No ADR, and why not"*, and records that one was written and
   "dropped unwritten to `main` on the owner's 2026-09-03 ruling", because "the
@@ -352,11 +362,20 @@ it rather than asserting it.
   #412 is still open (`gh pr view 412`) and its 26 files live under
   `experiments/trace_synthesis/resume_loop_feasibility/` on that branch. Task 22
   §9 names that path as "still untouched and still true"; it is not on `main`.
-  Measured on the tree rather than the index, with a control arm, because a
-  mistyped path also returns nothing:
-  `git ls-tree -r --name-only origin/main | grep -c
-  '^experiments/trace_synthesis/resume_loop_feasibility/'` returns **0**, while
-  the same command for `streamjson_input/` returns **41**. And task 22's own
+  Measured on the tree rather than the index, in two stages rather than a
+  pipeline, because `grep -c` prints `0` and a pipeline's status is its last
+  command's — so a failed `ls-tree` and a genuine absence would look identical:
+
+  ```sh
+  tree=$(mktemp)
+  git ls-tree -r --name-only origin/main > "$tree"; echo $?                        # 0, 4890 paths
+  grep -c '^experiments/trace_synthesis/resume_loop_feasibility/' "$tree"; echo $? # 0,  exit 1
+  grep -c '^experiments/trace_synthesis/streamjson_input/'        "$tree"; echo $? # 41, exit 0
+  ```
+
+  `ls-tree` rather than `ls-files --with-tree`, which
+  [`evidence.md`](../evidence.md) records as unioning the tree with the current
+  index. And task 22's own
   acceptance — the bring-up run — is still ⬜ in the
   task index as of this date, so the only carrier in the tree has not yet
   completed the two acceptance points the owner set for it.
