@@ -27,9 +27,20 @@ Two kinds of sentence, kept apart on purpose:
   that document's own words being reported.
 - **Blockquotes marked *Inference* are mine**, derived from the records cited
   immediately above them. Nothing in one is evidence.
+- **Sentences marked *Relayed* come from outside the repository** — a
+  coordination message, not a record anybody else can open. This is the weakest
+  tier here and it is labelled rather than laundered into the first: a reader
+  who wants to check one has nowhere to go, and should know that before
+  believing it.
 
 A third form appears where it matters most: **"the record does not say."** Those
 are findings, not gaps in this write-up.
+
+**Every absence claim below carries the search that produced it** — the exact
+command, the revision it ran at, and a control arm that returns a non-empty
+result — because a search that finds nothing and a search that looks in the
+wrong place produce the same output. Each also states what its terms cannot
+cover.
 
 **One boundary is deliberately not crossed.** Where a record says what somebody
 did, that is taken as first-hand. Where the same record explains *why the system
@@ -291,7 +302,11 @@ are outside the pre-registered decision surface.
 ### The one that could have changed when the tree was cleaned: commit density
 
 One `git log` per carrier, available continuously from 2026-09-04. No models, no
-runs, nothing paid. Nobody read it as a signal until the owner ruled on 09-08.
+runs, nothing paid. The two dead carriers were removed on 2026-09-08, and both
+ADRs attribute that to the owner's ruling of that date — so five days separate
+the observation being available from the tree being cleaned. **What anybody read
+in between is not something this document can establish**, and it is not claimed
+here.
 
 > **Inference, and the part worth carrying forward.** This repo has strong
 > forcing functions for *evidence* — pre-registration, N-and-design labelling,
@@ -305,31 +320,52 @@ runs, nothing paid. Nobody read it as a signal until the owner ruled on 09-08.
 
 ## 7. What the record does not contain
 
-Three absences, each worth naming rather than filling.
+Three findings about what is missing, each carrying the search that establishes
+it rather than asserting it.
 
-- **There was never a written comparison of the three carriers before
-  2026-09-08.** ADR-0025's Context table is the first document in the repo that
-  puts all three side by side, and it was written in order to remove two of
-  them.
+- **The only side-by-side comparison of the three carriers was written in order
+  to remove two of them.** ADR-0025's Context table gives each carrier a row —
+  how the actor is reached, and its record. Searching the tracked Markdown under
+  `docs/` and `experiments/` at `9f39348`, the commit before the first removal,
+  for files naming all three carriers (`correction[ _-]channel|CorrectionChannel`
+  **and** `native[ _-](supervis|runtime)|swe-lab-supervisor` **and**
+  `segment(ed)?[ _-](loop|supervision)`, case-insensitive) returns exactly two
+  files, and neither compares them:
+  [`plans/README.md`](../trace-synthesis/plans/README.md), a task index, and
+  [task 22](../trace-synthesis/plans/task-22-segmented-supervision-loop.md),
+  whose §9 lists the other two under *"Not touched"*. The same search at
+  `origin/main` returns seven, five of which are the removal PRs' own output.
+  **What this search cannot cover:** it is token-based, so a document that
+  compared the three without using any of those spellings would not appear in
+  it.
 - **The surviving carrier has no design decision record of its own.** Task 22 §7
   is titled *"No ADR, and why not"*, and records that one was written and
   "dropped unwritten to `main` on the owner's 2026-09-03 ruling", because "the
-  acceptance for this task is a loop that runs." ADR-0025 (09-08) is the first
-  accepted record naming the segment loop as the carrier. That §7 exists is the
+  acceptance for this task is a loop that runs." Its design record stayed a plan
+  until ADR-0025 (09-08), whose Decision line makes it the carrier of record;
+  earlier ADRs name it, but as one of two Python carriers rather than as the
+  one (e.g. [ADR-0024](../decisions/ADR-0024-the-judge-is-not-told-what-the-supervisor-said.md),
+  *"The Python carriers — the A′ channel and the segmented loop"*). That §7 exists is the
   good practice in this story: it keeps "no ADR" from looking like "nobody
   thought about an ADR" afterwards.
 - **The surviving carrier's feasibility evidence is not in the repository.**
-  #412 is still open; its 26 files live under
+  #412 is still open (`gh pr view 412`) and its 26 files live under
   `experiments/trace_synthesis/resume_loop_feasibility/` on that branch. Task 22
-  §9 names that path as "still untouched and still true"; on `main` it does not
-  exist. And task 22's own acceptance — the bring-up run — is still ⬜ in the
+  §9 names that path as "still untouched and still true"; it is not on `main`.
+  Measured on the tree rather than the index, with a control arm, because a
+  mistyped path also returns nothing:
+  `git ls-tree -r --name-only origin/main | grep -c
+  '^experiments/trace_synthesis/resume_loop_feasibility/'` returns **0**, while
+  the same command for `streamjson_input/` returns **41**. And task 22's own
+  acceptance — the bring-up run — is still ⬜ in the
   task index as of this date, so the only carrier in the tree has not yet
   completed the two acceptance points the owner set for it.
 
-## 8. An adjacent case, in scope because it isolates the shape
+## 8. An adjacent case
 
-Not a carrier decision. Included for one reason: it is the same failure with the
-carrier question removed.
+Not a carrier decision. It is here because the carrier question is absent from
+it, which is what makes it useful; whether it is *the same* failure is argued at
+the end of this section and marked as inference, not asserted here.
 
 [`docs/releases/v0.3.2.md`](../releases/v0.3.2.md) records that a provider-named supervisor was
 deliberately deleted — "Nobody had chosen that: OpenRouter was convenient to
@@ -341,18 +377,28 @@ their own base URL could not use this at all" — at the cost of "a dataclass, a
 `functools.cache`d registry, a lookup function, an injectable probe and a custom
 exception to express two strings." #448 deleted it two days later.
 
-The attribution, as the workspace coordinator gave it and not softened here:
-**the implementer proposed it, the reviewer missed it, and the coordinator read
-it, endorsed it and merged it.** The owner's own verdict on the design was
-blunt and profane; it was relayed in a coordination message and is not in the
-repository, so it is reported here as relayed rather than cited.
+**What the record holds about how it got in.** #445's body ends
+`Pair: swelab-orkey-impl / swelab-orkey-review`, so both roles are named there.
+The review comment on #445 records `Verdict: LGTM` and, under `## Findings`,
+`None.` — a full review pass over the change that #448 would undo two days
+later, raising nothing. Both PRs are authored and merged under the one account
+this repository's agents commit as, so GitHub cannot tell the roles apart.
+
+> **Relayed.** The workspace coordinator states that beyond the pair, they read
+> the change, endorsed it and merged it, and asked for that to be recorded
+> without softening. Nothing in the repository distinguishes that from the
+> single-account merge above, so it is carried here at the weakest tier this
+> document has.
 
 > **Inference.** The carriers and the registry fail the same check, and it is
-> not a correctness check. Each was evidenced, tested and reviewed; none was
-> asked *does this need to exist?* This repo's gates are answerable — a test can
-> go red, a claim can be checked, a number can carry its N. "Could this not
-> exist" has no red state, and on 2026-09-06 and 2026-09-08 the person who
-> answered it was the owner, both times.
+> not a correctness check. Each was evidenced, tested and reviewed — #445's
+> review found nothing, and #449/#450 removed code whose tests were green —
+> and none of them was asked *does this need to exist?* This repo's gates are
+> answerable: a test can go red, a claim can be checked, a number can carry its
+> N. **"Could this not exist" has no red state**, so nothing surfaces it on a
+> schedule; in both of these cases the answer arrived as an owner ruling
+> (#448's body records the design as the owner's; ADR-0025 and ADR-0026 record
+> theirs), which is a channel, not a gate.
 
 ## 9. What changed as a result
 
