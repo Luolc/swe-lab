@@ -182,36 +182,50 @@ Steps (the agent drives all of it):
    link to it from the Release body rather than restating either.
 4. **Watch the publish run:** `gh run watch`. It answers exactly one
    question — *did the publish workflow succeed* — and nothing beyond it.
-5. **Confirm the package is on PyPI as its own step, and re-read rather than
-   conclude.** After step 4 has returned, read
-   <https://pypi.org/p/swe-lab> (or `https://pypi.org/pypi/swe-lab/json` for
-   the file list). **If the new version is not there, read again** — a first
-   miss is not a failed publish.
+5. **Confirm the package is on PyPI, as its own step.** After step 4 has
+   returned, read <https://pypi.org/p/swe-lab> (or
+   `https://pypi.org/pypi/swe-lab/json` for the file list). **Confirmed** means
+   the new version is listed **with both distribution files**, the wheel and
+   the sdist — `latest` alone is a weaker fact than the file list. Anything
+   else is **pending**, which is neither confirmed nor failed:
+   - **Re-read**, about a minute apart, for up to ten minutes. That bound is
+     **stated, not measured** (see below), so treat it as a convention rather
+     than a threshold fitted to anything.
+   - **If it converges, the release is done** and the earlier misses mean
+     nothing at all.
+   - **If the bound passes with the version still absent, stop and report it
+     unresolved.** Do not report a failed publish, and do not report a
+     successful one. Name the two possibilities that are still open and hand
+     over the evidence: the run id, the run's conclusion, and each read with
+     its wall-clock time. **Unresolved is a real outcome and this step exists
+     to make it reportable** — guessing between the two is the thing being
+     prevented, and a step that says "retry" without saying when to stop has
+     only moved the guess to whoever gets tired first.
 
 **Steps 4 and 5 are two facts on two clocks, and 5 must not be chained onto
 4's.** Measured 2026-09-08, releasing 0.3.7: the publish run exited 0, and a
 PyPI read issued *in the same command* as the workflow wait returned
-`latest: 0.3.6` with `0.3.7 files: []`; a separate read moments later returned
-`0.3.7` with both the wheel and the sdist. The publish had succeeded the whole
-time — the index had not caught up in those few seconds.
+`latest: 0.3.6` with `0.3.7 files: []`; a separate read afterwards returned
+`0.3.7` with both files. The publish had succeeded the whole time — the index
+had not caught up when the first read went out.
 
-The trap is not that the early read is wrong. It is that **`latest: 0.3.6` is
-the identical output under *the publish failed* and under *the index has not
-caught up yet***, so asking early turns a check into an observation that cannot
-separate the two — and one that still reads like a check, which is what stops
-anybody looking twice. Reporting a failed publish on it would have been a false
-report on good-looking evidence. The separate retrying step is what puts the
-difference back: an index lagging converges, and a publish that failed does
-not.
+**The interval between those two reads was not recorded.** So this measurement
+establishes that the lag exists and says nothing about how long it lasts, which
+is exactly why step 5's bound is stated rather than derived: there is no
+measured duration here to derive one from, and writing a number as though there
+were would be the same species of claim this step is about.
 
-Worth seeing beside the release note this rule came out of, because it is one
-defect on two axes. The v0.3.7 note first stated *silent* as a property of a
-removed name, when it was a property of **how a consumer reached it** — every
-direct reference raises, and only tolerant reads go quiet. This step stated
-*published* as a fact of one moment, when it spans **two clocks**. Both are
-observations shaped like checks that cannot tell two cases apart. The general
-form — and why the fix is a second arm that would read differently, not a
-stricter predicate — is in the
+The trap is not that the early read is wrong. It is that
+**`latest: <previous version>` is the identical output under *the publish
+failed* and under *the index has not caught up yet***, so asking early turns a
+check into an observation that cannot separate the two — and one that still
+reads like a check, which is what stops anybody looking twice. Reporting a
+failed publish on it would have been a false report on good-looking evidence.
+
+What restores the difference is not a stricter predicate but **elapsed time
+plus a defined pending state**: an index that is merely lagging converges, and
+a publish that failed does not. The general form — and why the fix is a second
+arm that would read differently rather than a tighter one — is in the
 [experiment playbook](experiments/playbook.md).
 
 **An uploaded file can never be replaced.** A distribution filename on PyPI is
