@@ -406,30 +406,6 @@ class CodingAgentTask(Task):
 # recorded number into a branch.
 OOM_METRIC = "sandbox.oom_kills"
 
-#: Set to 1.0 when a supervised run lost its supervisor part-way *and the reach
-#: of that loss cannot be named*. A metric rather than an observer field so that
-#: `rollout_outcome` stays readable from the run alone, exactly as the
-#: out-of-memory signal is.
-#:
-#: **No shipped carrier writes it today.** Its only writer was the correction
-#: channel's host-side observer, removed with that carrier (ADR-0026); the
-#: segment loop records an unbounded failure as a `gap` row in
-#: `supervisor.jsonl` and does not raise a metric. The name and the outcome word
-#: it selects stay because they are the run record's vocabulary, which is a
-#: contract this change was not asked to move — a carrier that can lose its
-#: supervisor sets this, and `rollout_outcome` already knows what to do with it.
-SUPERVISION_METRIC = "supervision.unhealthy"
-
-#: How many boundaries went unsupervised for a reason the policy *could* bound
-#: to them — a failed model call, a line the writer could not make usable. Each
-#: one is named in the supervisor's own log; this is the count a reader needs to
-#: weigh a run without opening it, and the reason it is not folded into
-#: `SUPERVISION_METRIC`: a run with named holes is still evidence, carrying
-#: them, while a run of unknown reach is not evidence at all. An event, so a run
-#: that had none leaves no key rather than a zero. Unwritten today for the
-#: reason given above.
-SUPERVISION_LAPSE_METRIC = "supervision.lapses"
-
 
 class RolloutOutcome(StrEnum):
   """What the rollout *stage* produced — the word that decides what follows.
@@ -466,14 +442,6 @@ class RolloutOutcome(StrEnum):
       the denominator like any unclassified ending, but it is **counted
       separately**, so an ending nobody could attribute is a number rather than
       silence inside :attr:`NO_PATCH` (ADR-0016).
-    SUPERVISION_FAILED: A supervised run lost its supervisor part-way, with no
-      bound on where. Ours, and its own word: a run that was meant to be
-      supervised and was not for an unknown part of its length is **not
-      evidence about supervision**, and pooling it with "supervised, and the
-      actor did not comply" would put our own breakage inside the very
-      comparison the supervision is being judged by. A run whose unsupervised
-      boundaries are each named — `SUPERVISION_LAPSE_METRIC` — does not land
-      here: it is evidence, and it carries the count.
   """
 
   OOM_KILLED = "oom_killed"
@@ -482,7 +450,6 @@ class RolloutOutcome(StrEnum):
   NO_PATCH = "no_patch"
   PATCH_PRODUCED = "patch_produced"
   UNCLASSIFIED = "unclassified"
-  SUPERVISION_FAILED = "supervision_failed"
 
   @property
   def ours(self) -> bool:
@@ -528,13 +495,12 @@ class RolloutOutcome(StrEnum):
     return self is RolloutOutcome.UNCLASSIFIED
 
 
-# The only two endings that are ours rather than the actor's. Kept beside the
-# enum, like `_RETRYABLE_OUTCOMES`, so the policy reads as one table.
+# The endings that are ours rather than the actor's. Kept beside the enum, like
+# `_RETRYABLE_OUTCOMES`, so the policy reads as one table.
 _OURS: frozenset[RolloutOutcome] = frozenset(
     {
         RolloutOutcome.OOM_KILLED,
         RolloutOutcome.SYSTEM_FAILED,
-        RolloutOutcome.SUPERVISION_FAILED,
     }
 )
 
@@ -556,11 +522,6 @@ def rollout_outcome(result: AttemptResult) -> RolloutOutcome:
   """
   if result.run.metrics.get(OOM_METRIC, 0.0) > 0.0:
     return RolloutOutcome.OOM_KILLED
-  if result.run.metrics.get(SUPERVISION_METRIC, 0.0) > 0.0:
-    # Before the wall clock on purpose: a stalled supervisor is one of the ways
-    # a supervised run reaches its timeout, and reporting that as `TIMED_OUT`
-    # would hand a budget the actor never got to spend back to the actor.
-    return RolloutOutcome.SUPERVISION_FAILED
   if result.run.status is RunStatus.TIMEOUT:
     return RolloutOutcome.TIMED_OUT
   if result.run.status is not RunStatus.SUCCESS:

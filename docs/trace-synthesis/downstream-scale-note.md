@@ -152,29 +152,36 @@ Adopt or overturn deliberately; each of these cost an argument.
   *your* breakage leaves it — the current, complete set is
   `RolloutOutcome`'s docstring
   ([`rollout.py`](../../src/swe_lab/rollout.py)), not reproduced here: a
-  partial copy of this enum has already gone stale twice in this note. The one
-  worth calling out by name for a **supervised** rollout at scale:
-  `SUPERVISION_FAILED` (the supervisor died mid-run) leaves the denominator
-  too — a run that was meant to be supervised and lost its supervisor partway
-  through is not evidence about supervision either way, and pooling it with a
-  genuine non-compliance would put our own breakage inside the comparison
-  supervision is being judged by. An unclassified ending stays, so it can only
-  understate a rate; the opposite default lets the excluded set grow
-  unwatched, in the direction that flatters results.
+  partial copy of this enum has already gone stale twice in this note.
+  **There is no supervision-specific word in it any more** — `SUPERVISION_FAILED`
+  was removed on 2026-09-08 with the carrier that was its only writer
+  ([ADR-0026](../decisions/ADR-0026-the-correction-channel-is-removed.md)) — so
+  a supervised run at scale is classified by exactly the same words as an
+  unsupervised one, and the supervision-specific exclusion is yours to make
+  (next bullet). An unclassified ending stays, so it can only understate a
+  rate; the opposite default lets the excluded set grow unwatched, in the
+  direction that flatters results.
   ([ADR-0015](../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md))
-- **`SUPERVISION_FAILED` has no writer today, and that is a change in your
-  favour and a gap in equal measure.** The channel's observer raised
-  `supervision.unhealthy` on a supervisor lost mid-run, and a transient upstream
-  failure therefore ended the whole rollout — at full scale, ordinary jitter
-  rendered as a visible exclusion rate that reads as **our pipeline being
-  unstable**. That observer went with the channel ([ADR-0026](../decisions/ADR-0026-the-correction-channel-is-removed.md)). The segment loop
-  bounds what it can: a failed judge call is a `lapse` row and the run continues.
-  What it does **not** do is raise the metric when a failure is unbounded — it
-  writes a `gap` row and continues too — so a run of unknown supervision reach
-  no longer leaves your denominator on its own. **Read
-  `supervisor.jsonl` for `gap` rows and exclude those runs yourself** until a
-  carrier raises the metric again; the classification in
-  [`rollout.py`](../../src/swe_lab/rollout.py) is intact and waiting for it.
+- **Excluding a run that lost its supervisor is now yours to do, and this is
+  the one thing in this note you have to build.** The channel's observer raised
+  `supervision.unhealthy` on a supervisor lost mid-run, `rollout_outcome` turned
+  that into `SUPERVISION_FAILED`, and the run left the denominator on its own.
+  A transient upstream failure therefore ended the whole rollout — at full
+  scale, ordinary jitter rendered as a visible exclusion rate reading as **our
+  pipeline being unstable**. All of it went on 2026-09-08 with the carrier
+  ([ADR-0026](../decisions/ADR-0026-the-correction-channel-is-removed.md)): the
+  observer, both metrics, the branch and the word.
+
+  What the segment loop gives you instead is **the account, not a verdict on
+  it**. A judge call it can bound is a `lapse` row and the run continues; a
+  failure it cannot bound is a `gap` row and the run continues too. So: **read
+  `supervisor.jsonl`, and exclude runs carrying a `gap` row yourself** — a gap
+  means nothing is known about the boundaries after it, which is exactly the run
+  that is not evidence about supervision. Lapse rows are the opposite and should
+  stay in: each names one boundary, so the run is evidence carrying a known
+  hole. Report the two counts alongside your rate, as the next bullet says. The
+  reason this is not shipped as a metric is that no carrier writes one today,
+  and shipping a name nothing produces is what ADR-0026 removed.
 - **Report every rate with its two counts** — how many runs were excluded as
   ours, and how many nobody could attribute:
   `resolved 12 / 40 (3 system failures excluded, 2 unclassified)`, never

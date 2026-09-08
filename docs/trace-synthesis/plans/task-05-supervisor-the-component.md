@@ -598,14 +598,24 @@ The gate arithmetic between them is unwrapped on purpose, and
 `test_a_break_in_the_policys_own_state_is_not_bounded` is what keeps it that
 way.
 
-**The count is consumed, not just recorded.** A lapse leaves the run's
-denominator containing a boundary nobody watched, so
-`SUPERVISION_LAPSE_METRIC` carries the count out of the log and into the run's
-metrics, which `run_task` copies verbatim into `AttemptRecord.metrics` — the
-path `SUPERVISION_METRIC` already takes, and where a reader of the outcome is
-standing. It stays separate from `SUPERVISION_METRIC`, which is the one that
-changes the outcome word. A count that lived only in `supervisor.jsonl` would
-be one more fact recorded and never read.
+**The count was consumed, not just recorded.** A lapse leaves the run's
+denominator containing a boundary nobody watched, so `SUPERVISION_LAPSE_METRIC`
+carried the count out of the log and into the run's metrics, which `run_task`
+copies verbatim into `AttemptRecord.metrics` — the path `SUPERVISION_METRIC`
+took, and where a reader of the outcome is standing. It stayed separate from
+`SUPERVISION_METRIC`, which was the one that changed the outcome word. A count
+that lives only in `supervisor.jsonl` is one more fact recorded and never read.
+
+> **Amended 2026-09-08** ([ADR-0026](../../decisions/ADR-0026-the-correction-channel-is-removed.md)).
+> Both metrics, the `rollout_outcome` branch and `RolloutOutcome.SUPERVISION_FAILED`
+> are gone: their only writer was the correction channel's observer, and a name
+> nothing can produce is not a contract. **The paragraph's own argument is why
+> this is a real loss rather than a tidy-up** — the count is back to living only
+> in `supervisor.jsonl`, which is precisely the shape it calls "recorded and
+> never read". The account still distinguishes a bounded `lapse` from an
+> unbounded `gap`, and `downstream-scale-note.md` now tells a consumer to read
+> those rows and do the exclusion themselves. Restoring the hop means a carrier
+> raising a metric and saying so.
 
 **Both hops are tested, and the second one had to be.** The observer's half is
 `test_a_bounded_lapse_is_counted_where_the_outcome_is_read`; the runner's half

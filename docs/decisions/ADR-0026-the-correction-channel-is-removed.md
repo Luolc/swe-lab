@@ -71,6 +71,7 @@ Removed, with the number of files that referenced each **before** the removal
 | `SUPERVISED_ROLLOUT`, `CONTROL_ROLLOUT`, their `_AND_UNIT_TEST` chains, their two registrations, `CONTROL_BUDGET`, `SUPERVISOR_TRANSPORT` | ~110 | 3 | the only shipped way to ask for the channel |
 | `tests/test_correction_channel.py`, `tests/test_task_17_read.py`, `tests/test_n_batching_replay_witness.py`, and the channel-only tests inside four other files | ~2,500 | — | tested only the removed carrier |
 | `experiments/trace_synthesis/n_batching_replay/replay.py` and `analyze.py` | 1,534 | — | the drivers; see below |
+| `SUPERVISION_METRIC`, `SUPERVISION_LAPSE_METRIC`, `RolloutOutcome.SUPERVISION_FAILED` and the branch that read them | ~40 | 4 | see below — the channel's observer was their only writer |
 
 **Kept, and worth naming, because each looks removable and is not:**
 
@@ -91,12 +92,6 @@ Removed, with the number of files that referenced each **before** the removal
   value a test can compare the shipped segmented plan's default against — a
   later re-read of the environment answers a different question. Its comment now
   names that reader.
-- `SUPERVISION_METRIC`, `SUPERVISION_LAPSE_METRIC` and
-  `RolloutOutcome.SUPERVISION_FAILED`. **Nothing writes them now** — their only
-  writer was the channel's observer — and they are kept anyway, because the run
-  record's vocabulary is a contract this change was not asked to move (the
-  `AGENTS.md` *Ask first* list). Their docstrings say plainly that no shipped
-  carrier raises them, so a reader does not take the branch for a live signal.
 
 `SpeakAt` and `NeverSpeak` were also the stand-ins three test files used to
 drive a carrier without a model behind it. They did not vanish; they moved to
@@ -125,11 +120,26 @@ happened, and deleting a driver does not unmake them. Its README gains one
 dated line saying the driver went and the recorded results stand, so the next
 reader is not left wondering whether they were retracted.
 
-### Delete the metrics and the outcome word with their writer
+### Keep the metrics and the outcome word, since the run record is *ask first*
 
-Not taken, and it is the one thing here that was scoped out rather than argued
-down — see *Kept* above. If a later change wants the vocabulary narrowed, it is
-a report-contract decision and belongs to the owner.
+**Proposed, and rejected on 2026-09-08 by the workspace coordinator**, whose
+call this was; the reasoning is theirs and is recorded because it draws a line
+that will be needed again:
+
+- The owner has already ruled that everything outside the segment-loop route
+  goes. These three are artifacts of the carrier being removed, and keeping them
+  *because the report contract is ask-first* would be the exact reflex the
+  ruling is against — leaving dead surface standing so nobody has to decide.
+- **The *Ask first* line exists to stop us changing the shape of records
+  consumers read.** Nothing can produce these any more, so no record will ever
+  contain them again. An enum member that can never be emitted is not a
+  contract, it is a name.
+- The mechanism that protects a consumer is the **release note's list of
+  downstream-visible removals**, which these three are on — not an unremovable
+  constant.
+
+If the owner disagrees, three lines come back, which is cheaper than carrying
+dead vocabulary indefinitely.
 
 ## Consequences
 
@@ -155,14 +165,22 @@ a report-contract decision and belongs to the owner.
   `test_a_forged_criterion_cannot_build_the_policy` pins the rejection. What is
   no longer claimed is *when*. The spec and the task index are reworded in this
   PR rather than left carrying the stronger sentence.
-- **Nothing reads a lapse count or a gap out of a run record any more.** The
-  spec's *a lapse is counted where the outcome is read; a gap excludes the run*
-  was true of the channel's observer, which raised `supervision.lapses` and
-  `supervision.unhealthy` onto the run's metrics. Both kinds of row are still
-  written to `supervisor.jsonl` and are still told apart there — that half keeps
-  its tests, and gained one. The **counting** half is downgraded in the spec to
-  what it now is: intended, not enforced. Restoring it means the segment loop
-  raising those metrics, which is a change nobody has asked for.
+- **Nothing reads a lapse count or a gap out of a run record any more, and the
+  names for doing so are gone.** The spec's *a lapse is counted where the
+  outcome is read; a gap excludes the run* was true of the channel's observer,
+  which raised `supervision.lapses` and `supervision.unhealthy`. Both kinds of
+  row are still written to `supervisor.jsonl` and are still told apart there —
+  that half keeps its tests, and gained one. The **counting** half is deleted
+  rather than downgraded: `SUPERVISION_METRIC`, `SUPERVISION_LAPSE_METRIC`, the
+  `rollout_outcome` branch that read the first, and
+  `RolloutOutcome.SUPERVISION_FAILED` all go. A carrier that wants the behaviour
+  back adds a metric and a word for it, and says in that change what writes them.
+- **`RolloutOutcome` is six words again**, and `_OURS` is two. The ordering the
+  removed branch enforced — an unbounded supervision failure outranks a spent
+  wall clock — is not silently lost: the remaining ordering it belonged to (an
+  OOM kill outranks a timeout) is pinned by
+  `test_an_out_of_memory_kill_outranks_a_spent_wall_clock`, which names the
+  third cause in its docstring as the thing that used to sit between them.
 - **`ClaudeCodeHarness` has one supervision field**, so the mutual-exclusion
   refusal in `__post_init__` is gone with the pair it refused.
 - **The `no-stale-module-refs` hook gained the removed names**, so

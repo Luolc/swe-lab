@@ -19,7 +19,6 @@ import pytest
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.swebench_pro.unit_test import SweBenchProVerdict
 from swe_lab.evaluation.verdict import UnitTestSpec
-from swe_lab.rollout import SUPERVISION_LAPSE_METRIC
 from swe_lab.sandbox import (
     ArtifactSchema,
     Contribution,
@@ -243,18 +242,20 @@ def test_a_metric_an_observer_contributes_reaches_the_persisted_record(
   from the live result, so a test built on an in-memory ``AttemptResult`` stays
   green while the record loses the number.
 
-  Driven with ``supervision.lapses`` because that metric changes no outcome
-  word — the record *is* its only consumer, so this hop is the whole of it.
+  Driven with a name no branch reads, so the record *is* its only consumer and
+  this hop is the whole of it. (It used to be ``supervision.lapses``, which had
+  that property until ADR-0026 removed the metric outright.)
   """
-  task = _MetricProducer(metric=SUPERVISION_LAPSE_METRIC)
+  metric = "probe.observations"
+  task = _MetricProducer(metric=metric)
   outcome, store, _ = _run(tmp_path, task)
 
   assert outcome.outcome is TaskOutcome.SUCCEEDED
   assert outcome.record is not None
-  assert outcome.record.metrics[SUPERVISION_LAPSE_METRIC] == 2.0
+  assert outcome.record.metrics[metric] == 2.0
   # …and on the shard as it was written, not only on the object in hand.
   shards = store.read_manifest("sw", "acme__widget-1", 0, task="probe")
-  assert [s.metrics[SUPERVISION_LAPSE_METRIC] for s in shards] == [2.0]
+  assert [s.metrics[metric] for s in shards] == [2.0]
 
 
 def test_a_missing_required_output_fails_the_attempt(tmp_path: Path):

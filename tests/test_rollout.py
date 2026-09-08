@@ -30,7 +30,6 @@ from swe_lab.rollout import (
     PROMPT_NAME,
     rollout_outcome,
     RolloutOutcome,
-    SUPERVISION_METRIC,
 )
 from swe_lab.sandbox import (
     ArtifactSchema,
@@ -446,45 +445,23 @@ def test_the_unclassified_count_is_reportable_apart_from_the_excluded_one():
   assert RolloutOutcome.SYSTEM_FAILED.unclassified is False
 
 
-def test_a_run_that_lost_its_supervisor_is_not_evidence_about_supervision():
-  """A lost supervisor has to reach the outcome word, or it is decoration.
-
-  A supervisor that dies part-way leaves the rest of the run unjudged while the
-  run itself looks complete, so the loss has to be visible in the word the run
-  reports. Recording it in a field nothing reads would make it a fact with no
-  branch — the shape ADR-0015 exists to prevent.
-
-  **No shipped carrier raises this metric today** (ADR-0026), so the metric is
-  set here rather than produced: what is pinned is the *classification*, which
-  is this module's own, and not that anything currently sets it. That is stated
-  at :data:`~swe_lab.rollout.SUPERVISION_METRIC` too, so a reader does not take
-  a green test for a live signal.
-  """
-  task = CodingAgentTask(harness=ClaudeCodeHarness())
-  lost = _attempt(AgentOutcome.FINISHED)
-  lost.run.metrics[SUPERVISION_METRIC] = 1.0
-  assert rollout_outcome(lost) is RolloutOutcome.SUPERVISION_FAILED
-  # Ours, so it leaves the denominator and does not pay for a grading
-  # container: the run cannot answer the question it was run to answer.
-  assert rollout_outcome(lost).ours is True
-  assert rollout_outcome(lost).counts_in_denominator is False
-  assert task.outputs_valid(lost) is False
-  # Its own word, kept apart from the two it would otherwise hide inside.
-  assert rollout_outcome(lost) is not RolloutOutcome.SYSTEM_FAILED
-  assert rollout_outcome(lost) is not RolloutOutcome.NO_PATCH
-
-
-def test_a_stalled_supervisor_is_not_reported_as_a_budget_the_actor_spent():
+def test_an_out_of_memory_kill_outranks_a_spent_wall_clock():
   """Order matters where two causes co-occur.
 
-  A supervised run whose supervisor stalls reaches its wall clock, so both
-  signals are true at once. `TIMED_OUT` is the actor's by ADR-0011 — it spent
-  a budget it was handed — and a run that hung on our side was handed no such
-  budget.
+  A run killed for memory usually also reaches its timeout, so both signals are
+  true at once. `TIMED_OUT` is the actor's by ADR-0011 — it spent a budget it
+  was handed — while an OOM kill is ours and explains the timeout, so the OOM
+  has to be read first. The control arm is the same attempt without the OOM
+  metric, which must give the other answer.
+
+  (Until ADR-0026 a third cause sat between these two: a supervised run whose
+  supervisor was lost raised `supervision.unhealthy` and outranked the wall
+  clock for the same reason. Its only writer went with the correction channel,
+  and the metric and its outcome word went with it.)
   """
-  stalled = _attempt(AgentOutcome.FINISHED, status=RunStatus.TIMEOUT)
-  stalled.run.metrics[SUPERVISION_METRIC] = 1.0
-  assert rollout_outcome(stalled) is RolloutOutcome.SUPERVISION_FAILED
-  # …and an out-of-memory kill still outranks it: it explains the stall too.
-  stalled.run.metrics[OOM_METRIC] = 1.0
-  assert rollout_outcome(stalled) is RolloutOutcome.OOM_KILLED
+  timed_out = _attempt(AgentOutcome.FINISHED, status=RunStatus.TIMEOUT)
+  assert rollout_outcome(timed_out) is RolloutOutcome.TIMED_OUT
+
+  killed = _attempt(AgentOutcome.FINISHED, status=RunStatus.TIMEOUT)
+  killed.run.metrics[OOM_METRIC] = 1.0
+  assert rollout_outcome(killed) is RolloutOutcome.OOM_KILLED
