@@ -180,8 +180,39 @@ Steps (the agent drives all of it):
    the tag **and** the Release, which triggers `publish.yml`. The generated
    notes are the exhaustive PR list; the in-repo note is the curated one, so
    link to it from the Release body rather than restating either.
-4. Watch the run (`gh run watch`) and confirm the new version appears at
-   <https://pypi.org/p/swe-lab>.
+4. **Watch the publish run:** `gh run watch`. It answers exactly one
+   question — *did the publish workflow succeed* — and nothing beyond it.
+5. **Confirm the package is on PyPI as its own step, and re-read rather than
+   conclude.** After step 4 has returned, read
+   <https://pypi.org/p/swe-lab> (or `https://pypi.org/pypi/swe-lab/json` for
+   the file list). **If the new version is not there, read again** — a first
+   miss is not a failed publish.
+
+**Steps 4 and 5 are two facts on two clocks, and 5 must not be chained onto
+4's.** Measured 2026-09-08, releasing 0.3.7: the publish run exited 0, and a
+PyPI read issued *in the same command* as the workflow wait returned
+`latest: 0.3.6` with `0.3.7 files: []`; a separate read moments later returned
+`0.3.7` with both the wheel and the sdist. The publish had succeeded the whole
+time — the index had not caught up in those few seconds.
+
+The trap is not that the early read is wrong. It is that **`latest: 0.3.6` is
+the identical output under *the publish failed* and under *the index has not
+caught up yet***, so asking early turns a check into an observation that cannot
+separate the two — and one that still reads like a check, which is what stops
+anybody looking twice. Reporting a failed publish on it would have been a false
+report on good-looking evidence. The separate retrying step is what puts the
+difference back: an index lagging converges, and a publish that failed does
+not.
+
+Worth seeing beside the release note this rule came out of, because it is one
+defect on two axes. The v0.3.7 note first stated *silent* as a property of a
+removed name, when it was a property of **how a consumer reached it** — every
+direct reference raises, and only tolerant reads go quiet. This step stated
+*published* as a fact of one moment, when it spans **two clocks**. Both are
+observations shaped like checks that cannot tell two cases apart. The general
+form — and why the fix is a second arm that would read differently, not a
+stricter predicate — is in the
+[experiment playbook](experiments/playbook.md).
 
 **An uploaded file can never be replaced.** A distribution filename on PyPI is
 project + version + distribution type, and PyPI refuses to reuse one even after
