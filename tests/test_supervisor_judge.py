@@ -1298,7 +1298,7 @@ def test_the_located_deviation_is_read_without_coercion() -> None:
 
 
 def test_a_default_judges_verdict_carries_no_located_deviation() -> None:
-  """An A′ verdict reports absence, not a number nobody asked for."""
+  """A judge that was not asked reports absence, not a number."""
   verdict = ModelJudge(
       model="m", transport=RecordingTransport(answers=[OFF_TRACK_JSON])
   )(observation(), load_criterion())

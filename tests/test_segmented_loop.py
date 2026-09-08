@@ -600,7 +600,7 @@ def test_segmented_rows_retain_valid_silent_and_speaking_verdicts():
 
 
 def test_segmented_decision_rows_distinguish_both_guidebook_modes():
-  """The second carrier must expose the same compatibility split."""
+  """A guided run's rows say which representation the prompts consumed."""
   legacy = "# Guidebook — legacy\n\n## Stage 1 — inspect\n"
   rubric = (
       "# Guidebook — current\n\n"
@@ -727,7 +727,7 @@ def test_a_resumed_segment_records_that_the_seam_fabricated_a_record():
 
 
 def test_a_policy_lapse_is_bounded_to_its_seam_and_the_run_goes_on():
-  """A named hole, and the next seam is judged normally — as in A′."""
+  """A named hole, and the next seam is judged normally."""
 
   @dataclass
   class LapsingOnce:
@@ -964,7 +964,7 @@ def test_every_decision_row_says_which_upstream_the_run_was_pointed_at():
 
 
 def test_segmented_decision_rows_record_said_visibility_count_and_digest():
-  """The second carrier records the same three issue-#381 fields."""
+  """A decision row carries the three issue-#381 fields."""
 
   def judge(observation: Observation, criterion: Criterion) -> Verdict:
     del criterion
@@ -1020,7 +1020,7 @@ def test_segmented_decision_rows_record_said_visibility_count_and_digest():
 
 
 def test_a_segmented_judge_lapse_row_still_carries_the_request_and_digest():
-  """The second carrier records the request on a lapse row too."""
+  """A lapse row carries the request behind it, like any other."""
   payloads: list[dict[str, Any]] = []
 
   def transport(payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -1099,7 +1099,7 @@ def test_a_segmented_lapse_whose_transport_raised_still_carries_the_request():
 
 
 def test_segmented_rows_without_a_request_carry_neither_request_field():
-  """The second carrier writes no request on a row that had none behind it.
+  """A row with no request behind it carries neither request field.
 
   Two such rows: a policy that makes no model call (``SilentPolicy``, the
   silent row), and an unjudged seam — a segment that produced no actor
@@ -1157,7 +1157,7 @@ def test_segmented_rows_without_a_request_carry_neither_request_field():
 
 
 def test_a_segmented_writer_lapse_row_keeps_the_valid_verdicts_request():
-  """The second carrier keeps the judge's request on a writer-caused lapse."""
+  """A writer-caused lapse keeps the judge's request and its verdict."""
   payloads: list[dict[str, Any]] = []
 
   def transport(payload: Mapping[str, Any]) -> dict[str, Any]:
