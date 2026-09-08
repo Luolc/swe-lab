@@ -654,13 +654,14 @@ class ModelWriter:
       anyway by
       :data:`~swe_lab.trace_synthesis.supervisor.MAX_INTERVENTION_CHARS`. What
       is not: six calls put no upper bound on a distribution whose judge
-      counterpart is model- and provider-dependent, and no run artifact
-      records a writer call's ``finish_reason`` or usage at all — a writer
+      counterpart is model- and provider-dependent, and outside that replay a
+      writer call's ``finish_reason`` and usage are recorded nowhere — a run's
+      ``supervisor.jsonl`` carries the spoken text alone, and a writer
       truncated by its budget raises ``PolicyLapseError`` without the
-      ``finish_reason`` the judge branch carries, so the record could not tell
-      that failure apart from an unusable answer. 16384 buys margin against an
-      unobservable failure at the price of nothing on the common case, by the
-      same argument as the judge's.
+      ``finish_reason`` the judge branch carries, so that record could not tell
+      the truncation apart from an unusable answer. 16384 buys margin against a
+      failure that would go unseen, at the price of nothing on the common case,
+      by the same argument as the judge's.
     calls: What answered each request, in order.
     instructions: Optional system instructions for writing prompt variants.
       ``None`` preserves the guided or unguided default.
