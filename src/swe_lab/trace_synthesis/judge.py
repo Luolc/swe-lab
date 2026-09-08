@@ -9,9 +9,11 @@ Every guarantee stated here has an attack test that must fail — a claim withou
 one is downgraded rather than written, because a guarantee that has not been
 attacked is a wish (see the experiment playbook's entry on guards).
 
-- **Startup refuses unusable artifacts.** :func:`supervising_policy` loads the
+- **Startup refuses a missing artifact.** :func:`supervising_policy` loads the
   pinned criterion while the run is assembled, and the guidebook-guided harness
-  validates its phase-B artifact before the first actor script is launched.
+  refuses to launch the first actor script with no phase-B artifact at all. Its
+  *shape* is measured, never gated (ADR-0027): an imperfect guidebook is
+  supervision material, an absent one is no supervision.
 - **The judge prompts with the criterion it was handed**, not one it fetches
   for itself — the layer above hand-off, which the policy cannot enforce.
   ``test_the_judge_prompts_with_the_criterion_it_was_handed``.

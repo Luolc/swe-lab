@@ -1,9 +1,14 @@
-"""The guidebook schema shared by phase B writers and phase C readers.
+"""The guidebook schema: what phase B measures, and what phase C reads.
 
 A guidebook is Markdown with two representations: a detailed tutorial for a
-blind actor and a compact rubric for the Supervisor. New phase-B output must
-contain both. Phase C also accepts a tutorial-only artifact from a supported
-legacy resume, while any rubric that is present must contain every field.
+blind actor and a compact rubric for the Supervisor. Phase B asks for both.
+
+**The schema gates nothing** (ADR-0027). :func:`validate_guidebook` is how
+phase B *measures* what the Oracle wrote — the result is a metric and a
+record field — and phase C reads whichever representation the artifact
+carries (:func:`guidebook_context_mode`) without validating it. A guidebook
+that fails the label check is used, and the fact that it failed is recorded
+beside the run that used it.
 
 The schema is deliberately light. It checks the presence of the tutorial's
 stage fields and the rubric's supervisor-facing fields; whether their content
@@ -53,8 +58,13 @@ _FIELD_PATTERNS = {name: _field_pattern(name) for name in STAGE_FIELDS}
 _RUBRIC_FIELD_PATTERNS = {name: _field_pattern(name) for name in RUBRIC_FIELDS}
 
 
-class GuidebookRejectedError(RuntimeError):
-  """Raised when a guidebook-guided run lacks a usable guidebook."""
+class GuidebookMissingError(RuntimeError):
+  """Raised when a guidebook-guided run has no guidebook at all.
+
+  Absence, not shape (ADR-0027): a guided run whose guidebook never arrived is
+  an unguided run wearing a guided run's entry key, and the 2×2 reading of
+  blind versus guided verdicts would count it as the latter.
+  """
 
 
 def extract_guidebook_rubric(text: str) -> str | None:
@@ -90,18 +100,20 @@ def guidebook_context_mode(text: str | None) -> str | None:
   return GUIDEBOOK_CONTEXT_LEGACY
 
 
-def validate_guidebook(text: str, *, require_rubric: bool = False) -> list[str]:
-  """Check a guidebook's structure; return every problem found.
+def validate_guidebook(text: str) -> list[str]:
+  """Measure a guidebook's structure; return every problem found.
+
+  The rubric is required unconditionally — the one caller is phase B, whose
+  output contract includes it. There is no lenient mode: the legacy read path
+  ADR-0021 opened is :func:`guidebook_context_mode`'s, and since ADR-0027
+  phase C does not validate at all, so a flag for it would have no caller.
 
   Args:
     text: The guidebook Markdown.
-    require_rubric: Whether absence of the compact rubric is an error. Phase B
-      sets this for new output; phase C leaves it false for legacy resume.
 
   Returns:
     Human-readable problems, one per missing piece, in document order. Empty
-    means the guidebook has at least one complete stage and, when required or
-    present, one complete rubric.
+    means the guidebook has at least one complete stage and a complete rubric.
   """
   headings = list(_STAGE_HEADING.finditer(text))
   problems: list[str] = []
@@ -118,26 +130,9 @@ def validate_guidebook(text: str, *, require_rubric: bool = False) -> list[str]:
 
   rubric = extract_guidebook_rubric(text)
   if rubric is None:
-    if require_rubric:
-      problems.append("missing the '## Supervisor rubric' section")
+    problems.append("missing the '## Supervisor rubric' section")
   else:
     for name, pattern in _RUBRIC_FIELD_PATTERNS.items():
       if pattern.search(rubric) is None:
         problems.append(f"supervisor rubric: missing the '{name}' field")
   return problems
-
-
-def require_valid_guidebook(text: str) -> None:
-  """Reject a missing or structurally invalid guidebook.
-
-  Args:
-    text: The phase-B artifact about to be handed to phase C.
-
-  Raises:
-    GuidebookRejectedError: The artifact is missing or fails its schema check.
-  """
-  problems = validate_guidebook(text)
-  if problems:
-    raise GuidebookRejectedError(
-        "guidebook rejected before actor start: " + "; ".join(problems)
-    )

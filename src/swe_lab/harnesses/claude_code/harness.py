@@ -564,15 +564,30 @@ class ClaudeCodeHarness(Harness):
 
     Returns:
       The last segment's outcome, which is the run's.
+
+    Raises:
+      GuidebookMissingError: This run is guidebook-guided and the artifact is
+        absent or empty. Its *shape* is not checked here (ADR-0027) — only
+        that supervision has something to read.
     """
     assert self.segmented is not None
 
     guidebook: str | None = None
     if self.segmented.guidebook_name is not None:
-      from swe_lab.trace_synthesis.guidebook import require_valid_guidebook
+      from swe_lab.trace_synthesis.guidebook import GuidebookMissingError
 
       guidebook = read_text(sb, self.segmented.guidebook_name)
-      require_valid_guidebook(guidebook)
+      # Presence, and nothing else. The schema check that used to stand here
+      # was a gate on the Oracle's prose, and it blocked a usable guidebook
+      # over a label (ADR-0027); what is left is the fact that no supervision
+      # is possible at all without an artifact, which would silently make
+      # this the second blind run of the pair.
+      if not guidebook.strip():
+        raise GuidebookMissingError(
+            "no guidebook before actor start:"
+            f" {self.segmented.guidebook_name!r} is absent or empty, so a"
+            " guided run would be an unguided one under a guided key"
+        )
       _ = sb.run_command(
           f'rm -f -- "${WORKSPACE_ENV}"/'
           f"{shlex.quote(self.segmented.guidebook_name)}",

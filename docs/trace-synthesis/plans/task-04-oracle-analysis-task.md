@@ -2,6 +2,22 @@
 
 **Status lives in [`README.md`](README.md).** This file is the design.
 
+> [!NOTE]
+> **Three things below were changed on 2026-09-08 by
+> [ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)**
+> (the owner's ruling), and this file is the design record of what was built
+> before it — read those passages as history, and the ADR for what is true
+> now: ① the brief **branches on the graded verdict**, since the chain runs
+> phase B whatever the blind attempt did; a passed attempt is read for the
+> steps that were *guessed rather than derived*, and there is no refusal
+> path. ② the schema is a **metric, not a gate**: `outputs_valid` no longer
+> requires a valid guidebook, and phase C's pre-actor validation is gone
+> (only absence is still refused). ③ `should_retry` keeps **no schema
+> clause** — an imperfect guidebook is what the model wrote, not bad luck.
+> The `guidebook.present` / `guidebook.valid` / `guidebook.stages` metrics
+> and the `guidebook_problems` record field are unchanged, and are now the
+> whole of what the check does.
+
 ## What it is
 
 Phase B of the [spec](../spec.md#phase-b--the-oracle) as a `Task`
@@ -119,7 +135,7 @@ genuinely derivable is a reader's judgement, per the spec.
 
 | Acceptance (from the index) | State |
 |---|---|
-| schema validation rejects a guidebook with a stage missing its `justification` | ✅ `test_a_stage_missing_its_justification_is_rejected`, and at task level `test_a_guidebook_missing_a_justification_fails_the_attempt` |
+| schema validation names a guidebook with a stage missing its `justification` | ✅ `test_a_stage_missing_its_justification_is_named`, and at task level `test_a_guidebook_missing_a_justification_is_measured_and_kept`. **Both were renamed with [ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)**, which is also why the acceptance reads *names* rather than *rejects*: the finding is recorded and the guidebook is used |
 | the task declares `guidebook.md` as an output | ✅ required, `test_the_guidebook_is_the_declared_required_output` |
 | the purge-off configuration is explicit rather than incidental | ✅ the named test above |
 | unit tests for the schema | ✅ |

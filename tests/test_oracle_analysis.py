@@ -105,14 +105,34 @@ class _LocalFakeSandbox(FakeSandbox):
 
 
 def _failure(
-    underlying: _Underlying | None = None, *, patch_base_ref: str | None = None
+    underlying: _Underlying | None = None,
+    *,
+    patch_base_ref: str | None = None,
+    verdict: object | None = None,
 ) -> OracleFailureInstance:
+  """Stage one attempt, failed by default.
+
+  Args:
+    underlying: The instance the record delegates to.
+    patch_base_ref: The recorded pre-agent baseline, when there is one.
+    verdict: What the record's verdict column holds. The default is the
+      failed verdict every `oracle_failures` row carries; a caller passes
+      ``{"resolved": True, ...}`` for the arm where the blind attempt passed,
+      or something unusable for the arm where nobody can tell.
+
+  Returns:
+    The record.
+  """
   return OracleFailureInstance(
       dataset="fake",
       instance_id="acme__widget-1",
       rollout_id=0,
       conversation=CONVERSATION.model_dump_json(),
-      verdict=json.dumps({"resolved": False, "summary": {"missing": ["t::b"]}}),
+      verdict=json.dumps(
+          {"resolved": False, "summary": {"missing": ["t::b"]}}
+          if verdict is None
+          else verdict
+      ),
       patch="diff --git a/x b/x\n+wrong\n",
       provenance="{}",
       instance=underlying or _Underlying(),
@@ -145,7 +165,10 @@ def _task() -> OracleAnalysisTask:
 
 
 def _execute(
-    tmp_path: Path, *, guidebook: str | None = None
+    tmp_path: Path,
+    *,
+    guidebook: str | None = None,
+    instance: OracleFailureInstance | None = None,
 ) -> tuple[AttemptResult, _LocalFakeSandbox, Path]:
   workspace = tmp_path / "ws"
   if guidebook is not None:
@@ -154,7 +177,10 @@ def _execute(
     (workspace / GUIDEBOOK_NAME).write_text(guidebook)
   sandbox = _LocalFakeSandbox(spec=SPEC, workspace=epath.Path(workspace))
   result = _task().execute(
-      sandbox, _failure(), output_dir=tmp_path / "out", timeout=60.0
+      sandbox,
+      instance or _failure(),
+      output_dir=tmp_path / "out",
+      timeout=60.0,
   )
   return result, sandbox, workspace
 
@@ -312,16 +338,98 @@ def test_the_brief_carries_the_task_statement_whole_and_names_the_files(
     assert f"**{field}.**" in brief
 
 
-def test_default_oracle_instructions_are_pinned(
-    tmp_path: Path,
-) -> None:
-  """Pin the complete rubric-aware request rather than only its builder."""
-  _, _, workspace = _execute(tmp_path)
+# ─── the brief branches on the verdict, and only on the verdict ──────────────
 
-  assert hashlib.sha256(
-      (workspace / "prompt.txt").read_bytes()
-  ).hexdigest() == (
-      "ce10aa9d12b4b9a4b24580d3ba2f55f3cdfdf26ba1ab87abf0808f51c26f78c5"
+
+def test_a_failed_attempt_gets_the_brief_that_diagnoses_it(tmp_path: Path):
+  # The control arm of the test below: same task, same files, opposite
+  # verdict — and the two briefs must not be the same document.
+  _, _, workspace = _execute(tmp_path)
+  brief = (workspace / PROMPT_NAME).read_text()
+
+  assert "attempted the task below and failed its graded" in brief
+  assert "**Diagnose before you write.**" in brief
+  assert "decision at which the attempt went wrong" in brief
+  assert "**Make the failing stage a decision, not a formality.**" in brief
+  # …and it never tells an Oracle that a run which failed passed.
+  assert "passed its graded" not in brief
+  assert "**This attempt passed.**" not in brief
+  assert "guessed rather than derived" not in brief
+
+
+def test_a_passed_attempt_gets_the_brief_that_finds_the_guesswork(
+    tmp_path: Path,
+):
+  """A run that passed is analysed, not narrated as a failure.
+
+  Run r1 of the from-scratch chain passed its graded tests, was briefed as a
+  failure anyway, and its Oracle stopped to ask an operator who was not there
+  — 900 s of agent time and no guidebook. The brief now says what happened,
+  and asks for the steps that were guessed rather than derived.
+  """
+  passed = _failure(verdict={"resolved": True, "summary": {"missing": []}})
+
+  _, _, workspace = _execute(tmp_path, instance=passed)
+  brief = (workspace / PROMPT_NAME).read_text()
+
+  assert "attempted the task below and passed its graded" in brief
+  assert "**This attempt passed.**" in brief
+  assert "guessed rather than derived" in brief
+  assert "**Find what was guessed, not what went wrong.**" in brief
+  assert "**Make the guessed step a decision, not a formality.**" in brief
+  # …and nothing left over from the failure brief invents a failure.
+  assert "failed its graded" not in brief
+  assert "decision at which the attempt went wrong" not in brief
+  assert "**Diagnose before you write.**" not in brief
+  # The job is still a guidebook — there is no refusal path in either brief.
+  assert f"write\n**`{GUIDEBOOK_NAME}`**" in brief
+
+
+def test_an_unreadable_verdict_stops_the_run_instead_of_guessing(
+    tmp_path: Path,
+):
+  # Which brief to write is a claim about what happened. With no `resolved`
+  # to read, both briefs would state something nobody established — so the
+  # attempt fails in the workspace, before the agent is launched, and says
+  # what it could not read.
+  unreadable = _failure(verdict={"summary": {"missing": ["t::b"]}})
+
+  result, sandbox, _ = _execute(tmp_path, instance=unreadable)
+
+  assert result.run.status is not RunStatus.SUCCESS
+  assert AGENT_SCRIPT_NAME not in sandbox.scripts
+
+
+# The two default briefs, by digest of the complete model request.
+_FAILED_BRIEF_SHA = (
+    "f9cfb7340e31e91b2046b57a025019f80337dfbacfaccfbc362bf24cf7b73c51"
+)
+_PASSED_BRIEF_SHA = (
+    "bb34948b9f48b151114baa3ec524eb333869c81525139ceac4a4844ce71c0493"
+)
+
+
+@pytest.mark.parametrize(
+    ("resolved", "digest"),
+    [(False, _FAILED_BRIEF_SHA), (True, _PASSED_BRIEF_SHA)],
+)
+def test_default_oracle_instructions_are_pinned(
+    tmp_path: Path, resolved: bool, digest: str
+) -> None:
+  """Pin the complete rubric-aware request rather than only its builder.
+
+  Both briefs, because both are defaults now: an edit that quietly rewrites
+  the branch nobody has run yet is the one nothing else would catch.
+  """
+  instance = _failure(
+      verdict={"resolved": resolved, "summary": {"missing": []}}
+  )
+
+  _, _, workspace = _execute(tmp_path, instance=instance)
+
+  assert (
+      hashlib.sha256((workspace / "prompt.txt").read_bytes()).hexdigest()
+      == digest
   )
 
 
@@ -440,6 +548,8 @@ def test_a_written_guidebook_is_collected_and_the_attempt_is_valid(
 
 
 def test_a_missing_guidebook_fails_the_attempt(tmp_path: Path):
+  # Nothing at all is a missing declared output, not a judgement about one:
+  # this is the one guidebook-shaped thing that still fails an attempt.
   result, _, _ = _execute(tmp_path)
 
   assert GUIDEBOOK_NAME not in result.run.artifacts
@@ -448,15 +558,22 @@ def test_a_missing_guidebook_fails_the_attempt(tmp_path: Path):
   assert _task().should_retry(result) is True
 
 
-def test_new_oracle_output_without_a_rubric_fails_the_attempt(tmp_path: Path):
-  """Read compatibility does not weaken the new phase-B write contract."""
+def test_oracle_output_without_a_rubric_is_measured_and_kept(tmp_path: Path):
+  """An imperfect guidebook is recorded, not rejected (ADR-0027).
+
+  The control arm is ``test_a_written_guidebook_is_collected_and_the_attempt_
+  is_valid`` above: the same attempt with a complete guidebook reports
+  ``guidebook.valid 1`` and no problems, so the metric still discriminates
+  while neither attempt is failed or retried.
+  """
   result, _, _ = _execute(tmp_path, guidebook=_guidebook(include_rubric=False))
 
   assert result.run.metrics[VALID_METRIC] == 0.0
-  assert _task().outputs_valid(result) is False
   assert _task().record_extra(result)["guidebook_problems"] == [
       "missing the '## Supervisor rubric' section"
   ]
+  # …and the schema result changes nothing about the attempt itself.
+  assert _task().outputs_valid(result) is True
 
 
 def test_the_complete_tutorial_is_collected_beside_the_rubric(tmp_path: Path):
@@ -475,27 +592,40 @@ def test_the_complete_tutorial_is_collected_beside_the_rubric(tmp_path: Path):
   assert tutorial_sentinel in collected
 
 
-def test_a_guidebook_missing_a_justification_fails_the_attempt(tmp_path: Path):
-  # The schema's one load-bearing field. The artifact is still collected —
-  # a rejected guidebook is evidence — but the attempt is not valid, and the
-  # record says why.
+def test_a_guidebook_missing_a_justification_is_measured_and_kept(
+    tmp_path: Path,
+):
+  # The schema's one load-bearing field. The artifact is collected, the
+  # measurement says what it lacks, and the guidebook goes downstream: a
+  # re-roll buys another sample of the same writer at the price of a paid
+  # run, which is what ADR-0027 refuses to spend.
   result, _, _ = _execute(
       tmp_path, guidebook=_guidebook(without="Justification")
   )
 
   assert GUIDEBOOK_NAME in result.run.artifacts
   assert result.run.metrics[VALID_METRIC] == 0.0
-  assert _task().outputs_valid(result) is False
   assert _task().record_extra(result)["guidebook_problems"] == [
       "stage 1: missing the 'Justification' field"
   ]
+  assert _task().outputs_valid(result) is True
 
 
-def test_an_ending_that_happened_to_the_agent_is_retried():
+def _attempt(
+    *, outcome: AgentOutcome, guidebook: GuidebookObserver
+) -> AttemptResult:
+  """Assemble one finished attempt from the two observers that judge it.
+
+  Args:
+    outcome: How the agent's own trace says the run ended.
+    guidebook: The collector, carrying whatever the Oracle wrote.
+
+  Returns:
+    A successful engine run whose declared output is present.
+  """
   observer = HarnessOutcomeObserver(harness=ClaudeCodeHarness())
-  observer.outcome = AgentOutcome.EXECUTION_ERROR
-  guidebook = GuidebookObserver(guidebook=_guidebook())
-  result = AttemptResult(
+  observer.outcome = outcome
+  return AttemptResult(
       run=RunResult(
           label="x",
           status=RunStatus.SUCCESS,
@@ -506,6 +636,36 @@ def test_an_ending_that_happened_to_the_agent_is_retried():
       output_schema=(ArtifactSchema(GUIDEBOOK_NAME),),
       observers=(observer, guidebook),
   )
+
+
+def test_a_schema_result_never_buys_another_paid_attempt():
+  """What the check found is what the model wrote, not bad luck (ADR-0027).
+
+  The control arm is the test below: the *same* invalid guidebook under an
+  ending that happened to the agent is retried, so this pair separates "the
+  guidebook is imperfect" from "the run broke" rather than agreeing on both.
+  """
+  invalid = GuidebookObserver(
+      guidebook=_guidebook(without="Justification"),
+      problems=("stage 1: missing the 'Justification' field",),
+  )
+  result = _attempt(outcome=AgentOutcome.FINISHED, guidebook=invalid)
+
+  assert invalid.valid is False
+  assert _task().outputs_valid(result) is True
+  assert _task().should_retry(result) is False
+
+
+def test_an_ending_that_happened_to_the_agent_is_retried():
+  # The exceptional case retrying still exists for — and the control arm of
+  # the test above: an invalid guidebook, so the only thing that differs is
+  # how the run ended.
+  invalid = GuidebookObserver(
+      guidebook=_guidebook(without="Justification"),
+      problems=("stage 1: missing the 'Justification' field",),
+  )
+  result = _attempt(outcome=AgentOutcome.EXECUTION_ERROR, guidebook=invalid)
+
   assert _task().outputs_valid(result) is True  # it did produce a guidebook
   assert _task().should_retry(result) is True  # …but the crash was ours
 

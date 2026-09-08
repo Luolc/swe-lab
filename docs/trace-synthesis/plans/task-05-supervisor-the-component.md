@@ -159,9 +159,14 @@ scope, the second half has the same four parts as the first:
 | **named test** | `test_a_criterion_quoting_the_gold_patch_is_rejected` — a criterion that quotes the fix must make the check fail |
 
 **The startup gates are wired.** `supervising_policy` loads the pinned criterion,
-and a guidebook-guided harness validates the declared guidebook before its first
-actor script is launched. Missing or malformed guidebooks raise
-`GuidebookRejectedError`; they never select the unguided prompt as a fallback.
+and a guidebook-guided harness requires the declared guidebook to be there
+before its first actor script is launched. A **missing** guidebook raises
+`GuidebookMissingError`; it never selects the unguided prompt as a fallback. A
+*malformed* one did too until
+[ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)
+(2026-09-08) made the schema a measurement — its shape is recorded and the run
+proceeds, because a label a regex missed is not evidence the prose is
+unusable.
 `SpeakWhenOffTrack` passes the criterion and the observation carrying the
 guidebook to both model calls.
 `SpeakAt` takes none and judges nothing — it is the timing knob, and applying a
@@ -202,8 +207,14 @@ needs a test or the sentence is downgraded):
   acceptance does not pass merely because the guidebook arm passes.
 - `test_a_criterion_quoting_the_gold_patch_is_rejected` — §3.1's criterion
   half: the loader rejects rather than recording a gap.
-- `test_a_guided_run_rejects_an_unusable_guidebook_before_actor_start` — both
-  missing and malformed guidebooks refuse the run before an actor script.
+- `test_a_guided_run_with_no_guidebook_at_all_refuses_to_start` — a run with
+  no artifact refuses before an actor script; its control arm,
+  `test_a_guided_run_starts_with_a_guidebook_the_schema_would_reject`, shows a
+  *malformed* one now reaching the actor. Both replace
+  `test_a_guided_run_rejects_an_unusable_guidebook_before_actor_start`, which
+  refused either, until
+  [ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)
+  made the schema a measurement.
 - `test_a_forged_criterion_cannot_build_the_policy` and
   `test_the_judge_is_handed_the_canonical_criterion_every_call` — what *is*
   enforced today: `SpeakWhenOffTrack` refuses any criterion whose digest is not

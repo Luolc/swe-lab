@@ -300,10 +300,10 @@ def test_a_produced_failure_nobody_supplied_stops_before_the_agent(
     tmp_path: Path,
 ):
   # Standalone, with only the base ref staged (so the baseline verify that
-  # runs first has a tree to check): the brief still builds, then the
-  # in-session requiredness check refuses — an assembly error naming the
-  # inputs, not an agent budget spent on a brief about files that are not
-  # there.
+  # runs first has a tree to check): the brief cannot be built at all, since
+  # which brief to write is read from the verdict nobody supplied — an
+  # assembly error naming the input, not an agent budget spent on a brief
+  # about files that are not there.
   recorded_ref = "b" * 40
   sandbox = _LocalFakeSandbox(
       spec=SPEC,
@@ -329,8 +329,7 @@ def test_a_produced_failure_nobody_supplied_stops_before_the_agent(
 
   assert result.run.status is not RunStatus.SUCCESS
   assert "required input(s) missing" in repr(result.run.error)
-  for name in (CONVERSATION_NAME, PATCH_NAME, VERDICT_ARTIFACT):
-    assert name in repr(result.run.error)
+  assert VERDICT_ARTIFACT in repr(result.run.error)
   assert AGENT_SCRIPT_NAME not in sandbox.scripts
 
 

@@ -4,9 +4,14 @@
 
 Accepted, **partly superseded**: the *Self-correction signals remain
 diagnostic* decision and the six-field rubric contract that rested on it by
-[ADR-0022](ADR-0022-self-correcting-leaves-the-verdict.md). The compatibility
-transition, the rubric-over-tutorial delivery and `guidebook_context_mode`
-stand.
+[ADR-0022](ADR-0022-self-correcting-leaves-the-verdict.md); the **read-time
+validation** half — phase C validating what it reads at all, and "a malformed
+partial rubric fails both write-time and read-time validation" — by
+[ADR-0027](ADR-0027-the-oracle-writes-a-guidebook-either-way.md), which makes
+the schema a measurement and leaves phase C only a presence check. The
+compatibility transition, the rubric-over-tutorial delivery and
+`guidebook_context_mode` stand: which representation a prompt consumes is
+still recorded on every decision row, and it was never a validity verdict.
 
 The owner approved the compatibility transition and telemetry shape on
 2026-09-04; the implementation and trace-synthesis spec reconciliation land
