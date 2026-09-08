@@ -1,8 +1,9 @@
 r"""The judge's general-practice criterion: one committed shared artifact.
 
-In a guidebook-guided run this criterion remains beside the complete validated
-phase-B guidebook. The guidebook supplies the instance-specific route; this
-artifact supplies a reviewed standard for general engineering conduct. Raw
+In a guidebook-guided run this criterion remains beside the complete phase-B
+guidebook — whatever shape the Oracle gave it, since the schema measures and
+does not gate (ADR-0027). The guidebook supplies the instance-specific route;
+this artifact supplies a reviewed standard for general engineering conduct. Raw
 privileged artifacts still have no independent supervisor input.
 
 **What the digest check does and does not establish**, because a barrier

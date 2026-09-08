@@ -62,7 +62,11 @@ from swe_lab.trace_synthesis.sample import (
     FAILED_PATCH_NAME,
     FAILED_VERDICT_NAME,
 )
-from swe_lab.workflow import AttemptResult, workflow_definition
+from swe_lab.workflow import (
+    AttemptResult,
+    registered_workflows,
+    workflow_definition,
+)
 import swe_lab.workflow.definitions as definitions
 
 from .test_oracle_failures_record import _Underlying, CONVERSATION, SPEC
@@ -665,17 +669,28 @@ def test_the_shipped_oracle_entries_carry_no_retry_budget():
   behaviour the shipped entry cannot reach is the defect this test exists to
   keep from coming back; if someone gives an Oracle entry a budget, they have
   to come here and say so.
-  """
-  entries = [
-      *workflow_definition("oracle_analysis"),
-      *(
-          entry
-          for entry in workflow_definition("from_scratch_guided_trace")
-          if isinstance(entry.task, OracleAnalysisTask)
-      ),
-  ]
 
-  assert [entry.retries for entry in entries] == [0, 0]
+  **Derived from the registry, not from a list of workflow names.** A
+  hand-written list is green about the definitions it happens to name — the
+  first version of this test missed `oracle_guided_trace` — so the set is
+  every registered entry whose task is this one, and a new workflow joins it
+  by existing.
+  """
+  budgets = {
+      (name, entry.key): entry.retries
+      for name in registered_workflows()
+      for entry in workflow_definition(name)
+      if isinstance(entry.task, OracleAnalysisTask)
+  }
+
+  # The positive half: the set is not empty, so an enumeration that found
+  # nothing cannot pass as "every one of them is 0".
+  assert set(budgets) == {
+      ("oracle_analysis", "oracle_analysis"),
+      ("oracle_guided_trace", "oracle_analysis"),
+      ("from_scratch_guided_trace", "oracle_analysis"),
+  }
+  assert set(budgets.values()) == {0}
 
 
 def test_a_caller_who_pays_for_a_retry_gets_this_policy():

@@ -15,6 +15,12 @@ write contract (new phase-B output carries both representations), the
 rubric-over-tutorial delivery, and `guidebook_context_mode` as the record of
 which representation a run's prompts consumed.
 
+**Also partly supersedes
+[ADR-0018](ADR-0018-the-supervisor-reads-the-guidebook-but-must-not-recite-the-answer.md)**,
+in one word: it calls what reaches the supervisor the *validated* guidebook and
+says phase C refuses a "missing or structurally invalid" one. Only *missing*
+survives. What the supervisor may see, and the speech boundary, are untouched.
+
 ## Date
 
 2026-09-08
@@ -166,6 +172,11 @@ docstring starts describing behaviour its only entry cannot reach.
   record says what it faulted on. "The check did not run" and "the check ran
   and found nothing" stay distinguishable, because the metric is written on
   every attempt that produced a guidebook.
+- The word *validated* was load-bearing in five places that describe what
+  ships — the plan index's task 04 and 05 rows, task 05's input list, the
+  criterion docstring, and the spec's allowlist row — and in ADR-0018's
+  wording. All are reconciled here; the historical records keep their text
+  under a status note rather than being rewritten.
 - `require_valid_guidebook` and `GuidebookRejectedError` are gone;
   `GuidebookMissingError` names what phase C still refuses, which is absence.
 - `validate_guidebook` loses its `require_rubric` flag. Phase B was its only

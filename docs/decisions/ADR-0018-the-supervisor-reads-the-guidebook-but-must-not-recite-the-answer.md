@@ -11,6 +11,15 @@ the persisted-audit-shape question and adds host-side `running_state` to the
 exact supervisor input allowlist. The privileged-input and speech boundaries
 decided here are unchanged.
 
+Also partly superseded by
+[ADR-0027](ADR-0027-the-oracle-writes-a-guidebook-either-way.md) (2026-09-08),
+in one word: this record calls the artifact reaching the supervisor the
+**validated** guidebook, and describes phase B as validating its shape and
+phase C as refusing a "missing or structurally invalid" one. The schema is now
+a measurement — phase B fails no attempt over it and phase C refuses only an
+**absent** guidebook. Read every *validated* below as *measured*. What the
+supervisor sees, and the speech boundary, are unchanged.
+
 This decision supersedes the information-barrier argument in the module
 docstring of `src/swe_lab/trace_synthesis/supervisor.py` and in the
 `Observation` docstring. Their useful warning survives as the speech boundary

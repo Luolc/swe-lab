@@ -104,8 +104,13 @@ Two inputs, and they are different in kind:
   would let it read its output as the actor's behaviour. The filter is
   **stateless**, so where a supervisor attached cannot change its verdict on a
   message.
-- **Guidebook — the validated phase-B artifact.** `Observation.guidebook`
-  carries the complete Markdown to both judge and writer. The constructor's
+- **Guidebook — the phase-B artifact, whatever shape it has.**
+  `Observation.guidebook` carries the complete Markdown to both judge and
+  writer. It was *validated* until
+  [ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)
+  (2026-09-08) made the schema a measurement; what is still refused before an
+  actor starts is a guidebook that is **absent**, not one whose labels a regex
+  did not recognize. The constructor's
   exact allowlist is `task`, `evidence`, `cursor`, `said`, `guidebook`; its
   negative-control test separately attempts `gold_patch`, `reference_patch`,
   `test_patch`, `hidden_tests`, `fail_to_pass`, `pass_to_pass` and
@@ -119,8 +124,9 @@ Two inputs, and they are different in kind:
 **The barrier's claim, stated plainly because one described more strongly than
 it is, is worse than none:**
 
-> The supervisor receives the complete validated guidebook but has no separate
-> input for the gold patch, reference patch, test patch or hidden tests. What
+> The supervisor receives the complete guidebook as phase B wrote it — its
+> shape measured, not enforced (ADR-0027) — but has no separate input for the
+> gold patch, reference patch, test patch or hidden tests. What
 > crosses into the actor is only the writer's tagged correction. The writer is
 > intended to teach rather than recite; shallow checks cover named surface
 > forms, while semantic paraphrase remains a human-audit question.
@@ -722,7 +728,7 @@ that added it).
 **Dependencies:** [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
 for attribution, [ADR-0018](../../decisions/ADR-0018-the-supervisor-reads-the-guidebook-but-must-not-recite-the-answer.md)
 for the speech boundary, and
-[task 04](task-04-oracle-analysis-task.md) for the validated phase-B artifact.
+[task 04](task-04-oracle-analysis-task.md) for the phase-B artifact.
 It is not blocked on task 16 because the segmented harness already owns its
 delivery seam.
 **Scope:** L.

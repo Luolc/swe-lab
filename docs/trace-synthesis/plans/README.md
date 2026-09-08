@@ -75,7 +75,7 @@ research that preceded this index is not a task: its results are recorded in
 | 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ✅ |
 | 03 | **Hint log + conversion guard** (pure, tested) | ⚠ ⬜ **proposed for closure** — the task exists only for the terminated arm; see [below](#pending-reconciliation-2026-09-01) |
 | 04 | **Oracle analysis task + guidebook schema** — [`task-04-oracle-analysis-task.md`](task-04-oracle-analysis-task.md) | 🔶 Code landed — `OracleAnalysisTask`, the schema check, the one-entry `oracle_analysis` workflow, tests; one live run made — the guidebook it produced failed the schema check on one missing field and awaits a human judgement. **Reshaped on 2026-09-08 by [ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)** after two from-scratch runs: the brief now branches on the graded verdict (a passed attempt is read for what was *guessed rather than derived*), the Oracle has no refusal path, the schema gates nothing at either phase and only measures, and no attempt is retried over it. The human judgement that this row waits on is unaffected — and cheaper to reach, since a guidebook the check faults now reaches phase C instead of being discarded. Wording follow-up from #276's review (P2, not a task — fold into the next edit of those passages): the design record's rationale and `oracle.py`'s module docstring still use the shorthand "the fix commit is reachable, and the brief says so" / "a run handed the answer" — scoped to phase B, where the purge is off, so consistent with the purge measured in rollouts, but untrue for a dataset that records no fix commit or reference patch, which the task supports — and `datasets/oracle_failures/README.md` lists the delegated gold patch without its when-recorded qualifier |
-| 05 | **The supervisor: what it may see, when it speaks, what it may say** — the component consumes actor evidence plus the complete validated guidebook; its exact constructor boundary excludes separate raw privileged inputs, and shallow speech checks support human audit — [`task-05-supervisor-the-component.md`](task-05-supervisor-the-component.md) | ✅ Implemented with [ADR-0018](../../decisions/ADR-0018-the-supervisor-reads-the-guidebook-but-must-not-recite-the-answer.md) and refined by [ADR-0021](../../decisions/ADR-0021-compact-guidebook-rubric-has-a-legacy-read-path.md): default model calls receive the compact rubric or an explicit legacy tutorial fallback; `supervisor.jsonl` carries the audit tuple and context mode |
+| 05 | **The supervisor: what it may see, when it speaks, what it may say** — the component consumes actor evidence plus the complete guidebook, whatever shape phase B gave it ([ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md): measured, not validated); its exact constructor boundary excludes separate raw privileged inputs, and shallow speech checks support human audit — [`task-05-supervisor-the-component.md`](task-05-supervisor-the-component.md) | ✅ Implemented with [ADR-0018](../../decisions/ADR-0018-the-supervisor-reads-the-guidebook-but-must-not-recite-the-answer.md) and refined by [ADR-0021](../../decisions/ADR-0021-compact-guidebook-rubric-has-a-legacy-read-path.md): default model calls receive the compact rubric or an explicit legacy tutorial fallback; `supervisor.jsonl` carries the audit tuple and context mode |
 | 06 | **Trace-quality scorer** (decide whether to build) | ⬜ |
 | 07 | **The `oracle_guided_trace` workflow + integrity separation** | ⬜ |
 | 08 | **Batch run: N instances, measure yield / cost / quality** | ⬜ |
@@ -346,9 +346,12 @@ which is legitimate but must be recorded rather than assumed.
 
 **Description:** Phase B as a `Task`: a sandbox with the grading procedure,
 the failed conversation and — when the dataset records one — the golden patch
-mounted, the **git-history purge off**, producing a validated `guidebook.md`. The schema enforces the
-`justification` field per stage — the field that makes an honest hint possible
-at all. The failure arrives as the instance's own mounts — the instance is an
+mounted, the **git-history purge off**, producing `guidebook.md`. The schema
+**measures** each stage's `justification` field — the field that makes an
+honest hint possible at all — and, since
+[ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)
+(2026-09-08), enforces nothing: what it finds is a metric and a record field,
+and the guidebook goes to phase C either way. The failure arrives as the instance's own mounts — the instance is an
 `oracle_failures` record ([task 11](#task-11-start-from-a-cached-failure)) —
 which is what lets the shipped `oracle_analysis` workflow be a single entry
 run from a name alone. The design record is
@@ -357,8 +360,9 @@ run from a name alone. The design record is
 Phase B is independently useful: a guidebook is a readable artifact even
 without phase C.
 
-- **Acceptance:** schema validation rejects a guidebook with a stage missing
-  its `justification`; the task declares `guidebook.md` as an output and the
+- **Acceptance:** schema validation **names** a guidebook with a stage missing
+  its `justification` (it rejected one until ADR-0027 made the check a
+  measurement); the task declares `guidebook.md` as an output and the
   purge-off configuration is explicit rather than incidental.
 - **Verification:** unit tests for the schema; one live run producing a
   guidebook a human judges usable.
