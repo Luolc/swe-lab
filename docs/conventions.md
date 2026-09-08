@@ -61,7 +61,7 @@ direnv), which holds **only `op://` references read at load time via
 |---|---|---|
 | `HF_TOKEN` | `op://dev-shared/hf-token/credential` | HF pushes (`pipelines/related_files/traces.py`, `datasets/deepswe/build_parquet.py --upload`) |
 | `SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN` | `op://dev-shared/claude-code-oauth-token/credential` | the `claude_code` harness (subscription auth). **Deliberately not named `CLAUDE_CODE_OAUTH_TOKEN`** in your shell — see [Hazards](#hazards-learned-the-hard-way); the CLI copies it to that name inside its own process |
-| `OPENROUTER_API_KEYS` | `op://dev-shared/openrouter-api-keys/credential` | comma-separated OpenRouter keys, **split inside the consuming program, never in a shell** — `swe_lab.trace_synthesis.provider` (`live_key`, the shipped sampler: it splits the pool and asks `GET https://openrouter.ai/api/v1/key` until one answers, so a run is not spent on a dead key), `experiments/trace_synthesis/steered_rerun/supervisor.py` (`key_pool`), `experiments/trace_synthesis/process_supervision/guidebook_as_step_criterion/judge_steps.py`. **What a paid run must spend** — the rule, and how a run is pointed here — is in [`AGENTS.md`](../AGENTS.md) (Boundaries) |
+| `OPENROUTER_API_KEYS` | `op://dev-shared/openrouter-api-keys/credential` | comma-separated OpenRouter keys, **split inside the consuming program, never in a shell** — `experiments/trace_synthesis/steered_rerun/supervisor.py` (`key_pool`, which also probes for a live member so a run is not spent discovering a dead key), `experiments/trace_synthesis/process_supervision/guidebook_as_step_criterion/judge_steps.py`. The library itself never sees the pool: `swe_lab` takes **one** key, by the name of the variable holding it, so whoever knows the pool picks a member and exports it. **What a paid run must spend** — the rule, and how a run is pointed here — is in [`AGENTS.md`](../AGENTS.md) (Boundaries) |
 
 **OpenRouter serves the Anthropic Messages API, under the same model name.**
 Measured 2026-09-07 on dev-oregon against
@@ -84,22 +84,53 @@ conversation and was wrong both times; the prefixed form still works, so
 existing scripts that default to it are not broken and frozen experiment
 reports naming it are accurate history.
 
-**Pointing a run at it.** The supervisor's upstream is a per-invocation choice,
-by provider name: `--<rollout entry>.harness.segmented.provider=openrouter` on
-any workflow whose rollout runs under the segmented carrier (`segmented_rollout`,
+**Pointing the supervisor at it.** The supervisor's upstream is two strings the
+caller owns — a base URL and the *name* of the variable holding the key — and
+there is no registry of accepted upstreams: any endpoint is legitimate, which
+is what makes this usable by a consumer with their own gateway. On any workflow
+whose rollout runs under the segmented carrier (`segmented_rollout`,
 `segmented_rollout_and_unit_test`, `oracle_guided_trace`,
-`from_scratch_guided_trace`). An unknown name is refused while the command line
-is read, and the name is written onto every decision row the run persists, so a
-later reader can tell which account answered.
+`from_scratch_guided_trace`):
 
-**The actor is not pointable at OpenRouter today**, and no run should be
-reported as OpenRouter-funded on the strength of the flag above: the shipped
-rollout entries pass the subscription token (`pass_env=(OAUTH_TOKEN_ENV,)`) and
-run the agent with `bare=False`, which authenticates by OAuth. The gap is a
-credential one rather than an endpoint one — `ClaudeCodeHarness.proxy_target`
-already redirects the actor's upstream — and closing it needs a single live key
-in `ANTHROPIC_API_KEY` inside the sandbox, which the pool variable is not.
-Nothing in this repo does that split for the actor yet.
+```sh
+--<rollout entry>.harness.segmented.base_url=https://openrouter.ai/api
+--<rollout entry>.harness.segmented.api_key_env=OPENROUTER_LIVE_KEY
+```
+
+Unset, they default to `ANTHROPIC_BASE_URL` (falling back to the Anthropic
+root) and `ANTHROPIC_API_KEY`, which is the pair `claude -p` itself reads. The
+base URL is written onto every decision row the run persists — the upstream the
+invocation was **pointed at**, not proof anything answered: a `lapse`, `gap` or
+`unjudged` row carries it too, and those are exactly the rows where nobody did.
+The key never appears anywhere; only its variable's name is configuration, and
+the value is read at call time.
+
+The pool is not something the library splits. `api_key_env` must name a
+variable holding **one** key, so sampling a live member happens host-side,
+where the pool is known — `experiments/trace_synthesis/steered_rerun/supervisor.py`
+is the worked instance.
+
+**Pointing the actor at it** is three knobs plus that one live key, not a
+missing feature. The shipped definitions default to the subscription token
+(`pass_env=(OAUTH_TOKEN_ENV,)`, `bare=False`, OAuth), and moving off it is:
+
+```sh
+--<rollout entry>.harness.capture=proxy
+--<rollout entry>.harness.proxy_target=https://openrouter.ai/api
+--<rollout entry>.sandbox.pass_env=ANTHROPIC_API_KEY
+```
+
+`capture=proxy` is required rather than incidental: `cc-reverse-proxy` gates
+its OpenRouter behaviour on the target string, so it is the proxy — not
+`ANTHROPIC_BASE_URL` — that chooses the actor's upstream. `pass_env` replaces
+the tuple, which is how the OAuth token stops being handed in. Verified
+2026-09-07: the three resolve on `main` to `capture='proxy'`,
+`proxy_target='https://openrouter.ai/api'`, `pass_env=('ANTHROPIC_API_KEY',)`.
+`experiments/trace_synthesis/steered_rerun/run_steered.py` sets the same three
+in code and samples a live pool member in-process, and that is a run that has
+happened. What is still true is the narrower thing: a run is only
+OpenRouter-funded if **both** sides were moved, so do not report one on the
+strength of the supervisor's setting alone.
 
 `op read` needs `OP_SERVICE_ACCOUNT_TOKEN` in the environment. On the
 workstation an interactive zsh (so every herdr pane) gets it from `~/.zshrc`; a

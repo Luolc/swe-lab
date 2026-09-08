@@ -422,6 +422,46 @@ def test_an_override_reaches_the_run_and_a_bad_one_is_refused(
   assert "not a field of" in _message(refused.output)
 
 
+def test_a_refused_upstream_reads_as_a_bad_argument_not_a_crash():
+  """A `__post_init__` refusal survives the trip out as a usage error.
+
+  The supervisor's upstream is validated where it is chosen — while the
+  command line is read — so a value that cannot mean anything costs a
+  construction rather than a container. That is only true if the refusal
+  reaches the caller as a refusal: an uncaught `ValueError` would be a
+  traceback, which reads as a bug in the tool rather than a bad flag.
+  """
+  refused = _run(
+      "segmented_rollout",
+      _INSTANCE_ID,
+      "--rollout.harness.segmented.api_key_env=",
+  )
+
+  # Click's usage exit, which `CliRunner` surfaces as `SystemExit`; an
+  # uncaught refusal would arrive here as the `ValueError` itself.
+  assert refused.exit_code == 2
+  assert not isinstance(refused.exception, ValueError)
+  assert "api_key_env must name" in _message(refused.output)
+
+
+def test_an_upstream_this_repo_has_never_heard_of_is_not_refused():
+  """The control arm: the same path accepts somebody else's gateway.
+
+  Without it, the refusal above would be indistinguishable from "the CLI
+  refuses upstreams", which is the behaviour being removed. This run fails
+  later, on the stand-in dataset it was given no wiring for — what it must not
+  do is fail *here*, on the URL.
+  """
+  accepted = _run(
+      "segmented_rollout",
+      _INSTANCE_ID,
+      "--rollout.harness.segmented.base_url=https://gateway.example.internal",
+  )
+
+  assert "api_key_env must name" not in _message(accepted.output)
+  assert "base_url" not in _message(accepted.output)
+
+
 def test_persisting_writes_the_run_under_its_sweep(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):

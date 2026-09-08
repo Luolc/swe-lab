@@ -26,7 +26,6 @@ from swe_lab.sandbox import (
     SandboxError,
     Store,
 )
-from swe_lab.trace_synthesis.provider import ProviderError
 from swe_lab.workflow import (
     EntryOutcome,
     registered_workflows,
@@ -129,11 +128,11 @@ def run_cmd(
   try:
     definition = workflow_definition(workflow)
     entries = apply_overrides(definition, parse_overrides(ctx.args))
-  # A `ProviderError` reaches here from a dataclass rebuilt by an override —
-  # the supervisor provider is validated where it is chosen, so a typo costs a
-  # construction rather than a container, and it has to read as a bad argument
-  # rather than as a crash.
-  except (WorkflowError, OverrideError, ProviderError) as error:
+  # A `ValueError` reaches here from a dataclass whose `__post_init__` refused
+  # a value an override rebuilt it with — validation happens where the value is
+  # chosen, so a bad one costs a construction rather than a container, and it
+  # has to read as a bad argument rather than as a crash.
+  except (WorkflowError, OverrideError, ValueError) as error:
     raise typer.BadParameter(str(error)) from error
 
   instance = load_dataset(dataset).require(instance_id)

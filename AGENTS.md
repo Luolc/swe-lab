@@ -206,8 +206,10 @@ test for is a wish, and it silently decays into a lie.
   sampled rather than assumed** — a rollout started on a dead key is paid for
   before it fails. Report a key only by hash prefix or pool index, never its
   value. The supervisor side honours this per invocation with
-  `--<entry>.harness.segmented.provider=openrouter`, which is written onto
-  every decision row; how, and what the actor side cannot do yet, is in
+  `--<entry>.harness.segmented.base_url=…` and
+  `--<entry>.harness.segmented.api_key_env=…` — a variable holding **one** live
+  key, since the library never splits a pool — and the base URL is written onto
+  every decision row. How, and the three knobs that move the actor too, are in
   [`docs/conventions.md`](docs/conventions.md#secrets).
 - **Never:** commit secrets / OAuth tokens / `.envrc.local` (enforced by the
   gitleaks hook + the CI history scan — see [Quality bar](#quality-bar));

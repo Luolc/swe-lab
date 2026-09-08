@@ -38,7 +38,6 @@ from swe_lab.trace_synthesis.channel import supervision
 from swe_lab.trace_synthesis.context_components import SupervisorPromptBuilder
 from swe_lab.trace_synthesis.criterion import load_criterion
 from swe_lab.trace_synthesis.judge import ModelJudge, ModelWriter
-from swe_lab.trace_synthesis.provider import build_provider
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
 from swe_lab.trace_synthesis.supervisor import (
     Intervention,
@@ -625,7 +624,7 @@ def test_the_shipped_segmented_factory_reads_the_named_said_visibility(
   segmented = _segmented_supervision_of(definitions.SEGMENTED_ROLLOUT[0])
 
   policy = segmented.policy_factory(
-      segmented.cooldown, build_provider(segmented.provider)
+      segmented.cooldown, segmented.base_url, segmented.api_key_env
   )
 
   assert isinstance(policy, SpeakWhenOffTrack)
@@ -670,15 +669,23 @@ class _NoEnvironmentRead:
     raise AssertionError(f"construction tested {key!r} in os.environ")
 
 
-def test_nothing_in_building_a_supervision_reads_the_environment(
+def test_nothing_in_building_a_supervision_policy_reads_the_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-  """The mode comes from the definition; construction consults no variable.
+  """The mode comes from the definition; building a policy consults no variable.
 
   `os.environ` is replaced by an object that raises on any read for the
   duration of building the shipped A′ arms, the shipped segmented factory's
-  policy, and a channel factory asked for a non-default mode — so a
+  policy, and a channel factory asked for a non-default mode — so a *policy*
   construction path that read a variable, whatever its name, fails here.
+
+  **Policies, and no wider than that.** Building a `SegmentedSupervision` does
+  read one variable, by name, for its `base_url` default; the shipped plans
+  resolved theirs when this module imported, so that read is out of this
+  block's reach and this test would stay green whatever it did. Claiming it
+  covered every construction would be a gate that has stopped gating — the
+  timing contract is held up by
+  `test_the_shipped_default_is_captured_when_the_definitions_import` instead.
   """
   with monkeypatch.context() as patched:
     patched.setattr(os, "environ", _NoEnvironmentRead())
@@ -691,7 +698,7 @@ def test_nothing_in_building_a_supervision_reads_the_environment(
       )
     segmented = _segmented_supervision_of(definitions.SEGMENTED_ROLLOUT[0])
     shipped = segmented.policy_factory(
-        segmented.cooldown, build_provider(segmented.provider)
+        segmented.cooldown, segmented.base_url, segmented.api_key_env
     )
     assert isinstance(shipped, SpeakWhenOffTrack)
     assert shipped.said_visibility == definitions.SUPERVISOR_SAID_VISIBILITY

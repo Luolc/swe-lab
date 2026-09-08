@@ -1336,7 +1336,7 @@ def _segmented(*, turns_per_segment: int = 5) -> SegmentedSupervision:
     The plan.
   """
   return SegmentedSupervision(
-      policy_factory=lambda cooldown, provider: NeverSpeak(),
+      policy_factory=lambda cooldown, base_url, api_key_env: NeverSpeak(),
       max_segments=4,
       wall_clock_seconds=1_000.0,
       max_cost_usd=10.0,
@@ -1588,7 +1588,7 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
   assert isinstance(registered, ClaudeCodeHarness)
   assert registered.segmented is not None
 
-  def policy_factory(_cooldown: int, _provider: object):
+  def policy_factory(_cooldown: int, _base_url: str, _api_key_env: str):
     return supervising_policy(
         model="model", transport=transport, budget=1, cooldown=0
     )

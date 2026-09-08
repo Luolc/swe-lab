@@ -127,9 +127,50 @@ JUDGE_TOOL: Mapping[str, Any] = {
 }
 
 
-def _whole_value(raw: str) -> str:
-  """Return the environment value unchanged — the single-credential case."""
-  return raw
+#: The environment variable naming the upstream. Read rather than invented: it
+#: is the variable the agent itself reads — the ``claude_code`` harness exports
+#: it to redirect a run at its capture proxy — so a sandbox that already sets it
+#: for the actor has already pointed the supervisor at the same place.
+ANTHROPIC_BASE_URL_ENV = "ANTHROPIC_BASE_URL"
+
+#: The environment variable holding the supervisor's credential by default —
+#: the other half of the pair above, and named for the same reason. Only the
+#: name is a default; the value is read at call time and never travels.
+DEFAULT_API_KEY_ENV = "ANTHROPIC_API_KEY"
+
+
+def default_supervisor_base_url() -> str:
+  """Return the upstream a supervisor is pointed at when nobody says.
+
+  The environment first, the Anthropic API root when it is silent. There is no
+  registry of blessed upstreams behind this: any URL a caller supplies is
+  legitimate, and this function only answers "what if they supply none".
+
+  **It reads the environment when it is called, and the caller decides when
+  that is.** A plan resolves it while it is constructed, so a module-level
+  definition — every shipped one — resolves it while that module imports, and a
+  variable set afterwards does not reach it. That is the intended contract, not
+  an accident of import order: an upstream is part of a run's configuration, so
+  it is fixed and recorded before the run rather than re-read mid-flight, which
+  is what would let two segments of one run be pointed at different places
+  while their decision rows disagreed about which. A process gets its
+  environment before Python starts, which is the moment this reads.
+  ``test_the_shipped_default_is_captured_when_the_definitions_import`` holds
+  both arms of that up.
+
+  The **deferred import** is why this is a function rather than a module
+  constant: the Anthropic root has one home, in the ``claude_code`` harness's
+  constants, and that package imports this one. Copying the URL here would
+  give one fact two homes.
+
+  Returns:
+    The base URL, without a trailing slash guarantee — the transport strips it.
+  """
+  from swe_lab.harnesses.claude_code.constants import (  # noqa: PLC0415
+      ANTHROPIC_API,
+  )
+
+  return os.environ.get(ANTHROPIC_BASE_URL_ENV, "") or ANTHROPIC_API
 
 
 def messages_transport(
@@ -137,26 +178,26 @@ def messages_transport(
     *,
     base_url: str,
     api_key_env: str,
-    select_key: Callable[[str], str] = _whole_value,
 ) -> Mapping[str, Any]:
   """Send one Anthropic Messages request and return the decoded answer.
 
-  Deployment choices are arguments rather than provider-named constants: the
-  caller chooses the upstream and the environment variable holding its
-  credential. The credential is read at call time and never reaches a command
-  line. This deliberately does not retry — a retried judgement would be a
-  function of how many times we asked.
+  Deployment choices are arguments rather than named constants: the caller
+  chooses the upstream and the environment variable holding its credential,
+  and **no allow-list stands between them and either** — a consumer running
+  against their own endpoint is the ordinary case, not an exception. The
+  credential is read at call time and never reaches a command line. This
+  deliberately does not retry — a retried judgement would be a function of how
+  many times we asked.
+
+  A credential variable holding several keys is **not** this layer's business:
+  whoever knows the pool picks one live member and exports that, which keeps
+  the choice where the pool is known and keeps every other key out of this
+  process.
 
   Args:
     payload: The request body, already shaped by the caller.
     base_url: Upstream base URL; ``/v1/messages`` is appended.
     api_key_env: Environment variable containing the API key.
-    select_key: Turns the raw environment value into the key to send. The
-      default sends it whole; a provider whose variable holds a **pool** of
-      keys supplies a selector that splits it here, inside this process, and
-      picks a live member — see
-      :mod:`swe_lab.trace_synthesis.provider`. Splitting a pool in a shell
-      would put every key on a command line.
 
   Returns:
     The decoded response.
@@ -164,11 +205,10 @@ def messages_transport(
   Raises:
     RuntimeError: No key is present in the environment.
   """
-  raw = os.environ.get(api_key_env, "")
-  api_key = select_key(raw) if raw else ""
+  api_key = os.environ.get(api_key_env, "")
   if not api_key:
     raise RuntimeError(
-        f"no provider key: {api_key_env} is unset or empty in this"
+        f"no supervisor key: {api_key_env} is unset or empty in this"
         " shell, so the supervisor cannot reach a model. This is a missing"
         " credential, not a broken instance or image — see docs/conventions.md"
         " (Secrets) for the op:// reference that fills it."
