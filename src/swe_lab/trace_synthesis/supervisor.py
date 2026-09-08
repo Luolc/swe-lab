@@ -326,10 +326,9 @@ class Verdict:
       lightweight custom judges source-compatible.
     deviation_started_steps_ago: How many of the shown steps ago the judge
       believes the deviation began, or ``None`` when it was not asked — which
-      is the default, and every A′ run. **Never acted on**, exactly like
-      ``reason``: it exists so a segmented run can record how many turns late
-      its correction was, which is the only evidence a choice of segment length
-      could ever rest on.
+      is the default. **Never acted on**, exactly like ``reason``: it exists so
+      a segmented run can record how many turns late its correction was, which
+      is the only evidence a choice of segment length could ever rest on.
 
       **The unit is a rendered step, not a turn**, and the two differ: one turn
       emits several stream events (59 events for 32 turns on the first
