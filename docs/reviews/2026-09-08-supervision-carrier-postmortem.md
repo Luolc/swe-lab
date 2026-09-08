@@ -379,7 +379,11 @@ it rather than asserting it.
 
 Not a carrier decision. It is here because the carrier question is absent from
 it, which is what makes it useful; whether it is *the same* failure is argued at
-the end of this section and marked as inference, not asserted here.
+the end of this section and marked as inference, not asserted here. **It
+attributes no conduct to anyone**, and neither does the rest of this document:
+what is recorded is what happened and why. Decisions appear where a record
+attributes them — an owner ruling, in the ADRs' own words — and nothing else
+does.
 
 [`docs/releases/v0.3.2.md`](../releases/v0.3.2.md) records that a provider-named supervisor was
 deliberately deleted — "Nobody had chosen that: OpenRouter was convenient to
@@ -391,34 +395,20 @@ their own base URL could not use this at all" — at the cost of "a dataclass, a
 `functools.cache`d registry, a lookup function, an injectable probe and a custom
 exception to express two strings." #448 deleted it two days later.
 
-**How it got in, from the records on #445.** The body ends
-`Pair: swelab-orkey-impl / swelab-orkey-review`, so both roles are named there.
-The review comment records `Verdict: LGTM` and, under `## Findings`, `None.` —
-a full review pass over the change that #448 would undo two days later, raising
-nothing. Beyond the pair, [a third comment](https://github.com/Luolc/swe-lab/pull/445#issuecomment-5584999863)
-is the workspace coordinator's own account: *"beyond the pair named in the PR
-body … I read this change, endorsed it, and merged it"*, and *"None of the three
-of us asked whether it needed to exist."*
-
-Read that third comment at the weight it asks for. It is the **coordinator's
-self-report, posted on 2026-09-08** — after the fact, and written because this
-document needed something citable and the repository held nothing. It says so
-itself: *"it is not independently verifiable, and no reader should treat it as
-more than the author's own statement."* It is the same class of record as the
-`Verdict: LGTM` above it — a participant's own statement, on the PR, readable by
-anyone — and it exists because **every agent in this repository commits and
-merges as one account**, so GitHub cannot show who did which part. That tool
-blindness is why the roles had to be written down at all.
+**It went in through a green process.** #445 carried its design rationale, its
+tests and a recorded review, and it was merged on that basis; two days later
+#448 removed it in full. Nothing about the change was incorrect in the sense any
+gate here can express.
 
 > **Inference.** The carriers and the registry fail the same check, and it is
-> not a correctness check. Each was evidenced, tested and reviewed — #445's
-> review found nothing, and #449/#450 removed code whose tests were green —
-> and none of them was asked *does this need to exist?* This repo's gates are
-> answerable: a test can go red, a claim can be checked, a number can carry its
-> N. **"Could this not exist" has no red state**, so nothing surfaces it on a
-> schedule; in both of these cases the answer arrived as an owner ruling
-> (#448's body records the design as the owner's; ADR-0025 and ADR-0026 record
-> theirs), which is a channel, not a gate.
+> not a correctness check. Each was evidenced, tested and reviewed, and each
+> passed — #449 and #450 removed code whose suites were green. None of them was
+> asked *does this need to exist?* This repo's gates are answerable: a test can
+> go red, a claim can be checked, a number can carry its N. **"Could this not
+> exist" has no red state**, so nothing surfaces it on a schedule, and in each
+> of these cases the answer arrived as a ruling instead (ADR-0025 and ADR-0026
+> record their decisions that way; #448's body records its design the same way).
+> A ruling is a channel, not a gate: it fires when somebody happens to look.
 
 ## 9. What changed as a result
 
