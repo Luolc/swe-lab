@@ -190,11 +190,18 @@ Supervisor. The tutorial has one entry per stage:
 | Field | Content |
 |---|---|
 | `goal` | what this stage establishes |
-| `actions` | which files to open, which searches to run, which commands |
-| `expected observations` | what you should see if you are on the right track |
+| `actions` | which files to open, which searches to run, which commands — including the edits, for a stage that changes code |
+| `expected observations` | what you should see if you are on the right track — including what its tests do |
 | `justification` | **how you could have known to do this** — grounded only in the problem statement and earlier stages |
 | `exit criteria` | what tells you the stage is done |
-| `edits` / `tests` | for the stages that change code |
+
+**These five are every field a stage has**, whatever the stage does. The brief
+used to offer a code-changing stage its own `edits` / `tests` labels and two
+live Oracles substituted them for `actions` and `expected observations`, so
+`guidebook.valid` read 0 on both
+([#453](https://github.com/Luolc/swe-lab/issues/453)); the offer is gone. A
+guidebook that carries extra labels anyway is still measured on these five —
+the schema ignores what it does not name.
 
 Two rules on the guidebook:
 
@@ -207,8 +214,10 @@ Two rules on the guidebook:
    derivable reason for that step exists. A guidebook that says "open
    `foo/bar.py`" with no reachable *why* leaves the Supervisor nothing to say
    except the answer. The schema **measures** whether the field exists — as
-   bold labels inside `## Stage N` sections, with `edits` / `tests` left
-   optional ([task 04](plans/task-04-oracle-analysis-task.md#the-guidebook-schema))
+   bold labels inside `## Stage N` sections, which are the only labels the
+   brief offers — a code-changing stage states its edits and tests inside
+   `Actions` and `Expected observations`
+   ([task 04](plans/task-04-oracle-analysis-task.md#the-guidebook-schema))
    — and **gates nothing**
    ([ADR-0027](../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)):
    what it finds lands in `guidebook.valid` and `guidebook_problems`, the

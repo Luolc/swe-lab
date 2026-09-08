@@ -446,8 +446,10 @@ get right.>
 …
 ```
 
-Four to six stages is typical. A stage that changes code may add `**Edits.**`
-and `**Tests.**` after the five required fields.
+Four to six stages is typical. Every stage carries exactly the five labels
+above and no others, whatever it does: a stage that changes code states the
+edits it makes under `**Actions.**` and the tests it runs under
+`**Expected observations.**` — do not give either a label of its own.
 
 The rules:
 

@@ -125,8 +125,17 @@ direction over specifics).
 guidebook is Markdown, so the schema is the shape of the hand-written ones:
 `## Stage N — <title>` sections, each carrying five bold labels — `**Goal.**`,
 `**Actions.**`, `**Expected observations.**`, `**Justification.**`,
-`**Exit criteria.**` (a colon after the label is accepted too). `**Edits.**` /
-`**Tests.**` stay optional, as the spec's table has them.
+`**Exit criteria.**` (a colon after the label is accepted too). The schema
+ignores any other label, but **the brief no longer offers one**: it used to
+tell a stage that changes code it "may add `**Edits.**` and `**Tests.**`", and
+two live Oracles substituted those for `**Actions.**` and
+`**Expected observations.**` in exactly that stage, so `guidebook.valid` read
+0 on both guidebooks and discriminated nothing
+([#453](https://github.com/Luolc/swe-lab/issues/453)). This is the open
+question [ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)
+left ("whether the prompt should stop offering those labels is a separate
+question with its own evidence"), answered by removing the offer — the cause —
+rather than by widening the vocabulary the validator knows.
 `validate_guidebook(text)` returns every missing piece by stage number; empty
 means valid. Only **presence** is checked — whether a justification is
 genuinely derivable is a reader's judgement, per the spec.

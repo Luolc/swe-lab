@@ -342,6 +342,32 @@ def test_the_brief_carries_the_task_statement_whole_and_names_the_files(
     assert f"**{field}.**" in brief
 
 
+@pytest.mark.parametrize("resolved", [False, True])
+def test_the_brief_offers_no_stage_label_the_schema_does_not_measure(
+    tmp_path: Path, resolved: bool
+) -> None:
+  """The brief names the five measured labels and no alternatives to them.
+
+  It used to offer `**Edits.**` / `**Tests.**` to "a stage that changes
+  code", and two live Oracles substituted them for `**Actions.**` and
+  `**Expected observations.**` in exactly that stage — so
+  ``guidebook.valid`` read 0 on both guidebooks and discriminated nothing
+  (#453). Both verdict branches share one template, and this pins that.
+  """
+  instance = _failure(
+      verdict={"resolved": resolved, "summary": {"missing": []}}
+  )
+
+  _, _, workspace = _execute(tmp_path, instance=instance)
+  brief = (workspace / PROMPT_NAME).read_text()
+
+  assert "**Edits.**" not in brief
+  assert "**Tests.**" not in brief
+  # …and the code-changing stage is told where those belong instead.
+  assert "edits it makes under `**Actions.**`" in brief
+  assert "tests it runs under\n`**Expected observations.**`" in brief
+
+
 # ─── the brief branches on the verdict, and only on the verdict ──────────────
 
 
@@ -406,10 +432,10 @@ def test_an_unreadable_verdict_stops_the_run_instead_of_guessing(
 
 # The two default briefs, by digest of the complete model request.
 _FAILED_BRIEF_SHA = (
-    "f9cfb7340e31e91b2046b57a025019f80337dfbacfaccfbc362bf24cf7b73c51"
+    "fae7fa0c287b5076de118d88969ba7a1c78571f72cd9f58834117544da8bf99d"
 )
 _PASSED_BRIEF_SHA = (
-    "bb34948b9f48b151114baa3ec524eb333869c81525139ceac4a4844ce71c0493"
+    "b981329a35db2296fb2595c146d9187ef6a6d1234b69a651b4237ed56c5b839b"
 )
 
 
