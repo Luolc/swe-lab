@@ -14,6 +14,8 @@ imports their own.
 
 from __future__ import annotations
 
+import functools
+
 from swe_lab.conversation.observer import CONVERSATION_NAME
 from swe_lab.evaluation.unit_test import (
     ARTIFACT_NAMESPACE,
@@ -45,7 +47,12 @@ from swe_lab.sandbox import (
 from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
 from swe_lab.trace_synthesis.channel import supervision
 from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
-from swe_lab.trace_synthesis.judge import supervising_policy
+from swe_lab.trace_synthesis.judge import (
+    DEFAULT_API_KEY_ENV,
+    default_supervisor_base_url,
+    messages_transport,
+    supervising_policy,
+)
 from swe_lab.trace_synthesis.native_supervision import (
     API_KEY_ENV as SUPERVISOR_API_KEY_ENV,
 )
@@ -54,12 +61,6 @@ from swe_lab.trace_synthesis.native_supervision import (
     NativeSupervision,
 )
 from swe_lab.trace_synthesis.oracle import OracleAnalysisTask
-from swe_lab.trace_synthesis.provider import (
-    ANTHROPIC,
-    build_provider,
-    Provider,
-    transport_for,
-)
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
 from swe_lab.trace_synthesis.supervisor import SaidVisibility, SpeakPolicy
 
@@ -184,22 +185,27 @@ ROLLOUT_AND_UNIT_TEST: WorkflowDef = (*ROLLOUT, *UNIT_TEST)
 # The two prior supervision measurements — the steered re-run and the
 # guidebook-as-criterion experiment — used this model through OpenRouter. The
 # model stays pinned for continuity of the model choice, while the default
-# transport uses Anthropic's native Messages wire and therefore is not the same
-# measurement condition.
+# transport goes wherever the environment points it and otherwise to
+# Anthropic's native Messages wire — either way not the same measurement
+# condition.
 #
-# **One name, either upstream.** OpenRouter's Messages endpoint takes this bare
-# name and namespaces it itself, so pointing a run at OpenRouter is a change of
-# endpoint and nothing else — measured 2026-09-07, evidence in
+# **One name, whatever the upstream.** OpenRouter's Messages endpoint takes
+# this bare name and namespaces it itself, so pointing a run there is a change
+# of endpoint and nothing else — measured 2026-09-07, evidence in
 # `docs/conventions.md` (Secrets).
 SUPERVISOR_MODEL = "claude-sonnet-5"
-# Which upstream the supervisor's calls go to by default. **Anthropic, and that
-# is not what a paid experiment spends** — the rule is in `AGENTS.md`
-# (Boundaries) and the way to honour it on an invocation is
-# `--<entry>.harness.segmented.provider=openrouter`, which also lands on every
-# decision row.
-SUPERVISOR_PROVIDER: Provider = build_provider(ANTHROPIC)
-SUPERVISOR_BASE_URL = SUPERVISOR_PROVIDER.base_url
-SUPERVISOR_TRANSPORT = transport_for(SUPERVISOR_PROVIDER)
+# Where the supervisor's calls go, and which variable holds the key. Two
+# strings the caller owns: `ANTHROPIC_BASE_URL` when the environment sets it,
+# the Anthropic root otherwise. **The default is not what a paid experiment
+# spends** — the rule is in `AGENTS.md` (Boundaries) and an invocation honours
+# it by naming the pool's endpoint and a variable holding one live key, both of
+# which reach a command line through `--<entry>.harness.segmented.…`.
+SUPERVISOR_BASE_URL = default_supervisor_base_url()
+SUPERVISOR_TRANSPORT = functools.partial(
+    messages_transport,
+    base_url=SUPERVISOR_BASE_URL,
+    api_key_env=DEFAULT_API_KEY_ENV,
+)
 # How many corrections one run may carry. No measured value — task 05 owns that
 # question — so it is stated rather than derived, and stated once.
 SUPERVISOR_BUDGET = 3
@@ -304,27 +310,32 @@ CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
 )
 
 
-def _segmented_policy(cooldown: int, provider: Provider) -> SpeakPolicy:
-  """Build the segmented loop's policy for one run, against one provider.
+def _segmented_policy(
+    cooldown: int, base_url: str, api_key_env: str
+) -> SpeakPolicy:
+  """Build the segmented loop's policy for one run, against one upstream.
 
-  A named function rather than the lambda this used to be: the provider is a
-  second per-run argument, and a two-argument lambda spanning a dozen lines
+  A named function rather than the lambda this used to be: the upstream is two
+  further per-run arguments, and a three-argument lambda spanning a dozen lines
   inside a nested constructor is where a reader stops being able to see which
   values are per-run and which are the pinned ones. The model is one of the
-  pinned ones and stays so under either provider — see
+  pinned ones and stays so wherever the run is pointed — see
   :data:`SUPERVISOR_MODEL`.
 
   Args:
     cooldown: Boundaries required between two interventions, from the run's
       :class:`~swe_lab.trace_synthesis.segmented_loop.SegmentedSupervision`.
-    provider: The upstream this invocation pays.
+    base_url: Where this invocation's supervisor calls go.
+    api_key_env: The name of the variable holding this invocation's key.
 
   Returns:
     The policy for this run.
   """
   return supervising_policy(
       model=SUPERVISOR_MODEL,
-      transport=transport_for(provider),
+      transport=functools.partial(
+          messages_transport, base_url=base_url, api_key_env=api_key_env
+      ),
       budget=SUPERVISOR_BUDGET,
       cooldown=cooldown,
       window=SUPERVISOR_WINDOW,

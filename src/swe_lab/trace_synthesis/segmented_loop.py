@@ -57,7 +57,7 @@ from typing import Any
 from swe_lab.sandbox import ExecResult
 
 from .guidebook import guidebook_context_mode
-from .provider import build_provider, Provider
+from .judge import DEFAULT_API_KEY_ENV, default_supervisor_base_url
 from .seam_shape import (
     DirtySeamError,
     read_seam,
@@ -106,21 +106,25 @@ class SegmentedSupervision:
   """How a run is cut, judged and resumed — and where it is made to stop.
 
   Attributes:
-    policy_factory: Builds the policy for one attempt, given the cooldown and
-      the resolved :class:`~swe_lab.trace_synthesis.provider.Provider`. **A
-      factory, not a policy**, for the reason ``supervision()`` is one on the
-      A′ side: a judging policy carries per-run state — budget spent,
-      cooldown, the markers it has recorded — and these definitions are
-      module-level, so a shared instance would let one instance's spent budget
-      silence the next one's corrections with nothing to show for it. The
-      provider arrives the same way and for a second reason: it names the
-      upstream this invocation pays, which a module-level closure could not.
-    provider: Which upstream answers the supervisor, by registry name — see
-      :mod:`swe_lab.trace_synthesis.provider`. A name rather than a base URL so
-      an invocation can select one (``--rollout.harness.segmented.provider=…``)
-      and an unknown one is refused before a container is paid for; it is
-      written onto every decision row, so a later reader can tell which account
-      answered.
+    policy_factory: Builds the policy for one attempt, called as
+      ``policy_factory(cooldown, base_url, api_key_env)``. **A factory, not a
+      policy**, for the reason ``supervision()`` is one on the A′ side: a
+      judging policy carries per-run state — budget spent, cooldown, the
+      markers it has recorded — and these definitions are module-level, so a
+      shared instance would let one instance's spent budget silence the next
+      one's corrections with nothing to show for it. The two upstream strings
+      arrive the same way and for a second reason: they are per-invocation, and
+      a module-level closure could not carry them.
+    base_url: Where the supervisor's model calls go. **Any URL, no allow-list**
+      — a consumer pointing this at their own endpoint is the ordinary case,
+      and the closed registry that briefly stood here made that impossible
+      without a fork. Defaults to ``ANTHROPIC_BASE_URL`` and falls back to the
+      Anthropic API root, so a sandbox that already exports that variable for
+      its agent has already pointed the supervisor at the same place. Written
+      onto every decision row.
+    api_key_env: The **name** of the environment variable holding the key —
+      never the key. Read at call time, so nothing puts a credential on a
+      command line or in a record.
     max_segments: The hard ceiling on segments. The large default keeps normal
       rollouts away from it while remaining finite, because ``--max-turns``
       stops being the runaway guard here: on an
@@ -161,8 +165,9 @@ class SegmentedSupervision:
       ``None`` when this run uses only the general-practice criterion.
   """
 
-  policy_factory: Callable[[int, Provider], SpeakPolicy]
-  provider: str = "anthropic"
+  policy_factory: Callable[[int, str, str], SpeakPolicy]
+  base_url: str = dataclasses.field(default_factory=default_supervisor_base_url)
+  api_key_env: str = DEFAULT_API_KEY_ENV
   max_segments: int = 1_000
   wall_clock_seconds: float = 86_400.0
   max_cost_usd: float = 1_000.0
@@ -174,17 +179,26 @@ class SegmentedSupervision:
   guidebook_name: str | None = None
 
   def __post_init__(self) -> None:
-    """Refuse an unknown provider name where the name is chosen.
+    """Refuse the one upstream setting that cannot mean anything.
+
+    Only that one. A base URL is a deployment fact this repo does not get to
+    have opinions about, and a key-variable name it has never heard of is
+    ordinary; the empty string is different in kind, because there is no
+    variable it could name, so the refusal is structural rather than a taste.
 
     Here rather than at the first judgement: an override is applied while the
-    command line is read, so a typo costs a construction instead of a
-    container — the same reasoning as
+    command line is read, so it costs a construction instead of a container —
+    the same reasoning as
     :meth:`~swe_lab.trace_synthesis.native_supervision.NativeSupervision.__post_init__`.
 
-    ``build_provider`` is what refuses it; the name resolved here is
-    discarded, since the loop resolves it again per run.
+    Raises:
+      ValueError: ``api_key_env`` names no variable.
     """
-    _ = build_provider(self.provider)
+    if not self.api_key_env:
+      raise ValueError(
+          "api_key_env must name the environment variable holding the"
+          " supervisor's key"
+      )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -482,7 +496,9 @@ class SegmentedRun:
     # One policy per run, built here rather than shared by the definition —
     # see `SegmentedSupervision.policy_factory`.
     self._policy = self.supervision.policy_factory(
-        self.supervision.cooldown, build_provider(self.supervision.provider)
+        self.supervision.cooldown,
+        self.supervision.base_url,
+        self.supervision.api_key_env,
     )
     started = self.now()
     prompt = self.task
@@ -818,11 +834,14 @@ class SegmentedRun:
             "kind": kind,
             "at": self.now().isoformat(),
             "policy": self.policy.name,
-            # Which account answered this judgement. Recorded rather than
-            # inferred from the model name: the two providers spell one model
-            # differently today, and that is a fact about their catalogues, not
-            # a guarantee a reader may lean on.
-            "supervisor_provider": self.supervision.provider,
+            # Which upstream this invocation was *pointed at* — not proof
+            # that anything answered: a `lapse`, `gap` or `unjudged` row
+            # carries it too, and those are the rows where nobody did. The URL
+            # itself rather than a label, because a label would need a registry
+            # and there is none. No credential goes next to it: the key's
+            # variable *name* is configuration, its value never leaves the
+            # environment, and neither belongs on a row.
+            "supervisor_base_url": self.supervision.base_url,
             "guidebook_sha256": self._guidebook_sha256(),
             "guidebook_context_mode": guidebook_context_mode(self.guidebook),
             "said_visibility": said_visibility_of(self.policy),

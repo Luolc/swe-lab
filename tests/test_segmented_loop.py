@@ -27,7 +27,6 @@ import pytest
 from swe_lab.sandbox import ExecResult
 from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
 from swe_lab.trace_synthesis.judge import supervising_policy
-from swe_lab.trace_synthesis.provider import Provider
 from swe_lab.trace_synthesis.seam_shape import DirtySeamError
 from swe_lab.trace_synthesis.segmented_loop import (
     LOG_KIND_SEGMENT,
@@ -182,7 +181,9 @@ def _supervision(policy: Any = None, **overrides: Any) -> SegmentedSupervision:
   """
   built = policy or NeverSpeak()
 
-  def policy_factory(_cooldown: int, _provider: Provider) -> SpeakPolicy:
+  def policy_factory(
+      _cooldown: int, _base_url: str, _api_key_env: str
+  ) -> SpeakPolicy:
     return built
 
   defaults: dict[str, Any] = {
@@ -384,7 +385,9 @@ def test_a_cooldown_override_reaches_the_policy_factory():
   supervision = _shipped_supervision("--rollout.harness.segmented.cooldown=6")
   received: list[int] = []
 
-  def policy_factory(cooldown: int, _provider: Provider) -> NeverSpeak:
+  def policy_factory(
+      cooldown: int, _base_url: str, _api_key_env: str
+  ) -> NeverSpeak:
     received.append(cooldown)
     return NeverSpeak()
 
@@ -875,36 +878,37 @@ def test_an_anchored_run_says_so_on_every_resumed_segment():
   assert [row["anchored"] for row in rows] == [False, True]
 
 
-def test_every_decision_row_says_which_provider_answered():
-  """A reader can tell off the record which account a run spent.
+def test_every_decision_row_says_which_upstream_the_run_was_pointed_at():
+  """A reader can tell off the record where a run's judgements were sent.
 
-  Two arms, because the field has to *follow* the selection: a row that always
-  said "anthropic" would look exactly like this one on the default run. The
-  provider is recorded rather than inferred from the model name — the two
-  upstreams take the same name, so the name cannot stand in for it.
+  The value, not a label: there is no registry a label could index into, and a
+  consumer's own gateway has no name this repo knows. Two arms, because the
+  field has to *follow* the setting — a row that always said the Anthropic root
+  would look exactly like the default arm here.
   """
   import dataclasses
 
-  def rows_under(provider: str) -> list[str]:
+  def rows_under(base_url: str) -> list[str]:
     actor = FakeActor(
         segments=[
             _segment(ids=["a"], subtype=_CUT),
             _segment(ids=["b"], subtype=_DONE),
         ]
     )
-    supervision = dataclasses.replace(_supervision(), provider=provider)
+    supervision = dataclasses.replace(_supervision(), base_url=base_url)
     return [
-        str(row["supervisor_provider"])
+        str(row["supervisor_base_url"])
         for row in _run(actor, supervision)
         if row["kind"] != LOG_KIND_SEGMENT
     ]
 
-  under_default = rows_under("anthropic")
-  under_openrouter = rows_under("openrouter")
+  elsewhere = "https://llm.gateway.example.internal/anthropic"
+  under_default = rows_under("https://api.anthropic.com")
+  under_elsewhere = rows_under(elsewhere)
 
   assert under_default
-  assert set(under_default) == {"anthropic"}
-  assert set(under_openrouter) == {"openrouter"}
+  assert set(under_default) == {"https://api.anthropic.com"}
+  assert set(under_elsewhere) == {elsewhere}
 
 
 def test_segmented_decision_rows_record_said_visibility_count_and_digest():
