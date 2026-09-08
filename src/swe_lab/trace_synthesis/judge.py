@@ -515,13 +515,17 @@ class ModelJudge:
       answer needed at most 441 reasoning tokens for a distribution whose
       median was 89. The old 512 sat inside that distribution rather than past
       its tail, so a call needing an ordinary amount of reasoning could still
-      run out before writing its answer; the 85 failing calls were themselves
-      cut off at 512, so their true demand is censored and may be higher still.
-      4096 clears the entire observed distribution — including its successful
-      tail — with roughly 8x margin over the old cap, and costs nothing on the
-      common case: the model stops once it has an answer, so a call needing
-      the median's ~89 reasoning tokens spends the same either way. See issue
-      #383 for the recompute.
+      run out before writing its answer. **The number is not read off that
+      distribution**: the 85 failing calls were themselves cut at 512, so their
+      true demand is censored — the observed maximum of 441 is an upper bound
+      only over the calls that finished, and the sample says nothing about how
+      much reasoning the truncated tail wanted. Any cap chosen from it is an
+      extrapolation past a bound nobody has seen. 16384 is therefore picked for
+      headroom rather than fit, and headroom is close to free: the model stops
+      once it has an answer, so a call needing the median's ~89 reasoning
+      tokens is billed the same under 512, 4096 or 16384, and only a call that
+      would otherwise have been cut off spends more. See issue #383 for the
+      measurement.
     locate_deviation: Ask, in addition, how far back the deviation started.
       Off by default and isolated from the required-running-state prompt,
       pinned by ``test_default_unguided_model_system_instructions_are_pinned``.
@@ -536,7 +540,7 @@ class ModelJudge:
 
   model: str
   transport: Transport
-  max_tokens: int = 4096
+  max_tokens: int = 16384
   locate_deviation: bool = False
   calls: list[Call] = dataclasses.field(default_factory=list)
   instructions: str | None = None
@@ -637,7 +641,26 @@ class ModelWriter:
   Attributes:
     model: The model to ask. **No default**, as for :class:`ModelJudge`.
     transport: How a request is sent.
-    max_tokens: The one sampling parameter we set.
+    max_tokens: The reasoning-plus-answer budget for one call, and the same
+      failure mode as :attr:`ModelJudge.max_tokens`: reasoning tokens eat the
+      budget and the line never gets written. The evidence here is thinner than
+      the judge's, and thinner in a way that argues for headroom rather than
+      against it. What is measured: the six writer calls recorded by the #383
+      replay (``experiments/trace_synthesis/n_batching_replay``, ``replicate``
+      arm) all finished (``finish_reason == "stop"``) at 37–62 completion
+      tokens with **zero** reasoning tokens, while the judge calls in that same
+      arm reasoned freely (median 162.5, max 512) — so writing a line is cheap
+      when the model chooses not to reason first, and the answer is bounded
+      anyway by
+      :data:`~swe_lab.trace_synthesis.supervisor.MAX_INTERVENTION_CHARS`. What
+      is not: six calls put no upper bound on a distribution whose judge
+      counterpart is model- and provider-dependent, and no run artifact
+      records a writer call's ``finish_reason`` or usage at all — a writer
+      truncated by its budget raises ``PolicyLapseError`` without the
+      ``finish_reason`` the judge branch carries, so the record could not tell
+      that failure apart from an unusable answer. 16384 buys margin against an
+      unobservable failure at the price of nothing on the common case, by the
+      same argument as the judge's.
     calls: What answered each request, in order.
     instructions: Optional system instructions for writing prompt variants.
       ``None`` preserves the guided or unguided default.
@@ -648,7 +671,7 @@ class ModelWriter:
 
   model: str
   transport: Transport
-  max_tokens: int = 256
+  max_tokens: int = 16384
   calls: list[Call] = dataclasses.field(default_factory=list)
   instructions: str | None = None
   prompt_builder: PromptBuilder = dataclasses.field(
