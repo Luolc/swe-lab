@@ -136,6 +136,53 @@ invariant is an example above, not a rule here.
     disclosed expecting a ruling that they were out of bounds; the ruling instead
     used them as the evidence for narrowing the cross-repo rule, which would
     otherwise still have two readings — #411.)
+13. **To decide whether a flag exists, hand it to the parser at a position where
+    an unknown option *must* error, and pair that with a control arm known not to
+    exist.** `--help` lists what a tool chose to advertise, so *hidden from
+    `--help`* and *does not exist* print the same nothing and `--help | grep`
+    cannot separate them. Neither can a probe the parser never reaches:
+    `--version` short-circuits before option validation and prints the same
+    thing for a real flag, a fake one and no flag. The discriminating pair costs
+    nothing and reaches no API, and **what separates the arms is the message,
+    not the status** — both fail, so an exit code read alone answers the wrong
+    question (Claude Code 2.1.265, run for this entry):
+
+    ```
+    claude -p --max-turns              -> exit 1
+    error: option '--max-turns <turns>' argument missing
+    claude -p --definitely-not-a-flag  -> exit 1
+    error: unknown option '--definitely-not-a-flag'
+    ```
+
+    The cross-repo file's `codex --help` entry is this shape on a different
+    question and owns its own reasoning. (2026-09-08, [#456](https://github.com/Luolc/swe-lab/pull/456): a
+    brief recorded `--max-turns` as verified non-existent on `claude --help |
+    grep` — two days after this repository had committed a measurement of that
+    flag segmenting a run. The same blindness hid `--resume-session-at`, whose
+    anchored seam produces none of the artifact that had disqualified
+    stop-and-resume; both are `hideHelp()`. See
+    [the carrier postmortem](reviews/2026-09-08-supervision-carrier-postmortem.md)
+    §6.)
+14. **When a command's output is the evidence, publish the output — not a
+    rendering of it.** A pipe is the most common rendering, not the shape: the
+    family also holds a comment beside a command stating what it printed, a
+    count annotated as `# 19 files`, and a transcript tidied into an aligned
+    table. Every member reads as a courtesy to the reader, and every one
+    replaces the thing that carries the information with something that merely
+    describes it — after which a reader cannot tell a number that was measured
+    from one that was remembered. The test is **"if this line were wrong, what
+    would go red?"**: for a pasted transcript, the command that produced it; for
+    a rendering, nothing. So print the command, then its verbatim output; the
+    moment you reformat, you are the source and the command is not.
+    (`~/.agents/AGENTS.md` owns the pipe case itself; this is the shape it
+    belongs to.) (2026-09-08,
+    [#456](https://github.com/Luolc/swe-lab/pull/456): four review rounds found
+    the same defect in four places in the document that declared the rule —
+    `git ls-tree … | grep -c …`, whose status is grep's; a search described as
+    three regexes with no command; a pipe left inside the fix for the first two;
+    and line counts asserted in trailing comments that no printed command emits.
+    None was caught by the author, and the last fix's own first draft aligned the
+    verbatim output into a table before that was recognized as the same move.)
 
 ## Intended, and not enforced
 
