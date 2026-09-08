@@ -207,8 +207,10 @@ Two rules on the guidebook:
    derivable reason for that step exists. A guidebook that says "open
    `foo/bar.py`" with no reachable *why* leaves the Supervisor nothing to say
    except the answer. The schema **measures** whether the field exists — as
-   bold labels inside `## Stage N` sections, with `edits` / `tests` left
-   optional ([task 04](plans/task-04-oracle-analysis-task.md#the-guidebook-schema))
+   bold labels inside `## Stage N` sections, which are the only labels the
+   brief offers — a code-changing stage states its edits and tests inside
+   `Actions` and `Expected observations`
+   ([task 04](plans/task-04-oracle-analysis-task.md#the-guidebook-schema))
    — and **gates nothing**
    ([ADR-0027](../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)):
    what it finds lands in `guidebook.valid` and `guidebook_problems`, the
