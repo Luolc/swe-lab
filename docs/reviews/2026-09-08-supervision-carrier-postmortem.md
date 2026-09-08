@@ -20,18 +20,13 @@ are not re-litigated here.
 
 ## How to read this
 
-Three kinds of sentence, kept apart on purpose:
+Two kinds of sentence, kept apart on purpose:
 
 - **Plain text is record.** Every factual sentence points at a commit, a PR, an
   ADR, an experiment report or a plan. Where the citation is a document, it is
   that document's own words being reported.
 - **Blockquotes marked *Inference* are mine**, derived from the records cited
   immediately above them. Nothing in one is evidence.
-- **Sentences marked *Relayed* come from outside the repository** — a
-  coordination message, not a record anybody else can open. This is the weakest
-  tier here and it is labelled rather than laundered into the first: a reader
-  who wants to check one has nowhere to go, and should know that before
-  believing it.
 
 A third form appears where it matters most: **"the record does not say."** Those
 are findings, not gaps in this write-up.
@@ -396,19 +391,24 @@ their own base URL could not use this at all" — at the cost of "a dataclass, a
 `functools.cache`d registry, a lookup function, an injectable probe and a custom
 exception to express two strings." #448 deleted it two days later.
 
-**What the record holds about how it got in.** #445's body ends
+**How it got in, from the records on #445.** The body ends
 `Pair: swelab-orkey-impl / swelab-orkey-review`, so both roles are named there.
-The review comment on #445 records `Verdict: LGTM` and, under `## Findings`,
-`None.` — a full review pass over the change that #448 would undo two days
-later, raising nothing. Both PRs are authored and merged under the one account
-this repository's agents commit as, so GitHub cannot tell the roles apart.
+The review comment records `Verdict: LGTM` and, under `## Findings`, `None.` —
+a full review pass over the change that #448 would undo two days later, raising
+nothing. Beyond the pair, [a third comment](https://github.com/Luolc/swe-lab/pull/445#issuecomment-5584999863)
+is the workspace coordinator's own account: *"beyond the pair named in the PR
+body … I read this change, endorsed it, and merged it"*, and *"None of the three
+of us asked whether it needed to exist."*
 
-> **Relayed** — the workspace coordinator, 2026-09-08, in a `herdr` coordination
-> message to the author of this document. They state that beyond the pair, they
-> read the change, endorsed it and merged it, and asked for that to be recorded
-> without softening. Nothing in the repository distinguishes that from the
-> single-account merge above, so it is carried here at the weakest tier this
-> document has.
+Read that third comment at the weight it asks for. It is the **coordinator's
+self-report, posted on 2026-09-08** — after the fact, and written because this
+document needed something citable and the repository held nothing. It says so
+itself: *"it is not independently verifiable, and no reader should treat it as
+more than the author's own statement."* It is the same class of record as the
+`Verdict: LGTM` above it — a participant's own statement, on the PR, readable by
+anyone — and it exists because **every agent in this repository commits and
+merges as one account**, so GitHub cannot show who did which part. That tool
+blindness is why the roles had to be written down at all.
 
 > **Inference.** The carriers and the registry fail the same check, and it is
 > not a correctness check. Each was evidenced, tested and reviewed — #445's
