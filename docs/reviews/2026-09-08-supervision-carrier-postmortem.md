@@ -20,7 +20,7 @@ are not re-litigated here.
 
 ## How to read this
 
-Two kinds of sentence, kept apart on purpose:
+Three kinds of sentence, kept apart on purpose:
 
 - **Plain text is record.** Every factual sentence points at a commit, a PR, an
   ADR, an experiment report or a plan. Where the citation is a document, it is
@@ -384,8 +384,9 @@ The review comment on #445 records `Verdict: LGTM` and, under `## Findings`,
 later, raising nothing. Both PRs are authored and merged under the one account
 this repository's agents commit as, so GitHub cannot tell the roles apart.
 
-> **Relayed.** The workspace coordinator states that beyond the pair, they read
-> the change, endorsed it and merged it, and asked for that to be recorded
+> **Relayed** — the workspace coordinator, 2026-09-08, in a `herdr` coordination
+> message to the author of this document. They state that beyond the pair, they
+> read the change, endorsed it and merged it, and asked for that to be recorded
 > without softening. Nothing in the repository distinguishes that from the
 > single-account merge above, so it is carried here at the weakest tier this
 > document has.
