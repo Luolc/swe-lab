@@ -330,12 +330,20 @@ it rather than asserting it.
   git grep -lEi 'correction[ _-]channel|CorrectionChannel'            $rev -- "${paths[@]}" > a; echo $?   # 0, 19 files
   git grep -lEi 'native[ _-](supervis|runtime)|swe-lab-supervisor'    $rev -- "${paths[@]}" > b; echo $?   # 0, 11 files
   git grep -lEi 'segment(ed)?[ _-](loop|supervision)'                 $rev -- "${paths[@]}" > c; echo $?   # 0, 12 files
-  comm -12 a b | comm -12 - c
+  comm -12 a  b > ab;  echo $?                                                                  # 0,  4 files
+  comm -12 ab c > all; echo $?                                                                  # 0,  2 files
   ```
 
-  `git grep -l` exits 1 when nothing matches, so each `echo $?` above tells a
-  real empty result from a broken invocation. The intersection is **two files**,
-  and neither compares the carriers:
+  Each stage is materialized and counted rather than piped into the next,
+  because a pipeline's status is only its last command's — a failed first
+  intersection reaching a working second one would look like a result. The two
+  kinds of status carry different things here, and it is worth saying which:
+  `git grep -l` **exits 1 when nothing matches**, so its `echo $?` separates a
+  genuine empty result from a broken invocation, while `comm` **exits 0 on an
+  empty intersection too**, so at those two stages the exit status only says the
+  stage ran and the **count** is what carries the answer. Both are printed for
+  that reason. The intersection is **two files**, and neither compares the
+  carriers:
   [`plans/README.md`](../trace-synthesis/plans/README.md), a task index, and
   [task 22](../trace-synthesis/plans/task-22-segmented-supervision-loop.md),
   whose §9 lists the other two under *"Not touched"*. The same three commands at
