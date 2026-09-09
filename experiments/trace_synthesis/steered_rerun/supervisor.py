@@ -320,15 +320,21 @@ class Supervisor:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user},
         ],
-        # One budget for reasoning, verdict and hint together, so this call is
-        # under more pressure than the library judge's (#383) — and its every
-        # observed failure is that pressure: all 4 model errors across the 64
-        # logged calls in `runs/` are an unparseable verdict cut mid-JSON at
-        # exactly the cap in force (3 at 700 under the earlier version, 1 at
-        # 1200), while reasoning alone reached 1079. A cap the failures sit on
-        # is not an upper bound on demand — it is where demand was censored, so
-        # 16384 is headroom, not a measured requirement. It costs nothing on the
-        # common case (median completion 356): the model stops when it is done.
+        # One budget for reasoning, verdict and hint together, so this call
+        # is under more pressure than the library judge's (#383) — and that
+        # pressure has already cost this path answers. All 4 model errors
+        # across the 64 logged calls in `runs/` are an unparseable verdict cut
+        # mid-JSON, at completion tokens [1200, 700, 700, 700]. The 1200 is
+        # this file's own cap, so that one is a confirmed budget truncation;
+        # the three identical 700s are where a cap would put them, but no
+        # retained record says which revision made those requests (this file's
+        # only prior commit also sends 1200), so 700 is an inference. Reasoning
+        # alone reached 1079, and the largest survivor spent 1172 with 928 of
+        # it reasoning — 28 tokens short of losing its hint. A cap that
+        # failures sit on is where demand was censored, not a bound on it, so
+        # 16384 is headroom rather than a measured requirement, and it costs
+        # nothing on the common case (median completion 356.5): the model stops
+        # when it is done.
         "max_tokens": 16384,
         "temperature": 0.3,
     }).encode()
