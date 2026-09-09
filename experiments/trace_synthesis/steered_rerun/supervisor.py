@@ -321,23 +321,18 @@ class Supervisor:
             {"role": "user", "content": user},
         ],
         # One budget for reasoning, verdict and hint together, so this call
-        # is under more pressure than the library judge's (#383) — and that
-        # pressure has already cost this path answers. All 4 model errors
-        # across the 64 logged calls in `runs/` are an unparseable verdict cut
-        # mid-JSON, at completion tokens [1200, 700, 700, 700]. The 1200 is
-        # this file's own cap, so that one is strongly consistent with a budget
-        # truncation — but only that: this driver stores `usage` and no
-        # `finish_reason`, so the record cannot separate a response cut at the
-        # cap from one that stopped there on its own with an unusable object.
-        # The three identical 700s are where a cap would put them, but no
-        # retained record says which revision made those requests (this file's
-        # only prior commit also sends 1200), so 700 is an inference. Reasoning
-        # alone reached 1079, and the largest survivor spent 1172 with 928 of
-        # it reasoning — 28 tokens short of losing its hint. A cap that
-        # failures sit on is where demand was censored, not a bound on it, so
-        # 16384 is headroom rather than a measured requirement, and it costs
-        # nothing on the common case (median completion 356.5): the model stops
-        # when it is done.
+        # is under more pressure than the library judge's (#383). All 4 model
+        # errors across the 64 logged calls in `runs/` are an unparseable
+        # verdict cut mid-JSON, at completion tokens [1200, 700, 700, 700] —
+        # 1200 being this file's own cap. If those were truncated, that is
+        # where demand was censored rather than bounded; only `usage` is
+        # stored here, no `finish_reason`, so the record cannot say (#383 is
+        # the same failure on a path that recorded it). Either way the cap
+        # sits where answers are being lost: reasoning alone reached 1079, and
+        # the largest survivor spent 1172 with 928 of it reasoning — 28 tokens
+        # short of losing its hint. So 16384 is headroom, not a measured
+        # requirement, and it costs nothing on the common case (median
+        # completion 356.5): the model stops when it is done.
         "max_tokens": 16384,
         "temperature": 0.3,
     }).encode()
