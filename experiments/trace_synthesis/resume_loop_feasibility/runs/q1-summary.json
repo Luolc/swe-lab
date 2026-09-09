@@ -1,0 +1,74 @@
+{
+  "chain": {
+    "1_segment1_exit_zero_or_maxturns": true,
+    "2_segment1_read_step2": true,
+    "3_step2_absent_at_segment2": true,
+    "4_segment2_ran": true,
+    "5_nonce_verbatim_in_answer": true,
+    "6_segment2_zero_tool_use": true,
+    "7_control_lacks_nonce": true
+  },
+  "chain_holds": true,
+  "segment1": {
+    "exit_code": 1,
+    "assistant_messages": 5,
+    "tool_use_blocks": 5,
+    "tool_result_blocks": 5,
+    "result_subtype": "error_max_turns",
+    "result_terminal_reason": "max_turns",
+    "total_cost_usd": 0.0567628
+  },
+  "segment2": {
+    "exit_code": 0,
+    "assistant_messages": 1,
+    "tool_use_blocks": 0,
+    "result_subtype": "success",
+    "result_terminal_reason": "completed",
+    "total_cost_usd": 0.0067854000000000005
+  },
+  "segment2_usage": {
+    "input_tokens": 2,
+    "cache_creation_input_tokens": 383,
+    "cache_read_input_tokens": 25047,
+    "output_tokens": 24,
+    "output_tokens_details": {
+      "thinking_tokens": 0
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 383,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "not_available",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 24,
+        "cache_read_input_tokens": 25047,
+        "cache_creation_input_tokens": 383,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 383
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "control": {
+    "exit_code": 0,
+    "assistant_messages": 1,
+    "tool_use_blocks": 0,
+    "result_subtype": "success",
+    "total_cost_usd": 0.0191932
+  },
+  "session_files_before": {},
+  "session_files_after_segment1": {},
+  "session_files_after_segment2": {},
+  "session_ids_seen": [],
+  "ledger_total_usd": 0.2974
+}

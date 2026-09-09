@@ -1,0 +1,117 @@
+{
+  "source_sha256": "049ef74fc58bfacb21a0da890b198f5285183d1e61779904977ca254e9765a8a",
+  "source_bytes": 32031,
+  "credential_gate": {
+    "redaction_marker_occurrences": 5,
+    "sensitive_headers_seen": 4,
+    "sensitive_headers_redacted": 4,
+    "unredacted_field_findings": 0,
+    "credential_shapes": {
+      "anthropic_key_prefix": 0,
+      "bearer_jwt": 0,
+      "jwt_shaped": 0
+    }
+  },
+  "requests": [
+    {
+      "index": 0,
+      "has_tools": true,
+      "tool_count": 25,
+      "kind": "agent-loop",
+      "messages": 6,
+      "role_sequence": [
+        "user",
+        "system",
+        "assistant",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "message_shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 587,
+              "sha256": "59afdf410bfc08968791dd26782b444e1bd7b5cc138000dbc8f678ffd4929f1f"
+            },
+            {
+              "len": 334,
+              "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
+            }
+          ],
+          "has_system_reminder": true
+        },
+        {
+          "role": "system",
+          "blocks": [
+            "str"
+          ],
+          "text_digests": [
+            {
+              "len": 7957,
+              "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
+            }
+          ],
+          "has_system_reminder": true
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use:Bash"
+          ],
+          "text_digests": [],
+          "has_system_reminder": false
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result"
+          ],
+          "text_digests": [],
+          "has_system_reminder": false
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use:Read"
+          ],
+          "text_digests": [],
+          "has_system_reminder": false
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ],
+          "has_system_reminder": false
+        }
+      ],
+      "last_message_blocks": [
+        "tool_result",
+        "text"
+      ],
+      "mixed_tool_result_and_text_indices": [
+        5
+      ],
+      "correction_text_blocks": 1,
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant": 0,
+      "system_reminder_blocks": 3
+    }
+  ],
+  "label": "anchored-single-probe"
+}

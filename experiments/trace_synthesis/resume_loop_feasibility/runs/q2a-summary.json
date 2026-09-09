@@ -1,0 +1,53 @@
+[
+  {
+    "arm": "2",
+    "exit_code": 1,
+    "assistant_messages": 2,
+    "tool_use_blocks": 2,
+    "tool_result_blocks": 2,
+    "result_subtype": "error_max_turns",
+    "result_stop_reason": "tool_use",
+    "result_terminal_reason": "max_turns",
+    "assistant_events": 4,
+    "result_is_error": true,
+    "result_num_turns": 3,
+    "total_cost_usd": 0.035967599999999995,
+    "task_complete": false,
+    "nonces_in_result": 0,
+    "elapsed_s": 17.249
+  },
+  {
+    "arm": "3",
+    "exit_code": 1,
+    "assistant_messages": 3,
+    "tool_use_blocks": 3,
+    "tool_result_blocks": 3,
+    "result_subtype": "error_max_turns",
+    "result_stop_reason": "tool_use",
+    "result_terminal_reason": "max_turns",
+    "assistant_events": 5,
+    "result_is_error": true,
+    "result_num_turns": 4,
+    "total_cost_usd": 0.043238200000000004,
+    "task_complete": false,
+    "nonces_in_result": 0,
+    "elapsed_s": 18.172
+  },
+  {
+    "arm": "none",
+    "exit_code": 0,
+    "assistant_messages": 12,
+    "tool_use_blocks": 11,
+    "tool_result_blocks": 11,
+    "result_subtype": "success",
+    "result_stop_reason": "end_turn",
+    "result_terminal_reason": "completed",
+    "assistant_events": 15,
+    "result_is_error": false,
+    "result_num_turns": 12,
+    "total_cost_usd": 0.107195,
+    "task_complete": true,
+    "nonces_in_result": 5,
+    "elapsed_s": 55.273
+  }
+]

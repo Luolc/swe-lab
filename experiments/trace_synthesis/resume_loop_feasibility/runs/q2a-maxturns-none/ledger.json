@@ -1,0 +1,24 @@
+{
+  "steps_present": [
+    "step1.txt",
+    "step2.txt",
+    "step3.txt",
+    "step4.txt",
+    "step5.txt"
+  ],
+  "result_exists": true,
+  "result_lines": [
+    "TOKEN d97dadc36adb643bd1658d166d899880",
+    "TOKEN b1047eb1195258fb05a740d108b0cdb0",
+    "TOKEN 90b6c256332dd9173d0b7f3906465fd0",
+    "TOKEN 85f4a4e0f7adde6b8f3872c11e5bc539",
+    "TOKEN 9bac04f17242fedd84ae46f34e9ef2be"
+  ],
+  "nonces_found_in_result": [
+    "step1",
+    "step2",
+    "step3",
+    "step4",
+    "step5"
+  ]
+}

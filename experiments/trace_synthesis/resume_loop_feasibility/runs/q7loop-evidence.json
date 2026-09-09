@@ -1,0 +1,420 @@
+{
+  "source_sha256": "bb4e0fad1bcf3981fe9f1b64bbb8220f16d8d7dff4d0b325f896b169c7552edd",
+  "source_bytes": 132820,
+  "credential_gate": {
+    "redaction_marker_occurrences": 25,
+    "sensitive_headers_seen": 20,
+    "sensitive_headers_redacted": 20,
+    "unredacted_field_findings": 0,
+    "credential_shapes": {
+      "anthropic_key_prefix": 0,
+      "bearer_jwt": 0,
+      "jwt_shaped": 0
+    }
+  },
+  "requests": [
+    {
+      "index": 0,
+      "has_tools": false,
+      "tool_count": 0,
+      "kind": "auxiliary",
+      "messages": 1,
+      "role_sequence": [
+        "user"
+      ],
+      "message_shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 535,
+              "sha256": "41fb20b0c2793db9c3e1ea5db046e8fab45371cc72dc3dae25cecc9ce6e69777"
+            }
+          ],
+          "has_system_reminder": false
+        }
+      ],
+      "last_message_blocks": [
+        "text"
+      ],
+      "mixed_tool_result_and_text_indices": [],
+      "correction_text_blocks": 0,
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant": 0,
+      "system_reminder_blocks": 0
+    },
+    {
+      "index": 1,
+      "has_tools": true,
+      "tool_count": 25,
+      "kind": "agent-loop",
+      "messages": 2,
+      "role_sequence": [
+        "user",
+        "system"
+      ],
+      "message_shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 587,
+              "sha256": "59afdf410bfc08968791dd26782b444e1bd7b5cc138000dbc8f678ffd4929f1f"
+            },
+            {
+              "len": 334,
+              "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
+            }
+          ],
+          "has_system_reminder": true
+        },
+        {
+          "role": "system",
+          "blocks": [
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 7957,
+              "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
+            }
+          ],
+          "has_system_reminder": true
+        }
+      ],
+      "last_message_blocks": [
+        "text"
+      ],
+      "mixed_tool_result_and_text_indices": [],
+      "correction_text_blocks": 0,
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant": 0,
+      "system_reminder_blocks": 3
+    },
+    {
+      "index": 2,
+      "has_tools": true,
+      "tool_count": 25,
+      "kind": "agent-loop",
+      "messages": 4,
+      "role_sequence": [
+        "user",
+        "system",
+        "assistant",
+        "user"
+      ],
+      "message_shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 587,
+              "sha256": "59afdf410bfc08968791dd26782b444e1bd7b5cc138000dbc8f678ffd4929f1f"
+            },
+            {
+              "len": 334,
+              "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
+            }
+          ],
+          "has_system_reminder": true
+        },
+        {
+          "role": "system",
+          "blocks": [
+            "str"
+          ],
+          "text_digests": [
+            {
+              "len": 7957,
+              "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
+            }
+          ],
+          "has_system_reminder": true
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use:Read"
+          ],
+          "text_digests": [],
+          "has_system_reminder": false
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ],
+          "has_system_reminder": false
+        }
+      ],
+      "last_message_blocks": [
+        "tool_result",
+        "text"
+      ],
+      "mixed_tool_result_and_text_indices": [
+        3
+      ],
+      "correction_text_blocks": 1,
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant": 0,
+      "system_reminder_blocks": 3
+    },
+    {
+      "index": 3,
+      "has_tools": true,
+      "tool_count": 25,
+      "kind": "agent-loop",
+      "messages": 6,
+      "role_sequence": [
+        "user",
+        "system",
+        "assistant",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "message_shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 587,
+              "sha256": "59afdf410bfc08968791dd26782b444e1bd7b5cc138000dbc8f678ffd4929f1f"
+            },
+            {
+              "len": 334,
+              "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
+            }
+          ],
+          "has_system_reminder": true
+        },
+        {
+          "role": "system",
+          "blocks": [
+            "str"
+          ],
+          "text_digests": [
+            {
+              "len": 7957,
+              "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
+            }
+          ],
+          "has_system_reminder": true
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use:Read"
+          ],
+          "text_digests": [],
+          "has_system_reminder": false
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ],
+          "has_system_reminder": false
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use:Bash"
+          ],
+          "text_digests": [],
+          "has_system_reminder": false
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ],
+          "has_system_reminder": false
+        }
+      ],
+      "last_message_blocks": [
+        "tool_result",
+        "text"
+      ],
+      "mixed_tool_result_and_text_indices": [
+        3,
+        5
+      ],
+      "correction_text_blocks": 2,
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant": 0,
+      "system_reminder_blocks": 3
+    },
+    {
+      "index": 4,
+      "has_tools": true,
+      "tool_count": 25,
+      "kind": "agent-loop",
+      "messages": 8,
+      "role_sequence": [
+        "user",
+        "system",
+        "assistant",
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "message_shapes": [
+        {
+          "role": "user",
+          "blocks": [
+            "text",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 587,
+              "sha256": "59afdf410bfc08968791dd26782b444e1bd7b5cc138000dbc8f678ffd4929f1f"
+            },
+            {
+              "len": 334,
+              "sha256": "f1a0b5837c1d8a991a4cd11b00372943a3bc5518dbaeae88b798dfa51f5dab15"
+            }
+          ],
+          "has_system_reminder": true
+        },
+        {
+          "role": "system",
+          "blocks": [
+            "str"
+          ],
+          "text_digests": [
+            {
+              "len": 7957,
+              "sha256": "ddbec5920bdab0d81dc3fea839a3189db913a14f4737c0c9326dfcd3801e5d0e"
+            }
+          ],
+          "has_system_reminder": true
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use:Read"
+          ],
+          "text_digests": [],
+          "has_system_reminder": false
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ],
+          "has_system_reminder": false
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "thinking",
+            "tool_use:Bash"
+          ],
+          "text_digests": [],
+          "has_system_reminder": false
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ],
+          "has_system_reminder": false
+        },
+        {
+          "role": "assistant",
+          "blocks": [
+            "tool_use:Read"
+          ],
+          "text_digests": [],
+          "has_system_reminder": false
+        },
+        {
+          "role": "user",
+          "blocks": [
+            "tool_result",
+            "text"
+          ],
+          "text_digests": [
+            {
+              "len": 9,
+              "sha256": "f3daf2941865055833e9db4c9bab5d1280281952bb1699514a28ee4c67256573"
+            }
+          ],
+          "has_system_reminder": false
+        }
+      ],
+      "last_message_blocks": [
+        "tool_result",
+        "text"
+      ],
+      "mixed_tool_result_and_text_indices": [
+        3,
+        5,
+        7
+      ],
+      "correction_text_blocks": 3,
+      "seam_user_text_blocks": 0,
+      "seam_synthetic_assistant": 0,
+      "system_reminder_blocks": 3
+    }
+  ],
+  "label": "anchored-resume-session-at"
+}

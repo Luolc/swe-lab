@@ -1,0 +1,130 @@
+{
+  "kind": "assistant-record-shapes",
+  "source": "q1 resumed session transcript (host-private, not committed)",
+  "note": "Shapes only: key names, the model field and block types. No message content, no ids, no paths. This is the fixture the synthetic-message filter's two arms are asserted against.",
+  "real_assistant_examples": [
+    {
+      "record_keys": [
+        "apiBlockIndex",
+        "cwd",
+        "effort",
+        "entrypoint",
+        "gitBranch",
+        "isSidechain",
+        "message",
+        "parentUuid",
+        "requestId",
+        "sessionId",
+        "timestamp",
+        "type",
+        "userType",
+        "uuid",
+        "version"
+      ],
+      "message_keys": [
+        "content",
+        "diagnostics",
+        "id",
+        "model",
+        "role",
+        "stop_details",
+        "stop_reason",
+        "stop_sequence",
+        "type",
+        "usage"
+      ],
+      "model": "claude-sonnet-5",
+      "has_requestId": true,
+      "has_apiBlockIndex": true,
+      "has_effort": true,
+      "has_isApiErrorMessage": false,
+      "content_block_types": [
+        "thinking"
+      ]
+    },
+    {
+      "record_keys": [
+        "apiBlockIndex",
+        "cwd",
+        "effort",
+        "entrypoint",
+        "gitBranch",
+        "isSidechain",
+        "message",
+        "parentUuid",
+        "requestId",
+        "sessionId",
+        "timestamp",
+        "type",
+        "userType",
+        "uuid",
+        "version"
+      ],
+      "message_keys": [
+        "content",
+        "diagnostics",
+        "id",
+        "model",
+        "role",
+        "stop_details",
+        "stop_reason",
+        "stop_sequence",
+        "type",
+        "usage"
+      ],
+      "model": "claude-sonnet-5",
+      "has_requestId": true,
+      "has_apiBlockIndex": true,
+      "has_effort": true,
+      "has_isApiErrorMessage": false,
+      "content_block_types": [
+        "tool_use"
+      ]
+    }
+  ],
+  "synthetic_assistant_examples": [
+    {
+      "record_keys": [
+        "cwd",
+        "entrypoint",
+        "gitBranch",
+        "isApiErrorMessage",
+        "isSidechain",
+        "message",
+        "parentUuid",
+        "sessionId",
+        "timestamp",
+        "type",
+        "userType",
+        "uuid",
+        "version"
+      ],
+      "message_keys": [
+        "container",
+        "content",
+        "context_management",
+        "diagnostics",
+        "id",
+        "model",
+        "role",
+        "stop_details",
+        "stop_reason",
+        "stop_sequence",
+        "type",
+        "usage"
+      ],
+      "model": "<synthetic>",
+      "has_requestId": false,
+      "has_apiBlockIndex": false,
+      "has_effort": false,
+      "has_isApiErrorMessage": true,
+      "content_block_types": [
+        "text"
+      ]
+    }
+  ],
+  "counts": {
+    "real": 8,
+    "synthetic": 1
+  }
+}
