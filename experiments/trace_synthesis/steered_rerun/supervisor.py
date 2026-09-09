@@ -320,7 +320,20 @@ class Supervisor:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user},
         ],
-        "max_tokens": 1200,
+        # One budget for reasoning, verdict and hint together, so this call
+        # is under more pressure than the library judge's (#383). All 4 model
+        # errors across the 64 logged calls in `runs/` are an unparseable
+        # verdict cut mid-JSON, at completion tokens [1200, 700, 700, 700] —
+        # 1200 being this file's own cap. If those were truncated, that is
+        # where demand was censored rather than bounded; only `usage` is
+        # stored here, no `finish_reason`, so the record cannot say (#383 is
+        # the same failure on a path that recorded it). Either way the cap
+        # sits where answers are being lost: reasoning alone reached 1079, and
+        # the largest survivor spent 1172 with 928 of it reasoning — 28 tokens
+        # short of losing its hint. So 16384 is headroom, not a measured
+        # requirement, and it costs nothing on the common case (median
+        # completion 356.5): the model stops when it is done.
+        "max_tokens": 16384,
         "temperature": 0.3,
     }).encode()
     request = urllib.request.Request(
