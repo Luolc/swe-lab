@@ -325,8 +325,11 @@ class Supervisor:
         # pressure has already cost this path answers. All 4 model errors
         # across the 64 logged calls in `runs/` are an unparseable verdict cut
         # mid-JSON, at completion tokens [1200, 700, 700, 700]. The 1200 is
-        # this file's own cap, so that one is a confirmed budget truncation;
-        # the three identical 700s are where a cap would put them, but no
+        # this file's own cap, so that one is strongly consistent with a budget
+        # truncation — but only that: this driver stores `usage` and no
+        # `finish_reason`, so the record cannot separate a response cut at the
+        # cap from one that stopped there on its own with an unusable object.
+        # The three identical 700s are where a cap would put them, but no
         # retained record says which revision made those requests (this file's
         # only prior commit also sends 1200), so 700 is an inference. Reasoning
         # alone reached 1079, and the largest survivor spent 1172 with 928 of
