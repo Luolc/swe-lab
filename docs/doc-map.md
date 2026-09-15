@@ -21,7 +21,7 @@ vertical). An active component owns a
 
 | File / dir | Answers | Never put here |
 |---|---|---|
-| `AGENTS.md` | How do we work? (modes, git flow, quality bar, boundaries, comms) | status; design; codebase map |
+| `AGENTS.md` | How do we work? (modes, git flow, quality bar, boundaries, comms) | status; design; codebase map; a rule already in `~/.agents/AGENTS.md` |
 | `docs/README.md` | Where is everything, and where are we? (map + **workstream-level status**) | task-level status; design detail |
 | `docs/conventions.md` | How is the code laid out and run? (dir map, commands, hazards, source-of-truth, naming, interface style) | status; an ADR's rejected alternatives |
 | `docs/doc-map.md` | Which doc answers which question; where a learning lands (this file) | anything with its own home below |

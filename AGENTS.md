@@ -60,21 +60,15 @@ supersedes it.**
 
 ## Git & GitHub workflow
 
-The flow itself is a **cross-repo rule** — see the Git-workflow and multi-agent
-sections of `~/.agents/AGENTS.md`, and don't restate it here: branch off
-`origin/main`, open a PR (`gh pr create`) with a real title and body describing
-what changed and *why*, have the paired reviewer review it, and merge only on a
-`Verdict: LGTM`, pinning the approved SHA
-(`gh pr merge <n> --squash --delete-branch --match-head-commit <sha>`). No
-auto-merge, no self-merge, no direct push of non-trivial work to `main`. Delete
-the merged local branch by name; fast-forward local `main` only with
-`git fetch origin && git merge --ff-only origin/main`.
+The flow itself is a **cross-repo rule**, written once in the Git-workflow and
+multi-agent sections of `~/.agents/AGENTS.md` — read it there, and don't restate
+it here.
 
 Agents drive this via the `gh` CLI: don't ask the user to push, merge, or click
 in the GitHub UI — do it, and report the PR link. What is specific to this repo:
 
-- **Branch types:** `type/short-desc` with `docs/…`, `feat/…`, `fix/…`,
-  `chore/…`, and `exp/…` for experiment work.
+- **Branch types:** the cross-repo `type/short-desc` set, plus `exp/…` for
+  experiment work.
 - **CI is the required check.** [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
   runs `pytest` + `pre-commit` on every PR, enforced as the required `check`
   status by branch protection on `main`. Green CI is necessary but not
@@ -99,14 +93,17 @@ Before merge, both must be clean (see [`docs/conventions.md`](docs/conventions.m
 ```sh
 git add -A                           # see below: untracked files are NOT checked
 uv run pre-commit run --all-files    # the full hook set — see conventions.md
-uv run pytest -m 'not docker'        # the test suite, minus the container tests
+mkdir -p .pytest-tmp && TMPDIR="$PWD/.pytest-tmp" uv run pytest -m 'not docker'
 ```
 
 **`--all-files` means all *tracked* files**, so stage before running the quality
-bar even when you are not ready to commit — an untracked file is skipped in
-silence, and new files are the category that most needs checking. The
-measurement and the reasoning live once, in
+bar even when you are not ready to commit. The rule is cross-repo
+(`~/.agents/AGENTS.md`); this repo's measurement of it lives once, in
 [`docs/conventions.md`](docs/conventions.md#formatting--lint-enforced-by-pre-commit).
+
+**`TMPDIR` is part of the command, not decoration** — why, and what dropping it
+looks like when it bites, are in
+[`docs/conventions.md`](docs/conventions.md#hazards-learned-the-hard-way).
 
 The **docker-marked tests are CI's job**, and CI is the required check that runs
 them — they must be green before merge, but locally they start containers of
@@ -140,8 +137,7 @@ pre-existing fact we neither introduced nor can remove at acceptable cost, and
 each entry is one immutable fingerprint — never a path, rule or regex. The full
 rule and the reasoning are in that file's header comment.
 
-Scope to what you touched while iterating; run the full set before merge. New
-behavior gets a test; `experiments/` is exempt from the hooks.
+`experiments/` is exempt from the hooks.
 
 **An invariant needs a test, or downgrade the claim.** When a `spec.md`, an ADR,
 or a docstring asserts an *always / never / every path / exactly one*, the same
@@ -217,8 +213,7 @@ test for is a wish, and it silently decays into a lie.
   by design — what that covers, and why an experiment's own committed evidence
   is not it, is in
   [`docs/conventions.md`](docs/conventions.md#what-may-be-committed-as-evidence));
-  push non-trivial work straight to `main`; present the provisional patch-extraction
-  docs as authoritative.
+  present the provisional patch-extraction docs as authoritative.
 
 ## Language of the codebase
 
