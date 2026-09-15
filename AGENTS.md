@@ -101,12 +101,9 @@ bar even when you are not ready to commit. The rule is cross-repo
 (`~/.agents/AGENTS.md`); this repo's measurement of it lives once, in
 [`docs/conventions.md`](docs/conventions.md#formatting--lint-enforced-by-pre-commit).
 
-**`TMPDIR` is not optional decoration.** The mechanism is the cross-repo `/tmp`
-hygiene rule in `~/.agents/AGENTS.md`; what belongs here is the command, and the
-one symptom that sends people to the wrong place: dropping it puts the run's
-temp tree under a box-wide root another workspace can delete mid-run, and the
-red that produces is **broad, cross-module, and green on re-run** — which reads
-exactly like "we have a flaky test". `.pytest-tmp/` is gitignored.
+**`TMPDIR` is part of the command, not decoration** — why, and what dropping it
+looks like when it bites, are in
+[`docs/conventions.md`](docs/conventions.md#hazards-learned-the-hard-way).
 
 The **docker-marked tests are CI's job**, and CI is the required check that runs
 them — they must be green before merge, but locally they start containers of
