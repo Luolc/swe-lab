@@ -21,9 +21,10 @@ uv sync                              # create .venv + install all (incl. dev) de
 direnv allow                         # auto-activate venv on cd (or: source .venv/bin/activate)
 uv run pre-commit install            # install the hooks (once)
 
-uv run pytest                        # run the test suite
 git add -A                           # --all-files means all TRACKED files
 uv run pre-commit run --all-files    # the full hook set — see Formatting & lint
+# The test suite. TMPDIR is part of the command, not decoration — see Hazards.
+mkdir -p .pytest-tmp && TMPDIR="$PWD/.pytest-tmp" uv run pytest -m 'not docker'
 
 # The engine CLI — one entry point, per-subcommand modules (cli/<name>.py).
 # `run` takes a REGISTERED WORKFLOW and an instance; any field of it is
@@ -644,7 +645,15 @@ believe this result*; the cross-repo statement of the invariant itself is in
 - **The local suite and CI have different jurisdictions.** Two halves, and both
   are load-bearing when several agents share this box.
 
-  *What to run.* The default local gate is `uv run pytest -m 'not docker'`. The
+  *What to run.* The default local gate is
+  `mkdir -p .pytest-tmp && TMPDIR="$PWD/.pytest-tmp" uv run pytest -m 'not docker'`
+  — `TMPDIR` is load-bearing for the same "several agents share this box" reason
+  the marker is. Without it the run's temp tree goes under a box-wide root any
+  other workspace may clear, and the resulting red is **broad, cross-module, and
+  green on re-run** — indistinguishable, to a reader, from "we have a flaky
+  test", which is exactly the wrong place to go looking. The mechanism is the
+  cross-repo `/tmp` hygiene rule in `~/.agents/AGENTS.md`; this is its command
+  here, and `.pytest-tmp/` is gitignored. The
   docker-marked tests start containers of their own, which collides head-on with
   the one-container-at-a-time rule the moment two agents work in parallel:
   2026-09-01 had two leaked producer containers (`pytest-309`, `pytest-323`)
