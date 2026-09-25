@@ -46,7 +46,7 @@ re-implemented, and carries the one failed attempt that phase B analyses.
 
 The data file lives under `datasets/oracle_failures/data/`, gitignored like
 every dataset's data (`datasets/**/data/`); the tracked half is
-[`datasets/oracle_failures/README.md`](../../../datasets/oracle_failures/README.md).
+[`datasets/oracle_failures/README.md`](https://github.com/Luolc/swe-lab/blob/61caaf6153db5500c1d6df9116b562a247828fa7/datasets/oracle_failures/README.md).
 
 ## Delegation, not a copy
 
@@ -104,7 +104,7 @@ The Oracle task has to name the files the record stages, and "nothing
 downstream of a dataset should import a concrete one"
 (`datasets/instance.py`). So the three workspace names —
 `failed_conversation.json`, `failed_verdict.json`, `failed_patch.diff` — live
-in [`swe_lab/trace_synthesis/sample.py`](../../../src/swe_lab/trace_synthesis/sample.py),
+in [`swe_lab/trace_synthesis/sample.py`](https://github.com/Luolc/swe-lab/blob/61caaf6153db5500c1d6df9116b562a247828fa7/src/swe_lab/trace_synthesis/sample.py),
 a leaf module the dataset record imports and the task imports; neither
 imports the other. The same arrangement `PATCH_NAME` has between the
 extraction side and the datasets.

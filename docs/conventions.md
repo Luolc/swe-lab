@@ -580,6 +580,16 @@ those (a field-reduced snapshot, a normalized evidence record) — not to delete
 a small one because it *looks* big next to a source file. `runs/` is
 append-only per the playbook: new variant, new directory, never an overwrite.
 
+**Once an experiment ends, its raw files may go** (owner, 2026-09-25). The two
+questions above govern an experiment while it is open: its raw files are
+committed as usual. When it is finished and its conclusions are in its
+`REPORT.md` (or the README or record that plays that role), the raw files — runs,
+captures, logs, one-off scripts and the tests that only pinned them — may be
+deleted, keeping the written conclusions. Every link into a deleted file is
+rewritten to a permalink pinned on the commit before the deletion, so the
+evidence stays one click away in history, and only link targets change in a
+frozen document. Precedent: [#468](https://github.com/Luolc/swe-lab/pull/468).
+
 **None of this loosens what is absolute.** Independent of size or usefulness,
 and enforced elsewhere rather than judged here: **no secrets** (the gitleaks
 hook and the CI history scan — see [Quality bar](../AGENTS.md#quality-bar)) and

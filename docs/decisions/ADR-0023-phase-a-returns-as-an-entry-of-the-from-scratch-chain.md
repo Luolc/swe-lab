@@ -132,7 +132,7 @@ outputs **by store name** (ADR-0007 §5); an explicit binding
 `"<producer key>/<input name>"` picks the producer, never a different name.
 The Oracle task reads the failure under the sample contract's names —
 `failed_conversation.json`, `failed_verdict.json`, `failed_patch.diff`
-([`sample.py`](../../src/swe_lab/trace_synthesis/sample.py)) — while a rollout
+([`sample.py`](https://github.com/Luolc/swe-lab/blob/61caaf6153db5500c1d6df9116b562a247828fa7/src/swe_lab/trace_synthesis/sample.py)) — while a rollout
 produces `conversation.json` and `patch.diff`. Nothing can bind one to the
 other without either a rename facility in the edge layer or a second set of
 input names on the Oracle.
