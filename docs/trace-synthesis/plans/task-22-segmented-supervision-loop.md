@@ -487,7 +487,9 @@ and every frozen `PREREGISTRATION.md`.
    per the callout: recorded, never enforced. (The definition was deleted on
    2026-09-24; the loop now ships only as `from_scratch_guided_trace`'s
    `guided_rollout` entry.)
-6. **The bring-up run: 1 instance × 1 rollout**, this task's ceiling and tighter
+6. *(No dedicated bring-up run is recorded; the task closed on 2026-09-24 with
+   point 2 below dropped, not met — see the index's row 22.)*
+   **The bring-up run: 1 instance × 1 rollout**, this task's ceiling and tighter
    than the repo's own ask-first line. **Its acceptance is the two points in the
    callout and nothing else**: the loop completes, and there is quoted evidence
    that an injected message reached the actor's context and its next behaviour
