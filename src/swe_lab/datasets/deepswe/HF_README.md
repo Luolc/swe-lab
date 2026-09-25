@@ -50,7 +50,7 @@ evaluating agents, do not let them read this dataset or that repository.
 ## Licensing
 
 Two layers, per upstream's own
-[`PROVENANCE.md`](./PROVENANCE.md) (included verbatim):
+[`PROVENANCE.md`](https://huggingface.co/datasets/luolc/deep-swe-1-1-materialized/blob/main/PROVENANCE.md) (included verbatim):
 
 1. Datacurve AI Inc.'s original contributions (task specs, instructions,
    verifiers, curation) are **Apache-2.0** (`LICENSE` included).

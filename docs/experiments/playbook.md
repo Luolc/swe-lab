@@ -102,7 +102,9 @@ that a fresh session can re-derive every number and inspect any single run.
   model-under-test, final-prompt links, started/updated).
 - **Raw artifacts, preserved.** Save the full per-case output *and* an
   append-only `summary.jsonl`. Don't reduce to a mean and throw the runs away —
-  the residual-variance analysis needs the individual runs.
+  the residual-variance analysis needs the individual runs. This holds while the
+  experiment is open; what may be deleted once it ends is in
+  [conventions](../conventions.md#what-may-be-committed-as-evidence).
 - **Cost & tokens.** Track $ and input/output tokens per round; report a total
   and a per-run average. (Prompt-variance: "$24.18 / 56 runs (~$0.43/run)".)
 - **Never overwrite a variant — add one.** Prompt versions live side by side:
