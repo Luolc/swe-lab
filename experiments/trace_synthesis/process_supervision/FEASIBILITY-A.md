@@ -15,9 +15,9 @@ costs, and what is still unknown**. It does not propose a design.
 | Harness under test | Claude Code **2.1.257**, `~/.local/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe` |
 | Model under test | `claude-sonnet-4-5` → `claude-sonnet-4-5-20250929` |
 | Repo commit | `exp/process-supervision-research` @ `0e593e1` |
-| Raw artifacts | [`runs/`](runs/) — 20 real `claude` invocations (16 reached the API), 2 redacted proxy captures |
-| Probes | [`probes/`](probes/) — the hooks and settings files, verbatim |
-| Regenerate every number | `uv run python experiments/trace_synthesis/process_supervision/analyze.py` — offline, from this directory alone. The [§5](#5-what-does-resume-cost) pilot statistics come from another component's ledger, which lives off-repo; a field-reduced snapshot of it is committed as [`runs/pilot_ledger.jsonl`](runs/pilot_ledger.jsonl) so they regenerate here too |
+| Raw artifacts | [`runs/`](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/process_supervision/runs) — 20 real `claude` invocations (16 reached the API), 2 redacted proxy captures |
+| Probes | [`probes/`](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/process_supervision/probes) — the hooks and settings files, verbatim |
+| Regenerate every number | `uv run python experiments/trace_synthesis/process_supervision/analyze.py` — offline, from this directory alone. The [§5](#5-what-does-resume-cost) pilot statistics come from another component's ledger, which lives off-repo; a field-reduced snapshot of it is committed as [`runs/pilot_ledger.jsonl`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/process_supervision/runs/pilot_ledger.jsonl) so they regenerate here too |
 | Measured spend | $0.92 — the sum of the 16 `result` events' `total_cost_usd`; a resumed segment's figure appears to be session-cumulative, so this over-counts |
 
 Every row below is one of three: **measured** (a run in `runs/`),
@@ -311,16 +311,16 @@ count — order of magnitude only).
 > table and the two estimates below it, which is a false evidence boundary of
 > exactly the kind [§10](../../../docs/trace-synthesis/spec.md#10-what-is-measured-about-hooks)'s
 > classes exist to prevent. A field-reduced snapshot is now committed as
-> [`runs/pilot_ledger.jsonl`](runs/pilot_ledger.jsonl) (20 rows; source sha256
+> [`runs/pilot_ledger.jsonl`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/process_supervision/runs/pilot_ledger.jsonl) (20 rows; source sha256
 > `d93f3adf…`, provenance in
-> [`runs/pilot_ledger.provenance.json`](runs/pilot_ledger.provenance.json)),
+> [`runs/pilot_ledger.provenance.json`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/process_supervision/runs/pilot_ledger.provenance.json)),
 > taken with `analyze.py --freeze-pilot`, and `analyze.py` reads the snapshot
 > rather than the original. **The pilot's own ledger remains the source of
 > truth**; this is a dated copy of the fields these five statistics need, and
 > the values above are unchanged by it. That the analysis needs only this
 > directory is the kind of claim this report is about, so it is a test rather
 > than a sentence:
-> [`tests/test_process_supervision_pilot_snapshot.py`](../../../tests/test_process_supervision_pilot_snapshot.py)
+> [`tests/test_process_supervision_pilot_snapshot.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/tests/test_process_supervision_pilot_snapshot.py)
 > runs the whole analysis with the off-repo ledger made unreachable, and fails
 > if a missing snapshot ever goes back to reporting less instead of saying so.
 
@@ -478,7 +478,7 @@ only**; `python/reverse_proxy.py` was last modified by `942a11c`, before them.
 Committed captures under `injection_shape/runs/` **are** clean (`<redacted>`),
 so this is a regression in what the runner reaches for, not a committed leak.
 
-Actions taken here: the two captures in [`runs/`](runs/) were masked with this
+Actions taken here: the two captures in [`runs/`](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/process_supervision/runs) were masked with this
 repo's own `swe_lab.harnesses.claude_code.redaction.redact_record`, and
 `analyze.py --check-redaction` reports **0 findings** on both. **Nothing
 containing the token has been committed.**

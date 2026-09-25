@@ -124,7 +124,7 @@ sides: the request carries the run's OAuth bearer token (and
 `anthropic-organization-id` / `anthropic-workspace-id`. The driver redacts all
 of it in place as soon as a proxied run ends (`redact_record` /
 `redact_proxy_log`), and
-[`tests/test_injection_shape_redaction.py`](../../../tests/test_injection_shape_redaction.py)
+[`tests/test_injection_shape_redaction.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/tests/test_injection_shape_redaction.py)
 pins both directions plus the committed artifacts. Anything captured by other
 means must be redacted before it goes anywhere near a commit.
 

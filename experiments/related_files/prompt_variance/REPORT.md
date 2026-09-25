@@ -71,12 +71,12 @@
   (`aggregate.py`) is analyzed as a cheap proxy for sample-and-aggregate — does
   combining independent samples beat a single run?
 - **Cost and tokens** tracked per run. Raw data: `runs/<round>/` (full
-  annotations + `summary.jsonl`); regenerate metrics with [`analyze.py`](analyze.py) `<round>`
-  and [`aggregate.py`](aggregate.py) `<round>`.
+  annotations + `summary.jsonl`); regenerate metrics with [`analyze.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/analyze.py) `<round>`
+  and [`aggregate.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/aggregate.py) `<round>`.
 
 ## Baseline Results
 
-_Run: 2026-07-06 20:51–21:22 PDT · [raw data](runs/s1-baseline/)._
+_Run: 2026-07-06 20:51–21:22 PDT · [raw data](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/runs/s1-baseline)._
 
 All 12 runs completed and passed validation (`valid = 3/3` everywhere).
 
@@ -105,7 +105,7 @@ was *wrong* — all reasonable, on-target files — but ranges vary more than id
 
 ## v2 Results
 
-_Run: 2026-07-06 21:29–21:38 PDT · [raw data](runs/s1-v2/)._
+_Run: 2026-07-06 21:29–21:38 PDT · [raw data](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/runs/s1-v2)._
 
 Changes: added an explicit JSON output example; "range = the enclosing unit,
 never select an entire file"; "cover the whole relevant unit, not a sub-slice";
@@ -132,7 +132,7 @@ wins, two regressions**:
 
 ## v3 Results (Recommended Prompt)
 
-_Run: 2026-07-06 21:41–21:50 PDT · [raw data](runs/s1-v3/)._
+_Run: 2026-07-06 21:41–21:50 PDT · [raw data](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/runs/s1-v3)._
 
 Changes: kept v2's wins; softened to "don't grab a whole *large* file when only
 part is relevant; a *small, fully-relevant* file may be taken whole"; added
@@ -168,7 +168,7 @@ Still weak / noisy:
 
 ## Generalization: Second Suite
 
-_Run: [`s2-v3`](runs/s2-v3/), 2026-07-06 22:19–22:33 PDT. v3 prompt on four **different** repos: navidrome
+_Run: [`s2-v3`](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/runs/s2-v3), 2026-07-06 22:19–22:33 PDT. v3 prompt on four **different** repos: navidrome
 (go), openlibrary (python), webclients (js), tutanota (the real `ts` repo)._
 
 The point: does v3 generalize beyond the first sample? Yes. All 12 runs
@@ -198,7 +198,7 @@ Aggregation is the better lever for these cases (below).
 _Post-processing of the s1-v3 runs (2026-07-06 PDT); no new sampling._
 
 Question: is sample-and-aggregate worth building? As a cheap lower bound, a
-**majority-consensus** aggregate over the 3 v3 runs ([`aggregate.py`](aggregate.py)): keep a file
+**majority-consensus** aggregate over the 3 v3 runs ([`aggregate.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/aggregate.py)): keep a file
 if ≥ 2 runs chose it; keep a line if ≥ 2 runs covered it, then re-form ranges.
 This deterministically drops single-run outliers and resolves disagreements to
 the majority — no LLM needed.
@@ -219,7 +219,7 @@ What it produced, versus individual runs:
 But it is conservative: a genuinely-relevant region only one run found is dropped
 (a recall cost), and it cannot improve on what the runs collectively found.
 
-**LLM aggregator** ([`aggregate_llm.py`](aggregate_llm.py), 2026-07-06 22:29–22:39 PDT; data [s1](runs/s1-v3-agg-llm-v0/) · [s2](runs/s2-v3-agg-llm-v0/)). The real version: feed the
+**LLM aggregator** ([`aggregate_llm.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/aggregate_llm.py), 2026-07-06 22:29–22:39 PDT; data [s1](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/runs/s1-v3-agg-llm-v0) · [s2](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/runs/s2-v3-agg-llm-v0)). The real version: feed the
 3 run annotations + task context + the checkout to an aggregator agent that
 synthesizes one reconciled annotation (union the correct, drop over-broad /
 peripheral, pick tight consistent ranges), self-validated. All 4 s1 instances
@@ -254,9 +254,9 @@ first pass, where v3 single-run is already good and ~4× cheaper.
 
 The aggregator has its own prompt ([`pipelines/related_files/aggregator.py`](../../../src/swe_lab/pipelines/related_files/aggregator.py)),
 iterated separately from the annotation prompt. Outputs are preserved per
-version — v0 ([s1](runs/s1-v3-agg-llm-v0/), [s2](runs/s2-v3-agg-llm-v0/)),
-v1 ([s1](runs/s1-v3-agg-llm-v1/), [s2](runs/s2-v3-agg-llm-v1/)), finalized
-([s1](runs/s1-v3-agg-llm/), [s2](runs/s2-v3-agg-llm/)).
+version — v0 ([s1](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/runs/s1-v3-agg-llm-v0), [s2](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/runs/s2-v3-agg-llm-v0)),
+v1 ([s1](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/runs/s1-v3-agg-llm-v1), [s2](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/runs/s2-v3-agg-llm-v1)), finalized
+([s1](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/runs/s1-v3-agg-llm), [s2](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/related_files/prompt_variance/runs/s2-v3-agg-llm)).
 
 - **v0 — "tightest".** The first version told the aggregator to choose "the
   tightest contiguous range … from signature to closing line". It produced clean

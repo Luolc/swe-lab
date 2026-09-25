@@ -69,7 +69,7 @@ its chance to fire and did not.**
 ## Method
 
 The check imports `_wire()` from
-[`streamjson_input/evidence.py`](../streamjson_input/evidence.py) — **the code
+[`streamjson_input/evidence.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/streamjson_input/evidence.py) — **the code
 that computed the baseline** — rather than re-deriving the digest. Two numbers
 produced by one implementation is the comparison; two numbers produced by two
 implementations would have left open the question the check exists to answer.

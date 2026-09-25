@@ -46,7 +46,7 @@ supervisor that can end a rollout by dying.
 This is why the component is buildable now although task 16 is not authorized:
 it depends on a `write(line)` sink, not on a FIFO. The rig drives `claude`
 host-side as a subprocess ([the compliance driver already
-does](../../../experiments/trace_synthesis/mid_turn_compliance/driver.py)), so
+does](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/mid_turn_compliance/driver.py)), so
 the sink is that subprocess's stdin today and the in-sandbox relay later,
 without the component changing.
 

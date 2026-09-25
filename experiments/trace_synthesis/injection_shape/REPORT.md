@@ -56,7 +56,7 @@ from any transcript. STREAM / PROXY are this repo's two converters.
 | `PostToolUseFailure` `additionalContext` | same, wrapper says `PostToolUseFailure:Bash …`, inside the `is_error: true` result | same, attributed to a hook on tool failure | **LOST** | kept | shape probe only |
 | `PostToolUse` `decision: "block"` | — | — | — | — | already measured, [spec §10](../../../docs/trace-synthesis/spec.md#10-what-is-measured-about-hooks); lands as an `attachment` |
 
-Full per-run table: `analyze.py`, or [`analysis.json`](analysis.json).
+Full per-run table: `analyze.py`, or [`analysis.json`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/injection_shape/analysis.json).
 
 ### Why `updatedToolOutput` is not the banned rewrite
 

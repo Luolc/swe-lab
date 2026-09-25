@@ -27,11 +27,11 @@ comes from the parquet plus repository source fetched over HTTP at
 | File | What it is |
 | --- | --- |
 | [`REPORT.md`](REPORT.md) | the results: per-instance verdicts, screen overlap, the control, what to hand the trace-synthesis line |
-| [`candidates.json`](candidates.json) | the same verdicts, machine-readable, with each screen's raw output per instance |
-| [`screens.py`](screens.py) | the five mechanical screens, plus `--random N --seed S` for the control |
-| [`screens.json`](screens.json) | screen output over the 40 candidates |
-| [`control-screens.json`](control-screens.json) | screen output over a seeded random 40 of the full 731 |
-| [`instances.txt`](instances.txt) | the 40 instance ids, extracted from issue #261 |
+| [`candidates.json`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/instance_screening/candidates.json) | the same verdicts, machine-readable, with each screen's raw output per instance |
+| [`screens.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/instance_screening/screens.py) | the five mechanical screens, plus `--random N --seed S` for the control |
+| [`screens.json`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/instance_screening/screens.json) | screen output over the 40 candidates |
+| [`control-screens.json`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/instance_screening/control-screens.json) | screen output over a seeded random 40 of the full 731 |
+| [`instances.txt`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/instance_screening/instances.txt) | the 40 instance ids, extracted from issue #261 |
 
 ## Method
 

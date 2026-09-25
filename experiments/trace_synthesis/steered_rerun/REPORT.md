@@ -165,7 +165,7 @@ alone does not prove a hint was not lost silently — a dead recorder stops
 writing rather than recording its own death, which this round measured
 ([§2](#2-the-channel-is-blind-at-edit-boundaries)). What does prove it is
 joining three records produced by three different processes at three different
-trust boundaries. [`reconcile.py`](reconcile.py) runs the join and exits
+trust boundaries. [`reconcile.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/reconcile.py) runs the join and exits
 non-zero on any gap:
 
 ```
@@ -491,7 +491,7 @@ treats a non-string `content` as a model error like any other; the poller cannot
 die, because a raising judgement is caught per request; and a request the judge
 could not answer is **still answered**, so a broken judgement never becomes a
 stalled tool call. The gap is now recorded host-side as `boundaries_unjudged`
-rather than being absent — [`analyze.py`](analyze.py) counts it separately from
+rather than being absent — [`analyze.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/analyze.py) counts it separately from
 judgements, because counting it as one would report a hole in the belief state
 as coverage. The crashed run's logs are kept at
 `runs/steered-qutebrowser/r10-crashed/` as the evidence for all of this.
@@ -563,7 +563,7 @@ rows report `not measurable` rather than `0` for the same reason the code does
 the point: a guard that cannot tell "absent" from "unobserved" would have
 scored the degraded run as a pass twice over.
 
-So [`analyze.py`](analyze.py) reports two numbers: `signed` as a floor,
+So [`analyze.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/analyze.py) reports two numbers: `signed` as a floor,
 annotated as passing on the degraded path, and `thinking_replayed` — how many
 captured **request** bodies echo a prior assistant `thinking` block back. The
 second is the real check, it is visible only on the wire, and that is an
@@ -610,7 +610,7 @@ more useful half.
 | `tutao/tutanota` `fe240cbf` | clean | clean | determinate — reserve |
 | `protonmail/webclients` `a6e6f617` | clean | clean | determinate — reserve |
 
-Full evidence per instance in [`task-validation/`](task-validation/), written so
+Full evidence per instance in [`task-validation/`](https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/task-validation), written so
 a reviewer can re-derive each call rather than take it.
 
 **openlibrary — misleading prompt.** The requirements say "**The method**"
@@ -778,7 +778,7 @@ hand-assembled dataset row:
 
 So the artifact this round produces is not "a frozen run directory" — it is a
 **mountable input**, and the guidebook agent and the workflow that mounts it are
-built against its layout. [`freeze_sample.py`](freeze_sample.py) writes it, at
+built against its layout. [`freeze_sample.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/freeze_sample.py) writes it, at
 `~/dev/swe-lab-artifacts/trace_synthesis/<instance_id>/`:
 
 | File | What it is | Why it is separate |
@@ -829,7 +829,7 @@ the instance unresolved — which is true, and says nothing about any agent's
 reasoning.
 
 **So the gate is three checks, not two**, and both `harvest_one.sh` and
-[`freeze_sample.py`](freeze_sample.py) now apply all three before a run is
+[`freeze_sample.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/freeze_sample.py) now apply all three before a run is
 written out as a failure sample:
 
 ```

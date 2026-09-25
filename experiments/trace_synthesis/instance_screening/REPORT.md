@@ -31,7 +31,7 @@
    exactly one (`element-web-aec454dd`) rests on an argument this report calls
    weak. Per-instance
    evidence is in [the table below](#per-instance-verdicts) and machine-readable
-   in [`candidates.json`](candidates.json). 40% is higher than the ~30% OpenAI
+   in [`candidates.json`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/instance_screening/candidates.json). 40% is higher than the ~30% OpenAI
    reports for the full 731, and
    [the numbers are not comparable](#the-control-a-random-40-from-the-same-corpus)
    — different definitions, and this is not a random sample.
@@ -115,7 +115,7 @@ that classifies reading future commits as cheating; we cannot treat as
 
 ## The five mechanical screens
 
-[`screens.py`](screens.py), run over all 40. Screens 1–4 are **alarms that route
+[`screens.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/instance_screening/screens.py), run over all 40. Screens 1–4 are **alarms that route
 an instance to manual review**, never verdicts; screen 5 is different and is
 described separately below. They catch five different diseases:
 
@@ -545,7 +545,7 @@ sits in.
 
 Ordered as in issue #261 (fastest first). `f2p`/`p2p` are the required and
 regression test counts. Full evidence per row — including each screen's raw
-output — is in [`candidates.json`](candidates.json).
+output — is in [`candidates.json`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/instance_screening/candidates.json).
 
 | # | instance | verdict | category | f2p / p2p | evidence |
 | ---: | --- | --- | --- | ---: | --- |

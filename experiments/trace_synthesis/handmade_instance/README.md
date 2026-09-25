@@ -28,7 +28,7 @@ apart by exit code rather than by reading logs.
 
 **Candidates.** The four fastest mixed-outcome SWE-bench Pro instances from
 [issue #261](https://github.com/Luolc/swe-lab/issues/261), in wall-time order,
-listed in [`instances.txt`](instances.txt). All four are 1/2 resolved and none
+listed in [`instances.txt`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/handmade_instance/instances.txt). All four are 1/2 resolved and none
 is on that issue's flakiness watchlist. Rationale:
 [the plan](../../../docs/trace-synthesis/plans/task-01-one-instance-end-to-end.md#step-0--candidate-selection-decided).
 
