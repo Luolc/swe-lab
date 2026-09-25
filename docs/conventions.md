@@ -36,9 +36,6 @@ python -m swe_lab run rollout_and_unit_test <instance_id> \
     --rollout.harness.model opus --unit_test.retries 2     # …solved, graded, adjusted
 python -m swe_lab run unit_test <instance_id> --input ./candidate.diff   # grade a patch you have
 python -m swe_lab run git_integrity_audit <instance_id>     # agent-free: prove the purge held
-python -m swe_lab.datasets.oracle_failures.build \
-    --run-dir .cache/runs/rollout_and_unit_test/<instance_id>  # a finished failure → an oracle_failures row
-python -m swe_lab run oracle_analysis <instance_id> --dataset oracle_failures   # phase B: the Oracle writes guidebook.md
 python -m swe_lab run from_scratch_guided_trace <instance_id> --persist --sweep <id>  # A→B→C→grading over a plain instance, all five steps, no early exit
 python -m swe_lab guided-gain <id> [--store-root <dir>]    # that sweep's blind-vs-guided 2×2 (JSON on stdout, table on stderr)
 python -m swe_lab.datasets.verify --dataset <name> --shard i/N          # golden-sweep one shard
@@ -84,14 +81,13 @@ reports naming it are accurate history.
 **Pointing the supervisor at it.** The supervisor's upstream is two strings the
 caller owns — a base URL and the *name* of the variable holding the key — and
 there is no registry of accepted upstreams: any endpoint is legitimate, which
-is what makes this usable by a consumer with their own gateway. On any workflow
-whose rollout runs under the segmented carrier (`segmented_rollout`,
-`segmented_rollout_and_unit_test`, `oracle_guided_trace`,
-`from_scratch_guided_trace`):
+is what makes this usable by a consumer with their own gateway. The one
+workflow whose rollout runs under the segmented carrier is
+`from_scratch_guided_trace`, and its segmented entry is `guided_rollout`:
 
 ```sh
---<rollout entry>.harness.segmented.base_url=https://openrouter.ai/api
---<rollout entry>.harness.segmented.api_key_env=OPENROUTER_LIVE_KEY
+--guided_rollout.harness.segmented.base_url=https://openrouter.ai/api
+--guided_rollout.harness.segmented.api_key_env=OPENROUTER_LIVE_KEY
 ```
 
 Unset, they default to `ANTHROPIC_BASE_URL` (falling back to the Anthropic
@@ -459,10 +455,10 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | --- | --- |
 | `src/swe_lab/sandbox/` | The **engine**: `SandboxManager` + lifecycle hooks, the merged lifecycle-bearing `Sandbox` (+ narrow `SandboxFs` view), `Mounts`/`Resource`, backends (`DockerHostSandbox` = A-host, `GitHubJobSandbox` = A-ghjob) selected via an open `build_sandbox` registry, and the shared observers (`diff_extract`, `git_history_purge`, `result_verify`). |
 | `src/swe_lab/harnesses/` | The **harness axis**: `base.py` (the `Harness` ABC) + `registry.py`, then one package per agent — `claude_code/` (invocation, `convert`/`capture`, and the runner utilities `binary`/`proxy`/`errors` — `proxy` *builds* the in-sandbox capture proxy, it no longer runs one), `codex/`, `grok_build/`. |
-| `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus one package per dataset (`swebench_pro/`, `deepswe/`: record, run setup, unit-test compile + grader; `oracle_failures/`: a cached failure of another dataset's instance, delegating the runnable surface to it and staging the failure through `mounts()`, with `build.py` making rows from finished runs). `verify.py` is the dataset-agnostic golden sweep (`--dataset <name>`). |
+| `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus one package per dataset (`swebench_pro/`, `deepswe/`: record, run setup, unit-test compile + grader). `verify.py` is the dataset-agnostic golden sweep (`--dataset <name>`). |
 | `src/swe_lab/evaluation/` | The **evaluation axis**: the `verdict` contract + one module per method (`unit_test`). |
-| `src/swe_lab/workflow/` | The **task layer** above the engine ([ADR-0007](decisions/ADR-0007-task-and-workflow-layer.md)): `task.py` (the generic `Task` — one sandbox, three hooks, one `execute`), `workflow.py` (chains tasks by matching output to input store name), `registry.py` + `definitions.py` (the workflows `run --list` names: `rollout`, `unit_test`, `rollout_and_unit_test`, `gold_unit_test`, `git_integrity_audit`, `oracle_analysis`, `oracle_guided_trace`, `from_scratch_guided_trace`, and the `segmented_*` / `supervised_*` / `control_*` solve-and-grade variants; an entry's key is the store's task segment, so two entries never share one), `run_task.py` (executes one and writes its record). |
-| `src/swe_lab/trace_synthesis/` | The **trace-synthesis component** ([docs/trace-synthesis/](trace-synthesis/)): `oracle.py` is phase B (`OracleAnalysisTask` — the Oracle writes `guidebook.md` for an attempt, either staged by an `oracle_failures` record or delivered over edges from a phase-A rollout (`failure_inputs=True`); the brief branches on that attempt's graded verdict and the Oracle always writes one ([ADR-0027](decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)); git-history purge off), `guidebook.py` its schema — a **measurement**, not a gate, `sample.py` the names a staged failure is mounted under, `guided_gain.py` the from-scratch chain's 2×2 reading of a sweep's blind vs guided verdicts ([ADR-0023](decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md)). |
+| `src/swe_lab/workflow/` | The **task layer** above the engine ([ADR-0007](decisions/ADR-0007-task-and-workflow-layer.md)): `task.py` (the generic `Task` — one sandbox, three hooks, one `execute`), `workflow.py` (chains tasks by matching output to input store name), `registry.py` + `definitions.py` (the workflows `run --list` names: `rollout`, `unit_test`, `rollout_and_unit_test`, `gold_unit_test`, `git_integrity_audit` and `from_scratch_guided_trace`; an entry's key is the store's task segment, so two entries never share one), `run_task.py` (executes one and writes its record). |
+| `src/swe_lab/trace_synthesis/` | The **trace-synthesis component** ([docs/trace-synthesis/](trace-synthesis/)): `oracle.py` is phase B (`OracleAnalysisTask` — the Oracle writes `guidebook.md` for an attempt delivered over edges from a phase-A rollout; the brief branches on that attempt's graded verdict and the Oracle always writes one ([ADR-0027](decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)); git-history purge off), `guidebook.py` its schema — a **measurement**, not a gate, `guided_gain.py` the from-scratch chain's 2×2 reading of a sweep's blind vs guided verdicts ([ADR-0023](decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md)). |
 | `src/swe_lab/rollout.py` | The **rollout composition** (`CodingAgentTask`): a harness solves the bound instance under the shared observers, with optional proxy capture. Backend-, dataset- and harness-agnostic. |
 | `src/swe_lab/conversation/` | The provider-neutral typed `Conversation` + the shared conversation observer. |
 | `src/swe_lab/cli/` + `__main__.py` | The CLI entry point: one Typer app, one module per subcommand — `run` (any registered workflow, with `--<field>` overrides parsed by `overrides.py`), `promote`, and `guided-gain` (the from-scratch chain's 2×2 over a sweep's attempt records). `host_env.py` hands the repo-scoped OAuth token back to the name a run reads (see [Hazards](#hazards-learned-the-hard-way)). Golden QA is not a subcommand: it is `python -m swe_lab.datasets.verify`. |

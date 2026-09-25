@@ -3,6 +3,16 @@
 **Status lives in [`README.md`](README.md).** This file is the design.
 
 > [!NOTE]
+> **The standalone form below was deleted on 2026-09-24** (the owner's ruling,
+> recorded in [ADR-0023's amendment](../../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md#amendment-2026-09-24)). `OracleAnalysisTask` and the
+> guidebook schema are live and run as the from-scratch chain's
+> `oracle_analysis` entry, where the attempt arrives over workflow edges. What
+> is gone is the one-entry `oracle_analysis` workflow, the `oracle_failures`
+> record it ran over, and the staged-failure mode (`failed_*` names, the
+> `failure_inputs` flag) that read that record. Every `run oracle_analysis …
+> --dataset oracle_failures` below is history.
+
+> [!NOTE]
 > **Three things below were changed on 2026-09-08 by
 > [ADR-0027](../../decisions/ADR-0027-the-oracle-writes-a-guidebook-either-way.md)**
 > (the owner's ruling), and this file is the design record of what was built
@@ -228,9 +238,10 @@ None of the "does not show" items is claimed.
 **A failed attempt's artifacts are still the evidence.** The attempt was
 judged failed, and its `guidebook.md`, conversation and event stream are the
 only record of what the brief produced. They were credential-scanned (32
-files, no hits) and copied to the stable artifacts path outside every
-checkout (`~/data/swe-lab/trace_synthesis/oracle-analysis-qutebrowser-rollout-0-20260901T135011Z/`,
-with a `PROVENANCE.txt`). Judging an attempt failed and discarding its output
+files, no hits) and copied to a stable artifacts path outside every checkout,
+with a `PROVENANCE.txt`. That copy is not kept: the owner ruled on 2026-09-24
+that a finished experiment keeps its conclusions and not its raw files, so
+what this section records is now the whole account of that run. Judging an attempt failed and discarding its output
 are two different acts and must never be merged: the run layout keeps every
 attempt's `a<N>/` whatever its validity, and nothing in this task or
 downstream of it may change that.

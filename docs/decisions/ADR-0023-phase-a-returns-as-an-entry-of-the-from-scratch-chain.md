@@ -42,6 +42,43 @@ this ADR replaces are quoted here so the boundary is exact:
   entry's status and metrics, and resume is still task-marker driven and
   reads no workflow record.
 
+## Amendment (2026-09-24)
+
+**The phase-B entry point is gone; this chain is the only way in.** The owner
+ruled on 2026-09-24 that downstream runs this chain and nothing else, and that
+what is not needed goes. So the two workflows this record said it left alone —
+`oracle_analysis` and `oracle_guided_trace`, which started at phase B over an
+`oracle_failures` row — were deleted, and with them the `oracle_failures`
+dataset, its builder, and the failed-sample name contract
+(`trace_synthesis/sample.py`) that only those rows staged. The decision this
+record makes — phase A as the chain's first two entries, unconditional, the
+two rollouts told apart by key — is unaffected. What changes is the sentences
+that described the second form as live:
+
+- **Status**, *"The `oracle_guided_trace` and `oracle_analysis` workflows keep
+  starting at phase B over an `oracle_failures` record … and nothing here
+  changes them"* — they no longer exist.
+- **§4**, *"`OracleAnalysisTask` gains one boolean, `failure_inputs`. Off (the
+  default …)"* — the off mode had no remaining source of input, so the field is
+  gone and the task has only the behaviour §4 describes as *on*: four declared
+  inputs under the producers' names, graded against the recorded baseline.
+  The chain's Oracle stages and briefs byte-for-byte what it did before; the
+  brief's pinned digest moved only because the pin used to be taken over the
+  removed mode.
+- **Consequences**, *"`OracleAnalysisTask.failure_inputs` is a public field"*
+  and *"the `_segmented_rollout` … entries are built by small factories taking
+  a key"* — the field is removed, and the segmented factory is now
+  `_guided_rollout_entry(key)`, which always reads the guidebook. The
+  unsupervised-by-guidebook `segmented_rollout` /
+  `segmented_rollout_and_unit_test` bring-up definitions went in the same
+  change.
+- **Consequences**, *"The policy stamp on phase-B / phase-C records (spec §14,
+  task 07) is not shipped here either"* — nor anywhere: task 07 was closed
+  unbuilt the same day, so the chain's phase-B and phase-C records carry no
+  stamp and are told apart from benchmark records by entry key alone.
+
+The spec's §3, §13, §14 and §15 were rewritten in the same change.
+
 ## Date
 
 2026-09-05

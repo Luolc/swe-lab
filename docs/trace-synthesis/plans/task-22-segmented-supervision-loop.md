@@ -484,7 +484,9 @@ and every frozen `PREREGISTRATION.md`.
    the byte-identity control test, and the `bool`-subclasses-`int` case that
    fails if the check is "corrected" to `isinstance`.
 5. **Done** — the `segmented_rollout` definition, and the seam checks de-gated
-   per the callout: recorded, never enforced.
+   per the callout: recorded, never enforced. (The definition was deleted on
+   2026-09-24; the loop now ships only as `from_scratch_guided_trace`'s
+   `guided_rollout` entry.)
 6. **The bring-up run: 1 instance × 1 rollout**, this task's ceiling and tighter
    than the repo's own ask-first line. **Its acceptance is the two points in the
    callout and nothing else**: the loop completes, and there is quoted evidence

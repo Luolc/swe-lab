@@ -24,6 +24,7 @@ from typing import Any
 
 import pytest
 
+from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.sandbox import ExecResult
 from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
 from swe_lab.trace_synthesis.judge import supervising_policy
@@ -249,22 +250,43 @@ def _shipped_supervision(*override: str) -> SegmentedSupervision:
   """Apply CLI overrides to the registered segmented workflow.
 
   Args:
-    *override: Full ``--rollout...`` override spellings.
+    *override: Full ``--guided_rollout...`` override spellings.
 
   Returns:
     The rebuilt segmented-supervision configuration.
   """
-  from swe_lab.cli.overrides import apply_overrides, parse_overrides
-  from swe_lab.harnesses.claude_code import ClaudeCodeHarness
-  from swe_lab.rollout import CodingAgentTask
-  from swe_lab.workflow.definitions import SEGMENTED_ROLLOUT
+  harness = _shipped_guided_harness(*override)
+  assert harness.segmented is not None
+  return harness.segmented
 
-  (entry,) = apply_overrides(SEGMENTED_ROLLOUT, parse_overrides(override))
+
+def _shipped_guided_harness(*override: str) -> ClaudeCodeHarness:
+  """Return the shipped chain's guided-rollout harness after ``override``.
+
+  Args:
+    *override: Full ``--guided_rollout...`` override spellings.
+
+  Returns:
+    The rebuilt harness.
+  """
+  from swe_lab.cli.overrides import apply_overrides, parse_overrides
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.workflow.definitions import (
+      FROM_SCRATCH_GUIDED_TRACE,
+      GUIDED_ROLLOUT_KEY,
+  )
+
+  (entry,) = (
+      one
+      for one in apply_overrides(
+          FROM_SCRATCH_GUIDED_TRACE, parse_overrides(list(override))
+      )
+      if one.key == GUIDED_ROLLOUT_KEY
+  )
   assert isinstance(entry.task, CodingAgentTask)
   harness = entry.task.harness
   assert isinstance(harness, ClaudeCodeHarness)
-  assert harness.segmented is not None
-  return harness.segmented
+  return harness
 
 
 # --- the turn counter -------------------------------------------------------
@@ -300,18 +322,9 @@ def test_the_shipped_segment_defaults_are_roomy_but_finite():
 
 def test_a_turns_override_reaches_the_actor_argv():
   """A non-default segment length reaches the process command."""
-  from swe_lab.cli.overrides import apply_overrides, parse_overrides
-  from swe_lab.harnesses.claude_code import ClaudeCodeHarness
-  from swe_lab.rollout import CodingAgentTask
-  from swe_lab.workflow.definitions import SEGMENTED_ROLLOUT
-
-  (entry,) = apply_overrides(
-      SEGMENTED_ROLLOUT,
-      parse_overrides(["--rollout.harness.segmented.turns_per_segment=7"]),
+  harness = _shipped_guided_harness(
+      "--guided_rollout.harness.segmented.turns_per_segment=7"
   )
-  assert isinstance(entry.task, CodingAgentTask)
-  harness = entry.task.harness
-  assert isinstance(harness, ClaudeCodeHarness)
   argv = harness.actor_argv()
 
   assert argv[argv.index("--max-turns") + 1] == "7"
@@ -327,7 +340,7 @@ def test_a_max_segments_override_reaches_the_loop_ceiling():
       ]
   )
   supervision = _shipped_supervision(
-      "--rollout.harness.segmented.max_segments=2"
+      "--guided_rollout.harness.segmented.max_segments=2"
   )
 
   rows = _run(actor, supervision)
@@ -345,7 +358,7 @@ def test_a_wall_clock_override_reaches_the_loop_ceiling():
       ]
   )
   supervision = _shipped_supervision(
-      "--rollout.harness.segmented.wall_clock_seconds=1"
+      "--guided_rollout.harness.segmented.wall_clock_seconds=1"
   )
   start = datetime.datetime(2026, 9, 3, tzinfo=datetime.UTC)
   readings = iter([start, start, start + datetime.timedelta(seconds=2)])
@@ -370,7 +383,7 @@ def test_a_cost_override_reaches_the_loop_comparison():
       ]
   )
   supervision = _shipped_supervision(
-      "--rollout.harness.segmented.max_cost_usd=0.5"
+      "--guided_rollout.harness.segmented.max_cost_usd=0.5"
   )
 
   rows = _run(actor, supervision)
@@ -383,7 +396,9 @@ def test_a_cooldown_override_reaches_the_policy_factory():
   """A non-default cooldown reaches the per-run policy construction."""
   import dataclasses
 
-  supervision = _shipped_supervision("--rollout.harness.segmented.cooldown=6")
+  supervision = _shipped_supervision(
+      "--guided_rollout.harness.segmented.cooldown=6"
+  )
   received: list[int] = []
 
   def policy_factory(

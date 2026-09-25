@@ -321,8 +321,8 @@ def test_every_supervised_route_a_command_can_name_is_registered():
   """The pipeline is startable, which is prior to it being correct.
 
   A supervised carrier nothing in the shipped definitions configures is a
-  capability no command can reach, so the names are the assertion. All four
-  routes that put the actor under supervision are here, and each is checked to
+  capability no command can reach, so the names are the assertion. The one
+  route that puts the actor under supervision is here, and it is checked to
   actually carry one — a registered name whose entry has no
   `SegmentedSupervision` is the failure this is for. The **control arm** is the
   plain `rollout_and_unit_test`, which must carry none: without it a green
@@ -332,9 +332,6 @@ def test_every_supervised_route_a_command_can_name_is_registered():
   from swe_lab.rollout import CodingAgentTask
 
   supervised_routes = {
-      "segmented_rollout": definitions.ROLLOUT_KEY,
-      "segmented_rollout_and_unit_test": definitions.ROLLOUT_KEY,
-      "oracle_guided_trace": definitions.ROLLOUT_KEY,
       "from_scratch_guided_trace": definitions.GUIDED_ROLLOUT_KEY,
   }
   assert set(supervised_routes) <= set(registered_workflows())
@@ -370,39 +367,6 @@ def test_every_supervised_route_a_command_can_name_is_registered():
   assert plain.task.harness.segmented is None
 
 
-def test_the_segmented_rollout_and_unit_test_chain_shares_the_grading_tail():
-  """The segmented carrier is registered with the shared grading tail."""
-  segmented = workflow_definition("segmented_rollout_and_unit_test")
-
-  assert [entry.key for entry in segmented] == [
-      definitions.ROLLOUT_KEY,
-      definitions.UNIT_TEST_KEY,
-  ]
-  assert segmented[0] is definitions.SEGMENTED_ROLLOUT[0]
-  assert segmented[1] is definitions.UNIT_TEST[0]
-
-
-def test_oracle_guided_trace_feeds_the_guidebook_to_segmented_supervision():
-  """The phase-B artifact is the phase-C supervisor's declared input."""
-  from swe_lab.harnesses.claude_code import ClaudeCodeHarness
-  from swe_lab.rollout import CodingAgentTask
-  from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
-
-  oracle, rollout, grading = workflow_definition("oracle_guided_trace")
-
-  assert [oracle.key, rollout.key, grading.key] == [
-      definitions.ORACLE_ANALYSIS_KEY,
-      definitions.ROLLOUT_KEY,
-      definitions.UNIT_TEST_KEY,
-  ]
-  assert isinstance(rollout.task, CodingAgentTask)
-  assert [item.name for item in rollout.task.extra_inputs] == [GUIDEBOOK_NAME]
-  assert isinstance(rollout.task.harness, ClaudeCodeHarness)
-  segmented = rollout.task.harness.segmented
-  assert segmented is not None
-  assert segmented.guidebook_name == GUIDEBOOK_NAME
-
-
 # --- who is shown what the supervisor said, routed from the definitions
 # down to the two prompt builders (ADR-0024) -----------------------------------
 
@@ -427,11 +391,8 @@ def _builders_of(
   return judge_builder, writer_builder
 
 
-def _segmented_supervision_of(entry: WorkflowEntry) -> SegmentedSupervision:
-  """Return the segmented supervision a shipped segmented entry carries.
-
-  Args:
-    entry: The segmented rollout entry.
+def _shipped_segmented_supervision() -> SegmentedSupervision:
+  """Return the segmented supervision the shipped guided rollout carries.
 
   Returns:
     Its supervision configuration.
@@ -439,6 +400,11 @@ def _segmented_supervision_of(entry: WorkflowEntry) -> SegmentedSupervision:
   from swe_lab.harnesses.claude_code import ClaudeCodeHarness
   from swe_lab.rollout import CodingAgentTask
 
+  (entry,) = (
+      one
+      for one in definitions.FROM_SCRATCH_GUIDED_TRACE
+      if one.key == definitions.GUIDED_ROLLOUT_KEY
+  )
   assert isinstance(entry.task, CodingAgentTask)
   assert isinstance(entry.task.harness, ClaudeCodeHarness)
   segmented = entry.task.harness.segmented
@@ -457,7 +423,7 @@ def test_the_shipped_segmented_factory_reads_the_named_said_visibility(
   the default.
   """
   monkeypatch.setattr(definitions, "SUPERVISOR_SAID_VISIBILITY", "none")
-  segmented = _segmented_supervision_of(definitions.SEGMENTED_ROLLOUT[0])
+  segmented = _shipped_segmented_supervision()
 
   policy = segmented.policy_factory(
       segmented.cooldown, segmented.base_url, segmented.api_key_env
@@ -502,7 +468,7 @@ def test_nothing_in_building_a_supervision_policy_reads_the_environment(
   """
   with monkeypatch.context() as patched:
     patched.setattr(os, "environ", _NoEnvironmentRead())
-    segmented = _segmented_supervision_of(definitions.SEGMENTED_ROLLOUT[0])
+    segmented = _shipped_segmented_supervision()
     shipped = segmented.policy_factory(
         segmented.cooldown, segmented.base_url, segmented.api_key_env
     )

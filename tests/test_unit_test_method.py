@@ -588,8 +588,7 @@ def test_the_verdict_travels_whole_as_an_artifact(tmp_path: Path):
   The metrics keep only the verdict's scalars, so a consumer that has to know
   *which* tests failed — the Oracle, fed a phase-A failure over a workflow
   edge — needs the verdict itself. It travels in the one shape a verdict
-  leaves a process in (``Verdict.facts()``), the same shape an
-  ``oracle_failures`` record's verdict column carries, and it is a required
+  leaves a process in (``Verdict.facts()``), and it is a required
   output: grading runs whatever the script did, and an attempt without a
   verdict is already invalid.
   """

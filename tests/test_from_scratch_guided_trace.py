@@ -5,7 +5,8 @@ resolves to the producer the definition intends — the guided grading to the
 guided rollout, the Oracle to the blind pair. Two control arms say the checks
 have teeth: drop the one binding two producers make necessary and the engine
 refuses; give two grading entries one key and the declaration is refused. Then
-the Oracle's second failure source over a ``FakeSandbox``, and a five-step
+the Oracle reading the attempt its edges deliver over a ``FakeSandbox``, and a
+five-step
 smoke with fake tasks through ``Workflow.execute`` — the real definition's
 bindings, satisfied by tasks with the real schemas, on real store records that
 the 2×2 reading is then taken from. No agent runs and no container starts.
@@ -49,13 +50,10 @@ from swe_lab.trace_synthesis.guided_gain import (
     IncompleteRun,
 )
 from swe_lab.trace_synthesis.oracle import (
+    ATTEMPT_VERDICT_NAME,
     oracle_prompt,
     OracleAnalysisTask,
-    PRODUCED_FAILURE,
-    produced_failure_prompt,
-    STAGED_FAILURE,
 )
-from swe_lab.trace_synthesis.sample import FAILURE_NAMES
 from swe_lab.workflow import (
     AttemptResult,
     EntryStatus,
@@ -71,8 +69,13 @@ import swe_lab.workflow.definitions as definitions
 from swe_lab.workflow.workflow import _resolve_edges, WORKFLOW_RECORD_NAME
 import swe_lab.workflow.workflow as workflow_module
 
-from .test_oracle_analysis import _guidebook, _LocalFakeSandbox
-from .test_oracle_failures_record import _Underlying, CONVERSATION, SPEC
+from .test_oracle_analysis import (
+    _guidebook,
+    _LocalFakeSandbox,
+    _Underlying,
+    CONVERSATION,
+    SPEC,
+)
 
 KEYS = [
     definitions.BASELINE_ROLLOUT_KEY,
@@ -81,7 +84,7 @@ KEYS = [
     definitions.GUIDED_ROLLOUT_KEY,
     definitions.GUIDED_UNIT_TEST_KEY,
 ]
-VERDICT_ARTIFACT = PRODUCED_FAILURE.verdict
+VERDICT_ARTIFACT = ATTEMPT_VERDICT_NAME
 
 # The edge map the definition intends — every input, and who supplies it.
 EXPECTED_EDGES = {
@@ -130,14 +133,8 @@ def test_the_five_entries_are_five_keys_and_the_key_names_the_phase():
         plain_grading.timeout,
         plain_grading.retries,
     )
-  # …and the guided rollout is the segmented supervisor reading the guidebook,
-  # as in `oracle_guided_trace`, under its own key. (Not compared whole: each
-  # build of the segmented entry closes over a fresh policy factory.)
-  _, guided_in_trace, _ = workflow_definition("oracle_guided_trace")
+  # …and the guided rollout is the segmented supervisor reading the guidebook.
   assert isinstance(guided.task, CodingAgentTask)
-  assert isinstance(guided_in_trace.task, CodingAgentTask)
-  assert guided.key != guided_in_trace.key
-  assert guided.task.extra_inputs == guided_in_trace.task.extra_inputs
   assert [s.name for s in guided.task.extra_inputs] == [GUIDEBOOK_NAME]
   assert isinstance(guided.task.harness, ClaudeCodeHarness)
   assert guided.task.harness.segmented is not None
@@ -189,24 +186,17 @@ def test_two_grading_entries_under_one_key_are_refused(tmp_path: Path):
     )
 
 
-# ─── the Oracle's second failure source ──────────────────────────────────────
+# ─── the Oracle reads the attempt its edges deliver ──────────────────────────
 
 
-def test_the_staged_oracle_is_unchanged_and_the_chains_oracle_takes_inputs():
-  staged = OracleAnalysisTask(harness=ClaudeCodeHarness(model="sonnet"))
-  assert staged.failure is STAGED_FAILURE
-  assert staged.inputs_builder is oracle_prompt
-  assert [s.name for s in staged.input_schema()] == [PROMPT_NAME]
-
+def test_the_chains_oracle_takes_the_attempt_as_inputs():
   (chained,) = (
       entry
       for entry in definitions.FROM_SCRATCH_GUIDED_TRACE
       if entry.key == definitions.ORACLE_ANALYSIS_KEY
   )
   assert isinstance(chained.task, OracleAnalysisTask)
-  assert chained.task.failure_inputs is True
-  assert chained.task.failure is PRODUCED_FAILURE
-  assert chained.task.inputs_builder is produced_failure_prompt
+  assert chained.task.inputs_builder is oracle_prompt
   # The brief is still built in-session; the four produced files are inputs,
   # named as their producers name them — nothing is renamed on the way.
   assert [s.name for s in chained.task.input_schema()] == [
@@ -217,8 +207,6 @@ def test_the_staged_oracle_is_unchanged_and_the_chains_oracle_takes_inputs():
       VERDICT_ARTIFACT,
   ]
   assert all(s.required for s in chained.task.input_schema())
-  # …and none of them is a staged name: the two contracts do not overlap.
-  assert not set(FAILURE_NAMES) & {s.name for s in chained.task.input_schema()}
 
 
 def _produced_failure(*, base_ref: str) -> dict[str, Mount]:
@@ -259,13 +247,11 @@ def test_the_oracle_reads_the_failure_the_edges_deliver(tmp_path: Path):
       baseline_sha=recorded_ref,
       current_ref=SPEC.base_commit,
   )
-  task = OracleAnalysisTask(
-      harness=ClaudeCodeHarness(model="sonnet"), failure_inputs=True
-  )
+  task = OracleAnalysisTask(harness=ClaudeCodeHarness(model="sonnet"))
 
   result = task.execute(
       sandbox,
-      _Underlying(),  # a plain instance: it stages no failure of its own
+      _Underlying(),
       output_dir=tmp_path / "out",
       timeout=60.0,
       extra_mounts=_produced_failure(base_ref=recorded_ref),
@@ -291,8 +277,6 @@ def test_the_oracle_reads_the_failure_the_edges_deliver(tmp_path: Path):
   brief = (workspace / PROMPT_NAME).read_text()
   for name in (CONVERSATION_NAME, PATCH_NAME, BASE_REF_NAME, VERDICT_ARTIFACT):
     assert f"`{name}`" in brief
-  for name in FAILURE_NAMES:
-    assert name not in brief
   assert f"applies `{PATCH_NAME}`" in brief
 
 
@@ -311,9 +295,7 @@ def test_a_produced_failure_nobody_supplied_stops_before_the_agent(
       baseline_sha=recorded_ref,
       current_ref=SPEC.base_commit,
   )
-  task = OracleAnalysisTask(
-      harness=ClaudeCodeHarness(model="sonnet"), failure_inputs=True
-  )
+  task = OracleAnalysisTask(harness=ClaudeCodeHarness(model="sonnet"))
 
   result = task.execute(
       sandbox,
