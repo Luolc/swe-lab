@@ -108,25 +108,3 @@ repos:
         language: pygrep
         entry: 'swe_lab\.core\b|core\.agent\.trace|swe_lab\.solve\b|swe_lab\.cli\.verify\b|harnesses\.claude_code\.trace\b|swe_lab\.evaluation\.verify\b|\.execution\b|\b(CAPTURE_MODES|DEFAULT_CAPTURE|CAPTURE_PROXY|CAPTURE_STREAM|with_assets|materialize_to|BackendKind|build_backend|compile_sandbox_spec|compile_solve_prompt|fetch_harness|stream_to|ProxyRecorder|CONTAINER_PROXY_HOST|agent_proxy_url|proxy_base_url)\b|harnesses\.claude_code\.recorder\b|\b(native_supervision|supervisor_binary|transcript_marks|NativeSupervision|NATIVE_SUPERVISED_ROLLOUT|NATIVE_JUDGE_EVERY_N|SUPERVISOR_FLAGS|ensure_supervisor_binary|supervisor_proxy_target|supervisor_proxy_port|supervisor_api_key_env)\b|trace_synthesis\.channel\b|\b(CorrectionChannel|SupervisedRun|SupervisorPump|correction_channel|NeverSpeak|SpeakAt|WouldHaveSpoken|SupervisionFactory|supervision_factory|accepts_corrections|CONTROL_BUDGET|SUPERVISED_ROLLOUT|SUPERVISED_ROLLOUT_AND_UNIT_TEST|CONTROL_ROLLOUT|CONTROL_ROLLOUT_AND_UNIT_TEST|SUPERVISOR_TRANSPORT|CORRECTION_FIFO_NAME|CORRECTION_DROP_NAME|CORRECTION_DONE_NAME|CORRECTION_UNCLEAN_NAME|CORRECTION_RELAY_LOG_NAME|SUPERVISION_METRIC|SUPERVISION_LAPSE_METRIC|SUPERVISION_FAILED)\b|datasets\.oracle_failures\b|trace_synthesis\.sample\b|\b(OracleFailureInstance|ORACLE_ANALYSIS|ORACLE_GUIDED_TRACE|SEGMENTED_ROLLOUT|SEGMENTED_ROLLOUT_AND_UNIT_TEST|_GUIDEBOOK_SEGMENTED_ROLLOUT|_segmented_rollout|FailureFiles|STAGED_FAILURE|PRODUCED_FAILURE|produced_failure_prompt|failure_inputs|FAILURE_NAMES|FAILED_CONVERSATION_NAME|FAILED_VERDICT_NAME|FAILED_PATCH_NAME)\b'
         files: '^(src|tests|experiments)/.*\.py$'
-        # Named exemptions, never a directory. The test of an exemption is
-        # whether it can grow while nobody is looking: a directory pattern puts
-        # every future file outside the guard silently, whereas this list
-        # protects a new file the moment it lands and can only shrink — each
-        # addition is a line somebody had to write and a reviewer had to see.
-        #
-        # All five were created between 2026-07-06 and 2026-07-15 (following
-        # renames), last touched 2026-07-17, and broken 2026-07-25 by #53
-        # (`swe_lab.core` dissolves) — not by any later change. Each
-        # experiment's deliverable is its write-up (REPORT.md, qa_log.md, or
-        # the README's own conclusion) and the script is evidence of the method
-        # behind it: keeping them readable has value, keeping
-        # them runnable does not. Each is noted as unrunnable in its own
-        # README. Reviving one means porting it, not deleting its line here.
-        exclude: |
-          (?x)^(
-            experiments/eval_issues/truncated_golden_test_names/investigate\.py|
-            experiments/eval_issues/truncated_golden_test_names/make_fixed_rows\.py|
-            experiments/related_files/batch_annotation/qa_check\.py|
-            experiments/related_files/batch_annotation/recall_audit\.py|
-            experiments/related_files/prompt_variance/run_experiment\.py
-          )$

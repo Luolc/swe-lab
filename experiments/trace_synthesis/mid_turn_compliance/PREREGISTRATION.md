@@ -76,7 +76,7 @@ an arm, so run-to-run variance *within* a task is deliberately not estimated
 **$1** and three minutes (§4.5), and because `UNDERPOWERED` is terminal (§6):
 the only legitimate moment to buy power is before the first run.
 
-The twenty fixtures live in [`tasks.py`](tasks.py). Each is a small
+The twenty fixtures live in [`tasks.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/mid_turn_compliance/tasks.py). Each is a small
 self-contained repository plus a task prompt that underspecifies one step, and
 each carries three things fixed here:
 
@@ -174,7 +174,7 @@ a first look at the data, which is the thing this file exists to prevent.
 
 ## 5. The criterion — code, not judgement
 
-[`criterion.py`](criterion.py) is the criterion. It is committed with this file,
+[`criterion.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/mid_turn_compliance/criterion.py) is the criterion. It is committed with this file,
 before any data exists, and it is what produces the primary number.
 
 **Where it looks.** The first proxy record whose request carries the correction

@@ -55,7 +55,7 @@ direnv), which holds **only `op://` references read at load time via
 |---|---|---|
 | `HF_TOKEN` | `op://dev-shared/hf-token/credential` | HF pushes (`pipelines/related_files/traces.py`, `datasets/deepswe/build_parquet.py --upload`) |
 | `SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN` | `op://dev-shared/claude-code-oauth-token/credential` | the `claude_code` harness (subscription auth). **Deliberately not named `CLAUDE_CODE_OAUTH_TOKEN`** in your shell — see [Hazards](#hazards-learned-the-hard-way); the CLI copies it to that name inside its own process |
-| `OPENROUTER_API_KEYS` | `op://dev-shared/openrouter-api-keys/credential` | comma-separated OpenRouter keys, **split inside the consuming program, never in a shell** — `experiments/trace_synthesis/steered_rerun/supervisor.py` (`key_pool`, which also probes for a live member so a run is not spent discovering a dead key), `experiments/trace_synthesis/process_supervision/guidebook_as_step_criterion/judge_steps.py`. The library itself never sees the pool: `swe_lab` takes **one** key, by the name of the variable holding it, so whoever knows the pool picks a member and exports it. **What a paid run must spend** — the rule, and how a run is pointed here — is in [`AGENTS.md`](../AGENTS.md) (Boundaries) |
+| `OPENROUTER_API_KEYS` | `op://dev-shared/openrouter-api-keys/credential` | comma-separated OpenRouter keys, **split inside the consuming program, never in a shell** — [`steered_rerun/supervisor.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/supervisor.py) (`key_pool`, which also probes for a live member so a run is not spent discovering a dead key), [`guidebook_as_step_criterion/judge_steps.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/process_supervision/guidebook_as_step_criterion/judge_steps.py) — both removed from the tree with their experiments' raw files, and readable at those pinned links. The library itself never sees the pool: `swe_lab` takes **one** key, by the name of the variable holding it, so whoever knows the pool picks a member and exports it. **What a paid run must spend** — the rule, and how a run is pointed here — is in [`AGENTS.md`](../AGENTS.md) (Boundaries) |
 
 **OpenRouter serves the Anthropic Messages API, under the same model name.**
 Measured 2026-09-07 on dev-oregon against
@@ -100,8 +100,8 @@ the value is read at call time.
 
 The pool is not something the library splits. `api_key_env` must name a
 variable holding **one** key, so sampling a live member happens host-side,
-where the pool is known — `experiments/trace_synthesis/steered_rerun/supervisor.py`
-is the worked instance.
+where the pool is known — [`steered_rerun/supervisor.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/supervisor.py)
+(pinned; no longer in the tree) is the worked instance.
 
 **Pointing the actor at it** is three knobs plus that one live key, not a
 missing feature. The shipped definitions default to the subscription token
@@ -119,7 +119,7 @@ its OpenRouter behaviour on the target string, so it is the proxy — not
 the tuple, which is how the OAuth token stops being handed in. Verified
 2026-09-07: the three resolve on `main` to `capture='proxy'`,
 `proxy_target='https://openrouter.ai/api'`, `pass_env=('ANTHROPIC_API_KEY',)`.
-`experiments/trace_synthesis/steered_rerun/run_steered.py` sets the same three
+[`steered_rerun/run_steered.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/run_steered.py) (pinned) sets the same three
 in code and samples a live pool member in-process, and that is a run that has
 happened. What is still true is the narrower thing: a run is only
 OpenRouter-funded if **both** sides were moved, so do not report one on the
@@ -373,8 +373,8 @@ with the following repo-wide choices and deviations (full plan + rationale:
   ordinary green run says nothing about it. Drop, to the PR and git log: what
   the old implementation looked like, which error it raised, that the suite was
   green at the time, and how the review went. An incident may be **named**,
-  but only as a bare pointer to the full case (`test_steered_rerun_driver.py`
-  cites #264 this way) — never a dated run with its cause, which is chronicle
+  but only as a bare pointer to the full case ([`test_steered_rerun_driver.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/tests/test_steered_rerun_driver.py)
+  cited #264 this way) — never a dated run with its cause, which is chronicle
   rather than a source-level reason. The discriminant: does the reader need
   this to **avoid repeating** the failure, or to know **how we got here**?
 - Enforced by ruff (`D` google convention + `D401` + `D417`, `N`, `C90`,
@@ -715,7 +715,7 @@ believe this result*; the cross-repo statement of the invariant itself is in
   (`importlib.util.spec_from_file_location`) and feeds it the **committed**
   artifacts, so the test needs neither the dataset nor a container; the script
   then calls the same function. Precedent:
-  `tests/test_injection_shape_redaction.py`, and the one that prompted the rule
+  [`tests/test_injection_shape_redaction.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/tests/test_injection_shape_redaction.py), and the one that prompted the rule
   — the screening report's runnability table, whose exact-once check shipped
   reachable only by hand after the table had already gone out naming 34 of 40
   instances. Two failures make an unreachable check *worse* than no check: a

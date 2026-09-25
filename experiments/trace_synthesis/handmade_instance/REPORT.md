@@ -14,7 +14,7 @@
 
 **Scope of this round.** Steps 0–4: candidate selection, environment validation,
 harvesting one genuine failure, freezing it, and the Oracle's guidebook
-(written by `swelab-orchestra`, [`guidebook/openlibrary-from-isbn.md`](guidebook/openlibrary-from-isbn.md)).
+(written by `swelab-orchestra`, [`guidebook/openlibrary-from-isbn.md`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/handmade_instance/guidebook/openlibrary-from-isbn.md)).
 
 **Step 5 — the steered re-run — is pending**, gated on
 [task 02](../../../docs/trace-synthesis/plans/README.md) settling the injection
@@ -96,7 +96,7 @@ fault that would have burned four rollouts cost four cheap test runs instead.
 ## Step 1 — the gold gate
 
 `gold_check.sh`, sequential, 2026-09-01 01:07–01:17 PDT. Raw:
-[`runs/gold/summary.jsonl`](runs/gold/summary.jsonl) plus one full CLI log per
+[`runs/gold/summary.jsonl`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/handmade_instance/runs/gold/summary.jsonl) plus one full CLI log per
 instance.
 
 | instance | gold exit | wall (s) | verdict |
@@ -118,7 +118,7 @@ image-pull cost on a cold box, nothing more.
 ## Step 2 — harvesting a failure
 
 `harvest.sh`, on openlibrary (the fastest survivor). Raw:
-[`runs/rollouts.jsonl`](runs/rollouts.jsonl) + a full CLI log per sample.
+[`runs/rollouts.jsonl`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/handmade_instance/runs/rollouts.jsonl) + a full CLI log per sample.
 
 | rollout | started (PDT) | wall (s) | exit | verdict |
 | ---: | --- | ---: | ---: | --- |
@@ -205,9 +205,9 @@ sample 0's `unit_test/`, `edges/` and `store/` were gone.
 
 Checked by content, not by inspection. Before rollout 1, a sha256 manifest of
 all 99 files was written to
-[`runs/frozen-manifest-before.txt`](runs/frozen-manifest-before.txt); after
+[`runs/frozen-manifest-before.txt`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/handmade_instance/runs/frozen-manifest-before.txt); after
 rollout 1 completed, the same manifest was regenerated into
-[`runs/frozen-manifest-after.txt`](runs/frozen-manifest-after.txt).
+[`runs/frozen-manifest-after.txt`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/handmade_instance/runs/frozen-manifest-after.txt).
 
 ```
 INTACT: all 99 files byte-identical after a second rollout of the same instance
@@ -221,7 +221,7 @@ otherwise.
 
 ## Step 4 — the guidebook, and why this instance failed
 
-The guidebook is [`guidebook/openlibrary-from-isbn.md`](guidebook/openlibrary-from-isbn.md),
+The guidebook is [`guidebook/openlibrary-from-isbn.md`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/handmade_instance/guidebook/openlibrary-from-isbn.md),
 written by `swelab-orchestra` playing the Oracle with the privileged access
 [spec phase B](../../../docs/trace-synthesis/spec.md#phase-b--the-oracle) grants:
 the frozen conversation, the gold patch, the gold test patch, and the repo. Five

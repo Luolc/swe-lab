@@ -20,7 +20,7 @@ What this round can actually answer:
 2. Does **every** hint the host emitted survive into the converted trace — and
    when one does not, is the loss detectable? (The spec's one fatal failure
    mode.) — **yes**, and the proof is a three-way join, not a log
-   ([`reconcile.py`](reconcile.py)).
+   ([`reconcile.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/reconcile.py)).
 3. Do the hints stay **directional**, or slide into specifics? — they stayed
    directional; all six are quoted in the report so a reviewer can disagree.
 4. Is the instance a **genuine reasoning failure** at all, or a broken task?
@@ -42,8 +42,8 @@ Three processes, and which one holds what is the whole design:
 
 | | Where | Holds |
 |---|---|---|
-| **Supervisor** ([`supervisor.py`](supervisor.py)) | host | the guidebook, the belief state, the hint log, the model credential |
-| **hook** ([`steer_hook.py`](steer_hook.py)) | inside the instance container | nothing — it describes a boundary, asks, and appends what comes back |
+| **Supervisor** ([`supervisor.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/supervisor.py)) | host | the guidebook, the belief state, the hint log, the model credential |
+| **hook** ([`steer_hook.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/steer_hook.py)) | inside the instance container | nothing — it describes a boundary, asks, and appends what comes back |
 | **actor** | inside the instance container | the ordinary task prompt, and no idea any of this exists |
 
 The guidebook never enters the sandbox, so
@@ -113,7 +113,7 @@ measured 2026-09-01, a direct-to-OpenRouter `stream` run with no proxy at all
 scored 10 signed blocks out of 10. What discriminates is the *request* side:
 whether later request bodies echo prior assistant `thinking` blocks back, which
 is what interleaved thinking across turns means and is visible only on the wire.
-[`analyze.py`](analyze.py) reports both, and reports `-1` rather than `0` when
+[`analyze.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/analyze.py) reports both, and reports `-1` rather than `0` when
 there is no proxy log, so "not measurable" never reads as "measured zero".
 
 ### The injection shape is settled, not explored
@@ -152,7 +152,7 @@ problem statement, the requirements, the interface, and the repo at
 is true of every candidate and screens nothing: a coin flip between two
 self-consistent readings is reachable and still not pinned.
 
-[`validate_task.py`](validate_task.py) assembles the evidence and runs the one
+[`validate_task.py`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/validate_task.py) assembles the evidence and runs the one
 mechanical screen; the verdict is written by hand into
 `task-validation/<instance>.md` with the evidence, so a reviewer can re-derive
 it. Both screens have earned their place and neither subsumes the other:
@@ -229,7 +229,7 @@ and nothing else. The guidebook agent is built against it; see
 
 **Large artifacts live outside every git worktree**, at
 `~/dev/swe-lab-artifacts/trace_synthesis/`, with
-[`MANIFEST.md`](MANIFEST.md) pointing at them by sha256. Not fastidiousness: the
+[`MANIFEST.md`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/MANIFEST.md) pointing at them by sha256. Not fastidiousness: the
 previous round's frozen tree was gitignored *inside* a worktree and
 `git worktree remove` deleted it without a word
 ([hazards](../../../docs/conventions.md#hazards-learned-the-hard-way)).

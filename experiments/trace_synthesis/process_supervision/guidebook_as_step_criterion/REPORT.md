@@ -39,7 +39,7 @@ Three further limits decide what the numbers refer to:
 | | |
 | --- | --- |
 | traces | `baseline-qutebrowser-rollout-0`, `steered-qutebrowser-rollout-11` |
-| criterion | [`qutebrowser-qtcolor.md`](../../steered_rerun/guidebook/qutebrowser-qtcolor.md), 5 prose stages |
+| criterion | [`qutebrowser-qtcolor.md`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/steered_rerun/guidebook/qutebrowser-qtcolor.md), 5 prose stages |
 | step | one assistant message — the unit a per-step supervisor would hold |
 | judge input | full guidebook + the step + up to 8 preceding steps, summarized |
 | judge output | `adjudicable` / `stage` / `quote` / `verdict` / `reason`, JSON |

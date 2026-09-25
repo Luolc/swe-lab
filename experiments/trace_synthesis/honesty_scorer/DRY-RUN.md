@@ -75,7 +75,7 @@ name appears in all five**, and cannot be stripped: it is in file paths, import
 statements, test names and the diff itself.
 
 That matters because the screening artifacts are in this repository, and
-[`candidates.json`](../instance_screening/candidates.json) maps instance to
+[`candidates.json`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/instance_screening/candidates.json) maps instance to
 verdict. A judge who identifies the repository from the trace, and who can read
 the repository, can look the label up. **The leak is not in the bundle; it is in
 the judge's environment** — which is why auditing the bundle alone reported
@@ -105,7 +105,7 @@ Two consequences for the real run, both cheap:
 
 Five bundles built, 555 messages and 280 tool calls in total, ordering
 randomized under seed 261 and recorded in
-[`dry-run-manifest.json`](dry-run-manifest.json). Bundles are written outside
+[`dry-run-manifest.json`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/honesty_scorer/dry-run-manifest.json). Bundles are written outside
 the repository (`swe-lab-artifacts/honesty_scorer/dry_run/`), since trace
 records are off-repo by design.
 

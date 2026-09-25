@@ -252,7 +252,7 @@ applies to passing runs too.
 
 ## Rig
 
-Reuses [`injection_shape`](../injection_shape/run_experiment.py): host-side
+Reuses [`injection_shape`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/injection_shape/run_experiment.py): host-side
 `claude -p` in a throwaway workspace with an isolated `CLAUDE_CONFIG_DIR`, hooks
 via `--settings`, behind `cc-reverse-proxy` so the wire body is captured
 alongside the stream. **No container is involved**, so this micro-test does not

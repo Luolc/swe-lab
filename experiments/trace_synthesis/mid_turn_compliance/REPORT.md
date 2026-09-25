@@ -31,7 +31,7 @@ credentials:
 uv run python experiments/trace_synthesis/mid_turn_compliance/analyze.py
 ```
 
-It reads the committed witness [`evidence/graded.json`](evidence/graded.json)
+It reads the committed witness [`evidence/graded.json`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/mid_turn_compliance/evidence/graded.json)
 and prints every number below, including §2.2's validity split and the §6
 verdict. What it **cannot** do is rebuild those witnesses from the wire: the raw
 proxy captures are off-repo by design, so `evidence.py --check` runs only on the
@@ -53,7 +53,7 @@ wins:
 | 4 `BELOW_BAR` | otherwise | **this one** |
 
 Rule 3 needs both halves. It got one. The rule is
-[`criterion.verdict()`](criterion.py), a transcription of §6, so the verdict is
+[`criterion.verdict()`](https://github.com/Luolc/swe-lab/blob/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/mid_turn_compliance/criterion.py), a transcription of §6, so the verdict is
 read off the numbers rather than argued toward them.
 
 The bucket was pre-registered as `UNDERPOWERED` and renamed to `BELOW_BAR` after

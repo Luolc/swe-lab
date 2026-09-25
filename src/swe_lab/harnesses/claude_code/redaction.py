@@ -39,7 +39,8 @@ REDACTED = "[REDACTED]"
 # The placeholder an earlier redactor wrote, accepted on read and written by
 # nothing. **Closed and dated:** it appears in the 37 injection-shape captures
 # committed up to 2026-09-01 (under
-# `experiments/trace_synthesis/injection_shape/runs/`) and in W1 exchange
+# https://github.com/Luolc/swe-lab/tree/e7d785bb54b4b0b0750878642deed36beb25e69f/experiments/trace_synthesis/injection_shape/runs)
+# and in W1 exchange
 # records written before the same date. Those files are a
 # record and must not be rewritten, so a reader has to know this string.
 #
