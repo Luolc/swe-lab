@@ -40,7 +40,8 @@ from swe_lab.trace_synthesis.judge import (
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
 from swe_lab.trace_synthesis.supervisor import SpeakWhenOffTrack
 from swe_lab.workflow.definitions import (
-    SEGMENTED_ROLLOUT,
+    FROM_SCRATCH_GUIDED_TRACE,
+    GUIDED_ROLLOUT_KEY,
     SUPERVISOR_BASE_URL,
     SUPERVISOR_MODEL,
 )
@@ -65,8 +66,12 @@ def _supervision(*overrides: str) -> SegmentedSupervision:
   Returns:
     The plan the run would use.
   """
-  (entry,) = apply_overrides(
-      SEGMENTED_ROLLOUT, parse_overrides(list(overrides))
+  (entry,) = (
+      one
+      for one in apply_overrides(
+          FROM_SCRATCH_GUIDED_TRACE, parse_overrides(list(overrides))
+      )
+      if one.key == GUIDED_ROLLOUT_KEY
   )
   assert isinstance(entry.task, CodingAgentTask)
   harness = entry.task.harness
@@ -118,7 +123,9 @@ def test_an_arbitrary_third_party_base_url_reaches_the_supervisor() -> None:
   a URL that appears nowhere in this codebase.
   """
   judge = _judge_of(
-      _supervision(f"--rollout.harness.segmented.base_url={_THIRD_PARTY}")
+      _supervision(
+          f"--guided_rollout.harness.segmented.base_url={_THIRD_PARTY}"
+      )
   )
 
   assert _upstream_of(judge)[0] == _THIRD_PARTY
@@ -161,7 +168,12 @@ import swe_lab.workflow.definitions as definitions
 if when == "after":
   os.environ["ANTHROPIC_BASE_URL"] = url
 
-print(definitions.SEGMENTED_ROLLOUT[0].task.harness.segmented.base_url)
+(guided,) = (
+    entry
+    for entry in definitions.FROM_SCRATCH_GUIDED_TRACE
+    if entry.key == definitions.GUIDED_ROLLOUT_KEY
+)
+print(guided.task.harness.segmented.base_url)
 """
 
 
@@ -235,7 +247,9 @@ def test_the_key_variable_is_the_callers_choice_too() -> None:
   one with its own endpoint; its control arm is the default above.
   """
   judge = _judge_of(
-      _supervision(f"--rollout.harness.segmented.api_key_env={_KEY_VARIABLE}")
+      _supervision(
+          f"--guided_rollout.harness.segmented.api_key_env={_KEY_VARIABLE}"
+      )
   )
 
   assert _upstream_of(judge)[1] == _KEY_VARIABLE
@@ -273,7 +287,7 @@ def test_an_empty_key_variable_name_is_refused_where_it_is_chosen() -> None:
   container.
   """
   with pytest.raises(ValueError, match="api_key_env"):
-    _ = _supervision("--rollout.harness.segmented.api_key_env=")
+    _ = _supervision("--guided_rollout.harness.segmented.api_key_env=")
 
 
 def test_an_unheard_of_upstream_is_not_refused() -> None:
@@ -306,7 +320,9 @@ def test_the_pinned_model_is_the_same_name_wherever_the_run_is_pointed() -> (
   reintroduced a translation.
   """
   elsewhere = _judge_of(
-      _supervision(f"--rollout.harness.segmented.base_url={_THIRD_PARTY}")
+      _supervision(
+          f"--guided_rollout.harness.segmented.base_url={_THIRD_PARTY}"
+      )
   )
   default = _judge_of(_supervision())
 

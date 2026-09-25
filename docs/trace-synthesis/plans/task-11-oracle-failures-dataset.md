@@ -2,6 +2,15 @@
 
 **Status lives in [`README.md`](README.md).** This file is the design.
 
+> [!NOTE]
+> **Retired 2026-09-24, and everything this plan built was deleted** — the
+> `oracle_failures` record and loader entry, the builder, the `sample.py` name
+> contract, and the two workflows that read the record (`oracle_analysis`,
+> `oracle_guided_trace`). The owner ruled that the from-scratch chain, which
+> runs phase A itself, is the only entry point
+> ([ADR-0023's amendment](../../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md#amendment-2026-09-24)). Kept as the design record of what was
+> built; nothing in it is open work.
+
 ## Why the pipeline no longer begins with a rollout
 
 The [spec](../spec.md#3-the-pipeline) was written as a line: phase A runs a

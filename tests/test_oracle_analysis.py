@@ -1,14 +1,14 @@
 """OracleAnalysisTask: the phase-B composition, docker-free.
 
 Runs over an injected :class:`FakeSandbox` (real local-dir file ops, scripted
-exec) against an ``oracle_failures`` record built over a static underlying
-instance, so the whole composition — mounts, observers, brief, guidebook
-collection — is exercised while no agent ever spawns.
+exec) against a static instance, with the attempt staged as the four inputs a
+phase-A pair leaves, so the whole composition — mounts, observers, brief,
+guidebook collection — is exercised while no agent ever spawns.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 import dataclasses
 import hashlib
 import json
@@ -19,9 +19,16 @@ from etils import epath
 import pytest
 
 from swe_lab.cli.overrides import apply_overrides, parse_overrides
-from swe_lab.conversation import Conversation
-from swe_lab.datasets.oracle_failures import OracleFailureInstance
+from swe_lab.conversation import Conversation, Message, Role, TextBlock
+from swe_lab.conversation.observer import CONVERSATION_NAME
+from swe_lab.datasets.instance import TaskInstance
+from swe_lab.datasets.swebench_pro.unit_test import (
+    REQUIRED_TESTS_NAME,
+    SweBenchProGrader,
+    SweBenchProVerdict,
+)
 from swe_lab.evaluation.unit_test import ENTRYSCRIPT_NAME
+from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.git.patch import BASELINE_VERIFY_SCRIPT_NAME
 from swe_lab.harnesses import AgentOutcome, HarnessOutcomeObserver
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
@@ -30,15 +37,19 @@ from swe_lab.rollout import CodingAgentTask, PROMPT_NAME
 from swe_lab.sandbox import (
     ArtifactSchema,
     ExecResult,
+    Inline,
     merge_output_schemas,
     Mount,
+    Mounts,
     RunResult,
     RunStatus,
+    SandboxSpec,
 )
 from swe_lab.sandbox.observers import (
     BASE_REF_NAME,
     DiffExtractObserver,
     GitHistoryPurgeObserver,
+    PATCH_NAME,
     ResultVerifyObserver,
 )
 from swe_lab.sandbox.observers.git_history_purge import PURGE_SCRIPT_NAME
@@ -49,6 +60,7 @@ from swe_lab.trace_synthesis.guidebook import (
     STAGE_FIELDS,
 )
 from swe_lab.trace_synthesis.oracle import (
+    ATTEMPT_VERDICT_NAME,
     GOLD_PATCH_NAME,
     guidebook_of,
     GuidebookObserver,
@@ -57,19 +69,91 @@ from swe_lab.trace_synthesis.oracle import (
     STAGES_METRIC,
     VALID_METRIC,
 )
-from swe_lab.trace_synthesis.sample import (
-    FAILED_CONVERSATION_NAME,
-    FAILED_PATCH_NAME,
-    FAILED_VERDICT_NAME,
-)
 from swe_lab.workflow import (
     AttemptResult,
     registered_workflows,
     workflow_definition,
+    WorkflowEntry,
 )
 import swe_lab.workflow.definitions as definitions
 
-from .test_oracle_failures_record import _Underlying, CONVERSATION, SPEC
+SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
+
+CONVERSATION = Conversation(
+    messages=[
+        Message(role=Role.USER, content=[TextBlock(text="SOLVE THIS")]),
+        Message(role=Role.ASSISTANT, content=[TextBlock(text="I tried.")]),
+    ]
+)
+
+# The pre-agent baseline the attempt's patch was diffed against — distinct
+# from `SPEC.base_commit`, so a grading procedure that reset to the wrong tree
+# is visible.
+RECORDED_REF = "b" * 40
+FAILED_PATCH = "diff --git a/x b/x\n+wrong\n"
+
+
+@dataclasses.dataclass(frozen=True)
+class _Underlying(TaskInstance[SweBenchProVerdict]):
+  """The instance under analysis: static, no network."""
+
+  instance_id: str = "acme__widget-1"
+  extra_mounts: Mounts = dataclasses.field(default_factory=dict)
+  fix_sha: str | None = "f" * 40
+
+  @override
+  def sandbox_spec(self) -> SandboxSpec:
+    return SPEC
+
+  @override
+  def mounts(self) -> Mounts:
+    return dict(self.extra_mounts)
+
+  @override
+  def required_tests(self) -> Sequence[str]:
+    return ("t::a", "t::b")
+
+  @override
+  def solution_sha(self) -> str | None:
+    return self.fix_sha
+
+  @override
+  def prompt(self) -> str:
+    return "SOLVE THIS\n\nRequirements:\n- do it"
+
+  @override
+  def gold_patch(self) -> str | None:
+    return "diff --git a/g b/g\n"
+
+  @override
+  def unit_test_spec(
+      self,
+      *,
+      apply_patch: bool,
+      patch_name: str = PATCH_NAME,
+      checkout_golden_tests: bool = True,
+      patch_baseline: bool = False,
+  ) -> UnitTestSpec[SweBenchProVerdict]:
+    return UnitTestSpec(
+        eval_script=(
+            f"git apply {patch_name}\n"
+            f"patch-baseline={patch_baseline}\n"
+            "run-tests\n"
+        ),
+        mounts={
+            "run_script.sh": Mount(Inline(b"echo run")),
+            REQUIRED_TESTS_NAME: Mount(
+                Inline(json.dumps(list(self.required_tests())).encode())
+            ),
+        },
+        grader=SweBenchProGrader(),
+        patch_name=patch_name,
+        native_outputs={"output.json": "output.json"},
+    )
+
+  @override
+  def run_provenance(self) -> dict[str, object]:
+    return {"dataset": "fake", "language": "python"}
 
 
 @dataclasses.dataclass
@@ -108,40 +192,36 @@ class _LocalFakeSandbox(FakeSandbox):
     return super().run_script(name, timeout=timeout, env=env)
 
 
-def _failure(
-    underlying: _Underlying | None = None,
-    *,
-    patch_base_ref: str | None = None,
-    verdict: object | None = None,
-) -> OracleFailureInstance:
-  """Stage one attempt, failed by default.
+def _attempt_inputs(
+    *, verdict: object | None = None, base_ref: str = RECORDED_REF
+) -> dict[str, Mount]:
+  """Stage the four files a phase-A pair leaves, as the chain's edges would.
 
   Args:
-    underlying: The instance the record delegates to.
-    patch_base_ref: The recorded pre-agent baseline, when there is one.
-    verdict: What the record's verdict column holds. The default is the
-      failed verdict every `oracle_failures` row carries; a caller passes
-      ``{"resolved": True, ...}`` for the arm where the blind attempt passed,
-      or something unusable for the arm where nobody can tell.
+    verdict: What the grading entry's verdict holds. The default is a failed
+      verdict; a caller passes ``{"resolved": True, ...}`` for the arm where
+      the blind attempt passed, or something unusable for the arm where nobody
+      can tell.
+    base_ref: The recorded pre-agent baseline.
 
   Returns:
-    The record.
+    The inputs, by store name.
   """
-  return OracleFailureInstance(
-      dataset="fake",
-      instance_id="acme__widget-1",
-      rollout_id=0,
-      conversation=CONVERSATION.model_dump_json(),
-      verdict=json.dumps(
-          {"resolved": False, "summary": {"missing": ["t::b"]}}
-          if verdict is None
-          else verdict
-      ),
-      patch="diff --git a/x b/x\n+wrong\n",
-      provenance="{}",
-      instance=underlying or _Underlying(),
-      patch_base_ref=patch_base_ref,
+  facts = (
+      {"resolved": False, "summary": {"missing": ["t::b"]}}
+      if verdict is None
+      else verdict
   )
+  return {
+      CONVERSATION_NAME: Mount(
+          Inline(CONVERSATION.model_dump_json().encode()), read_only=True
+      ),
+      PATCH_NAME: Mount(Inline(FAILED_PATCH.encode()), read_only=True),
+      BASE_REF_NAME: Mount(Inline(f"{base_ref}\n".encode()), read_only=True),
+      ATTEMPT_VERDICT_NAME: Mount(
+          Inline(json.dumps(facts).encode()), read_only=True
+      ),
+  }
 
 
 def _guidebook(
@@ -168,23 +248,35 @@ def _task() -> OracleAnalysisTask:
   return OracleAnalysisTask(harness=ClaudeCodeHarness(model="sonnet"))
 
 
+def _sandbox(tmp_path: Path, *, baseline_sha: str = RECORDED_REF):
+  return _LocalFakeSandbox(
+      spec=SPEC,
+      workspace=epath.Path(tmp_path / "ws"),
+      baseline_sha=baseline_sha,
+      current_ref=SPEC.base_commit,
+  )
+
+
 def _execute(
     tmp_path: Path,
     *,
     guidebook: str | None = None,
-    instance: OracleFailureInstance | None = None,
+    verdict: object | None = None,
+    instance: _Underlying | None = None,
+    task: OracleAnalysisTask | None = None,
 ) -> tuple[AttemptResult, _LocalFakeSandbox, Path]:
   workspace = tmp_path / "ws"
   if guidebook is not None:
     # The agent never runs here, so what it "wrote" is placed ahead of time.
     workspace.mkdir()
     (workspace / GUIDEBOOK_NAME).write_text(guidebook)
-  sandbox = _LocalFakeSandbox(spec=SPEC, workspace=epath.Path(workspace))
-  result = _task().execute(
+  sandbox = _sandbox(tmp_path)
+  result = (task or _task()).execute(
       sandbox,
-      instance or _failure(),
+      instance or _Underlying(),
       output_dir=tmp_path / "out",
       timeout=60.0,
+      extra_mounts=_attempt_inputs(verdict=verdict),
   )
   return result, sandbox, workspace
 
@@ -197,7 +289,7 @@ def test_the_oracle_has_no_purge_extractor_or_result_verifier():
   # verifier would flag a run that is contaminated by design; a guidebook is
   # not a patch. Their absence is the design, pinned here rather than
   # incidental.
-  observers = _task().observers(_failure())
+  observers = _task().observers(_Underlying())
   kinds = {type(o) for o in observers}
   assert not kinds & {
       GitHistoryPurgeObserver,
@@ -209,7 +301,7 @@ def test_the_oracle_has_no_purge_extractor_or_result_verifier():
 
 def test_the_guidebook_is_the_declared_required_output():
   schema = merge_output_schemas(
-      *(o.output_schema() for o in _task().observers(_failure()))
+      *(o.output_schema() for o in _task().observers(_Underlying()))
   )
   guidebook = next(s for s in schema if s.name == GUIDEBOOK_NAME)
   assert guidebook == ArtifactSchema(
@@ -222,38 +314,36 @@ def test_the_guidebook_is_the_declared_required_output():
 # ─── the composition, end to end on the fake ─────────────────────────────────
 
 
-def test_execute_stages_the_failure_the_reference_and_the_grading_procedure(
+def test_execute_stages_the_attempt_the_reference_and_the_grading_procedure(
     tmp_path: Path,
 ):
   result, sandbox, workspace = _execute(tmp_path)
 
   assert result.run.status is RunStatus.SUCCESS
-  # the instance's own material: the failure, staged read-only
+  # the attempt, staged read-only under the names its producers gave it
   assert (
       Conversation.model_validate_json(
-          (workspace / FAILED_CONVERSATION_NAME).read_bytes()
+          (workspace / CONVERSATION_NAME).read_bytes()
       )
       == CONVERSATION
   )
-  assert json.loads((workspace / FAILED_VERDICT_NAME).read_text())[
+  assert json.loads((workspace / ATTEMPT_VERDICT_NAME).read_text())[
       "summary"
   ] == {"missing": ["t::b"]}
-  assert (
-      workspace / FAILED_PATCH_NAME
-  ).read_text() == "diff --git a/x b/x\n+wrong\n"
+  assert (workspace / PATCH_NAME).read_text() == FAILED_PATCH
   # the privileged extras: the reference, and the grading procedure compiled
-  # to apply the FAILED patch, with the dataset's grading files beside it
+  # to apply the attempt's patch against its recorded baseline, with the
+  # dataset's grading files beside it
   assert (workspace / GOLD_PATCH_NAME).read_text() == "diff --git a/g b/g\n"
-  assert (
-      (workspace / ENTRYSCRIPT_NAME)
-      .read_text()
-      .startswith(f"git apply {FAILED_PATCH_NAME}")
-  )
+  entryscript = (workspace / ENTRYSCRIPT_NAME).read_text()
+  assert entryscript.startswith(f"git apply {PATCH_NAME}\n")
+  assert "patch-baseline=True" in entryscript
   assert (workspace / "run_script.sh").read_text() == "echo run"
   assert {
-      FAILED_CONVERSATION_NAME,
-      FAILED_VERDICT_NAME,
-      FAILED_PATCH_NAME,
+      CONVERSATION_NAME,
+      ATTEMPT_VERDICT_NAME,
+      PATCH_NAME,
+      BASE_REF_NAME,
       GOLD_PATCH_NAME,
       ENTRYSCRIPT_NAME,
   } <= set(sandbox.mount_targets)
@@ -264,47 +354,31 @@ def test_execute_stages_the_failure_the_reference_and_the_grading_procedure(
   assert (workspace / "prompt.txt").read_text() == brief
   # no purge ran: the history is the Oracle's to read
   assert PURGE_SCRIPT_NAME not in sandbox.scripts
-  assert BASELINE_VERIFY_SCRIPT_NAME not in sandbox.scripts
 
 
-def test_a_baseline_failure_verifies_and_restores_its_recorded_tree(
+def test_the_attempt_verifies_and_restores_its_recorded_tree(
     tmp_path: Path,
 ):
-  recorded_ref = "b" * 40
-  assert recorded_ref != SPEC.base_commit
-  sandbox = _LocalFakeSandbox(
-      spec=SPEC,
-      workspace=epath.Path(tmp_path / "ws"),
-      baseline_sha=recorded_ref,
-      current_ref=SPEC.base_commit,
-  )
+  assert SPEC.base_commit != RECORDED_REF
 
-  result = _task().execute(
-      sandbox,
-      _failure(patch_base_ref=recorded_ref),
-      output_dir=tmp_path / "out",
-      timeout=60.0,
-  )
+  result, sandbox, _ = _execute(tmp_path)
 
   assert result.run.status is RunStatus.SUCCESS
-  assert sandbox.current_ref == recorded_ref
+  assert BASELINE_VERIFY_SCRIPT_NAME in sandbox.scripts
+  assert sandbox.current_ref == RECORDED_REF
 
 
-def test_a_baseline_failure_with_the_wrong_tree_stops_before_the_oracle(
+def test_an_attempt_with_the_wrong_tree_stops_before_the_oracle(
     tmp_path: Path,
 ):
-  sandbox = _LocalFakeSandbox(
-      spec=SPEC,
-      workspace=epath.Path(tmp_path / "ws"),
-      baseline_sha="c" * 40,
-      current_ref=SPEC.base_commit,
-  )
+  sandbox = _sandbox(tmp_path, baseline_sha="c" * 40)
 
   result = _task().execute(
       sandbox,
-      _failure(patch_base_ref="b" * 40),
+      _Underlying(),
       output_dir=tmp_path / "out",
       timeout=60.0,
+      extra_mounts=_attempt_inputs(),
   )
 
   assert result.run.status is RunStatus.SETUP_ERROR
@@ -324,9 +398,10 @@ def test_the_brief_carries_the_task_statement_whole_and_names_the_files(
       in brief
   )
   for name in (
-      FAILED_CONVERSATION_NAME,
-      FAILED_VERDICT_NAME,
-      FAILED_PATCH_NAME,
+      CONVERSATION_NAME,
+      ATTEMPT_VERDICT_NAME,
+      PATCH_NAME,
+      BASE_REF_NAME,
       GOLD_PATCH_NAME,
       ENTRYSCRIPT_NAME,
       GUIDEBOOK_NAME,
@@ -354,11 +429,9 @@ def test_the_brief_offers_no_stage_label_the_schema_does_not_measure(
   ``guidebook.valid`` read 0 on both guidebooks and discriminated nothing
   (#453). Both verdict branches share one template, and this pins that.
   """
-  instance = _failure(
-      verdict={"resolved": resolved, "summary": {"missing": []}}
+  _, _, workspace = _execute(
+      tmp_path, verdict={"resolved": resolved, "summary": {"missing": []}}
   )
-
-  _, _, workspace = _execute(tmp_path, instance=instance)
   brief = (workspace / PROMPT_NAME).read_text()
 
   assert "**Edits.**" not in brief
@@ -397,9 +470,9 @@ def test_a_passed_attempt_gets_the_brief_that_finds_the_guesswork(
   — 900 s of agent time and no guidebook. The brief now says what happened,
   and asks for the steps that were guessed rather than derived.
   """
-  passed = _failure(verdict={"resolved": True, "summary": {"missing": []}})
-
-  _, _, workspace = _execute(tmp_path, instance=passed)
+  _, _, workspace = _execute(
+      tmp_path, verdict={"resolved": True, "summary": {"missing": []}}
+  )
   brief = (workspace / PROMPT_NAME).read_text()
 
   assert "attempted the task below and passed its graded" in brief
@@ -422,9 +495,9 @@ def test_an_unreadable_verdict_stops_the_run_instead_of_guessing(
   # to read, both briefs would state something nobody established — so the
   # attempt fails in the workspace, before the agent is launched, and says
   # what it could not read.
-  unreadable = _failure(verdict={"summary": {"missing": ["t::b"]}})
-
-  result, sandbox, _ = _execute(tmp_path, instance=unreadable)
+  result, sandbox, _ = _execute(
+      tmp_path, verdict={"summary": {"missing": ["t::b"]}}
+  )
 
   assert result.run.status is not RunStatus.SUCCESS
   assert AGENT_SCRIPT_NAME not in sandbox.scripts
@@ -432,10 +505,10 @@ def test_an_unreadable_verdict_stops_the_run_instead_of_guessing(
 
 # The two default briefs, by digest of the complete model request.
 _FAILED_BRIEF_SHA = (
-    "fae7fa0c287b5076de118d88969ba7a1c78571f72cd9f58834117544da8bf99d"
+    "7bbfc8488acc222a9ed58ac1a4e9f21c42913a9c3f4a1fcaa2e7d62728a69b4a"
 )
 _PASSED_BRIEF_SHA = (
-    "b981329a35db2296fb2595c146d9187ef6a6d1234b69a651b4237ed56c5b839b"
+    "4e00f0315974369a04a1fdca6bf2e20a6a848145c59df777b58fe49fdf4981d1"
 )
 
 
@@ -451,11 +524,9 @@ def test_default_oracle_instructions_are_pinned(
   Both briefs, because both are defaults now: an edit that quietly rewrites
   the branch nobody has run yet is the one nothing else would catch.
   """
-  instance = _failure(
-      verdict={"resolved": resolved, "summary": {"missing": []}}
+  _, _, workspace = _execute(
+      tmp_path, verdict={"resolved": resolved, "summary": {"missing": []}}
   )
-
-  _, _, workspace = _execute(tmp_path, instance=instance)
 
   assert (
       hashlib.sha256((workspace / "prompt.txt").read_bytes()).hexdigest()
@@ -468,37 +539,16 @@ def test_oracle_override_instructions_reach_only_its_model_request(
 ) -> None:
   """The task-level override replaces the Oracle request byte for byte."""
   instructions = "ORACLE-OVERRIDE-sentinel\nKeep this exact trailing line.\n"
-  workspace = tmp_path / "ws"
-  sandbox = _LocalFakeSandbox(spec=SPEC, workspace=epath.Path(workspace))
-  (entry,) = apply_overrides(
-      workflow_definition("oracle_analysis"),
-      parse_overrides([f"--oracle_analysis.instructions={instructions}"]),
-  )
-  task = entry.task
+  task = _shipped_oracle(
+      [f"--oracle_analysis.instructions={instructions}"]
+  ).task
   assert isinstance(task, OracleAnalysisTask)
 
-  result = task.execute(
-      sandbox, _failure(), output_dir=tmp_path / "out", timeout=60.0
-  )
+  result, _, workspace = _execute(tmp_path, task=task)
 
   assert result.run.status is RunStatus.SUCCESS
   assert (workspace / "prompt.txt").read_text() == instructions
   assert (workspace / PROMPT_NAME).read_text() != instructions
-
-
-def test_an_instance_that_stages_no_failure_is_refused_before_the_sandbox(
-    tmp_path: Path,
-):
-  # The generic run CLI defaults to swebench_pro, and an ordinary instance
-  # assembles just as well — with a brief claiming three files that are not
-  # there and the networked agent budget spent finding out. Refuse at
-  # assembly, by the neutral names in `sample.py`, before anything is staged.
-  sandbox = _LocalFakeSandbox(spec=SPEC, workspace=epath.Path(tmp_path / "ws"))
-  with pytest.raises(ValueError, match="stages no failure to analyze"):
-    _ = _task().execute(
-        sandbox, _Underlying(), output_dir=tmp_path / "out", timeout=60.0
-    )
-  assert sandbox.mount_targets == []
 
 
 def test_the_brief_states_the_two_hard_won_rules(tmp_path: Path):
@@ -541,14 +591,8 @@ def test_a_dataset_without_a_fix_commit_or_a_reference_is_briefed_honestly(
     def gold_patch(self) -> str | None:
       return None
 
-  sandbox = _LocalFakeSandbox(spec=SPEC, workspace=epath.Path(tmp_path / "ws"))
-  _ = _task().execute(
-      sandbox,
-      _failure(_NoReference()),
-      output_dir=tmp_path / "out",
-      timeout=60.0,
-  )
-  brief = (tmp_path / "ws" / PROMPT_NAME).read_text()
+  _, sandbox, workspace = _execute(tmp_path, instance=_NoReference())
+  brief = (workspace / PROMPT_NAME).read_text()
   assert "records no upstream fix commit" in brief
   assert GOLD_PATCH_NAME not in brief
   assert GOLD_PATCH_NAME not in sandbox.mount_targets
@@ -698,9 +742,9 @@ def test_the_shipped_oracle_entries_carry_no_retry_budget():
 
   **Derived from the registry, not from a list of workflow names.** A
   hand-written list is green about the definitions it happens to name — the
-  first version of this test missed `oracle_guided_trace` — so the set is
-  every registered entry whose task is this one, and a new workflow joins it
-  by existing.
+  first version of this test missed a workflow — so the set is every
+  registered entry whose task is this one, and a new workflow joins it by
+  existing.
   """
   budgets = {
       (name, entry.key): entry.retries
@@ -711,11 +755,7 @@ def test_the_shipped_oracle_entries_carry_no_retry_budget():
 
   # The positive half: the set is not empty, so an enumeration that found
   # nothing cannot pass as "every one of them is 0".
-  assert set(budgets) == {
-      ("oracle_analysis", "oracle_analysis"),
-      ("oracle_guided_trace", "oracle_analysis"),
-      ("from_scratch_guided_trace", "oracle_analysis"),
-  }
+  assert set(budgets) == {("from_scratch_guided_trace", "oracle_analysis")}
   assert set(budgets.values()) == {0}
 
 
@@ -726,10 +766,7 @@ def test_a_caller_who_pays_for_a_retry_gets_this_policy():
   policy is then reachable exactly as written, which is why the method stays
   rather than being deleted as unreachable.
   """
-  (entry,) = apply_overrides(
-      workflow_definition("oracle_analysis"),
-      parse_overrides(["--oracle_analysis.retries=1"]),
-  )
+  entry = _shipped_oracle(["--oracle_analysis.retries=1"])
 
   assert entry.retries == 1
   assert isinstance(entry.task, OracleAnalysisTask)
@@ -757,13 +794,22 @@ def test_an_ending_that_happened_to_the_agent_is_retried():
 # ─── the shipped definition ──────────────────────────────────────────────────
 
 
-def test_the_oracle_analysis_workflow_is_registered_as_one_entry():
-  (entry,) = workflow_definition("oracle_analysis")
+def _shipped_oracle(overrides: list[str]) -> WorkflowEntry:
+  """Return the chain's Oracle entry after an operator's per-run overrides."""
+  return next(
+      entry
+      for entry in apply_overrides(
+          workflow_definition("from_scratch_guided_trace"),
+          parse_overrides(overrides),
+      )
+      if entry.key == definitions.ORACLE_ANALYSIS_KEY
+  )
+
+
+def test_the_chains_oracle_runs_the_rollouts_agent():
+  entry = _shipped_oracle([])
   assert entry.key == definitions.ORACLE_ANALYSIS_KEY == "oracle_analysis"
   assert isinstance(entry.task, OracleAnalysisTask)
-  # runs from a name alone: the brief is built in-session, nothing to --input
-  assert entry.task.inputs_builder is not None
-  assert [s.name for s in entry.task.input_schema()] == [PROMPT_NAME]
   # the same agent, network and credential as the rollout's entry
   rollout = workflow_definition("rollout")[0]
   assert isinstance(rollout.task, CodingAgentTask)

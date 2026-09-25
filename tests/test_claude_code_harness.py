@@ -1165,9 +1165,13 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
         "stop_reason": "end_turn",
     }
 
-  registered_workflow = workflow_definition("oracle_guided_trace")
-  assert registered_workflow is definitions.ORACLE_GUIDED_TRACE
-  _, rollout, _ = registered_workflow
+  registered_workflow = workflow_definition("from_scratch_guided_trace")
+  assert registered_workflow is definitions.FROM_SCRATCH_GUIDED_TRACE
+  (rollout,) = (
+      entry
+      for entry in registered_workflow
+      if entry.key == definitions.GUIDED_ROLLOUT_KEY
+  )
   assert isinstance(rollout.task, CodingAgentTask)
   registered = rollout.task.harness
   assert isinstance(registered, ClaudeCodeHarness)

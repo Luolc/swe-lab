@@ -6,6 +6,16 @@ workflow and the `guided-gain` reading, written against the code that landed
 with [ADR-0023](../../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md).
 Where this record and the code disagree, the code wins.
 
+> [!NOTE]
+> **Two things below changed on 2026-09-24** ([ADR-0023's
+> amendment](../../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md#amendment-2026-09-24)). ① The staged form beside this chain is gone —
+> `oracle_analysis`, `oracle_guided_trace` and the `oracle_failures` record —
+> and with it `OracleAnalysisTask.failure_inputs`: the task has only the
+> edge-fed behaviour this record calls `PRODUCED_FAILURE`, and the segmented
+> factory is `_guided_rollout_entry(key)`. ② "No live run" is no longer true:
+> PR #457's acceptance run has a reading for all five entries. Status is the
+> index's.
+
 ## 1. What it is for
 
 The pipeline's two shipped entry points, `oracle_analysis` and

@@ -67,15 +67,13 @@ instruction.
 ## 3. The pipeline
 
 Four phases. A and B are offline and privileged; C is the run that produces the
-trace; D is collection. **A is skippable**: when the failure already exists —
-a full eval sweep caches one for every instance it failed on — it enters as an
-`oracle_failures` record ([task 11](plans/task-11-oracle-failures-dataset.md))
-and the pipeline starts at B.
+trace; D is collection. The shipped pipeline runs all four, from a plain
+instance, as one workflow — `from_scratch_guided_trace`
+([ADR-0023](../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md)).
 
 ```mermaid
 flowchart TD
   A["<b>A.</b> baseline rollout + eval<br/><i>keep: failed, but the task is solvable</i>"]
-  F[("<b>A′.</b> a cached failure<br/><i>an oracle_failures record:<br/>conversation + verdict + patch</i>")]
   G["golden tests + repo at base_commit<br/>+ golden patch <i>when the dataset records one</i>"]
   B["<b>B.</b> Oracle<br/><i>privileged</i>"]
   GB[["guidebook.md<br/><i>private — never enters the actor's context</i>"]]
@@ -86,7 +84,6 @@ flowchart TD
   D["<b>D.</b> collect the conversation<br/><i>unedited</i>"]
 
   A --> B
-  F --> B
   G --> B
   B --> GB
   GB -.privileged, host-side only.-> S
@@ -109,42 +106,26 @@ Measuring the `pass@10 ≈ 3/10` band properly costs ten rollouts per instance.
 price of a fuzzier band; which of the two we use is [an open
 question](#11-open-questions).
 
-**Phase A is skipped when the failure already exists.** A full eval sweep
-caches exactly this pair for every instance it failed on, and re-running a
-rollout to reproduce one is a rollout paid for twice. The
-[`oracle_failures` dataset](plans/task-11-oracle-failures-dataset.md) captures
-a cached failure as a dataset record — the underlying instance's identity plus
-the failed conversation, the grader's verdict and the submitted patch — built
-from the finished run's own output directory
-(`python -m swe_lab.datasets.oracle_failures.build`). The record delegates the
-instance's whole runnable surface to the dataset it came from and adds the
-failure through the instance's own `mounts()`, so every phase after A runs
-against it unchanged. A fresh phase-A rollout is needed only for an instance no
-sweep has failed on yet.
-
-**Phase A has two entry points, and the workflow's name says which one a run
-takes.** The owner ruled on 2026-09-01 that the pipeline does not re-run phase
-A to reproduce a failure it already owns: a full rollout + eval sweep happens
-anyway, its traces are cached, and paying twice is waste. So `oracle_analysis`
-and `oracle_guided_trace` enter at **Phase B**, over a hand-assembled dataset
-row that carries the instance's fields *and* the failing run's typed
-conversation — a self-contained directory mounted into the sandbox, not a
-pointer into a run store. The layout, and the reasoning for each file in it, is
-[REPORT §8 of the steered re-run](../../experiments/trace_synthesis/steered_rerun/REPORT.md#8-the-failure-sample-is-the-workflows-input-contract);
-it is a contract, and the two workflows that mount it are built against it.
+**Phase A has one entry point: it runs.** An earlier form started at phase B
+over a cached failure — a hand-assembled `oracle_failures` dataset row
+([task 11](plans/task-11-oracle-failures-dataset.md)), read by the
+`oracle_analysis` and `oracle_guided_trace` workflows — on the owner's
+2026-09-01 ruling that a failure already owned should not be paid for twice.
+The owner retired that form on 2026-09-24: the from-scratch chain below is
+what downstream runs, and the dataset and both workflows were deleted
+([ADR-0023, amendment of 2026-09-24](../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md#amendment-2026-09-24)).
 
 `from_scratch_guided_trace`
 ([ADR-0023](../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md),
-[task 26](plans/task-26-from-scratch-guided-trace.md)) is the form that
-**does** run phase A, as its first two entries, over a plain instance: blind
+[task 26](plans/task-26-from-scratch-guided-trace.md)) runs phase A as its
+first two entries, over a plain instance: blind
 rollout, grading, the Oracle, the guided rollout, grading — all five
 **unconditionally**, whatever the blind verdict was. It exists for the pairing
 of the two verdicts (solved at baseline, gained with the guidebook, regressed,
 unsolved), and the regression cell is why it cannot stop early. Its Oracle
-takes the failure over workflow edges under the producers' own names
+takes the attempt over workflow edges under the producers' own names
 (`conversation.json`, `patch.diff`, `patch.base_ref.txt`,
-`unit_test.verdict.json`) instead of the row's staged names — the same task
-serves both forms, and the row contract above is untouched. Its two rollouts
+`unit_test.verdict.json`). Its two rollouts
 and two gradings are told apart by their entry keys alone — `baseline_rollout`,
 `baseline_unit_test`, `oracle_analysis`, `guided_rollout`, `guided_unit_test`,
 the store's task segment — and by nothing else.
@@ -160,12 +141,12 @@ A fresh agent with **privileged access** to:
 - the repository at `base_commit`.
 
 In the shipped form this is `OracleAnalysisTask`
-([task 04](plans/task-04-oracle-analysis-task.md)), registered as the
-one-entry `oracle_analysis` workflow: the failure arrives as the
-`oracle_failures` record's own mounts; the task adds the grading procedure —
-compiled to apply the failed patch, so the verdict can be reproduced in
-place — and, when the dataset records one, the golden patch; the git history
-is left unpurged. Without a reference patch the brief says so and drops every
+([task 04](plans/task-04-oracle-analysis-task.md)), the chain's
+`oracle_analysis` entry: the attempt arrives over the edges from phase A; the
+task adds the grading procedure — compiled to apply the attempt's patch against
+its recorded baseline, so the verdict can be reproduced in place — and, when
+the dataset records one, the golden patch; the git history is left
+unpurged. Without a reference patch the brief says so and drops every
 instruction that would read one — that branch is tested, not tolerated.
 
 **The brief branches on the graded verdict, and the Oracle always writes**
@@ -1049,8 +1030,8 @@ from the store — so this is a workflow, not a new subsystem.
 
 | Phase | Reuses | New |
 |---|---|---|
-| A | **skipped** in `oracle_analysis` / `oracle_guided_trace`: a cached failure enters as an `oracle_failures` record — or **run**, in `from_scratch_guided_trace`, as the `rollout_and_unit_test` pair under the keys `baseline_rollout` / `baseline_unit_test` | the `oracle_failures` dataset and its builder ([task 11](plans/task-11-oracle-failures-dataset.md)); the from-scratch chain and its `guided-gain` reading ([task 26](plans/task-26-from-scratch-guided-trace.md), [ADR-0023](../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md)) |
-| B | the `Task` layer; the record's mounts carry the failure — or, in the from-scratch chain, the edges from phase A do (`OracleAnalysisTask.failure_inputs`) | `OracleAnalysisTask` + the one-entry `oracle_analysis` workflow ([task 04](plans/task-04-oracle-analysis-task.md)): grading procedure staged, and the golden patch when the dataset records one; git-history purge **off**, declared output `guidebook.md` |
+| A | **run**, in `from_scratch_guided_trace`, as the `rollout_and_unit_test` pair under the keys `baseline_rollout` / `baseline_unit_test` | the from-scratch chain and its `guided-gain` reading ([task 26](plans/task-26-from-scratch-guided-trace.md), [ADR-0023](../decisions/ADR-0023-phase-a-returns-as-an-entry-of-the-from-scratch-chain.md)) |
+| B | the `Task` layer; the edges from phase A carry the attempt | `OracleAnalysisTask`, the chain's `oracle_analysis` entry ([task 04](plans/task-04-oracle-analysis-task.md)): grading procedure staged, and the golden patch when the dataset records one; git-history purge **off**, declared output `guidebook.md` |
 | C | the rollout composition; `guidebook.md` arrives over the workflow's declared artifact edge | a host-side Supervisor whose default judge and writer receive the compact rubric, or the complete tutorial on an explicit legacy path, beside the general-practice criterion; the segment loop, which is the carrier of record since [ADR-0025](../decisions/ADR-0025-the-segment-loop-is-the-only-supervised-carrier.md) and the only one in the tree since [ADR-0026](../decisions/ADR-0026-the-correction-channel-is-removed.md); `claude_code.supervisor.jsonl` records guidebook identity and context mode, judge request/reason, each valid running-state version, and emitted text for audit |
 | D | the `Conversation` converter + `Store` | — |
 | all | `register_workflow(...)` | the A→B→C→D edges |
@@ -1066,8 +1047,12 @@ for it. Two consequences, and neither is negotiable:
 1. **These runs are never pooled with benchmark numbers.** ADR-0010 §5's
    **policy stamp** is the mechanism: the record carries the policy that
    produced it, and aggregation across differing stamps is already defined as
-   an error rather than a warning. Oracle-guided runs carry a stamp that says
-   so.
+   an error rather than a warning. Oracle-guided runs are meant to carry a
+   stamp that says so. **No record carries it today:** task 07, which was to
+   build it, was closed unbuilt on 2026-09-24 by the owner's simplification
+   ruling. What sets these records apart today is only their entry key
+   (`oracle_analysis`, `guided_rollout`, `guided_unit_test`), and nothing
+   refuses to aggregate them with benchmark records.
 2. **The result verifier ([task 26](../horizontal/plans/task-26-result-verifier.md))
    flags the patch a guided run produces as contaminated, and that is correct
    behaviour.** The verifier reads what a run *produced*, so it applies to
@@ -1100,9 +1085,14 @@ for it. Two consequences, and neither is negotiable:
 3. Sampled traces read as honest: each assistant turn is explicable from the
    turns before it, judged by a human reader.
 4. Every oracle-guided record carries the policy stamp, and no aggregation
-   pools it with benchmark runs.
+   pools it with benchmark runs. **Not pursued:** task 07, which was to build
+   the stamp, was closed unbuilt on 2026-09-24 by the owner's simplification
+   ruling; see §14 for what separates these records instead.
 5. A measured cost per kept trace, and a yield, good enough to argue the
-   pipeline beats rejection sampling on the same instances.
+   pipeline beats rejection sampling on the same instances. **Not measured in
+   this repo:** task 08, the batch that was to measure it, was closed on
+   2026-09-24 — the downstream consumer runs the chain at scale, and the
+   answer is in their runs, not here.
 
 ## 16. Out of scope
 
@@ -1122,9 +1112,9 @@ no actor record, decide no mixture and change no report contract (the verdict
 artifact is additive; the attempt record's schema is untouched); the scope
 below is unchanged. Against [§15](#15-success-criteria): no criterion is met
 or invalidated — the chain makes the paired verdicts criterion 5 needs
-**measurable** and measures nothing, and criterion 4's stamp is still task
-07's, so a from-scratch run's phase-B and phase-C records are as unstamped as
-an `oracle_guided_trace` run's.
+**measurable** and measures nothing. Criterion 4's stamp was task 07's, and
+task 07 was closed unbuilt on 2026-09-24, so a from-scratch run's phase-B and
+phase-C records are unstamped and criterion 4 is unmet.
 
 - **Harnesses other than `claude_code`.** Every delivery this spec has
   described is Claude Code's: the segment loop is built on its `--max-turns`

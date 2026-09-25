@@ -1,4 +1,4 @@
-"""The shipped workflow definitions: rollout, unit_test, and the two chained.
+"""The shipped workflow definitions: rollout, grading, and the guided chain.
 
 Statically written, registered at import, invoked by name against any
 instance. This module is the one place where a shipped workflow names a
@@ -96,8 +96,8 @@ _UNIT_TEST_RETRIES = 2
 # Bounded by `git gc` on the largest repos (~51s observed under emulation),
 # plus the image pull. No agent runs, so this needs no agent budget.
 _GIT_INTEGRITY_TIMEOUT_S = 900.0
-# An agent run like the rollout's, over a smaller job: read a failure, write
-# a document. The one live run so far finished in about five minutes.
+# An agent run like the rollout's, over a smaller job: read an attempt, write
+# a document.
 _ORACLE_ANALYSIS_TIMEOUT_S = 1800.0
 
 
@@ -253,69 +253,48 @@ def _segmented_policy(
 
 
 # The supervised carrier (ADR-0025, ADR-0026): the actor is stopped every
-# configured number of turns, judged, and resumed. The policy travels on the
-# harness rather than beside it, because the loop *drives* `run()` instead of
-# bracketing it — which is why this is a definition of its own rather than a
-# flag on `ROLLOUT`.
+# configured number of turns, judged against the Oracle's guidebook, and
+# resumed. The policy travels on the harness rather than beside it, because the
+# loop *drives* `run()` instead of bracketing it — which is why this is an
+# entry of its own rather than a flag on the plain rollout.
 #
 # `capture="stream"`, which is also what makes the run readable: with
 # `--replay-user-messages` the event stream echoes the messages the actor
 # received, so an injected correction is visible in the trace beside what the
 # actor did next.
-def _segmented_rollout(
-    *, guidebook_name: str | None = None, key: str = ROLLOUT_KEY
-) -> WorkflowDef:
-  """Build the segmented rollout, optionally with a guidebook input.
+def _guided_rollout_entry(key: str) -> WorkflowEntry:
+  """Build the segmented rollout supervised under the Oracle's guidebook.
 
   Args:
-    guidebook_name: The phase-B artifact to give the supervisor, or ``None``.
-    key: The entry key; a chain that also runs an unguided rollout gives this
-      one its own.
+    key: The entry key — the task segment of every record the entry persists.
 
   Returns:
-    The one-entry segmented rollout definition.
+    The guided rollout entry.
   """
-  return (
-      WorkflowEntry(
-          key,
-          CodingAgentTask(
-              harness=ClaudeCodeHarness(
-                  model=DEFAULT_MODEL,
-                  bare=False,
-                  capture="stream",
-                  segmented=SegmentedSupervision(
-                      policy_factory=_segmented_policy,
-                      guidebook_name=guidebook_name,
-                  ),
-              ),
-              extra_inputs=(
-                  (
-                      ArtifactSchema(
-                          guidebook_name,
-                          description="the Oracle's phase-B guidebook",
-                      ),
-                  )
-                  if guidebook_name is not None
-                  else ()
+  return WorkflowEntry(
+      key,
+      CodingAgentTask(
+          harness=ClaudeCodeHarness(
+              model=DEFAULT_MODEL,
+              bare=False,
+              capture="stream",
+              segmented=SegmentedSupervision(
+                  policy_factory=_segmented_policy,
+                  guidebook_name=GUIDEBOOK_NAME,
               ),
           ),
-          timeout=_AGENT_TIMEOUT_S,
-          sandbox=DockerHostSandboxConfig(
-              network=True, pass_env=(OAUTH_TOKEN_ENV,)
+          extra_inputs=(
+              ArtifactSchema(
+                  GUIDEBOOK_NAME,
+                  description="the Oracle's phase-B guidebook",
+              ),
           ),
       ),
+      timeout=_AGENT_TIMEOUT_S,
+      sandbox=DockerHostSandboxConfig(
+          network=True, pass_env=(OAUTH_TOKEN_ENV,)
+      ),
   )
-
-
-SEGMENTED_ROLLOUT: WorkflowDef = _segmented_rollout()
-_GUIDEBOOK_SEGMENTED_ROLLOUT: WorkflowDef = _segmented_rollout(
-    guidebook_name=GUIDEBOOK_NAME
-)
-
-SEGMENTED_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (
-    *SEGMENTED_ROLLOUT,
-    *UNIT_TEST,
-)
 
 
 GOLD_UNIT_TEST: WorkflowDef = (
@@ -349,15 +328,11 @@ GIT_INTEGRITY_AUDIT: WorkflowDef = (
 )
 
 
-def _oracle_analysis_entry(
-    *, failure_inputs: bool = False, inputs: tuple[str, ...] = ()
-) -> WorkflowEntry:
-  """Build phase B's entry, reading the failure from where ``inputs`` says.
+def _oracle_analysis_entry(*, inputs: tuple[str, ...]) -> WorkflowEntry:
+  """Build phase B's entry, reading the attempt from the edges in ``inputs``.
 
   Args:
-    failure_inputs: Whether the failure arrives as declared inputs (a chain
-      that ran phase A first) rather than as the instance's own mounts.
-    inputs: Explicit edge bindings for those inputs.
+    inputs: Explicit edge bindings for the attempt the Oracle explains.
 
   Returns:
     The Oracle entry. The agent is the same shipped harness, under the same
@@ -366,8 +341,7 @@ def _oracle_analysis_entry(
   return WorkflowEntry(
       ORACLE_ANALYSIS_KEY,
       OracleAnalysisTask(
-          harness=ClaudeCodeHarness(model=DEFAULT_MODEL, bare=False),
-          failure_inputs=failure_inputs,
+          harness=ClaudeCodeHarness(model=DEFAULT_MODEL, bare=False)
       ),
       timeout=_ORACLE_ANALYSIS_TIMEOUT_S,
       sandbox=DockerHostSandboxConfig(
@@ -375,19 +349,6 @@ def _oracle_analysis_entry(
       ),
       inputs=inputs,
   )
-
-
-# Phase B of trace synthesis, on its own: the instance is an `oracle_failures`
-# record, which brings the failed conversation, verdict and patch along as its
-# own mounts, so this one entry runs from a name alone — `run oracle_analysis
-# <id> --dataset oracle_failures`.
-ORACLE_ANALYSIS: WorkflowDef = (_oracle_analysis_entry(),)
-
-ORACLE_GUIDED_TRACE: WorkflowDef = (
-    *ORACLE_ANALYSIS,
-    *_GUIDEBOOK_SEGMENTED_ROLLOUT,
-    *UNIT_TEST,
-)
 
 
 def _edge(producer: str, name: str) -> str:
@@ -418,7 +379,6 @@ FROM_SCRATCH_GUIDED_TRACE: WorkflowDef = (
         ),
     ),
     _oracle_analysis_entry(
-        failure_inputs=True,
         inputs=(
             _edge(BASELINE_ROLLOUT_KEY, CONVERSATION_NAME),
             _edge(BASELINE_ROLLOUT_KEY, PATCH_NAME),
@@ -429,7 +389,7 @@ FROM_SCRATCH_GUIDED_TRACE: WorkflowDef = (
             ),
         ),
     ),
-    *_segmented_rollout(guidebook_name=GUIDEBOOK_NAME, key=GUIDED_ROLLOUT_KEY),
+    _guided_rollout_entry(GUIDED_ROLLOUT_KEY),
     _unit_test_entry(
         GUIDED_UNIT_TEST_KEY,
         inputs=(
@@ -440,14 +400,8 @@ FROM_SCRATCH_GUIDED_TRACE: WorkflowDef = (
 )
 
 register_workflow("git_integrity_audit", GIT_INTEGRITY_AUDIT)
-register_workflow("oracle_analysis", ORACLE_ANALYSIS)
-register_workflow("oracle_guided_trace", ORACLE_GUIDED_TRACE)
 register_workflow("from_scratch_guided_trace", FROM_SCRATCH_GUIDED_TRACE)
 register_workflow("rollout", ROLLOUT)
 register_workflow("unit_test", UNIT_TEST)
 register_workflow("rollout_and_unit_test", ROLLOUT_AND_UNIT_TEST)
 register_workflow("gold_unit_test", GOLD_UNIT_TEST)
-register_workflow("segmented_rollout", SEGMENTED_ROLLOUT)
-register_workflow(
-    "segmented_rollout_and_unit_test", SEGMENTED_ROLLOUT_AND_UNIT_TEST
-)

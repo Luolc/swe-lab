@@ -432,9 +432,9 @@ def test_a_refused_upstream_reads_as_a_bad_argument_not_a_crash():
   traceback, which reads as a bug in the tool rather than a bad flag.
   """
   refused = _run(
-      "segmented_rollout",
+      "from_scratch_guided_trace",
       _INSTANCE_ID,
-      "--rollout.harness.segmented.api_key_env=",
+      "--guided_rollout.harness.segmented.api_key_env=",
   )
 
   # Click's usage exit, which `CliRunner` surfaces as `SystemExit`; an
@@ -453,9 +453,10 @@ def test_an_upstream_this_repo_has_never_heard_of_is_not_refused():
   do is fail *here*, on the URL.
   """
   accepted = _run(
-      "segmented_rollout",
+      "from_scratch_guided_trace",
       _INSTANCE_ID,
-      "--rollout.harness.segmented.base_url=https://gateway.example.internal",
+      "--guided_rollout.harness.segmented.base_url="
+      "https://gateway.example.internal",
   )
 
   assert "api_key_env must name" not in _message(accepted.output)
