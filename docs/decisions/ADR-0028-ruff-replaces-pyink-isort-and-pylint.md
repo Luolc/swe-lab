@@ -52,8 +52,10 @@ when it is ready, ty.
 
 1. **Ruff 0.16.10 is the formatter, the import sorter and the linter.**
    pre-commit runs `ruff-check` (lint plus `I`, with `--fix`) and then
-   `ruff-format`. The version is pinned in both places that can run it: the
-   hook (`rev: v0.16.10`) and the venv (`ruff>=0.16.10`). pyink, isort and
+   `ruff-format`. The hook is pinned (`rev: v0.16.10`). The venv is not:
+   `pyproject.toml` declares a lower bound, `ruff>=0.16.10`, and `uv.lock`
+   resolves it to 0.16.10 today, so a lock refresh can move the venv ahead of
+   the hook. pyink, isort and
    pylint are removed from the dependencies and `uv.lock`, and
    `[tool.pyink]` / `[tool.isort]` are deleted.
 
@@ -303,8 +305,10 @@ re-run only shows how much ty itself has changed.
 
 ## Consequences
 
-- One tool and one pinned version for formatting, import order and lint, in
-  the hook and in the venv alike.
+- One tool for formatting, import order and lint. The hook that checks the
+  code is pinned at 0.16.10; the venv's Ruff follows `uv.lock` (0.16.10 today,
+  above the `>=0.16.10` bound after a lock refresh), so an editor using the
+  venv can again disagree with the hook once the two drift apart.
 - Every bracket continuation is now 2 spaces; code written to the old
   4-space habit is reformatted by the hook.
 - "Every line is at most 80 characters" is not literally true: 21 lines
