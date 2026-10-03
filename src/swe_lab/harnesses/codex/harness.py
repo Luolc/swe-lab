@@ -18,8 +18,6 @@ distroless images alike (task-28 §1). There are, however, **two** binaries —
 see ``binary.BINARY_STEMS``.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 import logging

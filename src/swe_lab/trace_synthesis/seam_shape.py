@@ -26,8 +26,6 @@ then the zeros. That the instrument fires at all is a separate arm, asserted in
 ``tests/test_seam_shape.py`` against a committed dirty-seam fixture.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 import dataclasses
 import json

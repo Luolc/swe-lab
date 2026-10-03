@@ -9,8 +9,6 @@ Parent-alive deaths only — normal exit, exception, timeout. A parent that is
 killed sends no signal at all, and nothing here should be read as covering it.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterator
 import contextlib
 import os

@@ -47,8 +47,6 @@ than an accident a reader has to rediscover. It remains configurable for
 experiments that need to test that assumption.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Mapping, Sequence
 import dataclasses
 import datetime

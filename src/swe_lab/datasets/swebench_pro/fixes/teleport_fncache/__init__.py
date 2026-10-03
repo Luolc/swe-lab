@@ -1,7 +1,5 @@
 """teleport 78b0d8c7: a self-calibrating wall-clock assertion with no margin."""
 
-from __future__ import annotations
-
 from .._seam import (
   RegisteredFix,
   render,

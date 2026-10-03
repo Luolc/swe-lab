@@ -1,7 +1,5 @@
 """element-web 9a31cd0f: a transient label that vanishes before it is seen."""
 
-from __future__ import annotations
-
 from .._seam import (
   RegisteredFix,
   render,

@@ -15,8 +15,6 @@ stage fields and the rubric's supervisor-facing fields; whether their content
 is genuinely derivable from observable evidence remains a reader's judgement.
 """
 
-from __future__ import annotations
-
 import re
 
 GUIDEBOOK_NAME = "guidebook.md"

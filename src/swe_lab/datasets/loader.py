@@ -13,8 +13,6 @@ given file — later milestones derive a per-instance proxy port from it
 (``base_port + index``).
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Iterator, Mapping
 from typing import ClassVar, Protocol
 

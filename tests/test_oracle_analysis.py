@@ -6,8 +6,6 @@ phase-A pair leaves, so the whole composition — mounts, observers, brief,
 guidebook collection — is exercised while no agent ever spawns.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 import dataclasses
 import hashlib

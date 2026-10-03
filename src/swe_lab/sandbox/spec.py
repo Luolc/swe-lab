@@ -5,8 +5,6 @@ alike); everything grading-specific lives in the eval method's own spec
 instead (``UnitTestSpec``).
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 

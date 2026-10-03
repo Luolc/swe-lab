@@ -11,8 +11,6 @@ deliberately *not* imported by this package — the shipped definitions name
 concrete tasks and a concrete agent, and the engine must not depend on either.
 """
 
-from __future__ import annotations
-
 from .workflow import (
   validate_declaration,
   WorkflowEntry,

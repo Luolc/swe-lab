@@ -14,8 +14,6 @@ shows one* — none has yet — so a future divergence is a one-file change with
 evidence behind it rather than a fork of the parser.
 """
 
-from __future__ import annotations
-
 from swe_lab.conversation import Conversation
 from swe_lab.harnesses.base import AgentOutcome
 from swe_lab.harnesses.claude_code.convert import (

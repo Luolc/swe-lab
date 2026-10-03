@@ -93,8 +93,6 @@ indistinguishable at runtime from one that repairs a defect, and only the
 docstring tells the difference.
 """
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 
 from ._seam import InstanceFix, SweBenchProUnitTestSpec, with_setup

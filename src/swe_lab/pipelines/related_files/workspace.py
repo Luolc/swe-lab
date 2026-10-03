@@ -8,8 +8,6 @@ without them being mistaken for repo source. The agent writes its result to a
 fixed filename (``ANNOTATION_OUTPUT``) in the working directory.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 import subprocess
 

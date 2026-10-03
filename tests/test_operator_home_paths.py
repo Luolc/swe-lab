@@ -10,8 +10,6 @@ The rule itself, the allowlist, and why this is enforced in two places rather
 than one live in `tests/operator_home_paths.py`.
 """
 
-from __future__ import annotations
-
 import pathlib
 import subprocess
 

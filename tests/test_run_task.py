@@ -6,8 +6,6 @@ attempts are overwritten from ``a0``). The hooks' contracts — validity
 decides the marker, retry-desire does not — get their named tests.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 import pathlib
 from pathlib import Path

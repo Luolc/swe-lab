@@ -7,8 +7,6 @@ edge staging it into the second container read-only. Auto-skipped where
 Docker is absent (see ``conftest.py``).
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, replace
 import json
 from pathlib import Path

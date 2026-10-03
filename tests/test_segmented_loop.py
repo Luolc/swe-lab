@@ -12,8 +12,6 @@ each ceiling is asserted with a run that does *not* hit it beside the one that
 does.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 import datetime

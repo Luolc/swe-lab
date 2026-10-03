@@ -8,8 +8,6 @@ reuse it without vendoring ~1000 files into git or carrying the whole repo as a
 submodule.
 """
 
-from __future__ import annotations
-
 import urllib.request
 
 from etils import epath

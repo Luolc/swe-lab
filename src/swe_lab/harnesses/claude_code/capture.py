@@ -13,8 +13,6 @@ accepted.
 these two only ever travel to a command line.)
 """
 
-from __future__ import annotations
-
 from typing import Literal
 
 type Capture = Literal["stream", "proxy"]

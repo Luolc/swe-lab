@@ -8,8 +8,6 @@ set in ``before_destroy``) is a **single-run object**: construct a fresh one
 per composition; reuse across runs is a bug.
 """
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import override, TYPE_CHECKING

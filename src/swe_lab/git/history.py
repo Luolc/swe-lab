@@ -28,8 +28,6 @@ predates the base. SWE-bench Verified preserves those deliberately; we match it,
 which also keeps our numbers comparable with theirs.
 """
 
-from __future__ import annotations
-
 from dataclasses import asdict, dataclass
 import json
 import shlex

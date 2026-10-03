@@ -6,8 +6,6 @@ with run metadata into an :class:`Annotation`. Per-snippet validation against
 the repo lives in :mod:`agent_validator` (standalone so the agent can run it).
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from enum import StrEnum

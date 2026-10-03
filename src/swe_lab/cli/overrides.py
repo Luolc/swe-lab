@@ -15,8 +15,6 @@ Nothing is ever assigned through a reference, so the definition a registry
 holds is never edited by a run that overrides it.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, fields, is_dataclass, replace
 from enum import Enum

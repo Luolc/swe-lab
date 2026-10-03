@@ -21,8 +21,6 @@ with it, it also publishes the parquet plus its compliance set (README,
 upstream LICENSE, PROVENANCE.md, manifest.json) to the public HF repo.
 """
 
-from __future__ import annotations
-
 import argparse
 import datetime
 import hashlib

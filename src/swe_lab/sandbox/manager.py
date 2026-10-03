@@ -15,8 +15,6 @@ semantics, exhaustively:
   never masks the primary error.
 """
 
-from __future__ import annotations
-
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field

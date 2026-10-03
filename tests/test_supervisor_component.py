@@ -11,8 +11,6 @@ one carrier is the segment loop: those invariants are pinned in
 ``test_segmented_loop.py``, not duplicated here.
 """
 
-from __future__ import annotations
-
 import dataclasses
 from typing import Any
 

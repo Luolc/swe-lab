@@ -1,7 +1,5 @@
 """Tests for the SWE-Bench Pro record type: parsing + its runnable surface."""
 
-from __future__ import annotations
-
 import hashlib
 from pathlib import Path
 from typing import override

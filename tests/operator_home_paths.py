@@ -25,8 +25,6 @@ directory: a guard keyed to whoever happens to run it is green on every other
 machine and in CI, which is indistinguishable from not existing.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterable, Sequence
 import pathlib
 import re

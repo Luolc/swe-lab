@@ -6,8 +6,6 @@ the shared solve-input convention the harness *reads* while the dataset and
 composition *write* it (the prompt is dataset-derived).
 """
 
-from __future__ import annotations
-
 # The pinned native Claude Code binary — a read-only asset at a fixed path,
 # invoked by absolute path (not via PATH).
 BINARY_AT = "/opt/claude-code/claude"

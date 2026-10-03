@@ -1,7 +1,5 @@
 """ansible a20a5270: a pytest-xdist temp-directory collision."""
 
-from __future__ import annotations
-
 from ...constants import RUN_SCRIPT_NAME
 from .._seam import (
   RegisteredFix,

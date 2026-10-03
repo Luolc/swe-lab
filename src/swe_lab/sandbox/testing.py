@@ -16,8 +16,6 @@ script every built sandbox replays and collects the sandboxes themselves, so
 a test can still assert on what the runner constructed.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 import json

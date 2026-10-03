@@ -7,8 +7,6 @@ on the stateful observer that produced them — the caller constructed that
 observer, holds the reference, and reads the typed result straight back.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum

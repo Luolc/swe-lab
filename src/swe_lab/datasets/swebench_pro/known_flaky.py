@@ -45,8 +45,6 @@ decision, and it belongs where scoring decisions are visible (the caller's
 ``retries``, or the spec's own override) rather than behind a lookup here.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 

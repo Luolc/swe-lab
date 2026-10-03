@@ -6,8 +6,6 @@ a capture is only safe if neither leaks: a credential arrives on the *request*
 on the *response* (organization / workspace ids).
 """
 
-from __future__ import annotations
-
 import json
 
 from swe_lab.harnesses.claude_code.redaction import (

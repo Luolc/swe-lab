@@ -1,7 +1,5 @@
 """element-web aec454dd: wasm/GC double-free in the wysiwyg composer."""
 
-from __future__ import annotations
-
 import base64
 import hashlib
 

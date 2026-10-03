@@ -6,8 +6,6 @@ found in the upstream reference implementations especially, since both were
 invisible to reading and only showed up when run.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, replace
 import json
 from pathlib import Path

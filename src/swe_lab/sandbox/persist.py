@@ -12,8 +12,6 @@ workspace (the misclassification safety valve); ``index`` aggregates a sweep's
 shards.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, replace
 import json

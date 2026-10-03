@@ -6,8 +6,6 @@ module makes: the *whole* subtree is taken rather than a pattern, and an
 absence is written down rather than left to be inferred from a missing file.
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import override

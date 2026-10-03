@@ -13,8 +13,6 @@ several runs of the same instance can execute concurrently without sharing a
 checkout, proxy port, or log path.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, UTC

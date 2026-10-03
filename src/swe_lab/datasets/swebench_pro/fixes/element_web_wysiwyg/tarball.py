@@ -15,8 +15,6 @@ The blob's sha512 is asserted against npm's published ``dist.integrity`` by
 ``tests/test_swebench_pro_fixes.py`` — a silently altered blob fails there.
 """
 
-from __future__ import annotations
-
 # The published tarball, base64 at 76 columns (the MIME convention, so every
 # line stays inside the formatter's limit). Whitespace is ignored on decode.
 TARBALL_B64 = """\

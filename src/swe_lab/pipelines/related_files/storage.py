@@ -18,8 +18,6 @@ every instance's aggregate by the ``combine`` binary:
 extracted final ``cc-reverse-proxy`` record for that run.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterator
 import json
 

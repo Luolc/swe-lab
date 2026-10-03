@@ -31,8 +31,6 @@ Sensitivity, against the published exploits: BenchJack's nine-line
 hardcoded required-test name are all caught; a legitimate fix is not flagged.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 import posixpath

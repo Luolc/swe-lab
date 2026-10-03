@@ -20,8 +20,6 @@ and must raise: a contaminated result is worse than none, while a broken
 diagnostic is not worth a real run.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 import json
 import logging

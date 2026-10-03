@@ -13,8 +13,6 @@ default), and a chain can supply it by edge instead — a planning task writing
 the prompt its solver reads.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Mapping, Sequence
 import contextlib
 from dataclasses import dataclass, field

@@ -19,8 +19,6 @@ module raises distinguishes that case rather than letting it read as
 surfacing as if the instances themselves were broken.
 """
 
-from __future__ import annotations
-
 import hashlib
 
 from etils import epath

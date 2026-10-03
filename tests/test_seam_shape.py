@@ -17,8 +17,6 @@ Fixtures are built to the shapes the feasibility report measured on the wire —
 §6.2 for the dirty seam, §9.1 for the anchored one — not captured here.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from swe_lab.trace_synthesis.seam_shape import (

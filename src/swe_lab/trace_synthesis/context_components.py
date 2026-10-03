@@ -1,7 +1,5 @@
 """Reusable selection, rendering, and prompt assembly for supervision."""
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 import dataclasses

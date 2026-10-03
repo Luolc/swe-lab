@@ -8,8 +8,6 @@ record and the rerun tests in ``test_from_scratch_guided_trace.py`` go red;
 drop a zero cell from the table and the render assertion goes red.
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Literal

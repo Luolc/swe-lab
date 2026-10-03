@@ -17,8 +17,6 @@ Either way the bytes never reach a command line, never land in the workspace
 (where the run's artifacts are collected from), and go away with the container.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 import json
 from typing import override

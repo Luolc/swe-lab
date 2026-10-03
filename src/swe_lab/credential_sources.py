@@ -19,8 +19,6 @@ tell a supervisor key taken from the machine-wide pool from one exported
 deliberately for that run.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 
 _ADOPTED_FROM: dict[str, str] = {}

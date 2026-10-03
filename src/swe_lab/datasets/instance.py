@@ -14,8 +14,6 @@ same run context. This interface only says what every dataset must be able to
 answer for any of that to be possible.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 

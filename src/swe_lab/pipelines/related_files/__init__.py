@@ -5,8 +5,6 @@ reconciles several such annotations into one. Both are thin wrappers over
 `agent_run.run_agent`.
 """
 
-from __future__ import annotations
-
 from swe_lab.harnesses.claude_code.errors import (
   AnnotationError,
   MissingOutputError,

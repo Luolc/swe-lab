@@ -1,7 +1,5 @@
 """The ``run`` subcommand: any registered workflow, against any instance."""
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 import json
 import sys

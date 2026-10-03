@@ -26,8 +26,6 @@ The checks return findings rather than a bool: "which field, in which record"
 is what a person needs in order to act.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterator
 import json
 from typing import Literal

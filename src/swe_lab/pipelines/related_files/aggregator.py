@@ -9,8 +9,6 @@ Like the annotator, this is a thin wrapper over :func:`agent_run.run_agent`,
 differing only in the prompt and the extra ``candidates.json`` context file.
 """
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 import json
 

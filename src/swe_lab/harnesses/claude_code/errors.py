@@ -15,8 +15,6 @@ result message, the API error status). The keyword lists are best guesses and
 are meant to be tightened as real failures are observed.
 """
 
-from __future__ import annotations
-
 
 class AnnotationError(RuntimeError):
   """A single annotation run failed."""

@@ -6,8 +6,6 @@ subclass and teaching a ``Sandbox`` subclass to transfer it by overriding
 swe-lab (import only). A tiny foreshadowing of Task 15's full seam proof.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from pathlib import Path
 from typing import override

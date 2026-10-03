@@ -5,8 +5,6 @@ headless run (2026-08-11), trimmed but not reshaped — so the delegation to the
 ``claude_code`` converter is pinned against what the binary actually emits.
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 

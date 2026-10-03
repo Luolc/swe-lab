@@ -1,7 +1,5 @@
 """Tests for the split sandbox configs: semantics vs backend mechanics."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from etils import epath

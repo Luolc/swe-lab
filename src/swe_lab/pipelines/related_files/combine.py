@@ -17,8 +17,6 @@ of the parquet, so consumers can tell which build they have and verify it is
 intact.
 """
 
-from __future__ import annotations
-
 import argparse
 from collections.abc import Iterable
 from datetime import datetime, UTC

@@ -6,8 +6,6 @@ name. The native output names are harness-owned; the prompt name is this
 harness's own choice of where a caller-supplied prompt lands (ADR-0007 §8).
 """
 
-from __future__ import annotations
-
 from typing import Literal
 
 # The pinned Codex binary — a read-only asset at a fixed path, invoked by

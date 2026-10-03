@@ -5,8 +5,6 @@ enumerates the other. A backend must place an agent it has never heard of, and
 a harness must not care how the bytes travel (task-28 §7).
 """
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 from pathlib import Path
 from typing import override

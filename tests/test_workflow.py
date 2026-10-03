@@ -6,8 +6,6 @@ and emits ``thing.txt``, and a consumer whose ``input_schema`` requires it —
 the same shape as rollout → eval, without Docker or datasets.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 import json

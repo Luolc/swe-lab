@@ -9,8 +9,6 @@ lifecycle). Every generated script references staged files only through the
 ``SANDBOX_WORKSPACE`` env var, so one script text runs on any sandbox.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass

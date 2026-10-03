@@ -6,8 +6,6 @@ instance is a real ``SweBenchProInstance`` and each run is a
 consumes now.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from swe_lab.datasets.deepswe.unit_test import DeepSweVerdict

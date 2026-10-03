@@ -6,8 +6,6 @@ local file against it — a regeneration upstream (even by us) then fails
 loudly instead of changing the dataset under a sweep's feet.
 """
 
-from __future__ import annotations
-
 import hashlib
 
 from etils import epath

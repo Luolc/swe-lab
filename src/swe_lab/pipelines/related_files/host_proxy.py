@@ -18,8 +18,6 @@ records every request/response pair — used later to extract the final exchange
 and the session-success (``complete``) flag.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 import socket
 import subprocess

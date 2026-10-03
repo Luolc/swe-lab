@@ -4,8 +4,6 @@ Single source of truth for every literal the invocation script and the trace
 converter share, mirroring the ``codex`` harness's module of the same name.
 """
 
-from __future__ import annotations
-
 from typing import Literal
 
 # The pinned Grok Build binary — a read-only asset at a fixed path, invoked by

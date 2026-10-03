@@ -10,8 +10,6 @@ The aggregator's prompt (which reconciles several such annotations) lives
 separately in ``aggregator``.
 """
 
-from __future__ import annotations
-
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
 
 from .schema import SnippetCategory

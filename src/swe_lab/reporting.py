@@ -25,8 +25,6 @@ parenthetical that appears only when non-zero makes them look identical — whic
 is the silence these two ADRs are about.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterable
 from dataclasses import dataclass
 

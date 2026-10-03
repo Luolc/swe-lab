@@ -11,8 +11,6 @@ Here rather than copied into each file, because four want them: the harness's
 segment tests, the loop's own tests, the upstream tests and the gate tests.
 """
 
-from __future__ import annotations
-
 import dataclasses
 
 from swe_lab.trace_synthesis.supervisor import Intervention, Observation

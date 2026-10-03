@@ -7,8 +7,6 @@ diff vs ``base_commit``, ``git add -N``, no ``--binary``, residual
 ``Binary files … differ`` stripped host-side) byte-for-byte.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import override
 

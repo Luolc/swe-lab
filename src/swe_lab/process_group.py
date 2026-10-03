@@ -44,8 +44,6 @@ below is something the parent sends, so a parent that is gone sends nothing
 cover that).
 """
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import os

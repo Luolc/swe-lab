@@ -8,8 +8,6 @@ refuse on. Reporting is all these prove: nothing wires the gate to the
 uploader yet.
 """
 
-from __future__ import annotations
-
 import json
 from typing import Any
 

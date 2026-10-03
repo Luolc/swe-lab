@@ -13,8 +13,6 @@ The v0 block set is deliberately minimal (``text`` / ``reasoning`` /
 block class later is non-breaking for consumers that switch on ``type``.
 """
 
-from __future__ import annotations
-
 from enum import StrEnum
 from typing import Annotated, Any, Literal
 

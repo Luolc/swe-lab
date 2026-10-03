@@ -11,8 +11,6 @@ the repo through ``spec.workdir``), the exact same composition runs unchanged on
 either backend.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import logging

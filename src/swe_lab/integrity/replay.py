@@ -6,8 +6,6 @@ re-measurable against runs that already happened. Reading three files off disk
 does that; re-running the agent would not.
 """
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 import json
 from typing import Any

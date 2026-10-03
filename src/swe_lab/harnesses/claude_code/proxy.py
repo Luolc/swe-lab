@@ -27,8 +27,6 @@ or submoduled file. By default we look for a sibling checkout next to the repo
 explicit ``reverse_proxy.go`` path to override.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 import dataclasses
 import hashlib

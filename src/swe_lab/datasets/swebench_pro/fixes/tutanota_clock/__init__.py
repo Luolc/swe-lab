@@ -1,7 +1,5 @@
 """tutanota f373ac38: a graded suite that fails for 3 hours out of every 24."""
 
-from __future__ import annotations
-
 from etils import epath
 
 from swe_lab.sandbox import Inline, Mount

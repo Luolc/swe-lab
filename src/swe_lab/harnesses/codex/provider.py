@@ -28,8 +28,6 @@ instead, and the value reaches the agent by reference through the sandbox's
 ``pass_env``.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 import re
 from typing import Literal

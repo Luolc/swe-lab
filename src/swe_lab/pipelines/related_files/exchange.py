@@ -22,8 +22,6 @@ sandbox rollout path is separate — it runs the agent *inside* the container
 ``harnesses.claude_code.convert`` into a typed ``Conversation`` instead.
 """
 
-from __future__ import annotations
-
 import dataclasses
 import json
 import re

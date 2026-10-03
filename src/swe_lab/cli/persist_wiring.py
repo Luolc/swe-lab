@@ -6,8 +6,6 @@ Task 13 swaps ``build_store("filesystem", …)`` for ``"s3"`` (R2) with no chang
 here.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from datetime import datetime, UTC
 

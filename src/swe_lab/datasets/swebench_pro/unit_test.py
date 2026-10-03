@@ -8,8 +8,6 @@ takes the instance's fields directly (not the record) and returns the general
 record — the dependency runs one way, ``record`` → ``unit_test``.
 """
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum

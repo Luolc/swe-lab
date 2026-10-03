@@ -5,8 +5,6 @@ attack that would break it: a guard that has not been run against its own
 defect is not a guard.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Mapping
 import dataclasses
 import hashlib

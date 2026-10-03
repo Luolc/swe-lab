@@ -30,8 +30,6 @@ Auth: set ``HF_TOKEN`` (e.g. in ``.envrc.local``) or run ``hf auth login``.
     python -m swe_lab.pipelines.related_files.traces <action> [--dataset ...]
 """
 
-from __future__ import annotations
-
 import argparse
 from collections.abc import Iterator
 from dataclasses import dataclass

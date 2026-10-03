@@ -13,8 +13,6 @@ an absolute-path read-only asset (e.g. the pinned agent binary, outside the
 workspace) is ``docker cp``'d into the container and made read-only there.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import json

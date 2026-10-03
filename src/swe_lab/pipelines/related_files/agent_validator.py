@@ -15,8 +15,6 @@ line. So a 55-line file that ends in a newline has 56 addressable lines, and an
 tool shows the agent.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import json

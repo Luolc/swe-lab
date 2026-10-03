@@ -6,8 +6,6 @@ back, and that a registered name really does run end to end — here over the
 ``fake`` backend, with a definition this file writes itself.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field, replace
 import os
 from pathlib import Path

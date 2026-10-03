@@ -27,8 +27,6 @@ regardless of the host we download from (the bytes are host-agnostic; we only
 run them in the container).
 """
 
-from __future__ import annotations
-
 import hashlib
 import json
 import os

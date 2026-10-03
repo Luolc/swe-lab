@@ -1,7 +1,5 @@
 """Unified exchange record: schema shape + PII/secret redaction."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast
