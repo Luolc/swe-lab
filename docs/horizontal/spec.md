@@ -434,7 +434,7 @@ A-host, local for A-ghjob) — no `docker cp`.
 
 ## Tech Stack
 
-Unchanged baseline: Python 3.13 + uv; **sync** subprocess driving
+Unchanged baseline: Python 3.14 + uv; **sync** subprocess driving
 `docker create/start/exec/rm` (A-host) or in-job commands (A-ghjob); prebuilt
 jefzda images (`linux/amd64`); git for patch extraction. The existing `core/`
 infra (`DockerProvider`, `patch`, `agent/{binary,trace,proxy}`, `datasets/loader`)

@@ -46,7 +46,7 @@ codebase map, commands and hazards in
 
 - [uv](https://docs.astral.sh/uv/) for environment and dependency management
 - [direnv](https://direnv.net/) for auto-activating the environment
-- Python 3.13 (uv will install it automatically if missing)
+- Python 3.14 (uv will install it automatically if missing)
 
 ### 1. Clone
 
