@@ -240,7 +240,8 @@ def test_up_labels_name_the_owning_process_and_session(
   DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path), pull=False).up()
   create = fake.last_matching("create")
   assert f"swe-lab-owner-pid={os.getpid()}" in create
-  assert f"swe-lab-owner-session={host._OWNER_SESSION}" in create  # noqa: SLF001
+  session = host._OWNER_SESSION  # noqa: SLF001
+  assert f"swe-lab-owner-session={session}" in create
 
 
 def test_the_session_id_is_one_per_process_not_one_per_container(

@@ -310,9 +310,9 @@ class ClaudeCodeHarness(Harness):
       Letting the run bound itself yields a clean exit and a complete trace
       where an external kill would truncate mid-write.
     segmented: Cut the run into segments of
-      :attr:`~swe_lab.trace_synthesis.segmented_loop.SegmentedSupervision.turns_per_segment`
-      turns, consult a policy at each cut, and resume — the supervision carrier
-      of record (task 22, ADR-0025). ``None`` runs the actor once, which is what
+      ``SegmentedSupervision.turns_per_segment`` turns, consult a policy at
+      each cut, and resume — the supervision carrier of record (task 22,
+      ADR-0025). ``None`` runs the actor once, which is what
       every shipped definition but the segmented arm takes.
 
       **A field rather than a subclass** on purpose: a supervised run must

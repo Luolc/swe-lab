@@ -134,7 +134,7 @@ class SegmentedSupervision:
       rollouts away from it while remaining finite, because ``--max-turns``
       stops being the runaway guard here: on an
       unsegmented run it bounds the whole agent loop at
-      :attr:`~swe_lab.harnesses.claude_code.harness.ClaudeCodeHarness.max_turns`,
+      ``ClaudeCodeHarness.max_turns``,
       and under segmentation it bounds *one segment*. The run-level guard is
       ``max_segments * turns_per_segment``. It must stay bounded so a segment
       whose ending is misread cannot resume forever.
