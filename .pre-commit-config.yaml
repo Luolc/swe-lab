@@ -66,7 +66,7 @@ repos:
       - id: ruff-format
         exclude: ^experiments/
   - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
-    rev: 1.39.0
+    rev: 1.40.1
     hooks:
       - id: basedpyright
         exclude: ^experiments/
@@ -75,7 +75,7 @@ repos:
   # never repeat them). "Sections must exist at all" is D417's job (ruff),
   # enabled at the end of horizontal task 01.
   - repo: https://github.com/jsh9/pydoclint
-    rev: 0.9.1
+    rev: 0.11.0
     hooks:
       - id: pydoclint
         args:
@@ -86,7 +86,7 @@ repos:
           - --show-filenames-in-every-violation-message=True
         exclude: ^experiments/
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.11.7
+    rev: 0.12.22
     hooks:
       - id: uv-lock
         files: ^pyproject.toml$

@@ -7,7 +7,7 @@ the real ``SandboxManager`` + ``ConversationObserver`` + ``GitHubJobSandbox``
 ``sandbox/`` or ``conversation/`` is modified to make it work.
 """
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Generator, Mapping
 import contextlib
 from pathlib import Path
 from typing import final, override
@@ -189,7 +189,7 @@ def test_the_task_takes_a_foreign_harness_and_proxy(tmp_path: Path):
   entered: list[str] = []
 
   @contextlib.contextmanager
-  def stub_proxy() -> Iterator[None]:
+  def stub_proxy() -> Generator[None]:
     entered.append("open")
     yield
     entered.append("closed")

@@ -17,7 +17,7 @@ semantics, exhaustively:
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 import logging
@@ -71,7 +71,7 @@ class SandboxManager:
     return self._result
 
   @contextmanager
-  def session(self) -> Iterator[Sandbox]:
+  def session(self) -> Generator[Sandbox]:
     """Bring the sandbox up, yield it for the one main action, tear down.
 
     Yields:

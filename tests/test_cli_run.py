@@ -164,7 +164,7 @@ class _Instance(TaskInstance[SweBenchProVerdict]):
 
 
 @pytest.fixture(autouse=True)
-def _reset() -> None:  # pyright: ignore[reportUnusedFunction]  # autouse
+def _reset() -> None:
   """Each test starts with an agent that has said nothing and edits."""
   PROMPTS.clear()
   EDITS[0] = True

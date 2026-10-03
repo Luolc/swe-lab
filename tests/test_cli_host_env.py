@@ -19,7 +19,7 @@ from swe_lab.harnesses.claude_code.constants import OAUTH_TOKEN_ENV
 
 
 @pytest.fixture(autouse=True)
-def _forget() -> Iterator[None]:  # pyright: ignore[reportUnusedFunction]
+def _forget() -> Iterator[None]:
   """Keep the adoption record from outliving the test that made it.
 
   It is process-global, like the environment it describes. A test here that
