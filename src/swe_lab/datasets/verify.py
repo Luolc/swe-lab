@@ -346,8 +346,7 @@ def verify_instance(
     result["verdict"] = classify(instance, base, golden)
     result["base"] = _base_json(instance, base)
     result["golden"] = _run_json(golden)
-  except Exception as exc:  # noqa: BLE001
-    # Any failure is an inconclusive ERROR.
+  except Exception as exc:  # noqa: BLE001 — any failure is an inconclusive ERROR
     result["verdict"] = ERROR
     result["error"] = repr(exc)
   finally:

@@ -115,14 +115,8 @@ _NODEBB_UNAWAITED_DELETES = KnownFlaky(
     " reference flakes."
   ),
   evidence=(
-    (
-      "https://github.com/NodeBB/NodeBB/commit/"
-      "22368b996ee0e5f11a5189b400b33af3cc8d925a"
-    ),
-    (
-      "https://github.com/NodeBB/NodeBB/commit/"
-      "306651902896904ae1600febb02137e2ca127a06"
-    ),
+    "https://github.com/NodeBB/NodeBB/commit/22368b996ee0e5f11a5189b400b33af3cc8d925a",
+    "https://github.com/NodeBB/NodeBB/commit/306651902896904ae1600febb02137e2ca127a06",
   ),
 )
 
@@ -244,10 +238,7 @@ _TUTANOTA_SUITE_FLAKE = KnownFlaky(
   ),
   evidence=(
     "https://github.com/Luolc/swe-lab/issues/123#issuecomment-5146652774",
-    (
-      "https://github.com/scaleapi/SWE-bench_Pro-os/tree/"
-      "ca10a60a5fcae51e6948ffe1485d4153d421e6c5/run_scripts"
-    ),
+    "https://github.com/scaleapi/SWE-bench_Pro-os/tree/ca10a60a5fcae51e6948ffe1485d4153d421e6c5/run_scripts",
   ),
 )
 

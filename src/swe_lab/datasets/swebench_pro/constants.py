@@ -55,8 +55,7 @@ PARQUET_FILENAME = "test-00000-of-00001.parquet"
 #   - Local download: `curl` per this dataset's README, `sha256sum` on the
 #     result.
 #   - HF's own record, independent of that download:
-#     `curl -s \
-#       "https://huggingface.co/api/datasets/ScaleAI/SWE-bench_Pro?blobs=true"`
+#     `curl -s "https://huggingface.co/api/datasets/ScaleAI/SWE-bench_Pro?blobs=true"`
 #     -> `siblings[].lfs.sha256` for `data/test-00000-of-00001.parquet`.
 #   Both gave the same digest and the same size (7,816,820 bytes).
 PINNED_SWEBENCH_PRO_PARQUET_SHA256 = (

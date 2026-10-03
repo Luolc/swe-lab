@@ -321,8 +321,7 @@ def _declared_outputs(entry: Any) -> set[str]:
   """
   try:
     observers = entry.task.observers(None)
-  except Exception:  # noqa: BLE001
-    # An instance-derived schema is unknowable here.
+  except Exception:  # noqa: BLE001 — an instance-derived schema is unknowable here
     return set()
   return {
     schema.name for observer in observers for schema in observer.output_schema()

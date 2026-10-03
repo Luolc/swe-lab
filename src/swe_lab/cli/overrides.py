@@ -247,8 +247,7 @@ def _hints(cls: type) -> Mapping[str, Any]:
   """
   try:
     return typing.get_type_hints(cls)
-  except Exception:  # noqa: BLE001
-    # Any resolution failure means "not overridable".
+  except Exception:  # noqa: BLE001 — any resolution failure is "not overridable"
     return {}
 
 
