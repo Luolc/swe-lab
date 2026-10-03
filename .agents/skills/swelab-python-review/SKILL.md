@@ -30,19 +30,20 @@ in this file. A supersede names the *user-level* id.
 
 ## Increments
 
-- `SLP2` **Toolchain facts** (a comment on the root `pyproject.toml`; where they
-  disagree, the config wins): pyink formats at 80 columns, 2-space indent,
-  majority quotes, `py313`, and ruff's formatter is off for `.py`; isort runs
-  the black profile, so ruff `I` is off; ruff lints
-  `B C D D401 E F ISC001 N W W505 RUF008 UP SIM`, mccabe max-complexity 10;
-  pydoclint checks Google `Args:` against the signature with type checks off
-  (basedpyright owns types); basedpyright runs its default mode over `src` +
-  `tests` with a set of `report*` diagnostics switched off — read
+- `SLP2` **Toolchain facts** (from the root `pyproject.toml` and
+  `.pre-commit-config.yaml`; where they disagree, the config wins): ruff
+  formats (`ruff-format`) at 80 columns, 2-space indent, double quotes,
+  `py313`; ruff `I` sorts imports per `[tool.ruff.lint.isort]`; ruff lints
+  `B BLE C D D401 E F I ISC001 N PLW0129 W W505 RUF008 UP SIM`, mccabe
+  max-complexity 10; pydoclint checks Google `Args:` against the signature with
+  type checks off (basedpyright owns types); basedpyright runs its default mode
+  over `src` + `tests` with a set of `report*` diagnostics switched off — read
   `[tool.basedpyright]` for the current set rather than any copy of it, and
   treat every switch it disables as a blind spot; `tests/` is exempt from `D1`
-  and `reportUnusedCallResult`, and `experiments/` from every pre-commit hook
-  (the file-level `exclude: ^experiments/` is global, so it applies to all of
-  them); Python is pinned to 3.13.
+  and `reportUnusedCallResult`, and `experiments/` is excluded per hook from
+  `ruff-check`, `ruff-format`, `basedpyright` and `pydoclint` (the
+  credential, operator-home-path and stale-module-ref hooks still scan it);
+  Python is pinned to 3.13.
 - `SLP3` **Blind spots: point at the config, don't keep a list.** The
   authoritative enabled set is `[tool.ruff.lint] select` in the root
   `pyproject.toml`. `S`, `DTZ`, `PTH`, `T20`, `G`, `PT` and `RUF012` are **not**
