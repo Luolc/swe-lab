@@ -26,20 +26,20 @@ from swe_lab.credential_sources import adopted_credential_sources
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.harnesses import Harness, HarnessOutcomeObserver
 from swe_lab.sandbox import (
-    AgentAsset,
-    ArtifactSchema,
-    ExecResult,
-    merge_mounts,
-    Mounts,
-    RunStatus,
-    SandboxFs,
-    SandboxObserver,
+  AgentAsset,
+  ArtifactSchema,
+  ExecResult,
+  merge_mounts,
+  Mounts,
+  RunStatus,
+  SandboxFs,
+  SandboxObserver,
 )
 from swe_lab.sandbox.observers import (
-    DiffExtractObserver,
-    GitHistoryLeakError,
-    GitHistoryPurgeObserver,
-    ResultVerifyObserver,
+  DiffExtractObserver,
+  GitHistoryLeakError,
+  GitHistoryPurgeObserver,
+  ResultVerifyObserver,
 )
 from swe_lab.workflow import AttemptResult, InputsBuilder, Task
 
@@ -56,7 +56,7 @@ because a task is executed as many times as it is invoked.
 
 
 def instance_prompt(
-    sb: SandboxFs, instance: TaskInstance[Any]
+  sb: SandboxFs, instance: TaskInstance[Any]
 ) -> Mapping[str, bytes]:
   """Build the coding task's prompt input from the dataset's own statement.
 
@@ -148,7 +148,7 @@ class CodingAgentTask(Task):
   # function as a default is safe — `__init__` sets it as an *instance*
   # attribute, so `self.inputs_builder` never binds as a method would.
   inputs_builder: InputsBuilder | None = field(
-      default=instance_prompt, kw_only=True
+    default=instance_prompt, kw_only=True
   )
   extra_inputs: tuple[ArtifactSchema, ...] = ()
   exclude_globs: tuple[str, ...] = ()
@@ -169,8 +169,8 @@ class CodingAgentTask(Task):
       The merged staging set (duplicate targets refused).
     """
     return merge_mounts(
-        super().mounts(instance),
-        self.harness.mounts(instance.sandbox_spec().workdir),
+      super().mounts(instance),
+      self.harness.mounts(instance.sandbox_spec().workdir),
     )
 
   @override
@@ -209,31 +209,31 @@ class CodingAgentTask(Task):
       them just produced.
     """
     purge = (
-        GitHistoryPurgeObserver(solution_sha=instance.solution_sha())
-        if self.purge_git_history
-        else None
+      GitHistoryPurgeObserver(solution_sha=instance.solution_sha())
+      if self.purge_git_history
+      else None
     )
     # Called once: the verifier must point at the *same* observer objects that
     # run, since it reads what they leave on themselves.
     from_harness = tuple(self.harness.observers())
     diff = DiffExtractObserver(
-        exclude_globs=self.exclude_globs, baseline=self.patch_baseline
+      exclude_globs=self.exclude_globs, baseline=self.patch_baseline
     )
     verify = (
-        ResultVerifyObserver(
-            patch_source=diff,
-            conversation_source=next(
-                (o for o in from_harness if hasattr(o, "conversation")), None
-            ),
-            integrity_source=purge,
-            required_tests=tuple(instance.required_tests()),
-            workdir=instance.sandbox_spec().workdir,
-        )
-        if self.verify_result
-        else None
+      ResultVerifyObserver(
+        patch_source=diff,
+        conversation_source=next(
+          (o for o in from_harness if hasattr(o, "conversation")), None
+        ),
+        integrity_source=purge,
+        required_tests=tuple(instance.required_tests()),
+        workdir=instance.sandbox_spec().workdir,
+      )
+      if self.verify_result
+      else None
     )
     return tuple(
-        o for o in (purge, *from_harness, diff, verify) if o is not None
+      o for o in (purge, *from_harness, diff, verify) if o is not None
     )
 
   @override
@@ -365,13 +365,13 @@ class CodingAgentTask(Task):
       The prompt input first, then ``extra_inputs``.
     """
     return (
-        ArtifactSchema(PROMPT_NAME, description="the task prompt"),
-        *self.extra_inputs,
+      ArtifactSchema(PROMPT_NAME, description="the task prompt"),
+      *self.extra_inputs,
     )
 
   @override
   def action(
-      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+    self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
   ) -> ExecResult:
     """Run the agent against the staged prompt, inside the recording proxy.
 
@@ -395,7 +395,7 @@ class CodingAgentTask(Task):
     del instance
     prompt = sb.read(PROMPT_NAME).decode("utf-8", "backslashreplace")
     recorder = (
-        self.proxy_factory() if self.proxy_factory else contextlib.nullcontext()
+      self.proxy_factory() if self.proxy_factory else contextlib.nullcontext()
     )
     with recorder:
       return self.harness.run(sb, prompt=prompt, timeout=timeout, env=self.env)
@@ -498,10 +498,10 @@ class RolloutOutcome(StrEnum):
 # The endings that are ours rather than the actor's. Kept beside the enum, like
 # `_RETRYABLE_OUTCOMES`, so the policy reads as one table.
 _OURS: frozenset[RolloutOutcome] = frozenset(
-    {
-        RolloutOutcome.OOM_KILLED,
-        RolloutOutcome.SYSTEM_FAILED,
-    }
+  {
+    RolloutOutcome.OOM_KILLED,
+    RolloutOutcome.SYSTEM_FAILED,
+  }
 )
 
 
@@ -560,8 +560,8 @@ def patch_of(result: AttemptResult) -> DiffExtractObserver | None:
     diff extraction.
   """
   return next(
-      (o for o in result.observers if isinstance(o, DiffExtractObserver)),
-      None,
+    (o for o in result.observers if isinstance(o, DiffExtractObserver)),
+    None,
   )
 
 
@@ -576,8 +576,8 @@ def conversation_of(result: AttemptResult) -> ConversationObserver | None:
     composed none.
   """
   return next(
-      (o for o in result.observers if isinstance(o, ConversationObserver)),
-      None,
+    (o for o in result.observers if isinstance(o, ConversationObserver)),
+    None,
   )
 
 
@@ -592,6 +592,6 @@ def outcome_of(result: AttemptResult) -> HarnessOutcomeObserver | None:
     harness composed none.
   """
   return next(
-      (o for o in result.observers if isinstance(o, HarnessOutcomeObserver)),
-      None,
+    (o for o in result.observers if isinstance(o, HarnessOutcomeObserver)),
+    None,
   )

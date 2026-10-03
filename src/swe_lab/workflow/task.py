@@ -26,23 +26,23 @@ from etils import epath
 
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.sandbox import (
-    AgentAsset,
-    ArtifactSchema,
-    ExecResult,
-    merge_mounts,
-    merge_output_schemas,
-    Mounts,
-    RunResult,
-    RunStatus,
-    Sandbox,
-    SandboxError,
-    SandboxFs,
-    SandboxManager,
-    SandboxObserver,
+  AgentAsset,
+  ArtifactSchema,
+  ExecResult,
+  merge_mounts,
+  merge_output_schemas,
+  Mounts,
+  RunResult,
+  RunStatus,
+  Sandbox,
+  SandboxError,
+  SandboxFs,
+  SandboxManager,
+  SandboxObserver,
 )
 
 type InputsBuilder = Callable[
-    [SandboxFs, TaskInstance[Any]], Mapping[str, bytes]
+  [SandboxFs, TaskInstance[Any]], Mapping[str, bytes]
 ]
 """Generates a task's declared inputs from the instance and the live session.
 
@@ -201,7 +201,7 @@ class Task(ABC):
 
   @abstractmethod
   def action(
-      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+    self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
   ) -> ExecResult:
     """Run the main action: exec the harness, or run the entryscript.
 
@@ -240,9 +240,9 @@ class Task(ABC):
       return False  # TIMEOUT / RUN_ERROR / SETUP_ERROR
     produced = result.run.artifacts
     return all(
-        schema.name in produced
-        for schema in result.output_schema
-        if schema.required
+      schema.name in produced
+      for schema in result.output_schema
+      if schema.required
     )
 
   def should_retry(self, result: AttemptResult) -> bool:
@@ -293,14 +293,14 @@ class Task(ABC):
 
   @final
   def execute(
-      self,
-      sandbox: Sandbox,
-      instance: TaskInstance[Any],
-      *,
-      output_dir: epath.PathLike,
-      timeout: float,
-      extra_mounts: Mounts | None = None,
-      extra_observers: Sequence[SandboxObserver] = (),
+    self,
+    sandbox: Sandbox,
+    instance: TaskInstance[Any],
+    *,
+    output_dir: epath.PathLike,
+    timeout: float,
+    extra_mounts: Mounts | None = None,
+    extra_observers: Sequence[SandboxObserver] = (),
   ) -> AttemptResult:
     """Run the five steps once against a fresh sandbox and one instance.
 
@@ -341,8 +341,8 @@ class Task(ABC):
       missing = _missing_required(self.input_schema(), staged.__contains__)
       if missing:
         raise SandboxError(
-            f"required input(s) not mounted: {missing}; supply them via"
-            " extra_mounts (a workflow edge, or the caller's own bytes)"
+          f"required input(s) not mounted: {missing}; supply them via"
+          " extra_mounts (a workflow edge, or the caller's own bytes)"
         )
     # The backend's own first (they measure the whole run), then the assets it
     # was asked to place — before the task's observers, since one of those may
@@ -350,19 +350,19 @@ class Task(ABC):
     # caller's.
     provisioning = sandbox.asset_observer(self.assets())
     observers = [
-        *sandbox.observers(),
-        *([provisioning] if provisioning is not None else []),
-        *self.observers(instance),
-        *extra_observers,
+      *sandbox.observers(),
+      *([provisioning] if provisioning is not None else []),
+      *self.observers(instance),
+      *extra_observers,
     ]
     # The task's output schema is derived — and a duplicate store name across
     # observers fails HERE, at assembly, like a duplicate mount target.
     schema = merge_output_schemas(*(o.output_schema() for o in observers))
     manager = SandboxManager(
-        sandbox=sandbox,
-        output_dir=epath.Path(output_dir),
-        observers=observers,
-        mounts=merge_mounts(self.mounts(instance), staged),
+      sandbox=sandbox,
+      output_dir=epath.Path(output_dir),
+      observers=observers,
+      mounts=merge_mounts(self.mounts(instance), staged),
     )
     exec_result: ExecResult | None = None
     try:
@@ -376,14 +376,14 @@ class Task(ABC):
     except SandboxError:
       pass  # recorded in manager.result — the caller gates on run.status
     return AttemptResult(
-        run=_promote_timeout(manager.result, exec_result),
-        exec_result=exec_result,
-        output_schema=schema,
-        observers=tuple(observers),
+      run=_promote_timeout(manager.result, exec_result),
+      exec_result=exec_result,
+      output_schema=schema,
+      observers=tuple(observers),
     )
 
   def _build_inputs(
-      self, sb: SandboxFs, instance: TaskInstance[Any], *, staged: Mounts
+    self, sb: SandboxFs, instance: TaskInstance[Any], *, staged: Mounts
   ) -> None:
     """Run the inputs builder, land its bytes, and re-check requiredness.
 
@@ -413,29 +413,28 @@ class Task(ABC):
     undeclared = sorted(generated.keys() - declared)
     if undeclared:
       raise SandboxError(
-          f"the inputs builder produced undeclared input(s): {undeclared};"
-          f" this task declares {sorted(declared)}"
+        f"the inputs builder produced undeclared input(s): {undeclared};"
+        f" this task declares {sorted(declared)}"
       )
     collisions = sorted(generated.keys() & staged.keys())
     if collisions:
       raise SandboxError(
-          f"the inputs builder would overwrite staged input(s):"
-          f" {collisions}; a task supplied from outside (a workflow edge, a"
-          " caller's bytes) must not also build them — set"
-          " inputs_builder=None"
+        f"the inputs builder would overwrite staged input(s):"
+        f" {collisions}; a task supplied from outside (a workflow edge, a"
+        " caller's bytes) must not also build them — set"
+        " inputs_builder=None"
       )
     for name, data in generated.items():
       sb.write(name, data)
     missing = _missing_required(self.input_schema(), sb.exists)
     if missing:
       raise SandboxError(
-          f"required input(s) missing after the inputs builder ran:"
-          f" {missing}"
+        f"required input(s) missing after the inputs builder ran: {missing}"
       )
 
 
 def _missing_required(
-    schemas: Sequence[ArtifactSchema], is_present: Callable[[str], bool]
+  schemas: Sequence[ArtifactSchema], is_present: Callable[[str], bool]
 ) -> list[str]:
   """Return the required input names ``is_present`` does not vouch for.
 
@@ -448,9 +447,9 @@ def _missing_required(
     The missing required names, in declaration order.
   """
   return [
-      schema.name
-      for schema in schemas
-      if schema.required and not is_present(schema.name)
+    schema.name
+    for schema in schemas
+    if schema.required and not is_present(schema.name)
   ]
 
 
@@ -473,9 +472,9 @@ class _ExecOutcomeCarrier(Protocol):
 
 
 def _hand_exec_outcome(
-    observers: Sequence[SandboxObserver],
-    exec_result: ExecResult | None,
-    wall_seconds: float,
+  observers: Sequence[SandboxObserver],
+  exec_result: ExecResult | None,
+  wall_seconds: float,
 ) -> None:
   """Hand the action's outcome to every observer that carries the fields.
 
@@ -502,7 +501,7 @@ def _hand_exec_outcome(
 
 
 def _promote_timeout(
-    result: RunResult, exec_result: ExecResult | None
+  result: RunResult, exec_result: ExecResult | None
 ) -> RunResult:
   """Promote a timed-out main action to ``RunStatus.TIMEOUT``.
 

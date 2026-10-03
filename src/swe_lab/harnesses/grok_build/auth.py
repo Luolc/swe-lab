@@ -26,11 +26,11 @@ from typing import override
 from etils import epath
 
 from swe_lab.sandbox import (
-    Inline,
-    Mount,
-    Mounts,
-    SandboxError,
-    SandboxObserver,
+  Inline,
+  Mount,
+  Mounts,
+  SandboxError,
+  SandboxObserver,
 )
 
 from .constants import AGENT_HOME, AUTH_FILENAME, grok_config_dir
@@ -70,8 +70,8 @@ class GrokBuildAuthObserver(SandboxObserver):
     """
     if not self.auth_json.strip():
       raise SandboxError(
-          "grok auth_json is empty; supply an OAuth login's auth.json bytes,"
-          " or use an API key (XAI_API_KEY) instead"
+        "grok auth_json is empty; supply an OAuth login's auth.json bytes,"
+        " or use an API key (XAI_API_KEY) instead"
       )
     try:
       parsed = json.loads(self.auth_json)
@@ -79,17 +79,17 @@ class GrokBuildAuthObserver(SandboxObserver):
       # Deliberately reports the error's *type* and not the payload: this
       # message may be logged, and the payload is a credential.
       raise SandboxError(
-          f"grok auth_json is not valid JSON ({type(error).__name__}); it"
-          " should be the contents of a grok auth.json"
+        f"grok auth_json is not valid JSON ({type(error).__name__}); it"
+        " should be the contents of a grok auth.json"
       ) from error
     if not isinstance(parsed, dict):
       raise SandboxError(
-          "grok auth_json must be a JSON object, as Grok Build's auth.json is"
+        "grok auth_json must be a JSON object, as Grok Build's auth.json is"
       )
 
   @classmethod
   def from_file(
-      cls, path: epath.PathLike, *, agent_home: str = AGENT_HOME
+    cls, path: epath.PathLike, *, agent_home: str = AGENT_HOME
   ) -> GrokBuildAuthObserver:
     """Build one from a login that is already a file on this host.
 
@@ -108,8 +108,8 @@ class GrokBuildAuthObserver(SandboxObserver):
     source = epath.Path(path)
     if not source.is_file():
       raise SandboxError(
-          f"grok auth file not found: {path}; an OAuth login lives in"
-          " ~/.grok/auth.json, or use XAI_API_KEY instead"
+        f"grok auth file not found: {path}; an OAuth login lives in"
+        " ~/.grok/auth.json, or use XAI_API_KEY instead"
       )
     return cls(auth_json=source.read_bytes(), agent_home=agent_home)
 

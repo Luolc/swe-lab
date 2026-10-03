@@ -33,27 +33,27 @@ from swe_lab.datasets.swebench_pro import SweBenchProInstance
 # ``exchange`` module.
 from swe_lab.harnesses.claude_code.capture import Capture
 from swe_lab.harnesses.claude_code.errors import (
-    AnnotationError,
-    cli_failure,
-    MissingOutputError,
-    RetryableError,
+  AnnotationError,
+  cli_failure,
+  MissingOutputError,
+  RetryableError,
 )
 from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.pipelines.related_files.exchange import (
-    final_result_event,
-    last_assistant_stop_reason,
-    last_proxy_record,
-    last_stream_record,
-    parse_stream_events,
+  final_result_event,
+  last_assistant_stop_reason,
+  last_proxy_record,
+  last_stream_record,
+  parse_stream_events,
 )
 from swe_lab.repo.provider import GitCheckoutProvider
 
 from .agent_validator import validate_output
 from .host_proxy import (
-    build_proxy,
-    DEFAULT_BASE_PORT,
-    port_for_index,
-    ReverseProxy,
+  build_proxy,
+  DEFAULT_BASE_PORT,
+  port_for_index,
+  ReverseProxy,
 )
 from .schema import Annotation, parse_agent_output, Snippet
 from .workspace import prepare_workspace, Workspace
@@ -96,22 +96,22 @@ class RunResult:
 
 
 def run_agent(
-    instance: SweBenchProInstance,
-    index: int,
-    *,
-    prompt: str,
-    kind: str = "annotation",
-    context_files: Mapping[str, str] | None = None,
-    extra_metadata: Mapping[str, object] | None = None,
-    repo_root: epath.PathLike | None = None,
-    provider: GitCheckoutProvider | None = None,
-    model: str = DEFAULT_MODEL,
-    base_port: int = DEFAULT_BASE_PORT,
-    port: int | None = None,
-    variant: str = "",
-    max_attempts: int = DEFAULT_MAX_ATTEMPTS,
-    claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
-    capture: Capture = "stream",
+  instance: SweBenchProInstance,
+  index: int,
+  *,
+  prompt: str,
+  kind: str = "annotation",
+  context_files: Mapping[str, str] | None = None,
+  extra_metadata: Mapping[str, object] | None = None,
+  repo_root: epath.PathLike | None = None,
+  provider: GitCheckoutProvider | None = None,
+  model: str = DEFAULT_MODEL,
+  base_port: int = DEFAULT_BASE_PORT,
+  port: int | None = None,
+  variant: str = "",
+  max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+  claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
+  capture: Capture = "stream",
 ) -> RunResult:
   """Run an agent in an isolated workspace and return its validated result.
 
@@ -158,7 +158,7 @@ def run_agent(
     _ = (workspace.context_dir / name).write_text(content)
 
   run_port = (
-      port if port is not None else port_for_index(index, base_port=base_port)
+    port if port is not None else port_for_index(index, base_port=base_port)
   )
   tag = instance_id if not variant else f"{instance_id}__{variant}"
   if capture == "proxy":
@@ -168,17 +168,17 @@ def run_agent(
   diag_path = cache_root(root) / "annotate-failures" / f"{tag}.log"
 
   cli_result, snippets = invoke_with_retries(
-      prompt=prompt,
-      cwd=workspace.checkout,
-      port=run_port,
-      trace_log=trace_log,
-      binary=binary,
-      capture=capture,
-      model=model,
-      timeout=claude_timeout,
-      diag_path=diag_path,
-      max_attempts=max_attempts,
-      workspace=workspace,
+    prompt=prompt,
+    cwd=workspace.checkout,
+    port=run_port,
+    trace_log=trace_log,
+    binary=binary,
+    capture=capture,
+    model=model,
+    timeout=claude_timeout,
+    diag_path=diag_path,
+    max_attempts=max_attempts,
+    workspace=workspace,
   )
 
   validation_problems = validate_workspace(workspace)
@@ -189,7 +189,7 @@ def run_agent(
   complete = bool(last_record.get("complete", False))
 
   metadata = _build_metadata(
-      cli_result, model, run_port, complete, snippets, validation_problems, kind
+    cli_result, model, run_port, complete, snippets, validation_problems, kind
   )
   metadata["capture"] = capture
   # Wall-clock of this whole run (provision + agent + validate + store) vs the
@@ -200,57 +200,57 @@ def run_agent(
   annotation = Annotation(instance_id, snippets, metadata)
 
   return RunResult(
-      instance_id=instance_id,
-      annotation=annotation,
-      last_record=last_record,
-      proxy_log_path=trace_log,
-      complete=complete,
-      validation_problems=validation_problems,
+    instance_id=instance_id,
+    annotation=annotation,
+    last_record=last_record,
+    proxy_log_path=trace_log,
+    complete=complete,
+    validation_problems=validation_problems,
   )
 
 
 def _build_metadata(
-    cli_result: dict[str, object],
-    model: str,
-    port: int,
-    complete: bool,
-    snippets: tuple[Snippet, ...],
-    validation_problems: dict[str, list[str]],
-    kind: str,
+  cli_result: dict[str, object],
+  model: str,
+  port: int,
+  complete: bool,
+  snippets: tuple[Snippet, ...],
+  validation_problems: dict[str, list[str]],
+  kind: str,
 ) -> dict[str, object]:
   model_usage = cli_result.get("modelUsage")
   model_ids = list(model_usage) if isinstance(model_usage, dict) else []
   model_used = ", ".join(model_ids) if model_ids else model
   return {
-      "kind": kind,
-      "model": model_used,
-      "model_requested": model,
-      "run_id": cli_result.get("session_id"),
-      "timestamp": datetime.now(UTC).isoformat(),
-      "proxy_port": port,
-      "num_turns": cli_result.get("num_turns"),
-      "cost_usd": cli_result.get("total_cost_usd"),
-      "usage": cli_result.get("usage"),
-      "stop_reason": cli_result.get("stop_reason"),
-      "complete": complete,
-      "snippet_count": len(snippets),
-      "invalid_snippet_count": len(validation_problems),
+    "kind": kind,
+    "model": model_used,
+    "model_requested": model,
+    "run_id": cli_result.get("session_id"),
+    "timestamp": datetime.now(UTC).isoformat(),
+    "proxy_port": port,
+    "num_turns": cli_result.get("num_turns"),
+    "cost_usd": cli_result.get("total_cost_usd"),
+    "usage": cli_result.get("usage"),
+    "stop_reason": cli_result.get("stop_reason"),
+    "complete": complete,
+    "snippet_count": len(snippets),
+    "invalid_snippet_count": len(validation_problems),
   }
 
 
 def invoke_with_retries(
-    *,
-    prompt: str,
-    cwd: epath.PathLike,
-    port: int,
-    trace_log: epath.PathLike,
-    binary: epath.PathLike | None,
-    capture: Capture,
-    model: str,
-    timeout: float,
-    diag_path: epath.PathLike,
-    max_attempts: int,
-    workspace: Workspace,
+  *,
+  prompt: str,
+  cwd: epath.PathLike,
+  port: int,
+  trace_log: epath.PathLike,
+  binary: epath.PathLike | None,
+  capture: Capture,
+  model: str,
+  timeout: float,
+  diag_path: epath.PathLike,
+  max_attempts: int,
+  workspace: Workspace,
 ) -> tuple[dict[str, object], tuple[Snippet, ...]]:
   """Run the claude call and read the output, retrying flaky attempts.
 
@@ -290,24 +290,24 @@ def invoke_with_retries(
       if capture == "proxy":
         assert binary is not None  # built by run_agent for proxy capture
         with ReverseProxy(
-            port, epath.Path(trace_log), epath.Path(binary)
+          port, epath.Path(trace_log), epath.Path(binary)
         ) as proxy:
           cli_result = _invoke_claude(
-              prompt=prompt,
-              cwd=cwd,
-              base_url=proxy.base_url,
-              model=model,
-              timeout=timeout,
-              diag_path=diag_path,
-          )
-      else:
-        cli_result = _invoke_claude_stream(
             prompt=prompt,
             cwd=cwd,
+            base_url=proxy.base_url,
             model=model,
             timeout=timeout,
             diag_path=diag_path,
-            stream_log=trace_log,
+          )
+      else:
+        cli_result = _invoke_claude_stream(
+          prompt=prompt,
+          cwd=cwd,
+          model=model,
+          timeout=timeout,
+          diag_path=diag_path,
+          stream_log=trace_log,
         )
       return cli_result, read_snippets(workspace)
     except (RetryableError, MissingOutputError):
@@ -320,13 +320,13 @@ def invoke_with_retries(
 
 
 def _invoke_claude_stream(
-    *,
-    prompt: str,
-    cwd: epath.PathLike,
-    model: str,
-    timeout: float,
-    diag_path: epath.PathLike | None,
-    stream_log: epath.PathLike,
+  *,
+  prompt: str,
+  cwd: epath.PathLike,
+  model: str,
+  timeout: float,
+  diag_path: epath.PathLike | None,
+  stream_log: epath.PathLike,
 ) -> dict[str, object]:
   """Invoke headless claude with ``stream-json`` and persist the event stream.
 
@@ -338,15 +338,15 @@ def _invoke_claude_stream(
   """
   env = os.environ.copy()
   argv = [
-      "claude",
-      "-p",
-      prompt,
-      "--model",
-      model,
-      "--output-format",
-      "stream-json",
-      "--verbose",
-      "--dangerously-skip-permissions",
+    "claude",
+    "-p",
+    prompt,
+    "--model",
+    model,
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--dangerously-skip-permissions",
   ]
   # Stream stdout straight to the log FILE (not a pipe) and run claude in its
   # own process group. On timeout we SIGKILL the WHOLE group: killing only the
@@ -359,13 +359,13 @@ def _invoke_claude_stream(
   timed_out = False
   with stream_log.open("w") as out:
     proc = subprocess.Popen(
-        argv,
-        cwd=str(cwd),
-        env=env,
-        stdout=out,
-        stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=True,
+      argv,
+      cwd=str(cwd),
+      env=env,
+      stdout=out,
+      stderr=subprocess.PIPE,
+      text=True,
+      start_new_session=True,
     )
     try:
       _, stderr = proc.communicate(timeout=timeout)
@@ -388,9 +388,9 @@ def _invoke_claude_stream(
   if exit_code != 0 or (final is not None and final.get("is_error")):
     _save_diagnostics(diag_path, exit_code, stdout, stderr)
     raise cli_failure(
-        stderr=stderr,
-        result_text=result_text,
-        api_error_status=api_error_status,
+      stderr=stderr,
+      result_text=result_text,
+      api_error_status=api_error_status,
     )
 
   if final is None:
@@ -411,35 +411,35 @@ def _kill_process_group(proc: subprocess.Popen[str]) -> None:
 
 
 def _invoke_claude(
-    *,
-    prompt: str,
-    cwd: epath.PathLike,
-    base_url: str,
-    model: str,
-    timeout: float,
-    diag_path: epath.PathLike | None = None,
+  *,
+  prompt: str,
+  cwd: epath.PathLike,
+  base_url: str,
+  model: str,
+  timeout: float,
+  diag_path: epath.PathLike | None = None,
 ) -> dict[str, object]:
   env = os.environ.copy()
   env["ANTHROPIC_BASE_URL"] = base_url
   argv = [
-      "claude",
-      "-p",
-      prompt,
-      "--model",
-      model,
-      "--output-format",
-      "json",
-      "--dangerously-skip-permissions",
+    "claude",
+    "-p",
+    prompt,
+    "--model",
+    model,
+    "--output-format",
+    "json",
+    "--dangerously-skip-permissions",
   ]
   try:
     result = subprocess.run(
-        argv,
-        cwd=str(cwd),
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=timeout,
+      argv,
+      cwd=str(cwd),
+      env=env,
+      capture_output=True,
+      text=True,
+      check=False,
+      timeout=timeout,
     )
   except subprocess.TimeoutExpired as exc:
     _save_diagnostics(diag_path, "TIMEOUT", exc.stdout, exc.stderr)
@@ -464,45 +464,45 @@ def _invoke_claude(
 
   if result.returncode != 0:
     _save_diagnostics(
-        diag_path, result.returncode, result.stdout, result.stderr
+      diag_path, result.returncode, result.stdout, result.stderr
     )
     raise cli_failure(
-        stderr=result.stderr,
-        result_text=result_text,
-        api_error_status=api_error_status,
+      stderr=result.stderr,
+      result_text=result_text,
+      api_error_status=api_error_status,
     )
 
   if parse_error is not None:
     _save_diagnostics(
-        diag_path, result.returncode, result.stdout, result.stderr
+      diag_path, result.returncode, result.stdout, result.stderr
     )
     raise AnnotationError(
-        f"could not parse claude output as JSON: {parse_error}"
+      f"could not parse claude output as JSON: {parse_error}"
     ) from parse_error
 
   if not isinstance(parsed, dict):
     _save_diagnostics(
-        diag_path, result.returncode, result.stdout, result.stderr
+      diag_path, result.returncode, result.stdout, result.stderr
     )
     raise AnnotationError("claude output was not a JSON object")
 
   if parsed.get("is_error"):
     _save_diagnostics(
-        diag_path, result.returncode, result.stdout, result.stderr
+      diag_path, result.returncode, result.stdout, result.stderr
     )
     raise cli_failure(
-        stderr=result.stderr,
-        result_text=result_text,
-        api_error_status=api_error_status,
+      stderr=result.stderr,
+      result_text=result_text,
+      api_error_status=api_error_status,
     )
   return parsed
 
 
 def _save_diagnostics(
-    diag_path: epath.PathLike | None,
-    exit_code: object,
-    stdout: str | bytes | None,
-    stderr: str | bytes | None,
+  diag_path: epath.PathLike | None,
+  exit_code: object,
+  stdout: str | bytes | None,
+  stderr: str | bytes | None,
 ) -> None:
   """Append raw CLI output for a failed run, to study unknown errors later."""
   if diag_path is None:
@@ -526,8 +526,8 @@ def read_snippets(workspace: Workspace) -> tuple[Snippet, ...]:
   """Parse the agent's output file; raise ``MissingOutputError`` if absent."""
   if not workspace.output_path.is_file():
     raise MissingOutputError(
-        f"agent did not write {workspace.output_path.name} in the working"
-        " directory"
+      f"agent did not write {workspace.output_path.name} in the working"
+      " directory"
     )
   return parse_agent_output(workspace.output_path.read_text())
 
@@ -535,6 +535,6 @@ def read_snippets(workspace: Workspace) -> tuple[Snippet, ...]:
 def validate_workspace(workspace: Workspace) -> dict[str, list[str]]:
   """Re-check the output via the validator the agent ran (single source)."""
   problems = validate_output(
-      pathlib.Path(workspace.output_path), pathlib.Path(workspace.checkout)
+    pathlib.Path(workspace.output_path), pathlib.Path(workspace.checkout)
   )
   return {f"{p.index}:{p.file_path}": p.messages for p in problems}

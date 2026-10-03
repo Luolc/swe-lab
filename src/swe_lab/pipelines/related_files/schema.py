@@ -46,18 +46,18 @@ class Snippet:
   def from_dict(cls, raw: Mapping[str, object]) -> Snippet:
     """Build a snippet from a raw dict; raise ``ValueError`` if malformed."""
     missing = [
-        k
-        for k in ("file_path", "start_line", "end_line", "category")
-        if k not in raw
+      k
+      for k in ("file_path", "start_line", "end_line", "category")
+      if k not in raw
     ]
     if missing:
       raise ValueError(f"Snippet is missing keys: {missing}")
     return cls(
-        file_path=str(raw["file_path"]),
-        start_line=_as_int(raw["start_line"]),
-        end_line=_as_int(raw["end_line"]),
-        category=SnippetCategory(str(raw["category"])),
-        description=str(raw.get("description", "")),
+      file_path=str(raw["file_path"]),
+      start_line=_as_int(raw["start_line"]),
+      end_line=_as_int(raw["end_line"]),
+      category=SnippetCategory(str(raw["category"])),
+      description=str(raw.get("description", "")),
     )
 
   def to_dict(self) -> dict[str, object]:
@@ -85,9 +85,9 @@ class Annotation:
   def to_dict(self) -> dict[str, object]:
     """Return the annotation as a JSON-ready dict."""
     return {
-        "instance_id": self.instance_id,
-        "snippets": [s.to_dict() for s in self.snippets],
-        "metadata": self.metadata,
+      "instance_id": self.instance_id,
+      "snippets": [s.to_dict() for s in self.snippets],
+      "metadata": self.metadata,
     }
 
   def to_json(self) -> str:
@@ -101,14 +101,14 @@ class Annotation:
     if not isinstance(snippets_raw, Sequence):
       raise ValueError("'snippets' must be a list.")
     snippets = tuple(
-        Snippet.from_dict(s) for s in snippets_raw if isinstance(s, Mapping)
+      Snippet.from_dict(s) for s in snippets_raw if isinstance(s, Mapping)
     )
     metadata_raw = raw.get("metadata", {})
     metadata = dict(metadata_raw) if isinstance(metadata_raw, Mapping) else {}
     return cls(
-        instance_id=str(raw.get("instance_id", "")),
-        snippets=snippets,
-        metadata=metadata,
+      instance_id=str(raw.get("instance_id", "")),
+      snippets=snippets,
+      metadata=metadata,
     )
 
 

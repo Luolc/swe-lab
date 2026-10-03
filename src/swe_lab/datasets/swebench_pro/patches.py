@@ -47,25 +47,25 @@ from __future__ import annotations
 # verbatim from
 # experiments/eval_issues/truncated_golden_test_names/fixed_rows.json.
 _TRUNCATED_FAIL_TO_PASS_FIXES: dict[str, dict[str, str]] = {
-    'instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan': {
-        'test/user.js | User Digest.getSubscribers should accurately build digest list given ACP default "day': 'test/user.js | User Digest.getSubscribers should accurately build digest list given ACP default "day"',
-        'test/user.js | User Digest.getSubscribers should accurately build digest list given ACP default "week': 'test/user.js | User Digest.getSubscribers should accurately build digest list given ACP default "week"',
-        'test/user.js | User Digest.getSubscribers should accurately build digest list given ACP default "off': 'test/user.js | User Digest.getSubscribers should accurately build digest list given ACP default "off"',
-        'test/database.js | Test database test/database/sorted.js::Sorted Set methods test/database/sorted.js::getSortedSetRange() should work with big arrays (length > 100)': 'test/database.js | Test database test/database/sorted.js::Sorted Set methods test/database/sorted.js::getSortedSetRange() should work with big arrays (length > 100) ',
-    },
-    'instance_ansible__ansible-de5858f48dc9e1ce9117034e0d7e76806f420ca8-v1055803c3a812189a1133297f7f5468579283f86': {
-        'test/units/galaxy/test_api.py::test_cache_invalid_cache_content[{"de': 'test/units/galaxy/test_api.py::test_cache_invalid_cache_content[{"de"',
-    },
-    'instance_future-architect__vuls-bff6b7552370b55ff76d474860eead4ab5de785a-v1151a6325649aaf997cd541ebe533b53fddf1b07': {
-        'Test_redhatBase_parseUpdatablePacksLine/centos_7.0:_"zlib"_"0"_"1.2.7"_"17.el7"_"rhui-REGION-rhel-server-releases': 'Test_redhatBase_parseUpdatablePacksLine/centos_7.0:_"zlib"_"0"_"1.2.7"_"17.el7"_"rhui-REGION-rhel-server-releases"',
-        'Test_redhatBase_parseUpdatablePacksLine/centos_7.0:_"shadow-utils"_"2"_"4.1.5.1_24.el7"_"rhui-REGION-rhel-server-releases': 'Test_redhatBase_parseUpdatablePacksLine/centos_7.0:_"shadow-utils"_"2"_"4.1.5.1_24.el7"_"rhui-REGION-rhel-server-releases"',
-        'Test_redhatBase_parseUpdatablePacksLine/amazon_2023:_Is_this_ok_[y/N]:_"dnf"_"0"_"4.14.0"_"1.amzn2023.0.6"_"amazonlinux': 'Test_redhatBase_parseUpdatablePacksLine/amazon_2023:_Is_this_ok_[y/N]:_"dnf"_"0"_"4.14.0"_"1.amzn2023.0.6"_"amazonlinux"',
-    },
+  "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan": {
+    'test/user.js | User Digest.getSubscribers should accurately build digest list given ACP default "day': 'test/user.js | User Digest.getSubscribers should accurately build digest list given ACP default "day"',
+    'test/user.js | User Digest.getSubscribers should accurately build digest list given ACP default "week': 'test/user.js | User Digest.getSubscribers should accurately build digest list given ACP default "week"',
+    'test/user.js | User Digest.getSubscribers should accurately build digest list given ACP default "off': 'test/user.js | User Digest.getSubscribers should accurately build digest list given ACP default "off"',
+    "test/database.js | Test database test/database/sorted.js::Sorted Set methods test/database/sorted.js::getSortedSetRange() should work with big arrays (length > 100)": "test/database.js | Test database test/database/sorted.js::Sorted Set methods test/database/sorted.js::getSortedSetRange() should work with big arrays (length > 100) ",
+  },
+  "instance_ansible__ansible-de5858f48dc9e1ce9117034e0d7e76806f420ca8-v1055803c3a812189a1133297f7f5468579283f86": {
+    'test/units/galaxy/test_api.py::test_cache_invalid_cache_content[{"de': 'test/units/galaxy/test_api.py::test_cache_invalid_cache_content[{"de"',
+  },
+  "instance_future-architect__vuls-bff6b7552370b55ff76d474860eead4ab5de785a-v1151a6325649aaf997cd541ebe533b53fddf1b07": {
+    'Test_redhatBase_parseUpdatablePacksLine/centos_7.0:_"zlib"_"0"_"1.2.7"_"17.el7"_"rhui-REGION-rhel-server-releases': 'Test_redhatBase_parseUpdatablePacksLine/centos_7.0:_"zlib"_"0"_"1.2.7"_"17.el7"_"rhui-REGION-rhel-server-releases"',
+    'Test_redhatBase_parseUpdatablePacksLine/centos_7.0:_"shadow-utils"_"2"_"4.1.5.1_24.el7"_"rhui-REGION-rhel-server-releases': 'Test_redhatBase_parseUpdatablePacksLine/centos_7.0:_"shadow-utils"_"2"_"4.1.5.1_24.el7"_"rhui-REGION-rhel-server-releases"',
+    'Test_redhatBase_parseUpdatablePacksLine/amazon_2023:_Is_this_ok_[y/N]:_"dnf"_"0"_"4.14.0"_"1.amzn2023.0.6"_"amazonlinux': 'Test_redhatBase_parseUpdatablePacksLine/amazon_2023:_Is_this_ok_[y/N]:_"dnf"_"0"_"4.14.0"_"1.amzn2023.0.6"_"amazonlinux"',
+  },
 }
 
 
 def patch_fail_to_pass(
-    instance_id: str, fail_to_pass: tuple[str, ...]
+  instance_id: str, fail_to_pass: tuple[str, ...]
 ) -> tuple[str, ...]:
   """Return ``fail_to_pass`` with any known truncated names corrected.
 

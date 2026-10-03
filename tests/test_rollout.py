@@ -22,21 +22,21 @@ from swe_lab.harnesses import AgentOutcome, HarnessOutcomeObserver
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import DEFAULT_MODEL
 from swe_lab.rollout import (
-    CodingAgentTask,
-    conversation_of,
-    OOM_METRIC,
-    outcome_of,
-    patch_of,
-    PROMPT_NAME,
-    rollout_outcome,
-    RolloutOutcome,
+  CodingAgentTask,
+  conversation_of,
+  OOM_METRIC,
+  outcome_of,
+  patch_of,
+  PROMPT_NAME,
+  rollout_outcome,
+  RolloutOutcome,
 )
 from swe_lab.sandbox import (
-    ArtifactSchema,
-    Mount,
-    RunResult,
-    RunStatus,
-    SandboxSpec,
+  ArtifactSchema,
+  Mount,
+  RunResult,
+  RunStatus,
+  SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.observers.diff_extract import DiffExtractObserver
@@ -66,12 +66,12 @@ class _Instance(TaskInstance[Verdict]):
 
   @override
   def unit_test_spec(
-      self,
-      *,
-      apply_patch: bool,
-      patch_name: str = PATCH_NAME,
-      checkout_golden_tests: bool = True,
-      patch_baseline: bool = False,
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
+    checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
   ) -> UnitTestSpec[Verdict]:
     raise NotImplementedError("this instance is only solved, never graded")
 
@@ -103,10 +103,10 @@ def test_the_task_wires_and_assembles(tmp_path: Path):
   sandbox = _LocalFakeSandbox(spec=_SPEC, workspace=epath.Path(workspace))
 
   result = CodingAgentTask(harness=ClaudeCodeHarness(model="sonnet")).execute(
-      sandbox,
-      _Instance(),
-      output_dir=workspace,
-      timeout=60.0,
+    sandbox,
+    _Instance(),
+    output_dir=workspace,
+    timeout=60.0,
   )
 
   # the run wired up and assembled — no agent ran, so the patch/trace are empty
@@ -135,12 +135,12 @@ def test_the_task_wires_and_assembles(tmp_path: Path):
 
 
 def _attempt(
-    outcome: AgentOutcome,
-    *,
-    status: RunStatus = RunStatus.SUCCESS,
-    artifacts: dict[str, epath.Path] | None = None,
-    patch: DiffExtractObserver | None = None,
-    extractor: bool = True,
+  outcome: AgentOutcome,
+  *,
+  status: RunStatus = RunStatus.SUCCESS,
+  artifacts: dict[str, epath.Path] | None = None,
+  patch: DiffExtractObserver | None = None,
+  extractor: bool = True,
 ) -> AttemptResult:
   """Build a finished rollout attempt whose agent ended the given way.
 
@@ -152,23 +152,23 @@ def _attempt(
   observer = HarnessOutcomeObserver(harness=ClaudeCodeHarness())
   observer.outcome = outcome
   return AttemptResult(
-      run=RunResult(
-          label="acme__widget-1",
-          status=status,
-          # `outputs_valid` needs the declared required output present, so the
-          # engine half is happy and the agent's own ending is what decides.
-          artifacts=artifacts
-          if artifacts is not None
-          else {CONVERSATION_NAME: epath.Path("/tmp/conversation.json")},
-          metrics={},
-      ),
-      exec_result=None,
-      output_schema=(ArtifactSchema(CONVERSATION_NAME),),
-      observers=(
-          (observer,)
-          if not extractor
-          else (observer, patch or DiffExtractObserver(patch="", is_empty=True))
-      ),
+    run=RunResult(
+      label="acme__widget-1",
+      status=status,
+      # `outputs_valid` needs the declared required output present, so the
+      # engine half is happy and the agent's own ending is what decides.
+      artifacts=artifacts
+      if artifacts is not None
+      else {CONVERSATION_NAME: epath.Path("/tmp/conversation.json")},
+      metrics={},
+    ),
+    exec_result=None,
+    output_schema=(ArtifactSchema(CONVERSATION_NAME),),
+    observers=(
+      (observer,)
+      if not extractor
+      else (observer, patch or DiffExtractObserver(patch="", is_empty=True))
+    ),
   )
 
 
@@ -178,9 +178,9 @@ def test_an_agents_own_budget_ending_is_never_retried():
   # hands it a second budget a better-behaved agent would not have needed.
   task = CodingAgentTask(harness=ClaudeCodeHarness())
   for spent in (
-      AgentOutcome.MAX_TURNS,
-      AgentOutcome.MAX_BUDGET,
-      AgentOutcome.MAX_OUTPUT_RETRIES,
+    AgentOutcome.MAX_TURNS,
+    AgentOutcome.MAX_BUDGET,
+    AgentOutcome.MAX_OUTPUT_RETRIES,
   ):
     result = _attempt(spent)
     assert task.outputs_valid(result) is True  # it produced its outputs
@@ -193,10 +193,10 @@ def test_an_infrastructure_ending_is_retried():
   # for our problem.
   task = CodingAgentTask(harness=ClaudeCodeHarness())
   for ours in (
-      AgentOutcome.EXECUTION_ERROR,
-      AgentOutcome.FINISHED_WITH_API_ERROR,
-      AgentOutcome.TRUNCATED,
-      AgentOutcome.NO_OUTPUT,
+    AgentOutcome.EXECUTION_ERROR,
+    AgentOutcome.FINISHED_WITH_API_ERROR,
+    AgentOutcome.TRUNCATED,
+    AgentOutcome.NO_OUTPUT,
   ):
     assert task.should_retry(_attempt(ours)) is True, ours
 
@@ -222,10 +222,10 @@ def test_the_rollout_predicate_never_reads_the_patch(tmp_path: Path):
   workspace = tmp_path / "ws"
   task = CodingAgentTask(harness=ClaudeCodeHarness(model="sonnet"))
   result = task.execute(
-      _LocalFakeSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
-      _Instance(),
-      output_dir=workspace,
-      timeout=60.0,
+    _LocalFakeSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
+    _Instance(),
+    output_dir=workspace,
+    timeout=60.0,
   )
   extract = patch_of(result)
   assert extract is not None and extract.is_empty is True  # nothing solved
@@ -251,12 +251,12 @@ def test_the_agent_outcome_lands_on_the_record():
   # the trace says the loop did, `rollout_outcome` is what the stage produced.
   # Here the actor spent its own turn budget and left an empty patch behind.
   spent = _attempt(
-      AgentOutcome.MAX_TURNS, patch=DiffExtractObserver(patch="", is_empty=True)
+    AgentOutcome.MAX_TURNS, patch=DiffExtractObserver(patch="", is_empty=True)
   )
   assert task.record_extra(spent) == {
-      "agent_model": DEFAULT_MODEL,
-      "agent_outcome": "max_turns",
-      "rollout_outcome": "no_patch",
+    "agent_model": DEFAULT_MODEL,
+    "agent_outcome": "max_turns",
+    "rollout_outcome": "no_patch",
   }
 
 
@@ -274,12 +274,12 @@ def test_the_adopted_credential_source_lands_on_the_record():
   finally:
     forget_adoptions()
   assert extra["credential_env_adopted_from"] == {
-      "ANTHROPIC_API_KEY": "CUSTOM_SUPERVISOR_API_KEY"
+    "ANTHROPIC_API_KEY": "CUSTOM_SUPERVISOR_API_KEY"
   }
   # The control arm: with nothing adopted the key is absent rather than empty,
   # so a reader never has to tell "adopted nothing" from "recorded nothing".
   assert "credential_env_adopted_from" not in task.record_extra(
-      _attempt(AgentOutcome.FINISHED)
+    _attempt(AgentOutcome.FINISHED)
   )
 
 
@@ -292,7 +292,7 @@ def test_the_record_pins_which_actor_produced_it():
   """
   task = CodingAgentTask(harness=ClaudeCodeHarness(model="claude-opus-5"))
   assert task.record_extra(_attempt(AgentOutcome.FINISHED))["agent_model"] == (
-      "claude-opus-5"
+    "claude-opus-5"
   )
 
 
@@ -334,10 +334,10 @@ def test_a_clean_run_that_produced_nothing_stays_in_the_denominator():
   """
   task = CodingAgentTask(harness=ClaudeCodeHarness())
   gave_up = _attempt(
-      AgentOutcome.FINISHED,
-      # It really looked: an extraction that ran and came back empty, which is
-      # not the same input as no extraction at all.
-      patch=DiffExtractObserver(patch="", is_empty=True),
+    AgentOutcome.FINISHED,
+    # It really looked: an extraction that ran and came back empty, which is
+    # not the same input as no extraction at all.
+    patch=DiffExtractObserver(patch="", is_empty=True),
   )
   assert rollout_outcome(gave_up) is RolloutOutcome.NO_PATCH
   assert rollout_outcome(gave_up).counts_in_denominator is True
@@ -357,9 +357,9 @@ def test_an_unclassifiable_ending_stays_in_the_denominator():
   # "only a positively-identified system failure leaves", so a word added
   # later must satisfy it too, instead of quietly falling off a literal.
   assert all(
-      outcome.counts_in_denominator
-      for outcome in RolloutOutcome
-      if not outcome.ours
+    outcome.counts_in_denominator
+    for outcome in RolloutOutcome
+    if not outcome.ours
   )
   assert not any(o.counts_in_denominator for o in RolloutOutcome if o.ours)
   # A budget the actor spent is the actor's, per ADR-0011.
@@ -381,7 +381,7 @@ def test_an_ending_with_no_evidence_is_not_booked_as_the_actors():
   # indistinguishable from here, so neither attribution is earned.
   extraction = DiffExtractObserver(patch="diff --git a/a b/a", is_empty=False)
   no_outcome = dataclasses.replace(
-      _attempt(AgentOutcome.FINISHED), observers=(extraction,)
+    _attempt(AgentOutcome.FINISHED), observers=(extraction,)
   )
   assert outcome_of(no_outcome) is None
   assert rollout_outcome(no_outcome) is RolloutOutcome.UNCLASSIFIED
@@ -402,7 +402,7 @@ def test_the_task_always_composes_the_extractor_it_requires():
   composed = task.observers(_Instance())
   assert any(isinstance(o, DiffExtractObserver) for o in composed)
   assert PATCH_NAME in {
-      schema.name for o in composed for schema in o.output_schema()
+    schema.name for o in composed for schema in o.output_schema()
   }
 
 
@@ -433,7 +433,7 @@ def test_the_unclassified_count_is_reportable_apart_from_the_excluded_one():
   it is asserted to be exactly one word wide.
   """
   assert [o for o in RolloutOutcome if o.unclassified] == [
-      RolloutOutcome.UNCLASSIFIED
+    RolloutOutcome.UNCLASSIFIED
   ]
   # It is reported *and* counted: the two are independent, and this one is
   # deliberately both — in the denominator, and visible.

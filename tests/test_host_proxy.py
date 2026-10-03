@@ -14,10 +14,10 @@ from etils import epath
 import pytest
 
 from swe_lab.pipelines.related_files.host_proxy import (
-    build_proxy,
-    DEFAULT_BASE_PORT,
-    port_for_index,
-    ReverseProxy,
+  build_proxy,
+  DEFAULT_BASE_PORT,
+  port_for_index,
+  ReverseProxy,
 )
 
 
@@ -28,7 +28,7 @@ def test_port_for_index() -> None:
 
 
 def _plant_source(
-    tmp_path: Path, body: str, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, body: str, monkeypatch: pytest.MonkeyPatch
 ) -> Path:
   """Plant a stand-in reverse_proxy.go and point the env override at it."""
   source = tmp_path / "reverse_proxy.go"
@@ -38,7 +38,7 @@ def _plant_source(
 
 
 def _go_writing_the_source_back(
-    monkeypatch: pytest.MonkeyPatch, builds: list[str]
+  monkeypatch: pytest.MonkeyPatch, builds: list[str]
 ) -> None:
   """Stub `go build` with one that stamps its source into the binary.
 
@@ -46,7 +46,7 @@ def _go_writing_the_source_back(
   """
 
   def _fake_go(
-      argv: list[str], **_kwargs: object
+    argv: list[str], **_kwargs: object
   ) -> subprocess.CompletedProcess[str]:
     source = Path(argv[-1])
     out = Path(argv[argv.index("-o") + 1])
@@ -56,12 +56,12 @@ def _go_writing_the_source_back(
     return subprocess.CompletedProcess(argv, 0, "", "")
 
   monkeypatch.setattr(
-      "swe_lab.harnesses.claude_code.proxy.subprocess.run", _fake_go
+    "swe_lab.harnesses.claude_code.proxy.subprocess.run", _fake_go
   )
 
 
 def test_the_binary_path_is_keyed_by_the_source_digest(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   """Editing the source moves the path, which is *how* staleness is caught."""
   builds: list[str] = []
@@ -76,7 +76,7 @@ def test_the_binary_path_is_keyed_by_the_source_digest(
 
 
 def test_a_binary_built_from_an_older_source_is_not_reused(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   """A changed source must not be served the build made for the old one.
 
@@ -100,7 +100,7 @@ def test_a_binary_built_from_an_older_source_is_not_reused(
 
 
 def test_an_unchanged_source_reuses_the_cached_binary(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   """The converse: an unchanged source is reused, not rebuilt.
 
@@ -119,7 +119,7 @@ def test_an_unchanged_source_reuses_the_cached_binary(
 
 
 def test_a_missing_source_says_how_to_supply_it(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   monkeypatch.setenv("CC_REVERSE_PROXY_SRC", str(tmp_path / "nope.go"))
   with pytest.raises(FileNotFoundError, match="CC_REVERSE_PROXY_SRC"):
@@ -127,13 +127,13 @@ def test_a_missing_source_says_how_to_supply_it(
 
 
 def test_the_start_path_spawns_the_binary_it_was_handed(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   """`build_proxy` -> `ReverseProxy` is the call sequence every caller uses."""
   _ = _plant_source(tmp_path, "package main\n", monkeypatch)
 
   def _fake_go(
-      argv: list[str], **_kwargs: object
+    argv: list[str], **_kwargs: object
   ) -> subprocess.CompletedProcess[str]:
     out = Path(argv[argv.index("-o") + 1])
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -142,7 +142,7 @@ def test_the_start_path_spawns_the_binary_it_was_handed(
     return subprocess.CompletedProcess(argv, 0, "", "")
 
   monkeypatch.setattr(
-      "swe_lab.harnesses.claude_code.proxy.subprocess.run", _fake_go
+    "swe_lab.harnesses.claude_code.proxy.subprocess.run", _fake_go
   )
 
   def _skip_wait(_self: ReverseProxy) -> None:
@@ -151,8 +151,8 @@ def test_the_start_path_spawns_the_binary_it_was_handed(
   monkeypatch.setattr(ReverseProxy, "_wait_until_listening", _skip_wait)
 
   with ReverseProxy(
-      port=39998,
-      output_path=epath.Path(tmp_path / "b.jsonl"),
-      binary=build_proxy(tmp_path),
+    port=39998,
+    output_path=epath.Path(tmp_path / "b.jsonl"),
+    binary=build_proxy(tmp_path),
   ):
     pass  # Popen succeeded on the path the builder returned

@@ -66,7 +66,7 @@ def merge_mounts(*contributions: Mounts) -> Mounts:
     for target, mount in contribution.items():
       if target in merged:
         raise SandboxError(
-            f"duplicate mount target {target!r}: two contributors claim it"
+          f"duplicate mount target {target!r}: two contributors claim it"
         )
       merged[target] = mount
   return merged

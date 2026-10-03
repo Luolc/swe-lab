@@ -105,11 +105,11 @@ class Store(ABC):
 
   @abstractmethod
   def read_manifest(
-      self,
-      sweep_id: str,
-      instance_id: str,
-      rollout_id: int,
-      task: str | None = None,
+    self,
+    sweep_id: str,
+    instance_id: str,
+    rollout_id: int,
+    task: str | None = None,
   ) -> list[AttemptRecord]:
     """Read the attempts of **one** rollout, optionally one task's.
 
@@ -217,16 +217,16 @@ class FilesystemStore(Store):
 
   @override
   def read_manifest(
-      self,
-      sweep_id: str,
-      instance_id: str,
-      rollout_id: int,
-      task: str | None = None,
+    self,
+    sweep_id: str,
+    instance_id: str,
+    rollout_id: int,
+    task: str | None = None,
   ) -> list[AttemptRecord]:
     """Read one rollout's attempts (optionally one task's), no sweep scan."""
     segment = task if task is not None else "*"
     return self._read(
-        f"{sweep_id}/{instance_id}/r{rollout_id}/{segment}/a*/{MANIFEST_NAME}"
+      f"{sweep_id}/{instance_id}/r{rollout_id}/{segment}/a*/{MANIFEST_NAME}"
     )
 
   def _read(self, pattern: str) -> list[AttemptRecord]:
@@ -239,8 +239,8 @@ class FilesystemStore(Store):
     if not self.root.is_dir():
       return []
     records = [
-        AttemptRecord.from_json(shard.read_text())
-        for shard in self.root.glob(pattern)
+      AttemptRecord.from_json(shard.read_text())
+      for shard in self.root.glob(pattern)
     ]
     return sorted(records, key=lambda record: record.sort_key)
 
@@ -279,7 +279,7 @@ def build_store(name: str, **cfg: object) -> Store:
     factory = _REGISTRY[name]
   except KeyError:
     raise SandboxError(
-        f"unknown store {name!r}; registered: {registered_stores()}"
+      f"unknown store {name!r}; registered: {registered_stores()}"
     ) from None
   return factory(**cfg)
 

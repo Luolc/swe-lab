@@ -1,33 +1,33 @@
 """Tests for the canonical conversation model (round-trip + discrimination)."""
 
 from swe_lab.conversation import (
-    Conversation,
-    Message,
-    ReasoningBlock,
-    Role,
-    TextBlock,
-    ToolResultBlock,
-    ToolUseBlock,
+  Conversation,
+  Message,
+  ReasoningBlock,
+  Role,
+  TextBlock,
+  ToolResultBlock,
+  ToolUseBlock,
 )
 
 
 def _sample() -> Conversation:
   return Conversation(
-      messages=[
-          Message(role=Role.SYSTEM, content=[TextBlock(text="be terse")]),
-          Message(
-              role=Role.ASSISTANT,
-              content=[
-                  ReasoningBlock(text="think", signature="sig"),
-                  TextBlock(text="running a tool"),
-                  ToolUseBlock(id="t1", name="bash", input={"cmd": "ls"}),
-              ],
-          ),
-          Message(
-              role=Role.USER,
-              content=[ToolResultBlock(tool_use_id="t1", content="a.py b.py")],
-          ),
-      ]
+    messages=[
+      Message(role=Role.SYSTEM, content=[TextBlock(text="be terse")]),
+      Message(
+        role=Role.ASSISTANT,
+        content=[
+          ReasoningBlock(text="think", signature="sig"),
+          TextBlock(text="running a tool"),
+          ToolUseBlock(id="t1", name="bash", input={"cmd": "ls"}),
+        ],
+      ),
+      Message(
+        role=Role.USER,
+        content=[ToolResultBlock(tool_use_id="t1", content="a.py b.py")],
+      ),
+    ]
   )
 
 
@@ -51,16 +51,14 @@ def test_blocks_discriminate_on_type():
 
 def test_tool_result_error_flag_survives():
   conv = Conversation(
-      messages=[
-          Message(
-              role=Role.USER,
-              content=[
-                  ToolResultBlock(
-                      tool_use_id="x", content="boom", is_error=True
-                  )
-              ],
-          )
-      ]
+    messages=[
+      Message(
+        role=Role.USER,
+        content=[
+          ToolResultBlock(tool_use_id="x", content="boom", is_error=True)
+        ],
+      )
+    ]
   )
   restored = Conversation.model_validate_json(conv.model_dump_json())
   block = restored.messages[0].content[0]

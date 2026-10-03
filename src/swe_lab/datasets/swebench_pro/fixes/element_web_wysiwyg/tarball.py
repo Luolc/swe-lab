@@ -13722,6 +13722,6 @@ UNjw+1Ohfjz5Hkm0JAM2Pj0P//vhInvmqD3UeSaIE/XDp/jDMUuE8V8l0C3/PhTw779///3773/F
 # npm ``dist.integrity`` for the tarball above, in Subresource-Integrity form —
 # the same string the container asserts before it extracts anything.
 TARBALL_INTEGRITY = (
-    "sha512-B8sxY3pE2XyRyQ1g7cx0YjGaDZ1A0Uh5XxS/lNdxQ/0ctRJj6IBy7Kti"
-    "UjxDRdA15ioZnf6aoJBRkBSr02qhaw=="
+  "sha512-B8sxY3pE2XyRyQ1g7cx0YjGaDZ1A0Uh5XxS/lNdxQ/0ctRJj6IBy7Kti"
+  "UjxDRdA15ioZnf6aoJBRkBSr02qhaw=="
 )

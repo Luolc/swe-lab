@@ -21,8 +21,8 @@ from typing import Any, override
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.sandbox import ExecResult, SandboxFs, SandboxObserver
 from swe_lab.sandbox.observers import (
-    GitHistoryLeakError,
-    GitHistoryPurgeObserver,
+  GitHistoryLeakError,
+  GitHistoryPurgeObserver,
 )
 from swe_lab.workflow import AttemptResult, Task
 
@@ -51,14 +51,14 @@ class GitIntegrityAuditTask(Task):
       The purge observer, alone.
     """
     return (
-        GitHistoryPurgeObserver(
-            solution_sha=instance.solution_sha(), purge=self.purge
-        ),
+      GitHistoryPurgeObserver(
+        solution_sha=instance.solution_sha(), purge=self.purge
+      ),
     )
 
   @override
   def action(
-      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+    self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
   ) -> ExecResult:
     """Do nothing — ``after_create`` has already purged and asserted.
 

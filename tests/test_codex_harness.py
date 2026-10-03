@@ -19,24 +19,24 @@ import pytest
 from swe_lab.conversation import TextBlock, ToolResultBlock, ToolUseBlock
 from swe_lab.harnesses import AgentOutcome, registered_harnesses
 from swe_lab.harnesses.codex import (
-    CodexAuthObserver,
-    CodexHarness,
-    CodexProvider,
-    event_stream_outcome,
-    event_stream_to_conversation,
+  CodexAuthObserver,
+  CodexHarness,
+  CodexProvider,
+  event_stream_outcome,
+  event_stream_to_conversation,
 )
 from swe_lab.harnesses.codex.binary import (
-    archive_checksum,
-    archive_url,
-    BINARY_STEMS,
-    PINNED_CODEX_VERSION,
-    release_tag,
+  archive_checksum,
+  archive_url,
+  BINARY_STEMS,
+  PINNED_CODEX_VERSION,
+  release_tag,
 )
 from swe_lab.harnesses.codex.constants import (
-    AGENT_SCRIPT_NAME,
-    BINARY_AT,
-    CODE_MODE_HOST_AT,
-    EVENT_STREAM_NAME,
+  AGENT_SCRIPT_NAME,
+  BINARY_AT,
+  CODE_MODE_HOST_AT,
+  EVENT_STREAM_NAME,
 )
 from swe_lab.harnesses.common import home_fallback_lines
 from swe_lab.rollout import CodingAgentTask
@@ -46,40 +46,40 @@ from swe_lab.sandbox.testing import FakeSandbox
 # One captured turn: a command that read a file, a patch that landed, and the
 # agent's closing message.
 _EVENTS: list[dict[str, Any]] = [
-    {"type": "thread.started", "thread_id": "019fe364-b50e-7be2"},
-    {"type": "turn.started"},
-    {
-        "type": "item.completed",
-        "item": {
-            "id": "item_0",
-            "type": "agent_message",
-            "text": "I'll inspect the module, then make the edit.",
-        },
+  {"type": "thread.started", "thread_id": "019fe364-b50e-7be2"},
+  {"type": "turn.started"},
+  {
+    "type": "item.completed",
+    "item": {
+      "id": "item_0",
+      "type": "agent_message",
+      "text": "I'll inspect the module, then make the edit.",
     },
-    {
-        "type": "item.completed",
-        "item": {
-            "id": "item_1",
-            "type": "command_execution",
-            "command": "/bin/bash -lc \"sed -n '1,200p' calc.py\"",
-            "aggregated_output": "def add(a, b):\n    return a + b\n",
-            "exit_code": 0,
-            "status": "completed",
-        },
+  },
+  {
+    "type": "item.completed",
+    "item": {
+      "id": "item_1",
+      "type": "command_execution",
+      "command": "/bin/bash -lc \"sed -n '1,200p' calc.py\"",
+      "aggregated_output": "def add(a, b):\n    return a + b\n",
+      "exit_code": 0,
+      "status": "completed",
     },
-    {
-        "type": "item.completed",
-        "item": {
-            "id": "item_2",
-            "type": "file_change",
-            "changes": [{"path": "/work/calc.py", "kind": "update"}],
-            "status": "completed",
-        },
+  },
+  {
+    "type": "item.completed",
+    "item": {
+      "id": "item_2",
+      "type": "file_change",
+      "changes": [{"path": "/work/calc.py", "kind": "update"}],
+      "status": "completed",
     },
-    {
-        "type": "turn.completed",
-        "usage": {"input_tokens": 13741, "output_tokens": 6},
-    },
+  },
+  {
+    "type": "turn.completed",
+    "usage": {"input_tokens": 13741, "output_tokens": 6},
+  },
 ]
 
 
@@ -90,8 +90,8 @@ def _stream(events: Sequence[Mapping[str, Any]]) -> str:
 def _sandbox(workspace: Path) -> FakeSandbox:
   """Build a docker-free sandbox whose file ops hit a real local dir."""
   return FakeSandbox(
-      spec=SandboxSpec("codex__probe-1", "img:tag", "/app", "base"),
-      workspace=epath.Path(workspace),
+    spec=SandboxSpec("codex__probe-1", "img:tag", "/app", "base"),
+    workspace=epath.Path(workspace),
   )
 
 
@@ -112,11 +112,11 @@ def test_a_tool_item_becomes_a_call_and_a_result():
   conversation = event_stream_to_conversation(_stream(_EVENTS))
   roles = [(m.role.value, m.content[0].type) for m in conversation.messages]
   assert roles == [
-      ("assistant", "text"),
-      ("assistant", "tool_use"),
-      ("user", "tool_result"),
-      ("assistant", "tool_use"),
-      ("user", "tool_result"),
+    ("assistant", "text"),
+    ("assistant", "tool_use"),
+    ("user", "tool_result"),
+    ("assistant", "tool_use"),
+    ("user", "tool_result"),
   ]
   call = conversation.messages[1].content[0]
   result = conversation.messages[2].content[0]
@@ -131,17 +131,17 @@ def test_a_tool_item_becomes_a_call_and_a_result():
 
 def test_a_failed_command_marks_its_result_as_an_error():
   events = [
-      {
-          "type": "item.completed",
-          "item": {
-              "id": "c1",
-              "type": "command_execution",
-              "command": "rg --files",
-              "aggregated_output": "rg: command not found",
-              "exit_code": 127,
-              "status": "completed",
-          },
+    {
+      "type": "item.completed",
+      "item": {
+        "id": "c1",
+        "type": "command_execution",
+        "command": "rg --files",
+        "aggregated_output": "rg: command not found",
+        "exit_code": 127,
+        "status": "completed",
       },
+    },
   ]
   conversation = event_stream_to_conversation(_stream(events))
   result = conversation.messages[1].content[0]
@@ -153,8 +153,8 @@ def test_only_completed_items_convert():
   # Every item is emitted twice (started, then completed); converting both
   # would double every tool call in the trace.
   started = {
-      "type": "item.started",
-      "item": {"id": "x", "type": "agent_message", "text": "partial"},
+    "type": "item.started",
+    "item": {"id": "x", "type": "agent_message", "text": "partial"},
   }
   assert event_stream_to_conversation(_stream([started])).messages == []
 
@@ -180,37 +180,37 @@ def test_an_item_level_error_does_not_fail_the_run():
   EXECUTION_ERROR is retryable, spend the budget re-running it.
   """
   noisy = [
-      _EVENTS[0],
-      {
-          "type": "item.completed",
-          "item": {
-              "id": "item_0",
-              "type": "error",
-              "message": "Code Mode is unavailable because ...",
-          },
+    _EVENTS[0],
+    {
+      "type": "item.completed",
+      "item": {
+        "id": "item_0",
+        "type": "error",
+        "message": "Code Mode is unavailable because ...",
       },
-      *_EVENTS[1:],
+    },
+    *_EVENTS[1:],
   ]
   assert event_stream_outcome(_stream(noisy)) is AgentOutcome.FINISHED
   # ...and it is still visible in the conversation, not silently dropped.
   texts = [
-      b.text
-      for m in event_stream_to_conversation(_stream(noisy)).messages
-      for b in m.content
-      if isinstance(b, TextBlock)
+    b.text
+    for m in event_stream_to_conversation(_stream(noisy)).messages
+    for b in m.content
+    if isinstance(b, TextBlock)
   ]
   assert any("Code Mode is unavailable" in t for t in texts)
 
 
 @pytest.mark.parametrize(
-    "terminal",
-    [
-        {"type": "turn.failed", "error": {"message": "stream disconnected"}},
-        {"type": "error", "message": "invalid peer certificate"},
-    ],
+  "terminal",
+  [
+    {"type": "turn.failed", "error": {"message": "stream disconnected"}},
+    {"type": "error", "message": "invalid peer certificate"},
+  ],
 )
 def test_a_broken_turn_is_a_retryable_execution_error(
-    terminal: Mapping[str, Any],
+  terminal: Mapping[str, Any],
 ):
   # Both shapes were observed live (a 400 from the API, and a TLS failure).
   # Infrastructure, so ADR-0011 says retry.
@@ -238,7 +238,7 @@ def test_completed_is_derived_from_the_outcome(tmp_path: Path):
 
 
 def test_an_absent_trace_reads_as_no_output_rather_than_raising(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # A crashed run is a legitimate outcome to report, not an exception.
   assert CodexHarness().outcome(_sandbox(tmp_path)) is AgentOutcome.NO_OUTPUT
@@ -342,10 +342,10 @@ def test_an_invalid_env_name_is_refused_not_silently_dropped(tmp_path: Path):
   # ran" with no clue why, so this fails at the boundary instead.
   with pytest.raises(SandboxError, match="invalid environment variable"):
     _ = CodexHarness().run(
-        _sandbox(tmp_path),
-        prompt="p",
-        timeout=1.0,
-        env={"not a name": "v"},
+      _sandbox(tmp_path),
+      prompt="p",
+      timeout=1.0,
+      env={"not a name": "v"},
     )
 
 
@@ -377,7 +377,7 @@ def test_every_pinned_binary_has_a_pinned_checksum():
   # unverified bytes.
   for stem in BINARY_STEMS:
     assert archive_checksum(
-        stem, PINNED_CODEX_VERSION, "x86_64-unknown-linux-musl"
+      stem, PINNED_CODEX_VERSION, "x86_64-unknown-linux-musl"
     )
   with pytest.raises(ValueError, match="no pinned sha256"):
     _ = archive_checksum("codex", "0.0.0", "x86_64-unknown-linux-musl")
@@ -386,7 +386,7 @@ def test_every_pinned_binary_has_a_pinned_checksum():
 def test_the_auth_observer_stages_the_login_under_codex_home(tmp_path: Path):
   del tmp_path
   mounts = CodexAuthObserver(
-      auth_json=b'{"tokens": {}}', agent_home="/agent-home"
+    auth_json=b'{"tokens": {}}', agent_home="/agent-home"
   ).mounts()
   # Codex's own default layout, `$HOME/.codex` — not the home itself, which
   # would scatter its state over $HOME and diverge from an ordinary install.
@@ -420,22 +420,22 @@ def test_the_credential_is_never_shown_in_a_repr():
   # Nothing logs a mount today, but a credential that prints itself in a
   # traceback or a debugger is one careless log line away from a leak.
   observer = CodexAuthObserver(
-      auth_json=b'{"tokens": {"access_token": "sEcReT"}}'
+    auth_json=b'{"tokens": {"access_token": "sEcReT"}}'
   )
   assert "sEcReT" not in repr(observer)
   assert "auth_json" not in repr(observer)
 
 
 @pytest.mark.parametrize(
-    ("payload", "message"),
-    [
-        (b"   ", "is empty"),
-        (b"not json at all", "not valid JSON"),
-        (b'["a list"]', "must be a JSON object"),
-    ],
+  ("payload", "message"),
+  [
+    (b"   ", "is empty"),
+    (b"not json at all", "not valid JSON"),
+    (b'["a list"]', "must be a JSON object"),
+  ],
 )
 def test_an_unusable_credential_is_refused_on_the_host(
-    payload: bytes, message: str
+  payload: bytes, message: str
 ):
   # Checked here because the alternative is an authentication failure minutes
   # into a run, inside a container that is then thrown away.
@@ -475,13 +475,13 @@ def test_codex_is_selectable_by_name_through_the_cli(tmp_path: Path):
 
   definition = workflow_definition("rollout")  # ships claude_code
   entries = apply_overrides(
-      definition,
-      parse_overrides(
-          [
-              "--rollout.harness=codex",
-              "--rollout.harness.model=gpt-5.6-terra",
-          ]
-      ),
+    definition,
+    parse_overrides(
+      [
+        "--rollout.harness=codex",
+        "--rollout.harness.model=gpt-5.6-terra",
+      ]
+    ),
   )
   task = entries[0].task
   assert isinstance(task, CodingAgentTask)
@@ -495,25 +495,25 @@ def test_codex_is_selectable_by_name_through_the_cli(tmp_path: Path):
 
 
 def test_a_field_of_another_agent_is_refused_with_the_valid_ones(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # `capture` is a claude_code field; naming it on codex must say so rather
   # than silently doing nothing.
   del tmp_path
 
   from swe_lab.cli.overrides import (
-      apply_overrides,
-      OverrideError,
-      parse_overrides,
+    apply_overrides,
+    OverrideError,
+    parse_overrides,
   )
   from swe_lab.workflow.registry import workflow_definition
 
   with pytest.raises(OverrideError, match="not a field of CodexHarness"):
     _ = apply_overrides(
-        workflow_definition("rollout"),
-        parse_overrides(
-            ["--rollout.harness=codex", "--rollout.harness.capture=proxy"]
-        ),
+      workflow_definition("rollout"),
+      parse_overrides(
+        ["--rollout.harness=codex", "--rollout.harness.capture=proxy"]
+      ),
     )
 
 
@@ -547,15 +547,15 @@ def test_a_provider_declares_the_base_url_and_selects_itself():
   # A base URL has no flag; it is a config value. Verified live that a provider
   # declared entirely through `-c` is honoured (the run dialled the custom URL).
   overrides = CodexProvider(
-      provider_id="internal-gw",
-      base_url="https://gw.example.internal/v1",
-      env_key="MY_API_KEY",
-      name="Internal Gateway",
+    provider_id="internal-gw",
+    base_url="https://gw.example.internal/v1",
+    env_key="MY_API_KEY",
+    name="Internal Gateway",
   ).config_overrides()
   assert overrides[0] == 'model_provider="internal-gw"'  # selected first
   assert (
-      'model_providers.internal-gw.base_url="https://gw.example.internal/v1"'
-      in overrides
+    'model_providers.internal-gw.base_url="https://gw.example.internal/v1"'
+    in overrides
   )
   assert 'model_providers.internal-gw.env_key="MY_API_KEY"' in overrides
   assert 'model_providers.internal-gw.wire_api="responses"' in overrides
@@ -575,7 +575,7 @@ def test_the_proxy_flags_are_always_emitted_as_real_booleans():
   change either behaviour.
   """
   overrides = CodexProvider(
-      provider_id="gw", base_url="http://127.0.0.1:8080/v1"
+    provider_id="gw", base_url="http://127.0.0.1:8080/v1"
   ).config_overrides()
   assert "model_providers.gw.supports_websockets=false" in overrides
   assert "model_providers.gw.requires_openai_auth=false" in overrides
@@ -583,10 +583,10 @@ def test_the_proxy_flags_are_always_emitted_as_real_booleans():
   assert '"false"' not in " ".join(overrides)
 
   on = CodexProvider(
-      provider_id="gw",
-      base_url="http://x/v1",
-      supports_websockets=True,
-      requires_openai_auth=True,
+    provider_id="gw",
+    base_url="http://x/v1",
+    supports_websockets=True,
+    requires_openai_auth=True,
   ).config_overrides()
   assert "model_providers.gw.supports_websockets=true" in on
   assert "model_providers.gw.requires_openai_auth=true" in on
@@ -604,16 +604,16 @@ def test_the_retry_budget_is_raised_for_an_unattended_run():
   for the other. Emitted as bare integers; quoted, Codex would read a string.
   """
   overrides = CodexProvider(
-      provider_id="gw", base_url="http://x/v1"
+    provider_id="gw", base_url="http://x/v1"
   ).config_overrides()
   assert "model_providers.gw.stream_max_retries=10" in overrides
   assert "model_providers.gw.request_max_retries=10" in overrides
 
   tuned = CodexProvider(
-      provider_id="gw",
-      base_url="http://x/v1",
-      stream_max_retries=3,
-      request_max_retries=0,
+    provider_id="gw",
+    base_url="http://x/v1",
+    stream_max_retries=3,
+    request_max_retries=0,
   ).config_overrides()
   assert "model_providers.gw.stream_max_retries=3" in tuned
   assert "model_providers.gw.request_max_retries=0" in tuned  # 0 is legal
@@ -624,11 +624,11 @@ def test_a_negative_retry_budget_is_refused():
   # however Codex reads a nonsense number.
   with pytest.raises(SandboxError, match="must not be negative"):
     _ = CodexProvider(
-        provider_id="gw", base_url="http://x/v1", stream_max_retries=-1
+      provider_id="gw", base_url="http://x/v1", stream_max_retries=-1
     )
   with pytest.raises(SandboxError, match="must not be negative"):
     _ = CodexProvider(
-        provider_id="gw", base_url="http://x/v1", request_max_retries=-5
+      provider_id="gw", base_url="http://x/v1", request_max_retries=-5
     )
 
 
@@ -636,7 +636,7 @@ def test_a_provider_name_is_always_emitted():
   # Upstream validates this: a provider with an empty name is refused outright
   # ("provider name must not be empty"), so the id is the fallback.
   overrides = CodexProvider(
-      provider_id="gw", base_url="http://x/v1"
+    provider_id="gw", base_url="http://x/v1"
   ).config_overrides()
   assert 'model_providers.gw.name="gw"' in overrides
 
@@ -650,9 +650,9 @@ def test_the_api_key_value_never_reaches_argv_or_the_staged_script():
   script — both readable. The value travels by `pass_env` instead.
   """
   harness = CodexHarness(
-      provider=CodexProvider(
-          provider_id="gw", base_url="https://x/v1", env_key="MY_API_KEY"
-      )
+    provider=CodexProvider(
+      provider_id="gw", base_url="https://x/v1", env_key="MY_API_KEY"
+    )
   )
   script = _script(harness)
   assert "MY_API_KEY" in script  # the NAME is what Codex needs...
@@ -664,7 +664,7 @@ def test_no_config_file_is_staged_for_a_provider():
   # Codex CREATES its own config.toml in CODEX_HOME at startup, so staging one
   # would be a file the agent and the harness both claim. `-c` needs no file.
   harness = CodexHarness(
-      provider=CodexProvider(provider_id="gw", base_url="https://x/v1")
+    provider=CodexProvider(provider_id="gw", base_url="https://x/v1")
   )
   assert set(harness.mounts("/app")) == {AGENT_SCRIPT_NAME, "agent_env.sh"}
 
@@ -673,13 +673,13 @@ def test_provider_overrides_come_before_the_callers_own():
   # extra_config is the escape hatch, so it must be able to correct anything
   # the typed provider produced — which requires it to come last.
   script = _script(
-      CodexHarness(
-          provider=CodexProvider(provider_id="gw", base_url="https://x/v1"),
-          extra_config=("model_providers.gw.request_max_retries=5",),
-      )
+    CodexHarness(
+      provider=CodexProvider(provider_id="gw", base_url="https://x/v1"),
+      extra_config=("model_providers.gw.request_max_retries=5",),
+    )
   )
   assert script.index("model_providers.gw.base_url") < script.index(
-      "request_max_retries"
+    "request_max_retries"
   )
 
 
@@ -699,9 +699,9 @@ def test_an_empty_base_url_is_refused_rather_than_silently_defaulting():
 
 def test_toml_values_are_escaped_and_control_characters_refused():
   overrides = CodexProvider(
-      provider_id="gw",
-      base_url='https://x/v1?q="a"\\b',
-      name='He said "hi"',
+    provider_id="gw",
+    base_url='https://x/v1?q="a"\\b',
+    name='He said "hi"',
   ).config_overrides()
   # `in` on a tuple compares elements, so match the full override strings.
   assert r'model_providers.gw.base_url="https://x/v1?q=\"a\"\\b"' in overrides
@@ -710,7 +710,7 @@ def test_toml_values_are_escaped_and_control_characters_refused():
   # than refusing it, so a malformed one would silently mean something else.
   with pytest.raises(SandboxError, match="control character"):
     _ = CodexProvider(
-        provider_id="gw", base_url="https://x\n/v1"
+      provider_id="gw", base_url="https://x\n/v1"
     ).config_overrides()
 
 
@@ -762,9 +762,9 @@ def test_a_provider_still_resolves_under_bare():
   # Verified live: --ignore-user-config drops the config FILE, not the `-c`
   # overrides, so the custom endpoint survives bare mode.
   script = _script(
-      CodexHarness(
-          provider=CodexProvider(provider_id="gw", base_url="https://x/v1")
-      )
+    CodexHarness(
+      provider=CodexProvider(provider_id="gw", base_url="https://x/v1")
+    )
   )
   assert "--ignore-user-config" in script
   assert 'model_providers.gw.base_url="https://x/v1"' in script

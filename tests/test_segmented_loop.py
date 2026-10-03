@@ -30,30 +30,30 @@ from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
 from swe_lab.trace_synthesis.judge import supervising_policy
 from swe_lab.trace_synthesis.seam_shape import DirtySeamError
 from swe_lab.trace_synthesis.segmented_loop import (
-    LOG_KIND_SEGMENT,
-    SegmentedRun,
-    SegmentedSupervision,
-    SegmentRequest,
-    STOP_ACTOR_FINISHED,
-    STOP_MAX_COST,
-    STOP_MAX_SEGMENTS,
-    STOP_NO_RESULT_EVENT,
-    STOP_OTHER_ENDING,
-    STOP_WALL_CLOCK,
-    turns_taken,
+  LOG_KIND_SEGMENT,
+  SegmentedRun,
+  SegmentedSupervision,
+  SegmentRequest,
+  STOP_ACTOR_FINISHED,
+  STOP_MAX_COST,
+  STOP_MAX_SEGMENTS,
+  STOP_NO_RESULT_EVENT,
+  STOP_OTHER_ENDING,
+  STOP_WALL_CLOCK,
+  turns_taken,
 )
 from swe_lab.trace_synthesis.supervisor import (
-    INTERVENTION_TAG,
-    LOG_KIND_GAP,
-    LOG_KIND_LAPSE,
-    LOG_KIND_SILENT,
-    LOG_KIND_SPOKE,
-    LOG_KIND_UNJUDGED,
-    Observation,
-    PolicyLapseError,
-    SpeakPolicy,
-    SpeakWhenOffTrack,
-    Verdict,
+  INTERVENTION_TAG,
+  LOG_KIND_GAP,
+  LOG_KIND_LAPSE,
+  LOG_KIND_SILENT,
+  LOG_KIND_SPOKE,
+  LOG_KIND_UNJUDGED,
+  Observation,
+  PolicyLapseError,
+  SpeakPolicy,
+  SpeakWhenOffTrack,
+  Verdict,
 )
 
 from .policies import SilentPolicy, SpeaksAt
@@ -63,13 +63,13 @@ _DONE = "success"
 
 
 def _segment(
-    *,
-    ids: list[str],
-    subtype: str,
-    session: str = "session-1",
-    uuid: str = "result-uuid",
-    cost: float = 0.01,
-    events_per_message: int = 1,
+  *,
+  ids: list[str],
+  subtype: str,
+  session: str = "session-1",
+  uuid: str = "result-uuid",
+  cost: float = 0.01,
+  events_per_message: int = 1,
 ) -> str:
   """Render one segment's worth of ``stream-json`` lines.
 
@@ -89,35 +89,35 @@ def _segment(
   for message_id in ids:
     for repeat in range(events_per_message):
       lines.append(
-          json.dumps(
-              {
-                  "type": "assistant",
-                  "session_id": session,
-                  # Every event in a real capture carries one (170 of 170 on
-                  # the first end-to-end run), and it is what a resumed
-                  # segment is anchored at — a fixture without it would
-                  # exercise the *unanchored* path while looking like it
-                  # tested the anchored one.
-                  "uuid": f"{message_id}-{repeat}",
-                  "message": {
-                      "id": message_id,
-                      "role": "assistant",
-                      "content": [{"type": "text", "text": "working"}],
-                  },
-              }
-          )
+        json.dumps(
+          {
+            "type": "assistant",
+            "session_id": session,
+            # Every event in a real capture carries one (170 of 170 on
+            # the first end-to-end run), and it is what a resumed
+            # segment is anchored at — a fixture without it would
+            # exercise the *unanchored* path while looking like it
+            # tested the anchored one.
+            "uuid": f"{message_id}-{repeat}",
+            "message": {
+              "id": message_id,
+              "role": "assistant",
+              "content": [{"type": "text", "text": "working"}],
+            },
+          }
+        )
       )
   lines.append(
-      json.dumps(
-          {
-              "type": "result",
-              "subtype": subtype,
-              "session_id": session,
-              "uuid": uuid,
-              "total_cost_usd": cost,
-              "num_turns": len(ids),
-          }
-      )
+    json.dumps(
+      {
+        "type": "result",
+        "subtype": subtype,
+        "session_id": session,
+        "uuid": uuid,
+        "total_cost_usd": cost,
+        "num_turns": len(ids),
+      }
+    )
   )
   return "".join(line + "\n" for line in lines)
 
@@ -164,10 +164,10 @@ class FakeActor:
 
 
 _ANCHORED_WIRE = (
-    Path(__file__).resolve().parent / "data/proxy_seam_anchored.jsonl"
+  Path(__file__).resolve().parent / "data/proxy_seam_anchored.jsonl"
 ).read_text(encoding="utf-8")
 _DIRTY_WIRE = (
-    Path(__file__).resolve().parent / "data/proxy_seam_dirty.jsonl"
+  Path(__file__).resolve().parent / "data/proxy_seam_dirty.jsonl"
 ).read_text(encoding="utf-8")
 
 
@@ -184,27 +184,27 @@ def _supervision(policy: Any = None, **overrides: Any) -> SegmentedSupervision:
   built = policy or SilentPolicy()
 
   def policy_factory(
-      _cooldown: int, _base_url: str, _api_key_env: str
+    _cooldown: int, _base_url: str, _api_key_env: str
   ) -> SpeakPolicy:
     return built
 
   defaults: dict[str, Any] = {
-      "policy_factory": policy_factory,
-      "max_segments": 10,
-      "wall_clock_seconds": 10_000.0,
-      "max_cost_usd": 100.0,
-      "turns_per_segment": 5,
+    "policy_factory": policy_factory,
+    "max_segments": 10,
+    "wall_clock_seconds": 10_000.0,
+    "max_cost_usd": 100.0,
+    "turns_per_segment": 5,
   }
   return SegmentedSupervision(**(defaults | overrides))
 
 
 def _run(
-    actor: FakeActor,
-    supervision: SegmentedSupervision,
-    *,
-    wire: str | None = _ANCHORED_WIRE,
-    now: Callable[[], datetime.datetime] | None = None,
-    guidebook: str | None = None,
+  actor: FakeActor,
+  supervision: SegmentedSupervision,
+  *,
+  wire: str | None = _ANCHORED_WIRE,
+  now: Callable[[], datetime.datetime] | None = None,
+  guidebook: str | None = None,
 ) -> list[Any]:
   """Drive one loop over a fake actor and return its log rows.
 
@@ -221,14 +221,14 @@ def _run(
   """
   rows: list[Any] = []
   loop = SegmentedRun(
-      supervision=supervision,
-      task="fix the bug",
-      launch=actor.launch,
-      read_stream=actor.read,
-      log=rows.append,
-      read_wire=None if wire is None else (lambda: wire),
-      now=now or (lambda: datetime.datetime.now(datetime.UTC)),
-      guidebook=guidebook,
+    supervision=supervision,
+    task="fix the bug",
+    launch=actor.launch,
+    read_stream=actor.read,
+    log=rows.append,
+    read_wire=None if wire is None else (lambda: wire),
+    now=now or (lambda: datetime.datetime.now(datetime.UTC)),
+    guidebook=guidebook,
   )
   _ = loop.run(timeout=10_000.0)
   return rows
@@ -272,16 +272,16 @@ def _shipped_guided_harness(*override: str) -> ClaudeCodeHarness:
   from swe_lab.cli.overrides import apply_overrides, parse_overrides
   from swe_lab.rollout import CodingAgentTask
   from swe_lab.workflow.definitions import (
-      FROM_SCRATCH_GUIDED_TRACE,
-      GUIDED_ROLLOUT_KEY,
+    FROM_SCRATCH_GUIDED_TRACE,
+    GUIDED_ROLLOUT_KEY,
   )
 
   (entry,) = (
-      one
-      for one in apply_overrides(
-          FROM_SCRATCH_GUIDED_TRACE, parse_overrides(list(override))
-      )
-      if one.key == GUIDED_ROLLOUT_KEY
+    one
+    for one in apply_overrides(
+      FROM_SCRATCH_GUIDED_TRACE, parse_overrides(list(override))
+    )
+    if one.key == GUIDED_ROLLOUT_KEY
   )
   assert isinstance(entry.task, CodingAgentTask)
   harness = entry.task.harness
@@ -323,7 +323,7 @@ def test_the_shipped_segment_defaults_are_roomy_but_finite():
 def test_a_turns_override_reaches_the_actor_argv():
   """A non-default segment length reaches the process command."""
   harness = _shipped_guided_harness(
-      "--guided_rollout.harness.segmented.turns_per_segment=7"
+    "--guided_rollout.harness.segmented.turns_per_segment=7"
   )
   argv = harness.actor_argv()
 
@@ -333,14 +333,14 @@ def test_a_turns_override_reaches_the_actor_argv():
 def test_a_max_segments_override_reaches_the_loop_ceiling():
   """A non-default segment ceiling changes the branch that stops the loop."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_CUT),
-          _segment(ids=["c"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_CUT),
+      _segment(ids=["c"], subtype=_DONE),
+    ]
   )
   supervision = _shipped_supervision(
-      "--guided_rollout.harness.segmented.max_segments=2"
+    "--guided_rollout.harness.segmented.max_segments=2"
   )
 
   rows = _run(actor, supervision)
@@ -352,21 +352,21 @@ def test_a_max_segments_override_reaches_the_loop_ceiling():
 def test_a_wall_clock_override_reaches_the_loop_ceiling():
   """A non-default wall ceiling changes the branch that stops the loop."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
   supervision = _shipped_supervision(
-      "--guided_rollout.harness.segmented.wall_clock_seconds=1"
+    "--guided_rollout.harness.segmented.wall_clock_seconds=1"
   )
   start = datetime.datetime(2026, 9, 3, tzinfo=datetime.UTC)
   readings = iter([start, start, start + datetime.timedelta(seconds=2)])
 
   rows = _run(
-      actor,
-      supervision,
-      now=lambda: next(readings, start + datetime.timedelta(seconds=2)),
+    actor,
+    supervision,
+    now=lambda: next(readings, start + datetime.timedelta(seconds=2)),
   )
 
   assert len(actor.requests) == 1
@@ -377,13 +377,13 @@ def test_a_wall_clock_override_reaches_the_loop_ceiling():
 def test_a_cost_override_reaches_the_loop_comparison():
   """A non-default cost ceiling is compared with the actor's result event."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT, cost=0.75),
-          _segment(ids=["b"], subtype=_DONE, cost=0.8),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT, cost=0.75),
+      _segment(ids=["b"], subtype=_DONE, cost=0.8),
+    ]
   )
   supervision = _shipped_supervision(
-      "--guided_rollout.harness.segmented.max_cost_usd=0.5"
+    "--guided_rollout.harness.segmented.max_cost_usd=0.5"
   )
 
   rows = _run(actor, supervision)
@@ -397,19 +397,19 @@ def test_a_cooldown_override_reaches_the_policy_factory():
   import dataclasses
 
   supervision = _shipped_supervision(
-      "--guided_rollout.harness.segmented.cooldown=6"
+    "--guided_rollout.harness.segmented.cooldown=6"
   )
   received: list[int] = []
 
   def policy_factory(
-      cooldown: int, _base_url: str, _api_key_env: str
+    cooldown: int, _base_url: str, _api_key_env: str
   ) -> SilentPolicy:
     received.append(cooldown)
     return SilentPolicy()
 
   actor = FakeActor(segments=[_segment(ids=["a"], subtype=_DONE)])
   _ = _run(
-      actor, dataclasses.replace(supervision, policy_factory=policy_factory)
+    actor, dataclasses.replace(supervision, policy_factory=policy_factory)
   )
 
   assert received == [6]
@@ -428,10 +428,10 @@ def test_the_loop_stops_when_the_actor_says_it_is_done():
 def test_a_turn_limited_segment_is_a_cut_and_not_an_ending():
   """The control arm for the test above: the same shape, one field different."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
 
   rows = _run(actor, _supervision())
@@ -464,12 +464,12 @@ def test_the_cost_ceiling_stops_the_loop():
 def test_small_segment_costs_accumulate_to_the_run_ceiling():
   """A run stops when individually cheap segments cross the total ceiling."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT, cost=0.2),
-          _segment(ids=["b"], subtype=_CUT, cost=0.2),
-          _segment(ids=["c"], subtype=_CUT, cost=0.2),
-          _segment(ids=["d"], subtype=_DONE, cost=0.2),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT, cost=0.2),
+      _segment(ids=["b"], subtype=_CUT, cost=0.2),
+      _segment(ids=["c"], subtype=_CUT, cost=0.2),
+      _segment(ids=["d"], subtype=_DONE, cost=0.2),
+    ]
   )
 
   rows = _run(actor, _supervision(max_cost_usd=0.5))
@@ -482,10 +482,10 @@ def test_small_segment_costs_accumulate_to_the_run_ceiling():
 def test_a_cheap_run_is_not_stopped_by_the_cost_ceiling():
   """The control arm: the ceiling must not stop a run that stays under it."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT, cost=0.1),
-          _segment(ids=["b"], subtype=_DONE, cost=0.2),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT, cost=0.1),
+      _segment(ids=["b"], subtype=_DONE, cost=0.2),
+    ]
   )
 
   rows = _run(actor, _supervision(max_cost_usd=0.5))
@@ -515,10 +515,10 @@ def test_a_result_less_segment_after_a_cut_is_not_read_as_another_cut():
   per-segment readings agree, so it passes either way.
   """
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          '{"type": "system", "subtype": "init"}\n',
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      '{"type": "system", "subtype": "init"}\n',
+    ]
   )
 
   rows = _run(actor, _supervision())
@@ -530,7 +530,7 @@ def test_a_result_less_segment_after_a_cut_is_not_read_as_another_cut():
 def test_an_error_ending_stops_the_loop_rather_than_resuming():
   """Only the turn limit is a cut; every other error subtype ends the run."""
   actor = FakeActor(
-      segments=[_segment(ids=["a"], subtype="error_during_execution")]
+    segments=[_segment(ids=["a"], subtype="error_during_execution")]
   )
 
   rows = _run(actor, _supervision())
@@ -547,10 +547,10 @@ def test_an_error_ending_stops_the_loop_rather_than_resuming():
 def test_a_silent_seam_sends_the_neutral_continue():
   """Silence is the ordinary case, and it still has to say something."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
 
   rows = _run(actor, _supervision(neutral_continue="Carry on."))
@@ -562,16 +562,16 @@ def test_a_silent_seam_sends_the_neutral_continue():
 def test_segmented_rows_retain_valid_silent_and_speaking_verdicts():
   """The second runtime records the same diagnostic verdict telemetry."""
   verdicts = [
-      Verdict(
-          off_track=False,
-          reason="on track",
-          running_state="Current checkpoint: inspect",
-      ),
-      Verdict(
-          off_track=True,
-          reason="drifting",
-          running_state="Current checkpoint: test",
-      ),
+    Verdict(
+      off_track=False,
+      reason="on track",
+      running_state="Current checkpoint: inspect",
+    ),
+    Verdict(
+      off_track=True,
+      reason="drifting",
+      running_state="Current checkpoint: test",
+    ),
   ]
 
   def judge(observation: Observation, criterion: Criterion) -> Verdict:
@@ -583,34 +583,34 @@ def test_segmented_rows_retain_valid_silent_and_speaking_verdicts():
     return "look again"
 
   policy = SpeakWhenOffTrack(
-      judge=judge,
-      writer=write,
-      criterion=load_criterion(),
-      budget=1,
-      cooldown=0,
+    judge=judge,
+    writer=write,
+    criterion=load_criterion(),
+    budget=1,
+    cooldown=0,
   )
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_CUT),
-          _segment(ids=["c"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_CUT),
+      _segment(ids=["c"], subtype=_DONE),
+    ]
   )
 
   rows = [
-      row
-      for row in _run(actor, _supervision(policy))
-      if row["kind"] in {LOG_KIND_SILENT, LOG_KIND_SPOKE}
+    row
+    for row in _run(actor, _supervision(policy))
+    if row["kind"] in {LOG_KIND_SILENT, LOG_KIND_SPOKE}
   ]
 
   assert [row["kind"] for row in rows] == [LOG_KIND_SILENT, LOG_KIND_SPOKE]
   assert [(row["off_track"], row["reason"]) for row in rows] == [
-      (False, "on track"),
-      (True, "drifting"),
+    (False, "on track"),
+    (True, "drifting"),
   ]
   assert [row["running_state"] for row in rows] == [
-      "Current checkpoint: inspect",
-      "Current checkpoint: test",
+    "Current checkpoint: inspect",
+    "Current checkpoint: test",
   ]
 
 
@@ -618,19 +618,19 @@ def test_segmented_decision_rows_distinguish_both_guidebook_modes():
   """A guided run's rows say which representation the prompts consumed."""
   legacy = "# Guidebook — legacy\n\n## Stage 1 — inspect\n"
   rubric = (
-      "# Guidebook — current\n\n"
-      "## Supervisor rubric\n\n"
-      "**Checkpoints.** Inspect, then test.\n\n"
-      "## Stage 1 — inspect\n"
+    "# Guidebook — current\n\n"
+    "## Supervisor rubric\n\n"
+    "**Checkpoints.** Inspect, then test.\n\n"
+    "## Stage 1 — inspect\n"
   )
   modes: list[object] = []
 
   for guidebook in (legacy, rubric):
     actor = FakeActor(
-        segments=[
-            _segment(ids=["a"], subtype=_CUT),
-            _segment(ids=["b"], subtype=_DONE),
-        ]
+      segments=[
+        _segment(ids=["a"], subtype=_CUT),
+        _segment(ids=["b"], subtype=_DONE),
+      ]
     )
     rows = _run(actor, _supervision(), guidebook=guidebook)
     silent = next(row for row in rows if row["kind"] == LOG_KIND_SILENT)
@@ -652,24 +652,24 @@ def test_each_judgement_receives_only_the_segment_that_just_completed():
     del criterion
     observations.append(observation)
     return Verdict(
-        off_track=False,
-        reason="on track",
-        running_state=f"Current checkpoint: segment {len(observations)}",
+      off_track=False,
+      reason="on track",
+      running_state=f"Current checkpoint: segment {len(observations)}",
     )
 
   policy = SpeakWhenOffTrack(
-      judge=judge,
-      writer=lambda observation, criterion: "unused",
-      criterion=load_criterion(),
-      budget=1,
-      cooldown=0,
+    judge=judge,
+    writer=lambda observation, criterion: "unused",
+    criterion=load_criterion(),
+    budget=1,
+    cooldown=0,
   )
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_CUT),
-          _segment(ids=["c"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_CUT),
+      _segment(ids=["c"], subtype=_DONE),
+    ]
   )
 
   _ = _run(actor, _supervision(policy))
@@ -683,18 +683,17 @@ def test_a_correction_becomes_the_next_segments_prompt_tagged():
   # Segment 0 emits one assistant event plus its result, so the policy is
   # consulted at cursor 2.
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
   policy = SpeaksAt(cursors=frozenset({2}), text="check the failing test first")
 
   rows = _run(actor, _supervision(policy))
 
   assert actor.requests[1].prompt == (
-      f"<{INTERVENTION_TAG}>\ncheck the failing test first\n"
-      f"</{INTERVENTION_TAG}>"
+    f"<{INTERVENTION_TAG}>\ncheck the failing test first\n</{INTERVENTION_TAG}>"
   )
   spoke = [row for row in rows if row["kind"] == LOG_KIND_SPOKE]
   assert len(spoke) == 1
@@ -704,10 +703,10 @@ def test_a_correction_becomes_the_next_segments_prompt_tagged():
 def test_the_next_segment_resumes_the_session_the_last_one_reported():
   """The session id is read off the terminal event, never assumed."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT, session="abc-123"),
-          _segment(ids=["b"], subtype=_DONE, session="abc-123"),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT, session="abc-123"),
+      _segment(ids=["b"], subtype=_DONE, session="abc-123"),
+    ]
   )
 
   _ = _run(actor, _supervision())
@@ -727,10 +726,10 @@ def test_a_resumed_segment_records_that_the_seam_fabricated_a_record():
   whole of how it is located.
   """
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT, uuid="cut-uuid"),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT, uuid="cut-uuid"),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
 
   rows = _segment_rows(_run(actor, _supervision()))
@@ -760,11 +759,11 @@ def test_a_policy_lapse_is_bounded_to_its_seam_and_the_run_goes_on():
       return None
 
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_CUT),
-          _segment(ids=["c"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_CUT),
+      _segment(ids=["c"], subtype=_DONE),
+    ]
   )
 
   rows = _run(actor, _supervision(LapsingOnce()))
@@ -809,11 +808,11 @@ def test_a_failure_the_policy_did_not_bound_is_a_gap_and_the_run_goes_on():
       return None
 
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_CUT),
-          _segment(ids=["c"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_CUT),
+      _segment(ids=["c"], subtype=_DONE),
+    ]
   )
 
   rows = _run(actor, _supervision(BreaksOnce()))
@@ -839,10 +838,10 @@ def test_a_resumed_segment_is_anchored_at_the_last_message_record():
   attach to.
   """
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT, uuid="result-uuid"),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT, uuid="result-uuid"),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
 
   _ = _run(actor, _supervision())
@@ -859,10 +858,10 @@ def test_a_dirty_seam_is_recorded_and_does_not_stop_the_run():
   and asked for a loop that runs.
   """
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
 
   rows = _segment_rows(_run(actor, _supervision(), wire=_DIRTY_WIRE))
@@ -874,10 +873,10 @@ def test_a_dirty_seam_is_recorded_and_does_not_stop_the_run():
 def test_a_clean_seam_records_nothing_to_report():
   """The control arm: the field must not read as dirty for every wire."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
 
   rows = _segment_rows(_run(actor, _supervision()))
@@ -888,10 +887,10 @@ def test_a_clean_seam_records_nothing_to_report():
 def test_the_guard_can_be_turned_on_and_then_it_stops_the_run():
   """Off by default; on, it raises. Both are asserted so neither is assumed."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
 
   with pytest.raises(DirtySeamError, match="did not hold"):
@@ -901,10 +900,10 @@ def test_the_guard_can_be_turned_on_and_then_it_stops_the_run():
 def test_a_run_without_a_wire_still_runs():
   """No capture to read is not a failure: the seam is recorded, not enforced."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
 
   rows = _segment_rows(_run(actor, _supervision(), wire=None))
@@ -916,14 +915,14 @@ def test_a_run_without_a_wire_still_runs():
 def test_the_plain_resume_path_runs_and_says_which_path_it_took():
   """Both resume flavours are supported; the account says which one ran."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
 
   rows = _segment_rows(
-      _run(actor, _supervision(anchor_resume=False), wire=None)
+    _run(actor, _supervision(anchor_resume=False), wire=None)
   )
 
   assert actor.requests[1].resume_session_id is not None
@@ -934,10 +933,10 @@ def test_the_plain_resume_path_runs_and_says_which_path_it_took():
 def test_an_anchored_run_says_so_on_every_resumed_segment():
   """The control arm for the row above: not False for everything."""
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
 
   rows = _segment_rows(_run(actor, _supervision()))
@@ -957,16 +956,16 @@ def test_every_decision_row_says_which_upstream_the_run_was_pointed_at():
 
   def rows_under(base_url: str) -> list[str]:
     actor = FakeActor(
-        segments=[
-            _segment(ids=["a"], subtype=_CUT),
-            _segment(ids=["b"], subtype=_DONE),
-        ]
+      segments=[
+        _segment(ids=["a"], subtype=_CUT),
+        _segment(ids=["b"], subtype=_DONE),
+      ]
     )
     supervision = dataclasses.replace(_supervision(), base_url=base_url)
     return [
-        str(row["supervisor_base_url"])
-        for row in _run(actor, supervision)
-        if row["kind"] != LOG_KIND_SEGMENT
+      str(row["supervisor_base_url"])
+      for row in _run(actor, supervision)
+      if row["kind"] != LOG_KIND_SEGMENT
     ]
 
   elsewhere = "https://llm.gateway.example.internal/anthropic"
@@ -984,52 +983,52 @@ def test_segmented_decision_rows_record_said_visibility_count_and_digest():
   def judge(observation: Observation, criterion: Criterion) -> Verdict:
     del criterion
     return Verdict(
-        off_track=True,
-        reason="drifting",
-        running_state="Current checkpoint: test",
-        judge_input={
-            "messages": [
-                {"role": "user", "content": f"PROMPT-{observation.cursor}"}
-            ]
-        },
+      off_track=True,
+      reason="drifting",
+      running_state="Current checkpoint: test",
+      judge_input={
+        "messages": [
+          {"role": "user", "content": f"PROMPT-{observation.cursor}"}
+        ]
+      },
     )
 
   policy = SpeakWhenOffTrack(
-      judge=judge,
-      writer=lambda observation, criterion: "look again",
-      criterion=load_criterion(),
-      budget=2,
-      cooldown=0,
-      said_visibility="both",
+    judge=judge,
+    writer=lambda observation, criterion: "look again",
+    criterion=load_criterion(),
+    budget=2,
+    cooldown=0,
+    said_visibility="both",
   )
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_CUT),
-          _segment(ids=["c"], subtype=_CUT),
-          _segment(ids=["d"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_CUT),
+      _segment(ids=["c"], subtype=_CUT),
+      _segment(ids=["d"], subtype=_DONE),
+    ]
   )
 
   rows = [
-      row
-      for row in _run(actor, _supervision(policy))
-      if row["kind"] in {LOG_KIND_SILENT, LOG_KIND_SPOKE}
+    row
+    for row in _run(actor, _supervision(policy))
+    if row["kind"] in {LOG_KIND_SILENT, LOG_KIND_SPOKE}
   ]
 
   assert [row["kind"] for row in rows] == [
-      LOG_KIND_SPOKE,
-      LOG_KIND_SPOKE,
-      LOG_KIND_SILENT,
+    LOG_KIND_SPOKE,
+    LOG_KIND_SPOKE,
+    LOG_KIND_SILENT,
   ]
   assert [row["said_visibility"] for row in rows] == ["both", "both", "both"]
   assert [row["said_count"] for row in rows] == [0, 1, 2]
   digests = [row["judge_prompt_sha256"] for row in rows]
   assert digests == [
-      hashlib.sha256(
-          row["judge_input"]["messages"][0]["content"].encode()
-      ).hexdigest()
-      for row in rows
+    hashlib.sha256(
+      row["judge_input"]["messages"][0]["content"].encode()
+    ).hexdigest()
+    for row in rows
   ]
   assert len(set(digests)) == 3
 
@@ -1041,22 +1040,22 @@ def test_a_segmented_judge_lapse_row_still_carries_the_request_and_digest():
   def transport(payload: Mapping[str, Any]) -> dict[str, Any]:
     payloads.append(dict(payload))
     return {
-        "stop_reason": "end_turn",
-        "content": [{"type": "text", "text": "no tool call"}],
+      "stop_reason": "end_turn",
+      "content": [{"type": "text", "text": "no tool call"}],
     }
 
   policy = supervising_policy(model="m", transport=transport, budget=1)
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
 
   rows = [
-      row
-      for row in _run(actor, _supervision(policy))
-      if row["kind"] == LOG_KIND_LAPSE
+    row
+    for row in _run(actor, _supervision(policy))
+    if row["kind"] == LOG_KIND_LAPSE
   ]
 
   assert len(rows) == 1
@@ -1064,7 +1063,7 @@ def test_a_segmented_judge_lapse_row_still_carries_the_request_and_digest():
   prompt = payloads[0]["messages"][0]["content"]
   assert rows[0]["judge_input"] == payloads[0]
   assert rows[0]["judge_prompt_sha256"] == (
-      hashlib.sha256(prompt.encode()).hexdigest()
+    hashlib.sha256(prompt.encode()).hexdigest()
   )
   assert rows[0]["finish_reason"] == "end_turn"
 
@@ -1089,16 +1088,16 @@ def test_a_segmented_lapse_whose_transport_raised_still_carries_the_request():
 
   policy = supervising_policy(model="m", transport=transport, budget=1)
   actor = FakeActor(
-      segments=[
-          _segment(ids=["a"], subtype=_CUT),
-          _segment(ids=["b"], subtype=_DONE),
-      ]
+    segments=[
+      _segment(ids=["a"], subtype=_CUT),
+      _segment(ids=["b"], subtype=_DONE),
+    ]
   )
 
   rows = [
-      row
-      for row in _run(actor, _supervision(policy))
-      if row["kind"] == LOG_KIND_LAPSE
+    row
+    for row in _run(actor, _supervision(policy))
+    if row["kind"] == LOG_KIND_LAPSE
   ]
 
   assert len(rows) == 1
@@ -1109,7 +1108,7 @@ def test_a_segmented_lapse_whose_transport_raised_still_carries_the_request():
   prompt = payloads[0]["messages"][0]["content"]
   assert rows[0]["judge_input"] == payloads[0]
   assert rows[0]["judge_prompt_sha256"] == (
-      hashlib.sha256(prompt.encode()).hexdigest()
+    hashlib.sha256(prompt.encode()).hexdigest()
   )
 
 
@@ -1122,17 +1121,17 @@ def test_segmented_rows_without_a_request_carry_neither_request_field():
   two mode fields and neither ``judge_input`` nor ``judge_prompt_sha256``.
   """
   quiet = [
-      row
-      for row in _run(
-          FakeActor(
-              segments=[
-                  _segment(ids=["a"], subtype=_CUT),
-                  _segment(ids=["b"], subtype=_DONE),
-              ]
-          ),
-          _supervision(),
-      )
-      if row["kind"] == LOG_KIND_SILENT
+    row
+    for row in _run(
+      FakeActor(
+        segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_DONE),
+        ]
+      ),
+      _supervision(),
+    )
+    if row["kind"] == LOG_KIND_SILENT
   ]
   assert len(quiet) == 1
   assert (quiet[0]["said_visibility"], quiet[0]["said_count"]) == (None, 0)
@@ -1144,28 +1143,28 @@ def test_segmented_rows_without_a_request_carry_neither_request_field():
     raise AssertionError("the judge must not be consulted on empty evidence")
 
   policy = SpeakWhenOffTrack(
-      judge=never_asked,
-      writer=lambda observation, criterion: "unused",
-      criterion=load_criterion(),
-      budget=1,
+    judge=never_asked,
+    writer=lambda observation, criterion: "unused",
+    criterion=load_criterion(),
+    budget=1,
   )
   unjudged = [
-      row
-      for row in _run(
-          FakeActor(
-              segments=[
-                  _segment(ids=[], subtype=_CUT),
-                  _segment(ids=["b"], subtype=_DONE),
-              ]
-          ),
-          _supervision(policy),
-      )
-      if row["kind"] == LOG_KIND_UNJUDGED
+    row
+    for row in _run(
+      FakeActor(
+        segments=[
+          _segment(ids=[], subtype=_CUT),
+          _segment(ids=["b"], subtype=_DONE),
+        ]
+      ),
+      _supervision(policy),
+    )
+    if row["kind"] == LOG_KIND_UNJUDGED
   ]
   assert len(unjudged) == 1
   assert (unjudged[0]["said_visibility"], unjudged[0]["said_count"]) == (
-      "writer",
-      0,
+    "writer",
+    0,
   )
   assert "judge_input" not in unjudged[0]
   assert "judge_prompt_sha256" not in unjudged[0]
@@ -1179,40 +1178,40 @@ def test_a_segmented_writer_lapse_row_keeps_the_valid_verdicts_request():
     payloads.append(dict(payload))
     if "tools" in payload:
       return {
-          "stop_reason": "tool_use",
-          "content": [
-              {
-                  "type": "tool_use",
-                  "id": "toolu_test",
-                  "name": "submit_supervision_verdict",
-                  "input": {
-                      "off_track": True,
-                      "reason": "guessing",
-                      "running_state": "Current checkpoint: inspect",
-                  },
-              }
-          ],
+        "stop_reason": "tool_use",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "toolu_test",
+            "name": "submit_supervision_verdict",
+            "input": {
+              "off_track": True,
+              "reason": "guessing",
+              "running_state": "Current checkpoint: inspect",
+            },
+          }
+        ],
       }
     return {
-        "stop_reason": "end_turn",
-        "content": [{"type": "text", "text": "```python\nfix()\n```"}],
+      "stop_reason": "end_turn",
+      "content": [{"type": "text", "text": "```python\nfix()\n```"}],
     }
 
   policy = supervising_policy(
-      model="m", transport=transport, budget=1, cooldown=0
+    model="m", transport=transport, budget=1, cooldown=0
   )
   rows = [
-      row
-      for row in _run(
-          FakeActor(
-              segments=[
-                  _segment(ids=["a"], subtype=_CUT),
-                  _segment(ids=["b"], subtype=_DONE),
-              ]
-          ),
-          _supervision(policy),
-      )
-      if row["kind"] == LOG_KIND_LAPSE
+    row
+    for row in _run(
+      FakeActor(
+        segments=[
+          _segment(ids=["a"], subtype=_CUT),
+          _segment(ids=["b"], subtype=_DONE),
+        ]
+      ),
+      _supervision(policy),
+    )
+    if row["kind"] == LOG_KIND_LAPSE
   ]
 
   assert len(rows) == 1
@@ -1223,5 +1222,5 @@ def test_a_segmented_writer_lapse_row_keeps_the_valid_verdicts_request():
   assert rows[0]["judge_input"] == payloads[0]
   prompt = payloads[0]["messages"][0]["content"]
   assert rows[0]["judge_prompt_sha256"] == (
-      hashlib.sha256(prompt.encode()).hexdigest()
+    hashlib.sha256(prompt.encode()).hexdigest()
   )

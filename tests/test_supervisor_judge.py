@@ -22,58 +22,58 @@ import pytest
 from swe_lab.conversation import Message, Role, TextBlock
 from swe_lab.trace_synthesis.context_components import SupervisorPromptBuilder
 from swe_lab.trace_synthesis.criterion import (
-    Criterion,
-    CRITERION_PATH,
-    CriterionRejectedError,
-    load_criterion,
+  Criterion,
+  CRITERION_PATH,
+  CriterionRejectedError,
+  load_criterion,
 )
 from swe_lab.trace_synthesis.judge import (
-    Call,
-    JUDGE_INSTRUCTIONS,
-    JUDGE_TOOL,
-    JUDGE_TOOL_NAME,
-    JudgeAnswerError,
-    JudgeTransportError,
-    LOCATE_DEVIATION_INSTRUCTION,
-    messages_transport,
-    ModelJudge,
-    ModelWriter,
-    SAMPLING_KEYS,
-    supervising_policy,
+  Call,
+  JUDGE_INSTRUCTIONS,
+  JUDGE_TOOL,
+  JUDGE_TOOL_NAME,
+  JudgeAnswerError,
+  JudgeTransportError,
+  LOCATE_DEVIATION_INSTRUCTION,
+  messages_transport,
+  ModelJudge,
+  ModelWriter,
+  SAMPLING_KEYS,
+  supervising_policy,
 )
 from swe_lab.trace_synthesis.supervisor import (
-    Intervention,
-    InterventionTooLongError,
-    MAX_INTERVENTION_CHARS,
-    Observation,
-    PolicyLapseError,
-    SaidVisibility,
-    Verdict,
-    WriterOutputRejectedError,
+  Intervention,
+  InterventionTooLongError,
+  MAX_INTERVENTION_CHARS,
+  Observation,
+  PolicyLapseError,
+  SaidVisibility,
+  Verdict,
+  WriterOutputRejectedError,
 )
 
 RUNNING_STATE = "Current checkpoint: inspect the observed failure"
 OFF_TRACK_JSON = json.dumps(
-    {
-        "off_track": True,
-        "reason": "guessing",
-        "running_state": RUNNING_STATE,
-    }
+  {
+    "off_track": True,
+    "reason": "guessing",
+    "running_state": RUNNING_STATE,
+  }
 )
 ON_TRACK_JSON = json.dumps(
-    {
-        "off_track": False,
-        "reason": "fine",
-        "running_state": RUNNING_STATE,
-    }
+  {
+    "off_track": False,
+    "reason": "fine",
+    "running_state": RUNNING_STATE,
+  }
 )
 
 
 def observation(
-    cursor: int = 1,
-    *,
-    task: str = "make the test pass",
-    guidebook: str | None = None,
+  cursor: int = 1,
+  *,
+  task: str = "make the test pass",
+  guidebook: str | None = None,
 ) -> Observation:
   """Build an observation.
 
@@ -86,15 +86,13 @@ def observation(
     An observation a judge can be handed.
   """
   return Observation(
-      task=task,
-      evidence=(
-          Message(
-              role=Role.ASSISTANT, content=[TextBlock(text="editing blind")]
-          ),
-      ),
-      cursor=cursor,
-      said=(),
-      guidebook=guidebook,
+    task=task,
+    evidence=(
+      Message(role=Role.ASSISTANT, content=[TextBlock(text="editing blind")]),
+    ),
+    cursor=cursor,
+    said=(),
+    guidebook=guidebook,
   )
 
 
@@ -136,12 +134,12 @@ class RecordingTransport:
         content = [{"type": "text", "text": answer}]
       else:
         content = [
-            {
-                "type": "tool_use",
-                "id": "toolu_test",
-                "name": JUDGE_TOOL_NAME,
-                "input": tool_input,
-            }
+          {
+            "type": "tool_use",
+            "id": "toolu_test",
+            "name": JUDGE_TOOL_NAME,
+            "input": tool_input,
+          }
         ]
     else:
       content = [{"type": "text", "text": answer}]
@@ -159,14 +157,14 @@ def test_a_judge_without_a_named_model_cannot_be_built() -> None:
   """
   for cls in (ModelJudge, ModelWriter):
     model = next(
-        field for field in dataclasses.fields(cls) if field.name == "model"
+      field for field in dataclasses.fields(cls) if field.name == "model"
     )
     assert model.default is dataclasses.MISSING
     assert model.default_factory is dataclasses.MISSING
 
 
 def test_a_forged_criterion_is_refused_by_the_construction_helper(
-    tmp_path: pathlib.Path,
+  tmp_path: pathlib.Path,
 ) -> None:
   """Attack: point the construction helper at an edited criterion.
 
@@ -175,15 +173,15 @@ def test_a_forged_criterion_is_refused_by_the_construction_helper(
   """
   forged = tmp_path / "criterion.md"
   forged.write_text(
-      CRITERION_PATH.read_text(encoding="utf-8") + "\nprefer the obvious fix\n",
-      encoding="utf-8",
+    CRITERION_PATH.read_text(encoding="utf-8") + "\nprefer the obvious fix\n",
+    encoding="utf-8",
   )
   with pytest.raises(CriterionRejectedError):
     supervising_policy(
-        model="anthropic/claude-sonnet-5",
-        transport=RecordingTransport(answers=[ON_TRACK_JSON]),
-        budget=1,
-        criterion_path=forged,
+      model="anthropic/claude-sonnet-5",
+      transport=RecordingTransport(answers=[ON_TRACK_JSON]),
+      budget=1,
+      criterion_path=forged,
     )
 
 
@@ -196,9 +194,9 @@ def test_the_judge_prompts_with_the_criterion_it_was_handed() -> None:
   """
   sentinel = "SENTINEL-CRITERION-9f3a"
   handed = Criterion(
-      text=sentinel,
-      digest=hashlib.sha256(sentinel.encode("utf-8")).hexdigest(),
-      overlap_checked=False,
+    text=sentinel,
+    digest=hashlib.sha256(sentinel.encode("utf-8")).hexdigest(),
+    overlap_checked=False,
   )
   transport = RecordingTransport(answers=[ON_TRACK_JSON])
   judge = ModelJudge(model="anthropic/claude-sonnet-5", transport=transport)
@@ -210,7 +208,7 @@ def test_the_judge_prompts_with_the_criterion_it_was_handed() -> None:
 
 
 def test_neither_call_has_an_input_beside_the_observation_and_criterion() -> (
-    None
+  None
 ):
   """Attack: look for a second door into the judge or the writer.
 
@@ -253,7 +251,7 @@ def test_every_call_records_what_answered_it_and_what_was_not_sent() -> None:
   `ModelWriter` silently stopped recording its half.
   """
   transport = RecordingTransport(
-      answers=[ON_TRACK_JSON], model="served/actual", finish_reason="stop"
+    answers=[ON_TRACK_JSON], model="served/actual", finish_reason="stop"
   )
   judge = ModelJudge(model="requested/alias", transport=transport)
   judge(observation(), load_criterion())
@@ -268,9 +266,9 @@ def test_every_call_records_what_answered_it_and_what_was_not_sent() -> None:
   assert call.finish_reason == "stop"
 
   writer_transport = RecordingTransport(
-      answers=["look at the error"],
-      model="served/actual",
-      finish_reason="stop",
+    answers=["look at the error"],
+    model="served/actual",
+    finish_reason="stop",
   )
   writer = ModelWriter(model="requested/alias", transport=writer_transport)
   writer(observation(), load_criterion())
@@ -289,46 +287,46 @@ def test_model_calls_use_the_anthropic_messages_wire_shape() -> None:
 
   payload = transport.payloads[0]
   assert payload == {
-      "model": "claude-sonnet-5",
-      "max_tokens": judge.max_tokens,
-      "system": JUDGE_INSTRUCTIONS,
-      "messages": [
-          {
-              "role": "user",
-              "content": payload["messages"][0]["content"],
-          }
-      ],
-      "tools": [
-          {
-              "name": "submit_supervision_verdict",
-              "description": "Submit the supervision verdict.",
-              "input_schema": {
-                  "type": "object",
-                  "properties": {
-                      "off_track": {"type": "boolean"},
-                      "reason": {"type": "string"},
-                      "running_state": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 4_000,
-                      },
-                      "deviation_started_steps_ago": {
-                          "anyOf": [{"type": "integer"}, {"type": "null"}]
-                      },
-                  },
-                  "required": [
-                      "off_track",
-                      "reason",
-                      "running_state",
-                  ],
-                  "additionalProperties": False,
-              },
-          }
-      ],
-      "tool_choice": {
-          "type": "tool",
-          "name": "submit_supervision_verdict",
-      },
+    "model": "claude-sonnet-5",
+    "max_tokens": judge.max_tokens,
+    "system": JUDGE_INSTRUCTIONS,
+    "messages": [
+      {
+        "role": "user",
+        "content": payload["messages"][0]["content"],
+      }
+    ],
+    "tools": [
+      {
+        "name": "submit_supervision_verdict",
+        "description": "Submit the supervision verdict.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "off_track": {"type": "boolean"},
+            "reason": {"type": "string"},
+            "running_state": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4_000,
+            },
+            "deviation_started_steps_ago": {
+              "anyOf": [{"type": "integer"}, {"type": "null"}]
+            },
+          },
+          "required": [
+            "off_track",
+            "reason",
+            "running_state",
+          ],
+          "additionalProperties": False,
+        },
+      }
+    ],
+    "tool_choice": {
+      "type": "tool",
+      "name": "submit_supervision_verdict",
+    },
   }
 
 
@@ -338,9 +336,9 @@ def test_running_state_is_a_required_bounded_tool_field() -> None:
 
   assert "running_state" in schema["required"]
   assert schema["properties"]["running_state"] == {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 4_000,
+    "type": "string",
+    "minLength": 1,
+    "maxLength": 4_000,
   }
 
 
@@ -354,22 +352,22 @@ Current plan: inspect the caller
 Unresolved contradictions or blockers: parser accepts the control input"""
   state_two = state_one.replace("inspect the caller", "compare both inputs")
   transport = RecordingTransport(
-      answers=[
-          json.dumps(
-              {
-                  "off_track": False,
-                  "reason": "still investigating",
-                  "running_state": state_one,
-              }
-          ),
-          json.dumps(
-              {
-                  "off_track": False,
-                  "reason": "comparison in progress",
-                  "running_state": state_two,
-              }
-          ),
-      ]
+    answers=[
+      json.dumps(
+        {
+          "off_track": False,
+          "reason": "still investigating",
+          "running_state": state_one,
+        }
+      ),
+      json.dumps(
+        {
+          "off_track": False,
+          "reason": "comparison in progress",
+          "running_state": state_two,
+        }
+      ),
+    ]
   )
   policy = supervising_policy(model="m", transport=transport, budget=0)
 
@@ -386,35 +384,35 @@ Unresolved contradictions or blockers: parser accepts the control input"""
 
 
 def test_running_state_update_instructions_are_independently_replaceable() -> (
-    None
+  None
 ):
   """The update text changes without replacing the judge system prompt."""
   update_instructions = "UPDATE-STATE-ONLY-sentinel\nKeep the observed error."
   answer = json.dumps(
-      {
-          "off_track": False,
-          "reason": "fine",
-          "running_state": "Current checkpoint: inspect",
-      }
+    {
+      "off_track": False,
+      "reason": "fine",
+      "running_state": "Current checkpoint: inspect",
+    }
   )
   transport = RecordingTransport(answers=[answer])
   policy = supervising_policy(
-      model="m",
-      transport=transport,
-      budget=0,
-      running_state_instructions=update_instructions,
+    model="m",
+    transport=transport,
+    budget=0,
+    running_state_instructions=update_instructions,
   )
 
   _ = policy.consider(observation())
 
   assert transport.payloads[0]["system"] == JUDGE_INSTRUCTIONS
   assert transport.payloads[0]["messages"][0]["content"].endswith(
-      f"# Decision\n\n{update_instructions}\n"
+    f"# Decision\n\n{update_instructions}\n"
   )
 
 
 def test_missing_running_state_and_invalid_verdict_have_distinct_lapses() -> (
-    None
+  None
 ):
   """Two strict failures need different recorded reasons to be diagnosable.
 
@@ -426,9 +424,9 @@ def test_missing_running_state_and_invalid_verdict_have_distinct_lapses() -> (
 
   def lapse(answer: str) -> str:
     policy = supervising_policy(
-        model="m",
-        transport=RecordingTransport(answers=[answer]),
-        budget=0,
+      model="m",
+      transport=RecordingTransport(answers=[answer]),
+      budget=0,
     )
     with pytest.raises(PolicyLapseError) as raised:
       _ = policy.consider(observation())
@@ -436,8 +434,8 @@ def test_missing_running_state_and_invalid_verdict_have_distinct_lapses() -> (
 
   missing = lapse('{"off_track": false, "reason": "fine"}')
   invalid_verdict = lapse(
-      '{"off_track": 0, "reason": "fine",'
-      ' "running_state": "Current checkpoint: inspect"}'
+    '{"off_track": 0, "reason": "fine",'
+    ' "running_state": "Current checkpoint: inspect"}'
   )
 
   assert "running_state" in missing
@@ -448,21 +446,21 @@ def test_missing_running_state_and_invalid_verdict_have_distinct_lapses() -> (
 def test_an_overlong_running_state_is_rejected_not_silently_truncated() -> None:
   """The state bound is a loud failure, not an invisible loss of facts."""
   answer = json.dumps(
-      {
-          "off_track": False,
-          "reason": "fine",
-          "running_state": "x" * 4_001,
-      }
+    {
+      "off_track": False,
+      "reason": "fine",
+      "running_state": "x" * 4_001,
+    }
   )
 
   with pytest.raises(JudgeAnswerError, match="running_state.*4,000"):
     _ = ModelJudge(model="m", transport=RecordingTransport(answers=[answer]))(
-        observation(), load_criterion()
+      observation(), load_criterion()
     )
 
 
 def test_writer_receives_updated_state_verdict_and_only_recent_evidence() -> (
-    None
+  None
 ):
   """The writer gets the decision context without the complete old trace."""
   updated_state = """Current checkpoint: compare parser inputs
@@ -472,33 +470,29 @@ Tests, errors, and other established facts: test_parser fails
 Current plan: inspect normalization
 Unresolved contradictions or blockers: failure remains"""
   transport = RecordingTransport(
-      answers=[
-          json.dumps(
-              {
-                  "off_track": True,
-                  "reason": "the old assumption still drives the edit",
-                  "running_state": updated_state,
-              }
-          ),
-          "compare the observed parser inputs again",
-      ]
+    answers=[
+      json.dumps(
+        {
+          "off_track": True,
+          "reason": "the old assumption still drives the edit",
+          "running_state": updated_state,
+        }
+      ),
+      "compare the observed parser inputs again",
+    ]
   )
   policy = supervising_policy(
-      model="m", transport=transport, budget=1, cooldown=0, window=1
+    model="m", transport=transport, budget=1, cooldown=0, window=1
   )
   observed = Observation(
-      task="make the parser test pass",
-      evidence=(
-          Message(
-              role=Role.ASSISTANT, content=[TextBlock(text="OLD-EVIDENCE")]
-          ),
-          Message(
-              role=Role.ASSISTANT, content=[TextBlock(text="LATEST-EVIDENCE")]
-          ),
-      ),
-      cursor=2,
-      said=(Intervention(text="PRIOR-INTERVENTION"),),
-      guidebook="GUIDEBOOK-CHECKPOINT",
+    task="make the parser test pass",
+    evidence=(
+      Message(role=Role.ASSISTANT, content=[TextBlock(text="OLD-EVIDENCE")]),
+      Message(role=Role.ASSISTANT, content=[TextBlock(text="LATEST-EVIDENCE")]),
+    ),
+    cursor=2,
+    said=(Intervention(text="PRIOR-INTERVENTION"),),
+    guidebook="GUIDEBOOK-CHECKPOINT",
   )
 
   _ = policy.consider(observed)
@@ -512,16 +506,16 @@ Unresolved contradictions or blockers: failure remains"""
   assert "# Judge verdict" in writer_prompt
   structured = json.loads(writer_prompt.split("# Judge verdict\n\n", 1)[1])
   assert structured == {
-      "off_track": True,
-      "reason": "the old assumption still drives the edit",
-      "running_state": updated_state,
+    "off_track": True,
+    "reason": "the old assumption still drives the edit",
+    "running_state": updated_state,
   }
 
 
 def test_one_matching_tool_use_constructs_a_verdict() -> None:
   """A valid matching tool call is the judge's only usable answer shape."""
   judge = ModelJudge(
-      model="m", transport=RecordingTransport(answers=[OFF_TRACK_JSON])
+    model="m", transport=RecordingTransport(answers=[OFF_TRACK_JSON])
   )
 
   verdict = judge(observation(), load_criterion())
@@ -529,16 +523,16 @@ def test_one_matching_tool_use_constructs_a_verdict() -> None:
   assert verdict.off_track is True
   assert verdict.reason == "guessing"
   assert judge.calls[0].raw == [
-      {
-          "type": "tool_use",
-          "id": "toolu_test",
-          "name": "submit_supervision_verdict",
-          "input": {
-              "off_track": True,
-              "reason": "guessing",
-              "running_state": RUNNING_STATE,
-          },
-      }
+    {
+      "type": "tool_use",
+      "id": "toolu_test",
+      "name": "submit_supervision_verdict",
+      "input": {
+        "off_track": True,
+        "reason": "guessing",
+        "running_state": RUNNING_STATE,
+      },
+    }
   ]
 
 
@@ -561,13 +555,13 @@ def test_a_missing_tool_call_is_unusable() -> None:
 def test_duplicate_matching_tool_calls_are_unusable() -> None:
   """Taking the first matching call would silently weaken exactly-one."""
   tool_use = {
-      "type": "tool_use",
-      "id": "toolu_one",
-      "name": "submit_supervision_verdict",
-      "input": {
-          "off_track": False,
-          "reason": "fine",
-      },
+    "type": "tool_use",
+    "id": "toolu_one",
+    "name": "submit_supervision_verdict",
+    "input": {
+      "off_track": False,
+      "reason": "fine",
+    },
   }
   transport = RecordingTransport(answers=[[tool_use, dict(tool_use)]])
 
@@ -578,19 +572,19 @@ def test_duplicate_matching_tool_calls_are_unusable() -> None:
 def test_a_tool_call_with_the_wrong_name_is_unusable() -> None:
   """Only the tool declared by the judge may carry its verdict."""
   transport = RecordingTransport(
-      answers=[
-          [
-              {
-                  "type": "tool_use",
-                  "id": "toolu_wrong",
-                  "name": "other_tool",
-                  "input": {
-                      "off_track": False,
-                      "reason": "fine",
-                  },
-              }
-          ]
+    answers=[
+      [
+        {
+          "type": "tool_use",
+          "id": "toolu_wrong",
+          "name": "other_tool",
+          "input": {
+            "off_track": False,
+            "reason": "fine",
+          },
+        }
       ]
+    ]
   )
 
   with pytest.raises(JudgeAnswerError, match="exactly one"):
@@ -598,37 +592,37 @@ def test_a_tool_call_with_the_wrong_name_is_unusable() -> None:
 
 
 @pytest.mark.parametrize(
-    "tool_input",
-    [
-        {"off_track": False},
-        {
-            "off_track": False,
-            "reason": "fine",
-            "unexpected": "field",
-        },
-        {"off_track": 0, "reason": "fine"},
-        {"off_track": False, "reason": 1},
-        {
-            "off_track": False,
-            "reason": "fine",
-            "deviation_started_steps_ago": "3",
-        },
-        [False, False, "fine"],
-    ],
+  "tool_input",
+  [
+    {"off_track": False},
+    {
+      "off_track": False,
+      "reason": "fine",
+      "unexpected": "field",
+    },
+    {"off_track": 0, "reason": "fine"},
+    {"off_track": False, "reason": 1},
+    {
+      "off_track": False,
+      "reason": "fine",
+      "deviation_started_steps_ago": "3",
+    },
+    [False, False, "fine"],
+  ],
 )
 def test_malformed_tool_input_is_unusable(tool_input: Any) -> None:
   """Local validation rejects malformed input even if a gateway does not."""
   transport = RecordingTransport(
-      answers=[
-          [
-              {
-                  "type": "tool_use",
-                  "id": "toolu_bad_input",
-                  "name": "submit_supervision_verdict",
-                  "input": tool_input,
-              }
-          ]
+    answers=[
+      [
+        {
+          "type": "tool_use",
+          "id": "toolu_bad_input",
+          "name": "submit_supervision_verdict",
+          "input": tool_input,
+        }
       ]
+    ]
   )
 
   with pytest.raises(JudgeAnswerError, match="unusable judge answer"):
@@ -647,16 +641,16 @@ def test_a_self_correcting_answer_is_unusable_not_ignored() -> None:
   """
   assert "self_correcting" not in JUDGE_TOOL["input_schema"]["properties"]
   transport = RecordingTransport(
-      answers=[
-          json.dumps(
-              {
-                  "off_track": True,
-                  "self_correcting": True,
-                  "reason": "guessing",
-                  "running_state": RUNNING_STATE,
-              }
-          )
-      ]
+    answers=[
+      json.dumps(
+        {
+          "off_track": True,
+          "self_correcting": True,
+          "reason": "guessing",
+          "running_state": RUNNING_STATE,
+        }
+      )
+    ]
   )
 
   with pytest.raises(JudgeAnswerError, match="unexpected.*self_correcting"):
@@ -666,14 +660,14 @@ def test_a_self_correcting_answer_is_unusable_not_ignored() -> None:
 def test_boolean_deviation_start_is_unusable_not_an_integer() -> None:
   """A boolean cannot wear an integer measurement's clothes."""
   answer = (
-      '{"off_track": true, "reason": "guessing",'
-      f' "running_state": "{RUNNING_STATE}",'
-      ' "deviation_started_steps_ago": true}'
+    '{"off_track": true, "reason": "guessing",'
+    f' "running_state": "{RUNNING_STATE}",'
+    ' "deviation_started_steps_ago": true}'
   )
 
   with pytest.raises(JudgeAnswerError, match="integer or null"):
     ModelJudge(model="m", transport=RecordingTransport(answers=[answer]))(
-        observation(), load_criterion()
+      observation(), load_criterion()
     )
 
 
@@ -690,11 +684,11 @@ def test_an_unusable_judge_answer_is_never_retried() -> None:
 def test_the_writer_ignores_a_leading_non_text_block() -> None:
   """A usable text block need not be the response's first block."""
   content = [
-      {"type": "thinking", "thinking": "consider the evidence"},
-      {"type": "text", "text": "Check the failed assertion before editing."},
+    {"type": "thinking", "thinking": "consider the evidence"},
+    {"type": "text", "text": "Check the failed assertion before editing."},
   ]
   writer = ModelWriter(
-      model="m", transport=RecordingTransport(answers=[content])
+    model="m", transport=RecordingTransport(answers=[content])
   )
 
   line = writer(observation(), load_criterion())
@@ -703,14 +697,14 @@ def test_the_writer_ignores_a_leading_non_text_block() -> None:
 
 
 def test_a_missing_writer_text_block_is_one_lapse_and_is_never_retried() -> (
-    None
+  None
 ):
   """A completed response without text is bounded to this one boundary."""
   transport = RecordingTransport(
-      answers=[
-          OFF_TRACK_JSON,
-          [{"type": "thinking", "thinking": "no final answer"}],
-      ]
+    answers=[
+      OFF_TRACK_JSON,
+      [{"type": "thinking", "thinking": "no final answer"}],
+    ]
   )
   policy = supervising_policy(model="m", transport=transport, budget=1)
 
@@ -723,12 +717,12 @@ def test_a_missing_writer_text_block_is_one_lapse_and_is_never_retried() -> (
 def test_duplicate_writer_text_blocks_are_unusable() -> None:
   """Taking the first text block would silently weaken exactly-one."""
   transport = RecordingTransport(
-      answers=[
-          [
-              {"type": "text", "text": "first"},
-              {"type": "text", "text": "second"},
-          ]
+    answers=[
+      [
+        {"type": "text", "text": "first"},
+        {"type": "text", "text": "second"},
       ]
+    ]
   )
 
   with pytest.raises(ValueError, match="expected exactly one text block"):
@@ -746,8 +740,8 @@ def test_a_non_string_writer_text_block_is_unusable() -> None:
 def test_writer_content_must_be_a_list() -> None:
   """The writer validates the response container before selecting a block."""
   writer = ModelWriter(
-      model="m",
-      transport=lambda _: {"content": {"type": "text", "text": "line"}},
+    model="m",
+    transport=lambda _: {"content": {"type": "text", "text": "line"}},
   )
 
   with pytest.raises(ValueError, match="expected a content list"):
@@ -757,11 +751,11 @@ def test_writer_content_must_be_a_list() -> None:
 def test_an_unusable_writer_answer_keeps_raw_response_provenance() -> None:
   """Extraction failure cannot erase the response that explains the lapse."""
   content = [
-      {"type": "thinking", "thinking": "considering"},
-      {"type": "text", "text": 7},
+    {"type": "thinking", "thinking": "considering"},
+    {"type": "text", "text": 7},
   ]
   writer = ModelWriter(
-      model="m", transport=RecordingTransport(answers=[content])
+    model="m", transport=RecordingTransport(answers=[content])
   )
 
   with pytest.raises(ValueError):
@@ -773,11 +767,11 @@ def test_an_unusable_writer_answer_keeps_raw_response_provenance() -> None:
 def test_an_unusable_writer_answer_keeps_the_stop_reason() -> None:
   """The response ending remains readable when text extraction fails."""
   writer = ModelWriter(
-      model="m",
-      transport=RecordingTransport(
-          answers=[[{"type": "text", "text": 7}]],
-          finish_reason="max_tokens",
-      ),
+    model="m",
+    transport=RecordingTransport(
+      answers=[[{"type": "text", "text": 7}]],
+      finish_reason="max_tokens",
+    ),
   )
 
   with pytest.raises(ValueError):
@@ -787,7 +781,7 @@ def test_an_unusable_writer_answer_keeps_the_stop_reason() -> None:
 
 
 def test_a_token_budget_lapse_is_recorded_differently_from_a_bad_answer() -> (
-    None
+  None
 ):
   """`supervisor.jsonl` must not fold these two failures into one lapse.
 
@@ -808,19 +802,19 @@ def test_a_token_budget_lapse_is_recorded_differently_from_a_bad_answer() -> (
 
   def lapse(transport: RecordingTransport) -> PolicyLapseError:
     policy = supervising_policy(
-        model="anthropic/claude-sonnet-5", transport=transport, budget=1
+      model="anthropic/claude-sonnet-5", transport=transport, budget=1
     )
     with pytest.raises(PolicyLapseError) as raised:
       _ = policy.consider(observation())
     return raised.value
 
   budget = lapse(
-      RecordingTransport(
-          answers=['{"off_track": tru'], finish_reason="max_tokens"
-      )
+    RecordingTransport(
+      answers=['{"off_track": tru'], finish_reason="max_tokens"
+    )
   )
   bad_answer = lapse(
-      RecordingTransport(answers=["not json at all"], finish_reason="stop")
+    RecordingTransport(answers=["not json at all"], finish_reason="stop")
   )
 
   assert budget.finish_reason == "max_tokens"
@@ -837,14 +831,14 @@ def test_an_over_long_line_from_the_writer_is_rejected_not_truncated() -> None:
   """
   transport = RecordingTransport(answers=["x" * (MAX_INTERVENTION_CHARS + 1)])
   policy = supervising_policy(
-      model="anthropic/claude-sonnet-5",
-      transport=transport,
-      budget=1,
-      cooldown=0,
+    model="anthropic/claude-sonnet-5",
+    transport=transport,
+    budget=1,
+    cooldown=0,
   )
   policy.judge = ModelJudge(
-      model="anthropic/claude-sonnet-5",
-      transport=RecordingTransport(answers=[OFF_TRACK_JSON]),
+    model="anthropic/claude-sonnet-5",
+    transport=RecordingTransport(answers=[OFF_TRACK_JSON]),
   )
 
   with pytest.raises(PolicyLapseError) as raised:
@@ -856,10 +850,10 @@ def test_an_over_long_line_from_the_writer_is_rejected_not_truncated() -> None:
 def _writer_lapse(text: str, *, guidebook: str | None = None) -> Exception:
   """Return the bounded cause produced by one off-track writer answer."""
   policy = supervising_policy(
-      model="model",
-      transport=RecordingTransport(answers=[OFF_TRACK_JSON, text]),
-      budget=1,
-      cooldown=0,
+    model="model",
+    transport=RecordingTransport(answers=[OFF_TRACK_JSON, text]),
+    budget=1,
+    cooldown=0,
   )
   with pytest.raises(PolicyLapseError) as raised:
     policy.consider(observation(guidebook=guidebook))
@@ -901,47 +895,47 @@ def test_an_eight_word_guidebook_copy_from_the_writer_is_rejected() -> None:
   """Verbatim guidebook copying is rejected without parsing its sections."""
   copied = "compare the parsed value against the original request boundary"
   cause = _writer_lapse(
-      f"Perhaps {copied} before continuing.",
-      guidebook=f"**Justification.** You can {copied} to explain the failure.",
+    f"Perhaps {copied} before continuing.",
+    guidebook=f"**Justification.** You can {copied} to explain the failure.",
   )
   assert isinstance(cause, WriterOutputRejectedError)
   assert "eight-word guidebook shingle" in str(cause)
   assert _accepted_writer_line(
-      "compare the parsed value against the original",
-      guidebook=f"You can {copied} to explain the failure.",
+    "compare the parsed value against the original",
+    guidebook=f"You can {copied} to explain the failure.",
   )
 
 
 def _accepted_writer_line(text: str, *, guidebook: str | None = None) -> bool:
   """Return whether a single off-track call emits the candidate line."""
   policy = supervising_policy(
-      model="model",
-      transport=RecordingTransport(answers=[OFF_TRACK_JSON, text]),
-      budget=1,
-      cooldown=0,
+    model="model",
+    transport=RecordingTransport(answers=[OFF_TRACK_JSON, text]),
+    budget=1,
+    cooldown=0,
   )
   intervention = policy.consider(observation(guidebook=guidebook))
   return isinstance(intervention, Intervention) and intervention.text == text
 
 
 @pytest.mark.parametrize(
-    "line",
-    [
-        "Could the observed branch mean the assumption deserves another look?",
-        "Maybe compare the caller with `src/parser/request.py` once more.",
-    ],
+  "line",
+  [
+    "Could the observed branch mean the assumption deserves another look?",
+    "Maybe compare the caller with `src/parser/request.py` once more.",
+  ],
 )
 def test_shallow_writer_gates_allow_directional_prose_and_inline_paths(
-    line: str,
+  line: str,
 ) -> None:
   """The controls: useful short prose is not rejected wholesale."""
   transport = RecordingTransport(answers=[OFF_TRACK_JSON, line])
   policy = supervising_policy(
-      model="model", transport=transport, budget=1, cooldown=0
+    model="model", transport=transport, budget=1, cooldown=0
   )
 
   intervention = policy.consider(
-      observation(guidebook="A different guidebook phrase is present here.")
+    observation(guidebook="A different guidebook phrase is present here.")
   )
 
   assert isinstance(intervention, Intervention)
@@ -955,10 +949,10 @@ def test_a_non_boolean_verdict_field_is_unusable_not_coerced() -> None:
   One request, then rejection.
   """
   transport = RecordingTransport(
-      answers=[
-          '{"off_track": "false", "reason": "x",'
-          f' "running_state": "{RUNNING_STATE}"}}'
-      ]
+    answers=[
+      '{"off_track": "false", "reason": "x",'
+      f' "running_state": "{RUNNING_STATE}"}}'
+    ]
   )
   judge = ModelJudge(model="anthropic/claude-sonnet-5", transport=transport)
 
@@ -975,10 +969,10 @@ def test_the_built_policy_hands_its_criterion_to_both_model_calls() -> None:
   """
   transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look at the error"])
   built = supervising_policy(
-      model="anthropic/claude-sonnet-5",
-      transport=transport,
-      budget=1,
-      cooldown=0,
+    model="anthropic/claude-sonnet-5",
+    transport=transport,
+    budget=1,
+    cooldown=0,
   )
   built.consider(observation())
 
@@ -993,22 +987,22 @@ def test_a_legacy_guidebook_reaches_both_model_calls_unchanged() -> None:
   guidebook = "GUIDEBOOK-SENTINEL-4d68\n\n## Stage 1\n\nComplete text."
   transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])
   built = supervising_policy(
-      model="anthropic/claude-sonnet-5",
-      transport=transport,
-      budget=1,
-      cooldown=0,
+    model="anthropic/claude-sonnet-5",
+    transport=transport,
+    budget=1,
+    cooldown=0,
   )
   built.consider(observation(guidebook=guidebook))
 
   assert len(transport.payloads) == 2
   for payload in transport.payloads:
     assert (
-        f"# Guidebook\n\n{guidebook}\n\n" in payload["messages"][0]["content"]
+      f"# Guidebook\n\n{guidebook}\n\n" in payload["messages"][0]["content"]
     )
 
 
 def test_the_compact_rubric_reaches_both_model_calls_without_the_tutorial() -> (
-    None
+  None
 ):
   """Finding a rubric in the artifact is not proof the models received it."""
   rubric_sentinel = "RUBRIC-SENTINEL-7d21"
@@ -1044,10 +1038,10 @@ def test_the_compact_rubric_reaches_both_model_calls_without_the_tutorial() -> (
 """
   transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])
   built = supervising_policy(
-      model="anthropic/claude-sonnet-5",
-      transport=transport,
-      budget=1,
-      cooldown=0,
+    model="anthropic/claude-sonnet-5",
+    transport=transport,
+    budget=1,
+    cooldown=0,
   )
 
   built.consider(observation(guidebook=guidebook))
@@ -1084,32 +1078,32 @@ def test_anthropic_transport_sends_the_native_endpoint_headers_and_body():
     return io.BytesIO(json.dumps({"content": [{"text": "{}"}]}).encode())
 
   with (
-      mock.patch.dict(os.environ, {"CUSTOM_ANTHROPIC_KEY": sentinel}),
-      mock.patch.object(urllib.request, "urlopen", fake_urlopen),
+    mock.patch.dict(os.environ, {"CUSTOM_ANTHROPIC_KEY": sentinel}),
+    mock.patch.object(urllib.request, "urlopen", fake_urlopen),
   ):
     answer = messages_transport(
-        {"model": "m", "system": "rules", "messages": []},
-        base_url="https://gateway.example/anthropic",
-        api_key_env="CUSTOM_ANTHROPIC_KEY",
+      {"model": "m", "system": "rules", "messages": []},
+      base_url="https://gateway.example/anthropic",
+      api_key_env="CUSTOM_ANTHROPIC_KEY",
     )
 
   header_values = [
-      value
-      for name, value in captured["headers"].items()
-      if name.lower() == "x-api-key"
+    value
+    for name, value in captured["headers"].items()
+    if name.lower() == "x-api-key"
   ]
   assert header_values == [sentinel]
   version_values = [
-      value
-      for name, value in captured["headers"].items()
-      if name.lower() == "anthropic-version"
+    value
+    for name, value in captured["headers"].items()
+    if name.lower() == "anthropic-version"
   ]
   assert version_values == ["2023-06-01"]
   assert captured["url"] == "https://gateway.example/anthropic/v1/messages"
   assert json.loads(captured["body"]) == {
-      "model": "m",
-      "system": "rules",
-      "messages": [],
+    "model": "m",
+    "system": "rules",
+    "messages": [],
   }
   assert sentinel not in captured["url"]
   assert sentinel not in captured["body"]
@@ -1125,13 +1119,13 @@ def test_a_missing_provider_key_says_so_without_naming_a_value():
   empty" is exactly the case where a helpful echo prints whatever was there.
   """
   with (
-      mock.patch.dict(os.environ, {"CUSTOM_PROVIDER_KEY": ""}),
-      pytest.raises(RuntimeError, match="missing credential") as caught,
+    mock.patch.dict(os.environ, {"CUSTOM_PROVIDER_KEY": ""}),
+    pytest.raises(RuntimeError, match="missing credential") as caught,
   ):
     _ = messages_transport(
-        {"model": "m"},
-        base_url="https://api.example",
-        api_key_env="CUSTOM_PROVIDER_KEY",
+      {"model": "m"},
+      base_url="https://api.example",
+      api_key_env="CUSTOM_PROVIDER_KEY",
     )
   assert "CUSTOM_PROVIDER_KEY" in str(caught.value)
 
@@ -1170,7 +1164,7 @@ else.
 """
   transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])
   built = supervising_policy(
-      model="m", transport=transport, budget=1, cooldown=0
+    model="m", transport=transport, budget=1, cooldown=0
   )
 
   _ = built.consider(observation())
@@ -1188,21 +1182,21 @@ def test_default_guided_model_system_instructions_are_pinned() -> None:
   """Literal digests pin both guided system requests when overrides are None."""
   transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])
   built = supervising_policy(
-      model="m", transport=transport, budget=1, cooldown=0
+    model="m", transport=transport, budget=1, cooldown=0
   )
 
   _ = built.consider(observation(guidebook="guidebook"))
 
   assert len(transport.payloads) == 2
   assert hashlib.sha256(
-      transport.payloads[0]["system"].encode()
+    transport.payloads[0]["system"].encode()
   ).hexdigest() == (
-      "600525d94f9d8cd5b2a8d6457974d772ca70d90ecf731525200b1020aa91af91"
+    "600525d94f9d8cd5b2a8d6457974d772ca70d90ecf731525200b1020aa91af91"
   )
   assert hashlib.sha256(
-      transport.payloads[1]["system"].encode()
+    transport.payloads[1]["system"].encode()
   ).hexdigest() == (
-      "56135a93e8bd72a72f2ec53fd4d4d6314cfb80dbae4115f946ed1699302c7613"
+    "56135a93e8bd72a72f2ec53fd4d4d6314cfb80dbae4115f946ed1699302c7613"
   )
 
 
@@ -1234,7 +1228,7 @@ def test_a_writer_uses_override_instructions_verbatim() -> None:
   instructions = "WRITER-OVERRIDE-sentinel\nKeep this exact trailing line.\n"
   transport = RecordingTransport(answers=["look again"])
   writer = ModelWriter(
-      model="m", transport=transport, instructions=instructions
+    model="m", transport=transport, instructions=instructions
   )
 
   _ = writer(observation(guidebook="guidebook"), load_criterion())
@@ -1247,10 +1241,10 @@ def test_supervising_policy_passes_override_instructions_to_the_judge() -> None:
   instructions = "POLICY-OVERRIDE-sentinel"
   transport = RecordingTransport(answers=[ON_TRACK_JSON])
   policy = supervising_policy(
-      model="m",
-      transport=transport,
-      budget=1,
-      instructions=instructions,
+    model="m",
+    transport=transport,
+    budget=1,
+    instructions=instructions,
   )
 
   _ = policy.consider(observation())
@@ -1259,19 +1253,19 @@ def test_supervising_policy_passes_override_instructions_to_the_judge() -> None:
 
 
 def test_supervising_policy_routes_each_override_to_only_its_model_call() -> (
-    None
+  None
 ):
   """Deleting either pass-through, or crossing them, changes the requests."""
   judge_instructions = "JUDGE-ONLY-sentinel"
   writer_instructions = "WRITER-ONLY-sentinel"
   transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look again"])
   policy = supervising_policy(
-      model="m",
-      transport=transport,
-      budget=1,
-      cooldown=0,
-      instructions=judge_instructions,
-      writer_instructions=writer_instructions,
+    model="m",
+    transport=transport,
+    budget=1,
+    cooldown=0,
+    instructions=judge_instructions,
+    writer_instructions=writer_instructions,
   )
 
   _ = policy.consider(observation())
@@ -1283,16 +1277,16 @@ def test_supervising_policy_routes_each_override_to_only_its_model_call() -> (
 def test_the_located_deviation_is_read_without_coercion() -> None:
   """An integer is carried directly as the optional measurement."""
   answered = (
-      '{"off_track": true, "reason": "guessing",'
-      f' "running_state": "{RUNNING_STATE}",'
-      ' "deviation_started_steps_ago": 3}'
+    '{"off_track": true, "reason": "guessing",'
+    f' "running_state": "{RUNNING_STATE}",'
+    ' "deviation_started_steps_ago": 3}'
   )
   criterion = load_criterion()
 
   located = ModelJudge(
-      model="m",
-      transport=RecordingTransport(answers=[answered]),
-      locate_deviation=True,
+    model="m",
+    transport=RecordingTransport(answers=[answered]),
+    locate_deviation=True,
   )(observation(), criterion)
   assert located.deviation_started_steps_ago == 3
 
@@ -1300,7 +1294,7 @@ def test_the_located_deviation_is_read_without_coercion() -> None:
 def test_a_default_judges_verdict_carries_no_located_deviation() -> None:
   """A judge that was not asked reports absence, not a number."""
   verdict = ModelJudge(
-      model="m", transport=RecordingTransport(answers=[OFF_TRACK_JSON])
+    model="m", transport=RecordingTransport(answers=[OFF_TRACK_JSON])
   )(observation(), load_criterion())
 
   assert verdict.deviation_started_steps_ago is None
@@ -1315,7 +1309,7 @@ SAID_SENTINEL = "SAID-SENTINEL-7c1e look at the failing assertion first"
 
 
 def _off_track_transport(
-    payloads: list[dict[str, Any]],
+  payloads: list[dict[str, Any]],
 ) -> Callable[[Mapping[str, Any]], dict[str, Any]]:
   """Return a transport whose judge is always off track and whose writer speaks.
 
@@ -1330,30 +1324,30 @@ def _off_track_transport(
     payloads.append(dict(payload))
     if "tools" in payload:
       return {
-          "stop_reason": "tool_use",
-          "content": [
-              {
-                  "type": "tool_use",
-                  "id": "toolu_test",
-                  "name": JUDGE_TOOL_NAME,
-                  "input": {
-                      "off_track": True,
-                      "reason": "guessing",
-                      "running_state": RUNNING_STATE,
-                  },
-              }
-          ],
+        "stop_reason": "tool_use",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "toolu_test",
+            "name": JUDGE_TOOL_NAME,
+            "input": {
+              "off_track": True,
+              "reason": "guessing",
+              "running_state": RUNNING_STATE,
+            },
+          }
+        ],
       }
     return {
-        "stop_reason": "end_turn",
-        "content": [{"type": "text", "text": SAID_SENTINEL}],
+      "stop_reason": "end_turn",
+      "content": [{"type": "text", "text": SAID_SENTINEL}],
     }
 
   return transport
 
 
 def _two_arms(
-    said_visibility: SaidVisibility,
+  said_visibility: SaidVisibility,
 ) -> tuple[list[str], list[str], list[str]]:
   """Replay one stream through a speaking arm and a silent arm.
 
@@ -1370,38 +1364,38 @@ def _two_arms(
     speaking arm's writer prompts, each in boundary order.
   """
   evidence = [
-      Message(role=Role.ASSISTANT, content=[TextBlock(text=f"step {i}")])
-      for i in range(1, 5)
+    Message(role=Role.ASSISTANT, content=[TextBlock(text=f"step {i}")])
+    for i in range(1, 5)
   ]
   judge_prompts: dict[int, list[str]] = {}
   writer_prompts: list[str] = []
   for budget in (3, 0):
     payloads: list[dict[str, Any]] = []
     policy = supervising_policy(
-        model="m",
-        transport=_off_track_transport(payloads),
-        budget=budget,
-        cooldown=0,
-        said_visibility=said_visibility,
+      model="m",
+      transport=_off_track_transport(payloads),
+      budget=budget,
+      cooldown=0,
+      said_visibility=said_visibility,
     )
     said: list[Intervention] = []
     for cursor in range(1, len(evidence) + 1):
       decision = policy.consider(
-          Observation(
-              task="make the test pass",
-              evidence=tuple(evidence[:cursor]),
-              cursor=cursor,
-              said=tuple(said),
-          )
+        Observation(
+          task="make the test pass",
+          evidence=tuple(evidence[:cursor]),
+          cursor=cursor,
+          said=tuple(said),
+        )
       )
       if isinstance(decision, Intervention):
         said.append(decision)
     judge_prompts[budget] = [
-        p["messages"][0]["content"] for p in payloads if "tools" in p
+      p["messages"][0]["content"] for p in payloads if "tools" in p
     ]
     if budget:
       writer_prompts = [
-          p["messages"][0]["content"] for p in payloads if "tools" not in p
+        p["messages"][0]["content"] for p in payloads if "tools" not in p
       ]
   return judge_prompts[3], judge_prompts[0], writer_prompts
 
@@ -1438,8 +1432,8 @@ def test_the_writer_prompt_carries_what_was_said_unless_told_not_to() -> None:
     _, _, writer = _two_arms(mode)
     assert len(writer) == 3
     assert (
-        "# Prior supervisor interventions\n\n(nothing yet)\n\n# Judge verdict\n"
-        in writer[0]
+      "# Prior supervisor interventions\n\n(nothing yet)\n\n# Judge verdict\n"
+      in writer[0]
     )
     assert SAID_SENTINEL in writer[1]
     assert SAID_SENTINEL in writer[2]
@@ -1451,18 +1445,18 @@ def test_the_writer_prompt_carries_what_was_said_unless_told_not_to() -> None:
 
 
 def test_the_policy_records_the_said_visibility_its_builders_were_given() -> (
-    None
+  None
 ):
   """One argument sets both builders and the value the decision rows carry."""
   transport = RecordingTransport(answers=[ON_TRACK_JSON])
   expected: tuple[tuple[SaidVisibility, bool, bool], ...] = (
-      ("writer", False, True),
-      ("both", True, True),
-      ("none", False, False),
+    ("writer", False, True),
+    ("both", True, True),
+    ("none", False, False),
   )
   for mode, judge_sees, writer_sees in expected:
     policy = supervising_policy(
-        model="m", transport=transport, budget=1, said_visibility=mode
+      model="m", transport=transport, budget=1, said_visibility=mode
     )
     assert policy.said_visibility == mode
     assert isinstance(policy.judge, ModelJudge)
@@ -1480,30 +1474,30 @@ def test_the_default_builders_render_said_to_the_writer_only() -> None:
   """A judge built by hand gets the same default as one built by the policy."""
   criterion = load_criterion()
   spoken = Observation(
-      task="make the test pass",
-      evidence=(
-          Message(role=Role.ASSISTANT, content=[TextBlock(text="editing")]),
-      ),
-      cursor=2,
-      said=(Intervention(text=SAID_SENTINEL),),
+    task="make the test pass",
+    evidence=(
+      Message(role=Role.ASSISTANT, content=[TextBlock(text="editing")]),
+    ),
+    cursor=2,
+    said=(Intervention(text=SAID_SENTINEL),),
   )
   quiet = dataclasses.replace(spoken, said=())
   transport = RecordingTransport(answers=[ON_TRACK_JSON])
 
   judge_builder = ModelJudge(model="m", transport=transport).prompt_builder
   assert judge_builder.build(spoken, criterion) == judge_builder.build(
-      quiet, criterion
+    quiet, criterion
   )
   assert "# Prior supervisor interventions" not in judge_builder.build(
-      spoken, criterion
+    spoken, criterion
   )
 
   writer_builder = ModelWriter(model="m", transport=transport).prompt_builder
   assert writer_builder.build(spoken, criterion).endswith(
-      f"# Prior supervisor interventions\n\n{SAID_SENTINEL}\n"
+    f"# Prior supervisor interventions\n\n{SAID_SENTINEL}\n"
   )
   assert writer_builder.build(quiet, criterion).endswith(
-      "# Prior supervisor interventions\n\n(nothing yet)\n"
+    "# Prior supervisor interventions\n\n(nothing yet)\n"
   )
 
 
@@ -1522,7 +1516,7 @@ def test_a_transport_failure_carries_the_request_it_was_sent() -> None:
 
   with pytest.raises(JudgeTransportError, match="upstream 503") as caught:
     _ = ModelJudge(model="m", transport=transport)(
-        observation(), load_criterion()
+      observation(), load_criterion()
     )
 
   assert len(seen) == 1

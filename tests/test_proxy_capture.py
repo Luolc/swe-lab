@@ -9,19 +9,19 @@ extra SYSTEM turn — a richer capture). Fixtures are inline literals, mirroring
 import json
 
 from swe_lab.conversation import (
-    Conversation,
-    Message,
-    ReasoningBlock,
-    Role,
-    TextBlock,
-    ToolResultBlock,
-    ToolUseBlock,
+  Conversation,
+  Message,
+  ReasoningBlock,
+  Role,
+  TextBlock,
+  ToolResultBlock,
+  ToolUseBlock,
 )
 from swe_lab.harnesses import AgentOutcome
 from swe_lab.harnesses.claude_code import (
-    event_stream_to_conversation,
-    proxy_log_outcome,
-    proxy_log_to_conversation,
+  event_stream_to_conversation,
+  proxy_log_outcome,
+  proxy_log_to_conversation,
 )
 
 # ─── one session, two capture shapes ────────────────────────────────────────
@@ -29,45 +29,45 @@ from swe_lab.harnesses.claude_code import (
 # The shared turns: an assistant turn (reasoning + text + tool_use), the user's
 # tool_result, and the final assistant turn.
 _STREAM_EVENTS: list[dict[str, object]] = [
-    {"type": "system", "subtype": "init"},
-    {
-        "type": "assistant",
-        "message": {
-            "role": "assistant",
-            "content": [
-                {"type": "thinking", "thinking": "look", "signature": "sig"},
-                {"type": "text", "text": "editing"},
-                {
-                    "type": "tool_use",
-                    "id": "t1",
-                    "name": "Bash",
-                    "input": {"command": "ls"},
-                },
-            ],
+  {"type": "system", "subtype": "init"},
+  {
+    "type": "assistant",
+    "message": {
+      "role": "assistant",
+      "content": [
+        {"type": "thinking", "thinking": "look", "signature": "sig"},
+        {"type": "text", "text": "editing"},
+        {
+          "type": "tool_use",
+          "id": "t1",
+          "name": "Bash",
+          "input": {"command": "ls"},
         },
+      ],
     },
-    {
-        "type": "user",
-        "message": {
-            "role": "user",
-            "content": [
-                {
-                    "type": "tool_result",
-                    "tool_use_id": "t1",
-                    "content": "a.py\nb.py",
-                    "is_error": False,
-                },
-            ],
+  },
+  {
+    "type": "user",
+    "message": {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "t1",
+          "content": "a.py\nb.py",
+          "is_error": False,
         },
+      ],
     },
-    {
-        "type": "assistant",
-        "message": {
-            "role": "assistant",
-            "content": [{"type": "text", "text": "done"}],
-        },
+  },
+  {
+    "type": "assistant",
+    "message": {
+      "role": "assistant",
+      "content": [{"type": "text", "text": "done"}],
     },
-    {"type": "result", "subtype": "success", "is_error": False},
+  },
+  {"type": "result", "subtype": "success", "is_error": False},
 ]
 
 # The proxy log for the same session. Anthropic is stateless, so the LAST
@@ -75,56 +75,56 @@ _STREAM_EVENTS: list[dict[str, object]] = [
 # final assistant turn. An earlier stub record is present to prove only the last
 # record is read.
 _PROXY_RECORDS: list[dict[str, object]] = [
-    {"request": {"body": {}}, "response": {"message": {}}, "complete": False},
-    {
-        "request": {
-            "headers": {"x-api-key": "secret"},
-            "body": {
-                "model": "claude-sonnet-5",
-                "system": "You are helpful.",
-                "tools": [{"name": "Bash"}],
-                "messages": [
-                    {
-                        "role": "assistant",
-                        "content": [
-                            {
-                                "type": "thinking",
-                                "thinking": "look",
-                                "signature": "sig",
-                            },
-                            {"type": "text", "text": "editing"},
-                            {
-                                "type": "tool_use",
-                                "id": "t1",
-                                "name": "Bash",
-                                "input": {"command": "ls"},
-                            },
-                        ],
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "tool_result",
-                                "tool_use_id": "t1",
-                                "content": "a.py\nb.py",
-                                "is_error": False,
-                            },
-                        ],
-                    },
-                ],
-            },
-        },
-        "response": {
-            "status": 200,
-            "headers": {},
-            "message": {
-                "role": "assistant",
-                "content": [{"type": "text", "text": "done"}],
-            },
-        },
-        "complete": True,
+  {"request": {"body": {}}, "response": {"message": {}}, "complete": False},
+  {
+    "request": {
+      "headers": {"x-api-key": "secret"},
+      "body": {
+        "model": "claude-sonnet-5",
+        "system": "You are helpful.",
+        "tools": [{"name": "Bash"}],
+        "messages": [
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "look",
+                "signature": "sig",
+              },
+              {"type": "text", "text": "editing"},
+              {
+                "type": "tool_use",
+                "id": "t1",
+                "name": "Bash",
+                "input": {"command": "ls"},
+              },
+            ],
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "t1",
+                "content": "a.py\nb.py",
+                "is_error": False,
+              },
+            ],
+          },
+        ],
+      },
     },
+    "response": {
+      "status": 200,
+      "headers": {},
+      "message": {
+        "role": "assistant",
+        "content": [{"type": "text", "text": "done"}],
+      },
+    },
+    "complete": True,
+  },
 ]
 
 
@@ -135,36 +135,36 @@ def _jsonl(records: list[dict[str, object]]) -> str:
 
 def _non_system(conv: Conversation) -> Conversation:
   return Conversation(
-      messages=[m for m in conv.messages if m.role is not Role.SYSTEM]
+    messages=[m for m in conv.messages if m.role is not Role.SYSTEM]
   )
 
 
 def test_proxy_conversion_maps_the_expected_messages():
   conv = proxy_log_to_conversation(_jsonl(_PROXY_RECORDS))
   assert conv == Conversation(
-      messages=[
-          Message(
-              role=Role.SYSTEM,
-              content=[TextBlock(text="You are helpful.")],
-          ),
-          Message(
-              role=Role.ASSISTANT,
-              content=[
-                  ReasoningBlock(text="look", signature="sig"),
-                  TextBlock(text="editing"),
-                  ToolUseBlock(id="t1", name="Bash", input={"command": "ls"}),
-              ],
-          ),
-          Message(
-              role=Role.USER,
-              content=[
-                  ToolResultBlock(
-                      tool_use_id="t1", content="a.py\nb.py", is_error=False
-                  )
-              ],
-          ),
-          Message(role=Role.ASSISTANT, content=[TextBlock(text="done")]),
-      ]
+    messages=[
+      Message(
+        role=Role.SYSTEM,
+        content=[TextBlock(text="You are helpful.")],
+      ),
+      Message(
+        role=Role.ASSISTANT,
+        content=[
+          ReasoningBlock(text="look", signature="sig"),
+          TextBlock(text="editing"),
+          ToolUseBlock(id="t1", name="Bash", input={"command": "ls"}),
+        ],
+      ),
+      Message(
+        role=Role.USER,
+        content=[
+          ToolResultBlock(
+            tool_use_id="t1", content="a.py\nb.py", is_error=False
+          )
+        ],
+      ),
+      Message(role=Role.ASSISTANT, content=[TextBlock(text="done")]),
+    ]
   )
 
 
@@ -173,7 +173,7 @@ def test_proxy_capture_is_equivalent_to_stream():
   # the proxy additionally carries the SYSTEM turn; the shared user/assistant
   # surface is identical — proven by construction (same block mappers).
   assert _non_system(proxy_log_to_conversation(_jsonl(_PROXY_RECORDS))) == (
-      event_stream_to_conversation(stream)
+    event_stream_to_conversation(stream)
   )
 
 
@@ -187,8 +187,8 @@ def test_proxy_outcome_reads_last_record():
   assert proxy_log_outcome(_jsonl(_PROXY_RECORDS)) is AgentOutcome.FINISHED
   # last record's flag wins over the earlier stub's True
   assert (
-      proxy_log_outcome(_jsonl([_PROXY_RECORDS[1], _PROXY_RECORDS[0]]))
-      is AgentOutcome.TRUNCATED
+    proxy_log_outcome(_jsonl([_PROXY_RECORDS[1], _PROXY_RECORDS[0]]))
+    is AgentOutcome.TRUNCATED
   )
   assert proxy_log_outcome("") is AgentOutcome.NO_OUTPUT
 

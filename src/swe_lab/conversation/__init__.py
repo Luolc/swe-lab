@@ -8,31 +8,31 @@ output into. A harness is a :class:`ConversationProducer` (it yields a
 """
 
 from .model import (
-    ContentBlock,
-    Conversation,
-    Message,
-    ReasoningBlock,
-    Role,
-    TextBlock,
-    ToolResultBlock,
-    ToolUseBlock,
+  ContentBlock,
+  Conversation,
+  Message,
+  ReasoningBlock,
+  Role,
+  TextBlock,
+  ToolResultBlock,
+  ToolUseBlock,
 )
 from .observer import (
-    CONVERSATION_NAME,
-    ConversationObserver,
-    ConversationProducer,
+  CONVERSATION_NAME,
+  ConversationObserver,
+  ConversationProducer,
 )
 
 __all__ = [
-    "CONVERSATION_NAME",
-    "ContentBlock",
-    "Conversation",
-    "ConversationObserver",
-    "ConversationProducer",
-    "Message",
-    "ReasoningBlock",
-    "Role",
-    "TextBlock",
-    "ToolResultBlock",
-    "ToolUseBlock",
+  "CONVERSATION_NAME",
+  "ContentBlock",
+  "Conversation",
+  "ConversationObserver",
+  "ConversationProducer",
+  "Message",
+  "ReasoningBlock",
+  "Role",
+  "TextBlock",
+  "ToolResultBlock",
+  "ToolUseBlock",
 ]

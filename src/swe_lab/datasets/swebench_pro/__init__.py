@@ -13,6 +13,6 @@ from __future__ import annotations
 from .record import COLUMNS, SweBenchProInstance
 
 __all__ = [
-    "COLUMNS",
-    "SweBenchProInstance",
+  "COLUMNS",
+  "SweBenchProInstance",
 ]

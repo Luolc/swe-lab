@@ -7,9 +7,9 @@ result a human reads.
 
 from swe_lab.datasets.swebench_pro.known_flaky import _NODEBB_ORPHANS as _NODEBB
 from swe_lab.datasets.swebench_pro.known_flaky import (
-    flaky_instances,
-    known_flaky,
-    KnownFlaky,
+  flaky_instances,
+  known_flaky,
+  KnownFlaky,
 )
 
 

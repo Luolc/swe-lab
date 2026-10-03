@@ -38,11 +38,11 @@ import polars as pl
 from swe_lab.paths import cache_root, find_repo_root
 
 from .constants import (
-    DEEPSWE_GIT_URL,
-    HF_REPO_ID,
-    MANIFEST_FILENAME,
-    PARQUET_FILENAME,
-    PINNED_DEEPSWE_COMMIT,
+  DEEPSWE_GIT_URL,
+  HF_REPO_ID,
+  MANIFEST_FILENAME,
+  PARQUET_FILENAME,
+  PINNED_DEEPSWE_COMMIT,
 )
 
 EXPECTED_TASK_COUNT = 113
@@ -53,46 +53,44 @@ EXPECTED_TASK_COUNT = 113
 # is the checkout of the base commit in every image, so it IS the full form
 # of the recorded prefix (prefix match verified there).
 BASE_COMMIT_FIXES: dict[str, str] = {
-    "eicrud-keyset-pagination-cursor": (
-        "68dafce500a85227b996d8fcab466d7a0c88809e"
-    ),
-    "koota-entity-snapshot-rollback": (
-        "72ebef44b8e024d877250f055eea60cdfaa45069"
-    ),
-    "langchain-request-coalescing": (
-        "7cef35bfdebd22148a4c62a10bf01f1fde36e722"
-    ),
+  "eicrud-keyset-pagination-cursor": (
+    "68dafce500a85227b996d8fcab466d7a0c88809e"
+  ),
+  "koota-entity-snapshot-rollback": (
+    "72ebef44b8e024d877250f055eea60cdfaa45069"
+  ),
+  "langchain-request-coalescing": ("7cef35bfdebd22148a4c62a10bf01f1fde36e722"),
 }
 
 # The row schema, in column order. The loader's COLUMNS contract will assert
 # against this list; keeping it here keeps producer and consumer in one home.
 COLUMNS: tuple[str, ...] = (
-    "task_id",
-    "ext_id",
-    "display_title",
-    "display_description",
-    "category",
-    "language",
-    "repository_url",
-    "base_commit_hash",  # upstream task.toml value, verbatim
-    "base_commit",  # normalized full sha (== hash except the three fixes)
-    "docker_image",
-    "agent_timeout_sec",
-    "verifier_timeout_sec",
-    "cpus",
-    "memory_mb",
-    "storage_mb",
-    "instruction",
-    "test_sh",
-    "grader_py",
-    "config_json",
-    "test_patch",
-    "solution_patch",
-    "solve_sh",
-    "f2p",  # derived from config_json; builder asserts consistency
-    "p2p",
-    "upstream_repo",
-    "upstream_license",
+  "task_id",
+  "ext_id",
+  "display_title",
+  "display_description",
+  "category",
+  "language",
+  "repository_url",
+  "base_commit_hash",  # upstream task.toml value, verbatim
+  "base_commit",  # normalized full sha (== hash except the three fixes)
+  "docker_image",
+  "agent_timeout_sec",
+  "verifier_timeout_sec",
+  "cpus",
+  "memory_mb",
+  "storage_mb",
+  "instruction",
+  "test_sh",
+  "grader_py",
+  "config_json",
+  "test_patch",
+  "solution_patch",
+  "solve_sh",
+  "f2p",  # derived from config_json; builder asserts consistency
+  "p2p",
+  "upstream_repo",
+  "upstream_license",
 )
 
 
@@ -115,18 +113,18 @@ def ensure_checkout(dest: Path, *, commit: str = PINNED_DEEPSWE_COMMIT) -> Path:
   head = dest / ".git" / "HEAD"
   if head.is_file():
     at = subprocess.run(
-        ["git", "-C", str(dest), "rev-parse", "HEAD"],
-        capture_output=True,
-        text=True,
-        check=True,
+      ["git", "-C", str(dest), "rev-parse", "HEAD"],
+      capture_output=True,
+      text=True,
+      check=True,
     ).stdout.strip()
     if at == commit:
       return dest
   dest.mkdir(parents=True, exist_ok=True)
   for args in (
-      ["init", "-q"],
-      ["fetch", "-q", "--depth", "1", DEEPSWE_GIT_URL, commit],
-      ["checkout", "-q", commit],
+    ["init", "-q"],
+    ["fetch", "-q", "--depth", "1", DEEPSWE_GIT_URL, commit],
+    ["checkout", "-q", commit],
   ):
     _ = subprocess.run(["git", "-C", str(dest), *args], check=True)
   return dest
@@ -151,10 +149,10 @@ def parse_provenance(text: str) -> dict[str, tuple[str, str]]:
 
 
 def build_row(
-    task_dir: Path,
-    provenance: dict[str, tuple[str, str]],
-    *,
-    base_commit_fixes: dict[str, str] | None = None,
+  task_dir: Path,
+  provenance: dict[str, tuple[str, str]],
+  *,
+  base_commit_fixes: dict[str, str] | None = None,
 ) -> dict[str, Any]:
   """Build one task's row from its directory.
 
@@ -185,8 +183,8 @@ def build_row(
   full = fixes.get(task_id, verbatim)
   if not full.startswith(verbatim.rstrip()):
     raise ValueError(
-        f"{task_id}: base_commit fix {full!r} does not extend the recorded"
-        f" prefix {verbatim!r}"
+      f"{task_id}: base_commit fix {full!r} does not extend the recorded"
+      f" prefix {verbatim!r}"
     )
   if task_id not in provenance:
     raise ValueError(f"{task_id}: no PROVENANCE.md entry")
@@ -198,32 +196,32 @@ def build_row(
     return (task_dir / rel).read_bytes().decode("utf-8", "replace")
 
   return {
-      "task_id": task_id,
-      "ext_id": meta["ext_id"],
-      "display_title": meta["display_title"],
-      "display_description": meta["display_description"],
-      "category": meta["category"],
-      "language": meta["language"],
-      "repository_url": meta["repository_url"],
-      "base_commit_hash": verbatim,
-      "base_commit": full,
-      "docker_image": env["docker_image"],
-      "agent_timeout_sec": float(toml["agent"]["timeout_sec"]),
-      "verifier_timeout_sec": float(toml["verifier"]["timeout_sec"]),
-      "cpus": int(env["cpus"]),
-      "memory_mb": int(env["memory_mb"]),
-      "storage_mb": int(env["storage_mb"]),
-      "instruction": read("instruction.md"),
-      "test_sh": read("tests/test.sh"),
-      "grader_py": read("tests/grader.py"),
-      "config_json": config_json,
-      "test_patch": read("tests/test.patch"),
-      "solution_patch": read("solution/solution.patch"),
-      "solve_sh": read("solution/solve.sh"),
-      "f2p": list(config["f2p_node_ids"]),
-      "p2p": list(config["p2p_node_ids"]),
-      "upstream_repo": upstream_repo,
-      "upstream_license": upstream_license,
+    "task_id": task_id,
+    "ext_id": meta["ext_id"],
+    "display_title": meta["display_title"],
+    "display_description": meta["display_description"],
+    "category": meta["category"],
+    "language": meta["language"],
+    "repository_url": meta["repository_url"],
+    "base_commit_hash": verbatim,
+    "base_commit": full,
+    "docker_image": env["docker_image"],
+    "agent_timeout_sec": float(toml["agent"]["timeout_sec"]),
+    "verifier_timeout_sec": float(toml["verifier"]["timeout_sec"]),
+    "cpus": int(env["cpus"]),
+    "memory_mb": int(env["memory_mb"]),
+    "storage_mb": int(env["storage_mb"]),
+    "instruction": read("instruction.md"),
+    "test_sh": read("tests/test.sh"),
+    "grader_py": read("tests/grader.py"),
+    "config_json": config_json,
+    "test_patch": read("tests/test.patch"),
+    "solution_patch": read("solution/solution.patch"),
+    "solve_sh": read("solution/solve.sh"),
+    "f2p": list(config["f2p_node_ids"]),
+    "p2p": list(config["p2p_node_ids"]),
+    "upstream_repo": upstream_repo,
+    "upstream_license": upstream_license,
   }
 
 
@@ -238,9 +236,9 @@ def build_rows(checkout: Path) -> list[dict[str, Any]]:
   """
   provenance = parse_provenance((checkout / "PROVENANCE.md").read_text())
   rows = [
-      build_row(d, provenance)
-      for d in sorted((checkout / "tasks").iterdir())
-      if (d / "task.toml").is_file()
+    build_row(d, provenance)
+    for d in sorted((checkout / "tasks").iterdir())
+    if (d / "task.toml").is_file()
   ]
   return rows
 
@@ -259,7 +257,7 @@ def row_content_hash(row: dict[str, Any]) -> str:
     ``sha256:<hex>``.
   """
   canonical = json.dumps(
-      row, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+    row, sort_keys=True, ensure_ascii=False, separators=(",", ":")
   )
   return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
@@ -286,7 +284,7 @@ def verify_round_trip(parquet: Path, rows: list[dict[str, Any]]) -> None:
 
 
 def build_manifest(
-    rows: list[dict[str, Any]], parquet_sha256: str
+  rows: list[dict[str, Any]], parquet_sha256: str
 ) -> dict[str, Any]:
   """Assemble the manifest published beside the parquet.
 
@@ -298,36 +296,36 @@ def build_manifest(
     The manifest, JSON-serializable.
   """
   return {
-      "schema_version": 1,
-      "dataset": HF_REPO_ID,
-      "source_repo": DEEPSWE_GIT_URL,
-      "source_commit": PINNED_DEEPSWE_COMMIT,
-      "build_date": datetime.date.today().isoformat(),
-      "task_count": len(rows),
-      "parquet_file": PARQUET_FILENAME,
-      "parquet_sha256": parquet_sha256,
-      "hash_scheme": (
-          "sha256 over each row's canonical JSON (sorted keys, separators"
-          " (',', ':'), UTF-8) — encoding-independent, unlike the file sha"
-      ),
-      "fixes": [
-          {
-              "task_id": task_id,
-              "column": "base_commit",
-              "from": next(
-                  r["base_commit_hash"] for r in rows if r["task_id"] == task_id
-              ),
-              "to": full,
-              "reason": (
-                  "task.toml carries an abbreviated/truncated sha; full value"
-                  " measured from the task image's HEAD (task-30 census)"
-              ),
-          }
-          for task_id, full in sorted(BASE_COMMIT_FIXES.items())
-      ],
-      "task_content_hashes": {
-          row["task_id"]: row_content_hash(row) for row in rows
-      },
+    "schema_version": 1,
+    "dataset": HF_REPO_ID,
+    "source_repo": DEEPSWE_GIT_URL,
+    "source_commit": PINNED_DEEPSWE_COMMIT,
+    "build_date": datetime.date.today().isoformat(),
+    "task_count": len(rows),
+    "parquet_file": PARQUET_FILENAME,
+    "parquet_sha256": parquet_sha256,
+    "hash_scheme": (
+      "sha256 over each row's canonical JSON (sorted keys, separators"
+      " (',', ':'), UTF-8) — encoding-independent, unlike the file sha"
+    ),
+    "fixes": [
+      {
+        "task_id": task_id,
+        "column": "base_commit",
+        "from": next(
+          r["base_commit_hash"] for r in rows if r["task_id"] == task_id
+        ),
+        "to": full,
+        "reason": (
+          "task.toml carries an abbreviated/truncated sha; full value"
+          " measured from the task image's HEAD (task-30 census)"
+        ),
+      }
+      for task_id, full in sorted(BASE_COMMIT_FIXES.items())
+    ],
+    "task_content_hashes": {
+      row["task_id"]: row_content_hash(row) for row in rows
+    },
   }
 
 
@@ -346,32 +344,32 @@ def main(argv: list[str] | None = None) -> int:
   """
   parser = argparse.ArgumentParser(description=__doc__)
   _ = parser.add_argument(
-      "--upload",
-      action="store_true",
-      help="publish to the HF repo after building (needs HF_TOKEN)",
+    "--upload",
+    action="store_true",
+    help="publish to the HF repo after building (needs HF_TOKEN)",
   )
   args = parser.parse_args(argv)
 
   root = find_repo_root()
   # Concrete pathlib from here down: this module is host-local by nature.
   work = (
-      Path(str(cache_root(root)))
-      / "deepswe"
-      / f"build-{PINNED_DEEPSWE_COMMIT[:12]}"
+    Path(str(cache_root(root)))
+    / "deepswe"
+    / f"build-{PINNED_DEEPSWE_COMMIT[:12]}"
   )
   checkout = ensure_checkout(work / "checkout")
   rows = build_rows(checkout)
   if len(rows) != EXPECTED_TASK_COUNT:
     raise SystemExit(
-        f"expected {EXPECTED_TASK_COUNT} tasks, built {len(rows)} — the"
-        " upstream layout changed; re-survey before publishing"
+      f"expected {EXPECTED_TASK_COUNT} tasks, built {len(rows)} — the"
+      " upstream layout changed; re-survey before publishing"
     )
 
   out_dir = work / "dist"
   out_dir.mkdir(parents=True, exist_ok=True)
   parquet = out_dir / PARQUET_FILENAME
   pl.DataFrame(rows, schema_overrides=None).select(COLUMNS).write_parquet(
-      str(parquet)
+    str(parquet)
   )
   verify_round_trip(parquet, rows)
 
@@ -404,24 +402,24 @@ def _upload(out_dir: Path, checkout: Path) -> None:
 
   api = HfApi()
   _ = api.create_repo(
-      HF_REPO_ID, repo_type="dataset", private=False, exist_ok=True
+    HF_REPO_ID, repo_type="dataset", private=False, exist_ok=True
   )
   readme = (
-      Path(str(find_repo_root())) / "src/swe_lab/datasets/deepswe/HF_README.md"
+    Path(str(find_repo_root())) / "src/swe_lab/datasets/deepswe/HF_README.md"
   )
   uploads = [
-      (out_dir / PARQUET_FILENAME, PARQUET_FILENAME),
-      (out_dir / MANIFEST_FILENAME, MANIFEST_FILENAME),
-      (checkout / "LICENSE", "LICENSE"),
-      (checkout / "PROVENANCE.md", "PROVENANCE.md"),
-      (readme, "README.md"),
+    (out_dir / PARQUET_FILENAME, PARQUET_FILENAME),
+    (out_dir / MANIFEST_FILENAME, MANIFEST_FILENAME),
+    (checkout / "LICENSE", "LICENSE"),
+    (checkout / "PROVENANCE.md", "PROVENANCE.md"),
+    (readme, "README.md"),
   ]
   for src, dest in uploads:
     _ = api.upload_file(
-        path_or_fileobj=str(src),
-        path_in_repo=dest,
-        repo_id=HF_REPO_ID,
-        repo_type="dataset",
+      path_or_fileobj=str(src),
+      path_in_repo=dest,
+      repo_id=HF_REPO_ID,
+      repo_type="dataset",
     )
     print(f"uploaded {dest}")
   print(f"https://huggingface.co/datasets/{HF_REPO_ID}")

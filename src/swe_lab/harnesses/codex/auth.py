@@ -31,11 +31,11 @@ from typing import override
 from etils import epath
 
 from swe_lab.sandbox import (
-    Inline,
-    Mount,
-    Mounts,
-    SandboxError,
-    SandboxObserver,
+  Inline,
+  Mount,
+  Mounts,
+  SandboxError,
+  SandboxObserver,
 )
 
 from .constants import AGENT_HOME, AUTH_FILENAME, codex_config_dir
@@ -76,8 +76,8 @@ class CodexAuthObserver(SandboxObserver):
     """
     if not self.auth_json.strip():
       raise SandboxError(
-          "codex auth_json is empty; supply a ChatGPT login's auth.json bytes,"
-          " or use an API key (OPENAI_API_KEY) instead"
+        "codex auth_json is empty; supply a ChatGPT login's auth.json bytes,"
+        " or use an API key (OPENAI_API_KEY) instead"
       )
     try:
       parsed = json.loads(self.auth_json)
@@ -85,17 +85,17 @@ class CodexAuthObserver(SandboxObserver):
       # Deliberately reports the error's *type* and not the payload: this
       # message may be logged, and the payload is a credential.
       raise SandboxError(
-          f"codex auth_json is not valid JSON ({type(error).__name__}); it"
-          " should be the contents of a Codex auth.json"
+        f"codex auth_json is not valid JSON ({type(error).__name__}); it"
+        " should be the contents of a Codex auth.json"
       ) from error
     if not isinstance(parsed, dict):
       raise SandboxError(
-          "codex auth_json must be a JSON object, as Codex's auth.json is"
+        "codex auth_json must be a JSON object, as Codex's auth.json is"
       )
 
   @classmethod
   def from_file(
-      cls, path: epath.PathLike, *, agent_home: str = AGENT_HOME
+    cls, path: epath.PathLike, *, agent_home: str = AGENT_HOME
   ) -> CodexAuthObserver:
     """Build one from a login that is already a file on this host.
 
@@ -114,8 +114,8 @@ class CodexAuthObserver(SandboxObserver):
     source = epath.Path(path)
     if not source.is_file():
       raise SandboxError(
-          f"codex auth file not found: {path}; a ChatGPT login lives in"
-          " <CODEX_HOME>/auth.json, or use OPENAI_API_KEY instead"
+        f"codex auth file not found: {path}; a ChatGPT login lives in"
+        " <CODEX_HOME>/auth.json, or use OPENAI_API_KEY instead"
       )
     return cls(auth_json=source.read_bytes(), agent_home=agent_home)
 

@@ -21,11 +21,11 @@ from swe_lab.datasets.swebench_pro import SweBenchProInstance
 from swe_lab.harnesses.claude_code.capture import Capture
 
 from .agent_run import (
-    DEFAULT_CLAUDE_TIMEOUT_S,
-    DEFAULT_MAX_ATTEMPTS,
-    DEFAULT_MODEL,
-    run_agent,
-    RunResult,
+  DEFAULT_CLAUDE_TIMEOUT_S,
+  DEFAULT_MAX_ATTEMPTS,
+  DEFAULT_MODEL,
+  run_agent,
+  RunResult,
 )
 from .workspace import ANNOTATION_OUTPUT, CONTEXT_DIR, VALIDATOR_SCRIPT
 
@@ -86,18 +86,18 @@ deliverable."""
 
 
 def aggregate_instance(
-    instance: SweBenchProInstance,
-    index: int,
-    candidates: Sequence[object],
-    *,
-    repo_root: epath.PathLike | None = None,
-    model: str = DEFAULT_MODEL,
-    base_port: int = DEFAULT_AGG_BASE_PORT,
-    port: int | None = None,
-    variant: str = "agg",
-    max_attempts: int = DEFAULT_MAX_ATTEMPTS,
-    claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
-    capture: Capture = "stream",
+  instance: SweBenchProInstance,
+  index: int,
+  candidates: Sequence[object],
+  *,
+  repo_root: epath.PathLike | None = None,
+  model: str = DEFAULT_MODEL,
+  base_port: int = DEFAULT_AGG_BASE_PORT,
+  port: int | None = None,
+  variant: str = "agg",
+  max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+  claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
+  capture: Capture = "stream",
 ) -> RunResult:
   """Reconcile ``candidates`` (each an object with a ``snippets`` array).
 
@@ -107,31 +107,31 @@ def aggregate_instance(
   """
   candidates_json = json.dumps({"candidates": list(candidates)}, indent=2)
   return run_agent(
-      instance,
-      index,
-      prompt=build_aggregator_prompt(instance.repo, len(candidates)),
-      kind="aggregate",
-      context_files={CANDIDATES_FILE: candidates_json},
-      extra_metadata={"n_candidates": len(candidates)},
-      repo_root=repo_root,
-      model=model,
-      base_port=base_port,
-      port=port,
-      variant=variant,
-      max_attempts=max_attempts,
-      claude_timeout=claude_timeout,
-      capture=capture,
+    instance,
+    index,
+    prompt=build_aggregator_prompt(instance.repo, len(candidates)),
+    kind="aggregate",
+    context_files={CANDIDATES_FILE: candidates_json},
+    extra_metadata={"n_candidates": len(candidates)},
+    repo_root=repo_root,
+    model=model,
+    base_port=base_port,
+    port=port,
+    variant=variant,
+    max_attempts=max_attempts,
+    claude_timeout=claude_timeout,
+    capture=capture,
   )
 
 
 def aggregate_by_id(
-    instance_id: str,
-    candidates: Sequence[object],
-    *,
-    dataset: Dataset | None = None,
-    model: str = DEFAULT_MODEL,
-    base_port: int = DEFAULT_AGG_BASE_PORT,
-    capture: Capture = "stream",
+  instance_id: str,
+  candidates: Sequence[object],
+  *,
+  dataset: Dataset | None = None,
+  model: str = DEFAULT_MODEL,
+  base_port: int = DEFAULT_AGG_BASE_PORT,
+  capture: Capture = "stream",
 ) -> RunResult:
   """Look an instance up by id and aggregate ``candidates`` for it."""
   dataset = dataset or load_dataset()
@@ -140,10 +140,10 @@ def aggregate_by_id(
     raise TypeError(f"Unexpected record type: {type(record).__name__}")
   index = dataset.index_of(instance_id)
   return aggregate_instance(
-      record,
-      index,
-      candidates,
-      model=model,
-      base_port=base_port,
-      capture=capture,
+    record,
+    index,
+    candidates,
+    model=model,
+    base_port=base_port,
+    capture=capture,
   )

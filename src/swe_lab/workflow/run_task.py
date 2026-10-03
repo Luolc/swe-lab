@@ -21,16 +21,16 @@ from etils import epath
 
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.sandbox import (
-    AttemptRecord,
-    backend_of,
-    Mounts,
-    persist,
-    RunStatus,
-    sandbox_factory,
-    SandboxConfig,
-    SandboxError,
-    SandboxObserver,
-    Store,
+  AttemptRecord,
+  backend_of,
+  Mounts,
+  persist,
+  RunStatus,
+  sandbox_factory,
+  SandboxConfig,
+  SandboxError,
+  SandboxObserver,
+  Store,
 )
 
 from .task import AttemptResult, Task
@@ -102,7 +102,7 @@ class TaskAddress:
     """
     if not _TASK_KEY_RE.match(self.task):
       raise ValueError(
-          f"task key {self.task!r} must match {_TASK_KEY_RE.pattern}"
+        f"task key {self.task!r} must match {_TASK_KEY_RE.pattern}"
       )
 
   def prefix(self, instance_id: str) -> str:
@@ -127,13 +127,13 @@ class TerminalMarker:
   def to_json(self) -> str:
     """Serialize to stable JSON."""
     return json.dumps(
-        {
-            "outcome": self.outcome.value,
-            "attempts": self.attempts,
-            "run_ts": self.run_ts,
-        },
-        indent=2,
-        sort_keys=True,
+      {
+        "outcome": self.outcome.value,
+        "attempts": self.attempts,
+        "run_ts": self.run_ts,
+      },
+      indent=2,
+      sort_keys=True,
     )
 
   @classmethod
@@ -141,14 +141,14 @@ class TerminalMarker:
     """Read a marker back from its JSON."""
     data = json.loads(text)
     return cls(
-        outcome=TaskOutcome(data["outcome"]),
-        attempts=int(data["attempts"]),
-        run_ts=str(data["run_ts"]),
+      outcome=TaskOutcome(data["outcome"]),
+      attempts=int(data["attempts"]),
+      run_ts=str(data["run_ts"]),
     )
 
 
 def read_marker(
-    store: Store, address: TaskAddress, instance_id: str
+  store: Store, address: TaskAddress, instance_id: str
 ) -> TerminalMarker | None:
   """Read a task's terminal marker; ``None`` means "not terminal, run it".
 
@@ -193,10 +193,10 @@ class TaskRunOutcome:
 
 
 def _final_shard(
-    shards: Sequence[AttemptRecord],
-    marker: TerminalMarker,
-    address: TaskAddress,
-    instance_id: str,
+  shards: Sequence[AttemptRecord],
+  marker: TerminalMarker,
+  address: TaskAddress,
+  instance_id: str,
 ) -> AttemptRecord:
   """Return the shard the marker was written for — never an outlived one.
 
@@ -236,18 +236,18 @@ def _final_shard(
   # is terminally failed. The remedy is explicit — re-run with resume off,
   # which overwrites from a0 — and the operator should know they needed it.
   raise SandboxError(
-      f"{address.prefix(instance_id)}: the terminal marker claims"
-      f" {marker.outcome.value} after {marker.attempts} attempt(s) at"
-      f" {marker.run_ts!r}, but no shard matches (a{attempt} of that run is"
-      f" not in the store; found"
-      f" {[(s.attempt, s.run_ts) for s in shards]}). The marker is written"
-      " last, so this cannot happen to a store that kept what it was given."
-      " Re-run this task with resume disabled to rebuild it."
+    f"{address.prefix(instance_id)}: the terminal marker claims"
+    f" {marker.outcome.value} after {marker.attempts} attempt(s) at"
+    f" {marker.run_ts!r}, but no shard matches (a{attempt} of that run is"
+    f" not in the store; found"
+    f" {[(s.attempt, s.run_ts) for s in shards]}). The marker is written"
+    " last, so this cannot happen to a store that kept what it was given."
+    " Re-run this task with resume disabled to rebuild it."
   )
 
 
 def _over_a_fresh_workspace(
-    config: SandboxConfig, workspace: epath.Path
+  config: SandboxConfig, workspace: epath.Path
 ) -> SandboxConfig:
   """Return the attempt's config: the declared one, over its own workspace.
 
@@ -270,20 +270,20 @@ def _over_a_fresh_workspace(
 
 
 def run_task(
-    task: Task,
-    instance: TaskInstance[Any],
-    *,
-    store: Store,
-    address: TaskAddress,
-    sandbox: SandboxConfig,
-    output_dir: epath.PathLike,
-    timeout: float,
-    retries: int = 0,
-    resume: bool = True,
-    run_ts: str,
-    extra_mounts: Mounts | None = None,
-    extra_observers: Sequence[SandboxObserver] = (),
-    extra_record: Mapping[str, object] | None = None,
+  task: Task,
+  instance: TaskInstance[Any],
+  *,
+  store: Store,
+  address: TaskAddress,
+  sandbox: SandboxConfig,
+  output_dir: epath.PathLike,
+  timeout: float,
+  retries: int = 0,
+  resume: bool = True,
+  run_ts: str,
+  extra_mounts: Mounts | None = None,
+  extra_observers: Sequence[SandboxObserver] = (),
+  extra_record: Mapping[str, object] | None = None,
 ) -> TaskRunOutcome:
   """Run one task durably: resume check, attempt loop, terminal marker.
 
@@ -342,14 +342,14 @@ def run_task(
   marker = read_marker(store, address, instance_id) if resume else None
   if marker is not None:
     shards = store.read_manifest(
-        address.sweep_id, instance_id, address.rollout_id, task=address.task
+      address.sweep_id, instance_id, address.rollout_id, task=address.task
     )
     return TaskRunOutcome(
-        outcome=marker.outcome,
-        resumed=True,
-        attempts=marker.attempts,
-        record=_final_shard(shards, marker, address, instance_id),
-        result=None,
+      outcome=marker.outcome,
+      resumed=True,
+      attempts=marker.attempts,
+      record=_final_shard(shards, marker, address, instance_id),
+      result=None,
     )
 
   result: AttemptResult | None = None
@@ -363,21 +363,21 @@ def run_task(
     # backend with nothing to do at construction ignores it and answers at run
     # time instead — the two moments are complementary, not alternatives.
     attempt_config = replace(
-        _over_a_fresh_workspace(
-            sandbox, epath.Path(output_dir) / "ws" / f"a{attempt}"
-        ),
-        assets=tuple(task.assets()),
+      _over_a_fresh_workspace(
+        sandbox, epath.Path(output_dir) / "ws" / f"a{attempt}"
+      ),
+      assets=tuple(task.assets()),
     )
     built = sandbox_factory(backend_of(attempt_config))(
-        instance.sandbox_spec(), attempt_config
+      instance.sandbox_spec(), attempt_config
     )
     result = task.execute(
-        built,
-        instance,
-        output_dir=epath.Path(output_dir) / f"a{attempt}",
-        timeout=timeout,
-        extra_mounts=extra_mounts,
-        extra_observers=extra_observers,
+      built,
+      instance,
+      output_dir=epath.Path(output_dir) / f"a{attempt}",
+      timeout=timeout,
+      extra_mounts=extra_mounts,
+      extra_observers=extra_observers,
     )
     valid = task.outputs_valid(result)
     # Persist the attempt, valid or not: the failing attempt is evidence,
@@ -388,27 +388,27 @@ def run_task(
     # The task's own facts first: the runner's two keys are the shard's
     # contract and must win a name collision rather than be shadowed by one.
     extra: dict[str, object] = {
-        **task.record_extra(result),
-        "outputs_valid": valid,
+      **task.record_extra(result),
+      "outputs_valid": valid,
     }
     if error is not None:
       extra["error"] = repr(error)
     record = persist(
-        store,
-        AttemptRecord(
-            sweep_id=address.sweep_id,
-            instance_id=instance_id,
-            task=address.task,
-            rollout_id=address.rollout_id,
-            attempt=attempt,
-            run_ts=run_ts,
-            status=result.run.status.value,
-            tier="formal",
-            backend=backend_of(sandbox),
-            metrics=dict(result.run.metrics),
-            extra=extra | dict(extra_record or {}),
-        ),
-        result.run.artifacts,
+      store,
+      AttemptRecord(
+        sweep_id=address.sweep_id,
+        instance_id=instance_id,
+        task=address.task,
+        rollout_id=address.rollout_id,
+        attempt=attempt,
+        run_ts=run_ts,
+        status=result.run.status.value,
+        tier="formal",
+        backend=backend_of(sandbox),
+        metrics=dict(result.run.metrics),
+        extra=extra | dict(extra_record or {}),
+      ),
+      result.run.artifacts,
     )
     if not retry_permitted(task, result):
       break
@@ -421,15 +421,15 @@ def run_task(
   # durable, and atomically (ADR-0007 §7): a crash before it re-runs the
   # task; a torn write must never read as complete.
   store.put_bytes(
-      f"{address.prefix(instance_id)}/{MARKER_NAME}",
-      TerminalMarker(outcome=outcome, attempts=attempt + 1, run_ts=run_ts)
-      .to_json()
-      .encode("utf-8"),
+    f"{address.prefix(instance_id)}/{MARKER_NAME}",
+    TerminalMarker(outcome=outcome, attempts=attempt + 1, run_ts=run_ts)
+    .to_json()
+    .encode("utf-8"),
   )
   return TaskRunOutcome(
-      outcome=outcome,
-      resumed=False,
-      attempts=attempt + 1,
-      record=record,
-      result=result,
+    outcome=outcome,
+    resumed=False,
+    attempts=attempt + 1,
+    record=record,
+    result=result,
   )

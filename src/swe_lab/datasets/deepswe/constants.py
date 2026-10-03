@@ -25,5 +25,5 @@ MANIFEST_FILENAME = "manifest.json"
 # consistency, so the anchor lives here). Filled by the builder's output when
 # the artifact is (re)published; empty means "not yet published".
 PINNED_DEEPSWE_PARQUET_SHA256 = (
-    "954184ffb6fd88c798171dfc8577793b29631bff35c8d02f6fa4bbf88a44abd0"
+  "954184ffb6fd88c798171dfc8577793b29631bff35c8d02f6fa4bbf88a44abd0"
 )

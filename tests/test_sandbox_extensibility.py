@@ -18,10 +18,10 @@ from swe_lab.sandbox import Inline, Mount, Resource, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
 
 _SPEC = SandboxSpec(
-    instance_id="acme__widget-1",
-    image_ref="img:tag",
-    workdir="/repo",
-    base_commit="abc123",
+  instance_id="acme__widget-1",
+  image_ref="img:tag",
+  workdir="/repo",
+  base_commit="abc123",
 )
 
 
@@ -50,10 +50,10 @@ def test_custom_resource_kind_mounts_via_override(tmp_path: Path) -> None:
   sandbox.up()
 
   sandbox.mount(
-      {
-          "custom.txt": Mount(Reversed(b"abc")),
-          "builtin.txt": Mount(Inline(b"kept")),
-      }
+    {
+      "custom.txt": Mount(Reversed(b"abc")),
+      "builtin.txt": Mount(Inline(b"kept")),
+    }
   )
 
   assert sandbox.read("custom.txt") == b"cba"  # the override ran

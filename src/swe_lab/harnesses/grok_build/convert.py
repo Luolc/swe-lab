@@ -19,10 +19,10 @@ from __future__ import annotations
 from swe_lab.conversation import Conversation
 from swe_lab.harnesses.base import AgentOutcome
 from swe_lab.harnesses.claude_code.convert import (
-    event_stream_outcome as _claude_outcome,
+  event_stream_outcome as _claude_outcome,
 )
 from swe_lab.harnesses.claude_code.convert import (
-    event_stream_to_conversation as _claude_conversation,
+  event_stream_to_conversation as _claude_conversation,
 )
 
 

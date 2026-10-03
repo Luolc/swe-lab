@@ -16,21 +16,21 @@ from etils import epath
 import pytest
 
 from swe_lab.cli.overrides import (
-    apply_overrides,
-    Override,
-    OverrideError,
-    parse_overrides,
+  apply_overrides,
+  Override,
+  OverrideError,
+  parse_overrides,
 )
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.unit_test import UnitTestTask
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.rollout import CodingAgentTask
 from swe_lab.sandbox import (
-    backend_of,
-    DockerHostSandboxConfig,
-    ExecResult,
-    GhjobSandboxConfig,
-    SandboxFs,
+  backend_of,
+  DockerHostSandboxConfig,
+  ExecResult,
+  GhjobSandboxConfig,
+  SandboxFs,
 )
 from swe_lab.workflow import Task, WorkflowEntry
 import swe_lab.workflow.definitions as definitions
@@ -51,7 +51,7 @@ class _Probe(Task):
 
   @override
   def action(
-      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+    self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
   ) -> ExecResult:
     del instance
     return sb.run_script("main.sh", timeout=timeout)
@@ -64,7 +64,7 @@ def _entry(**kwargs: Any) -> WorkflowEntry:
 def _applied(*args: str, entry: WorkflowEntry | None = None) -> WorkflowEntry:
   """Parse and apply, returning the single rebuilt entry."""
   entries = apply_overrides(
-      [entry if entry is not None else _entry()], parse_overrides(args)
+    [entry if entry is not None else _entry()], parse_overrides(args)
   )
   return entries[0]
 
@@ -75,10 +75,10 @@ def _applied(*args: str, entry: WorkflowEntry | None = None) -> WorkflowEntry:
 def test_parsing_takes_the_path_apart():
   (parsed,) = parse_overrides(["--rollout.harness.model=opus"])
   assert parsed == Override(
-      entry="rollout",
-      path=("harness", "model"),
-      value="opus",
-      spelling="--rollout.harness.model=opus",
+    entry="rollout",
+    path=("harness", "model"),
+    value="opus",
+    spelling="--rollout.harness.model=opus",
   )
 
 
@@ -92,11 +92,11 @@ def test_anything_that_is_not_an_override_is_refused():
   # These arrive as *unknown* options, so a mistyped known flag lands here —
   # ignoring it would silently drop what the caller asked for.
   for arg, match in [
-      ("--persits", "unrecognized argument"),
-      ("nonsense", "unrecognized argument"),
-      ("--rollout=x", "names an entry and a field path"),
-      ("--.model=x", "names an entry and a field path"),
-      ("--rollout..model=x", "empty path segment"),
+    ("--persits", "unrecognized argument"),
+    ("nonsense", "unrecognized argument"),
+    ("--rollout=x", "names an entry and a field path"),
+    ("--.model=x", "names an entry and a field path"),
+    ("--rollout..model=x", "empty path segment"),
   ]:
     with pytest.raises(OverrideError, match=match):
       _ = parse_overrides([arg])
@@ -148,7 +148,7 @@ def test_an_entry_field_wins_where_the_names_collide():
   # one is reachable by its full path, which is the rule the help text states.
   entry = _entry()
   assert _applied("--probe.sandbox.env=A=1", entry=entry).sandbox.env == {
-      "A": "1"
+    "A": "1"
   }
   assert _probe(_applied("--probe.env=B=2", entry=entry)).env == {"B": "2"}
 
@@ -178,13 +178,13 @@ def test_walking_into_a_non_dataclass_is_refused():
 
 def test_every_shape_in_the_table_coerces():
   entry = _applied(
-      "--probe.text=hi",
-      "--probe.count=7",
-      "--probe.ratio=1.5",
-      "--probe.flag=true",
-      "--probe.where=/tmp/x",
-      "--probe.names=a,b",
-      "--probe.env=A=1,B=2",
+    "--probe.text=hi",
+    "--probe.count=7",
+    "--probe.ratio=1.5",
+    "--probe.flag=true",
+    "--probe.where=/tmp/x",
+    "--probe.names=a,b",
+    "--probe.env=A=1,B=2",
   )
   task = _probe(entry)
   assert (task.text, task.count, task.ratio, task.flag) == ("hi", 7, 1.5, True)
@@ -206,7 +206,7 @@ def test_booleans_take_the_words_and_the_digits():
 
 def test_an_enum_takes_its_value_and_lists_them_when_it_does_not():
   entry = WorkflowEntry(
-      "rollout", CodingAgentTask(harness=ClaudeCodeHarness()), timeout=10.0
+    "rollout", CodingAgentTask(harness=ClaudeCodeHarness()), timeout=10.0
   )
   rebuilt = _applied("--rollout.harness.capture=proxy", entry=entry)
   assert _agent(rebuilt).capture == "proxy"
@@ -216,9 +216,9 @@ def test_an_enum_takes_its_value_and_lists_them_when_it_does_not():
 
 def test_numbers_are_checked_for_being_numbers_and_finite():
   for arg, match in [
-      ("--probe.count=many", "is not int"),
-      ("--probe.ratio=nan", "not a finite number"),
-      ("--probe.ratio=inf", "not a finite number"),
+    ("--probe.count=many", "is not int"),
+    ("--probe.ratio=nan", "not a finite number"),
+    ("--probe.ratio=inf", "not a finite number"),
   ]:
     with pytest.raises(OverrideError, match=match):
       _ = _applied(arg)
@@ -251,9 +251,9 @@ def test_an_entrys_identity_cannot_be_overridden():
 
 def test_a_bare_name_swaps_the_harness_through_the_registry():
   entry = WorkflowEntry(
-      "rollout",
-      CodingAgentTask(harness=ClaudeCodeHarness(model="opus")),
-      timeout=10.0,
+    "rollout",
+    CodingAgentTask(harness=ClaudeCodeHarness(model="opus")),
+    timeout=10.0,
   )
   rebuilt = _applied("--rollout.harness=claude_code", entry=entry)
   # the registry builds a DEFAULT-configured agent; the name is not a field
@@ -262,7 +262,7 @@ def test_a_bare_name_swaps_the_harness_through_the_registry():
 
 def test_an_unknown_harness_name_lists_the_registered_ones():
   entry = WorkflowEntry(
-      "rollout", CodingAgentTask(harness=ClaudeCodeHarness()), timeout=10.0
+    "rollout", CodingAgentTask(harness=ClaudeCodeHarness()), timeout=10.0
   )
   with pytest.raises(OverrideError, match="unknown harness"):
     _ = _applied("--rollout.harness=telepath", entry=entry)
@@ -272,12 +272,12 @@ def test_a_swap_lands_before_a_field_set_on_what_it_replaced():
   # The shortest-path-first rule, which is why the swap needs no rule of its
   # own: setting a field on the harness being replaced would be lost.
   entry = WorkflowEntry(
-      "rollout", CodingAgentTask(harness=ClaudeCodeHarness()), timeout=10.0
+    "rollout", CodingAgentTask(harness=ClaudeCodeHarness()), timeout=10.0
   )
   rebuilt = _applied(
-      "--rollout.harness.model=haiku",
-      "--rollout.harness=claude_code",
-      entry=entry,
+    "--rollout.harness.model=haiku",
+    "--rollout.harness=claude_code",
+    entry=entry,
   )
   assert _agent(rebuilt).model == "haiku"
 
@@ -290,10 +290,8 @@ def test_overriding_a_run_never_edits_the_definition():
   # them in place, the next instance would inherit it — silently.
   before = definitions.ROLLOUT_AND_UNIT_TEST
   rebuilt = apply_overrides(
-      before,
-      parse_overrides(
-          ["--rollout.harness.model=opus", "--unit_test.retries=5"]
-      ),
+    before,
+    parse_overrides(["--rollout.harness.model=opus", "--unit_test.retries=5"]),
   )
   assert _agent(rebuilt[0]).model == "opus"
   assert rebuilt[1].retries == 5
@@ -305,8 +303,8 @@ def test_overriding_a_run_never_edits_the_definition():
 
 def test_entries_keep_their_declared_order():
   rebuilt = apply_overrides(
-      definitions.ROLLOUT_AND_UNIT_TEST,
-      parse_overrides(["--unit_test.retries=3", "--rollout.timeout=60"]),
+    definitions.ROLLOUT_AND_UNIT_TEST,
+    parse_overrides(["--unit_test.retries=3", "--rollout.timeout=60"]),
   )
   assert [entry.key for entry in rebuilt] == ["rollout", "unit_test"]
   assert isinstance(rebuilt[1].task, UnitTestTask)
@@ -318,13 +316,13 @@ def test_sandbox_swaps_whole_by_backend_name_then_takes_field_edits():
   # whatever is then there. Replacement lands first (shortest path wins), so
   # the two compose in either order on the command line.
   entries = apply_overrides(
-      definitions.ROLLOUT_AND_UNIT_TEST,
-      parse_overrides(
-          [
-              "--rollout.sandbox.pass_env=TOKEN",
-              "--rollout.sandbox=ghjob",
-          ]
-      ),
+    definitions.ROLLOUT_AND_UNIT_TEST,
+    parse_overrides(
+      [
+        "--rollout.sandbox.pass_env=TOKEN",
+        "--rollout.sandbox=ghjob",
+      ]
+    ),
   )
   rollout, unit_test = entries
   assert isinstance(rollout.sandbox, GhjobSandboxConfig)
@@ -338,7 +336,7 @@ def test_sandbox_swaps_whole_by_backend_name_then_takes_field_edits():
 def test_an_unknown_backend_name_is_refused():
   with pytest.raises(OverrideError, match="unknown backend"):
     _ = apply_overrides(
-        definitions.ROLLOUT, parse_overrides(["--rollout.sandbox=nope"])
+      definitions.ROLLOUT, parse_overrides(["--rollout.sandbox=nope"])
     )
 
 
@@ -352,7 +350,7 @@ def test_a_literal_alias_is_overridable_and_validates_its_members():
 
   plain = Literal["stream", "proxy"]
   assert (
-      _coerce(plain, Override("r", ("x",), "proxy", "--r.x=proxy")) == "proxy"
+    _coerce(plain, Override("r", ("x",), "proxy", "--r.x=proxy")) == "proxy"
   )
   with pytest.raises(OverrideError, match="expected one of stream, proxy"):
     _ = _coerce(plain, Override("r", ("x",), "ftp", "--r.x=ftp"))
@@ -367,7 +365,7 @@ def test_a_pep695_type_alias_is_unwrapped_before_dispatch():
   from swe_lab.harnesses.claude_code import Effort
 
   assert (
-      _coerce(Effort, Override("r", ("x",), "xhigh", "--r.x=xhigh")) == "xhigh"
+    _coerce(Effort, Override("r", ("x",), "xhigh", "--r.x=xhigh")) == "xhigh"
   )
   with pytest.raises(OverrideError, match="low, medium, high, xhigh, max"):
     _ = _coerce(Effort, Override("r", ("x",), "ultra", "--r.x=ultra"))

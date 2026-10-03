@@ -117,13 +117,13 @@ def run_prefix(record: AttemptRecord) -> str:
   deterministically overwrites it.
   """
   return (
-      f"{record.sweep_id}/{record.instance_id}"
-      f"/r{record.rollout_id}/{record.task}/a{record.attempt}"
+    f"{record.sweep_id}/{record.instance_id}"
+    f"/r{record.rollout_id}/{record.task}/a{record.attempt}"
   )
 
 
 def persist(
-    store: Store, record: AttemptRecord, files: Mapping[str, epath.PathLike]
+  store: Store, record: AttemptRecord, files: Mapping[str, epath.PathLike]
 ) -> AttemptRecord:
   """Upload a run's files under its key and append its manifest shard.
 
@@ -148,7 +148,7 @@ def persist(
   for name, path in files.items():
     if not epath.Path(path).exists():
       _logger.warning(
-          "artifact %r is missing at %s; not persisting it", name, path
+        "artifact %r is missing at %s; not persisting it", name, path
       )
       continue
     key = f"{prefix}/{name}"
@@ -160,7 +160,7 @@ def persist(
 
 
 def promote(
-    store: Store, record: AttemptRecord, workspace: epath.PathLike
+  store: Store, record: AttemptRecord, workspace: epath.PathLike
 ) -> AttemptRecord:
   """Push a whole debug workspace into T1 (the misclassification safety valve).
 
@@ -180,9 +180,9 @@ def promote(
   # wrap the results back into epath.Path.
   base = pathlib.Path(workspace)
   files = {
-      path.relative_to(base).as_posix(): epath.Path(path)
-      for path in sorted(base.rglob("*"))
-      if path.is_file()
+    path.relative_to(base).as_posix(): epath.Path(path)
+    for path in sorted(base.rglob("*"))
+    if path.is_file()
   }
   return persist(store, record, files)
 

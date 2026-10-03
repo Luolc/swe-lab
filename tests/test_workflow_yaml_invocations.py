@@ -57,9 +57,9 @@ def test_cli_overrides_in_workflows_parse(path: Path):
     parsed = parse_overrides(args)
   except OverrideError as error:
     raise AssertionError(
-        f"{path.name} invokes the CLI with an override the parser rejects:"
-        f" {error}\n"
-        "Overrides are spelled --<entry>.<field-path>=<value>, one token."
+      f"{path.name} invokes the CLI with an override the parser rejects:"
+      f" {error}\n"
+      "Overrides are spelled --<entry>.<field-path>=<value>, one token."
     ) from error
   assert len(parsed) == len(args)
 
@@ -71,10 +71,10 @@ def test_workflow_names_in_workflows_are_registered(path: Path):
   # `python -m swe_lab run <name>` — including the `a && 'x' || 'y'` ternary
   # the dispatch files use to pick between two registered names.
   names = set(re.findall(r"'([a-z_]+)'\s*\}\}", text)) | set(
-      re.findall(r"swe_lab run\s*\\?\s*\n?\s*([a-z_]+)\s", text)
+    re.findall(r"swe_lab run\s*\\?\s*\n?\s*([a-z_]+)\s", text)
   )
   unknown = sorted(n for n in names if n not in set(registered_workflows()))
   assert not unknown, (
-      f"{path.name} runs unregistered workflow name(s): {unknown};"
-      f" registered: {registered_workflows()}"
+    f"{path.name} runs unregistered workflow name(s): {unknown};"
+    f" registered: {registered_workflows()}"
   )

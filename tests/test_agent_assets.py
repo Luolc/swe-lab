@@ -15,10 +15,10 @@ from etils import epath
 import pytest
 
 from swe_lab.sandbox import (
-    AgentAsset,
-    InstalledAssetsObserver,
-    MountedAssetsObserver,
-    SandboxSpec,
+  AgentAsset,
+  InstalledAssetsObserver,
+  MountedAssetsObserver,
+  SandboxSpec,
 )
 from swe_lab.sandbox.backends.ghjob import GitHubJobSandbox
 from swe_lab.sandbox.backends.host import DockerHostSandbox
@@ -27,7 +27,7 @@ SPEC = SandboxSpec("acme__widget-1", "img:tag", "/app", "base")
 
 
 def _asset(
-    tmp_path: Path, name: str = "agent"
+  tmp_path: Path, name: str = "agent"
 ) -> tuple[AgentAsset, list[object]]:
   """Build an asset whose materializer records where it was asked to put it."""
   calls: list[object] = []
@@ -43,12 +43,12 @@ def _asset(
     return epath.Path(dest)
 
   return (
-      AgentAsset(
-          path=f"/opt/{name}/{name}",
-          version="1.0",
-          fetch=materialize,
-      ),
-      calls,
+    AgentAsset(
+      path=f"/opt/{name}/{name}",
+      version="1.0",
+      fetch=materialize,
+    ),
+    calls,
   )
 
 
@@ -105,10 +105,10 @@ def test_a_task_that_runs_no_agent_gets_nothing(tmp_path: Path):
   sandbox = DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path / "ws"))
   assert sandbox.asset_observer(()) is None
   assert (
-      GitHubJobSandbox(
-          spec=SPEC, workspace=epath.Path(tmp_path / "ws2")
-      ).asset_observer(())
-      is None
+    GitHubJobSandbox(
+      spec=SPEC, workspace=epath.Path(tmp_path / "ws2")
+    ).asset_observer(())
+    is None
   )
 
 
@@ -181,7 +181,7 @@ def test_every_harness_uses_the_shared_info_observer():
   for name in ("claude_code", "codex", "grok_build"):
     harness = build_harness(name)
     (info,) = [
-        o for o in harness.observers() if isinstance(o, AgentInfoObserver)
+      o for o in harness.observers() if isinstance(o, AgentInfoObserver)
     ]
     assert info.artifact.startswith(name.split("_")[0])
     seen[name] = tuple(info.probes)
@@ -210,8 +210,8 @@ def test_the_workspace_reader_is_absence_tolerant(tmp_path: Path):
   from swe_lab.sandbox.testing import FakeSandbox
 
   sb = FakeSandbox(
-      spec=SandboxSpec("x", "img", "/app", "base"),
-      workspace=epath.Path(tmp_path),
+    spec=SandboxSpec("x", "img", "/app", "base"),
+    workspace=epath.Path(tmp_path),
   )
   assert read_text(sb, "nope.txt") == ""
   sb.write("there.txt", b"hi")
@@ -303,7 +303,7 @@ def test_a_store_backed_sandbox_resolves_without_fetching():
 
 
 def test_an_asset_without_a_fetch_is_legal_and_says_so_when_transferred(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # A harness targeting a store-backed sandbox may declare no fetch at all.
   # That must construct fine...
@@ -332,7 +332,7 @@ def test_the_pinned_version_is_a_field_a_run_can_override():
   # That the pin itself is checksum-covered is a separate guard
   # (`test_every_pinned_binary_has_a_pinned_checksum`).
   assert [a.version for a in CodexHarness().assets()] == [
-      PINNED_CODEX_VERSION
+    PINNED_CODEX_VERSION
   ] * 2
   moved = CodexHarness(version="0.146.1")
   assert [a.version for a in moved.assets()] == ["0.146.1"] * 2
@@ -361,7 +361,7 @@ def test_the_runner_puts_assets_on_the_config_before_construction():
 
   task = CodingAgentTask(harness=CodexHarness())
   config = dataclasses.replace(
-      DockerHostSandboxConfig(), assets=tuple(task.assets())
+    DockerHostSandboxConfig(), assets=tuple(task.assets())
   )
   seen.append(tuple(a.path for a in config.assets))
 
@@ -372,7 +372,7 @@ def test_the_runner_puts_assets_on_the_config_before_construction():
 
 
 def test_config_time_resolution_does_not_remove_the_run_time_phase(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """Bringing bytes in early does not finish the job.
 
@@ -392,10 +392,9 @@ def test_config_time_resolution_does_not_remove_the_run_time_phase(
 
     @override
     def asset_observer(
-        self, assets: Sequence[AgentAsset]
+      self, assets: Sequence[AgentAsset]
     ) -> SandboxObserver | None:
       class _Unpack(SandboxObserver):
-
         @override
         def after_create(self, sb: object) -> None:
           del sb
@@ -405,7 +404,7 @@ def test_config_time_resolution_does_not_remove_the_run_time_phase(
 
   asset, calls = _asset(tmp_path)
   sandbox = _StoreBackedSandbox(
-      spec=SPEC, workspace=epath.Path(tmp_path / "ws")
+    spec=SPEC, workspace=epath.Path(tmp_path / "ws")
   )
   observer = sandbox.asset_observer((asset,))
   assert observer is not None

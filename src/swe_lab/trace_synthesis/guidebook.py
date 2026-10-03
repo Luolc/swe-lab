@@ -29,19 +29,19 @@ GUIDEBOOK_CONTEXT_LEGACY = "legacy_tutorial"
 # bold label (``**Goal.**``) at the start of its paragraph — the shape of the
 # hand-written guidebooks the schema was distilled from.
 STAGE_FIELDS: tuple[str, ...] = (
-    "Goal",
-    "Actions",
-    "Expected observations",
-    "Justification",
-    "Exit criteria",
+  "Goal",
+  "Actions",
+  "Expected observations",
+  "Justification",
+  "Exit criteria",
 )
 
 RUBRIC_FIELDS: tuple[str, ...] = (
-    "Checkpoints",
-    "On-track evidence",
-    "Disallowed branches",
-    "Off-track signals",
-    "Safe hint justification",
+  "Checkpoints",
+  "On-track evidence",
+  "Disallowed branches",
+  "Off-track signals",
+  "Safe hint justification",
 )
 
 _STAGE_HEADING = re.compile(r"^## Stage (\d+)\b.*$", re.MULTILINE)

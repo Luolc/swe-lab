@@ -17,11 +17,11 @@ from swe_lab.rollout import RolloutOutcome
 def _batch() -> list[tuple[RolloutOutcome, bool]]:
   """Build a batch with both kinds of oddity: one alone proves less."""
   return (
-      [(RolloutOutcome.PATCH_PRODUCED, True)] * 12
-      + [(RolloutOutcome.NO_PATCH, False)] * 26
-      + [(RolloutOutcome.SYSTEM_FAILED, False)] * 2
-      + [(RolloutOutcome.OOM_KILLED, False)]
-      + [(RolloutOutcome.UNCLASSIFIED, False)] * 2
+    [(RolloutOutcome.PATCH_PRODUCED, True)] * 12
+    + [(RolloutOutcome.NO_PATCH, False)] * 26
+    + [(RolloutOutcome.SYSTEM_FAILED, False)] * 2
+    + [(RolloutOutcome.OOM_KILLED, False)]
+    + [(RolloutOutcome.UNCLASSIFIED, False)] * 2
   )
 
 
@@ -35,7 +35,7 @@ def test_a_reported_rate_carries_both_of_its_counts():
   """
   rate = rate_of(_batch())
   assert rate.render("resolved") == (
-      "resolved 12 / 40 (3 system failures excluded, 2 unclassified)"
+    "resolved 12 / 40 (3 system failures excluded, 2 unclassified)"
   )
 
 
@@ -49,9 +49,9 @@ def test_a_run_that_was_ours_moves_neither_half_of_the_fraction():
   assert (clean.numerator, clean.denominator) == (3, 3)
 
   with_ours = rate_of(
-      [(RolloutOutcome.PATCH_PRODUCED, True)] * 3
-      + [(RolloutOutcome.SYSTEM_FAILED, True)]  # "met" is ignored for ours
-      + [(RolloutOutcome.OOM_KILLED, False)]
+    [(RolloutOutcome.PATCH_PRODUCED, True)] * 3
+    + [(RolloutOutcome.SYSTEM_FAILED, True)]  # "met" is ignored for ours
+    + [(RolloutOutcome.OOM_KILLED, False)]
   )
   assert (with_ours.numerator, with_ours.denominator) == (3, 3)
   assert with_ours.excluded == 2
@@ -65,8 +65,8 @@ def test_an_unclassified_run_is_inside_the_denominator_and_still_visible():
   silent — the two facts have to hold at once.
   """
   rate = rate_of(
-      [(RolloutOutcome.PATCH_PRODUCED, True)]
-      + [(RolloutOutcome.UNCLASSIFIED, False)] * 2
+    [(RolloutOutcome.PATCH_PRODUCED, True)]
+    + [(RolloutOutcome.UNCLASSIFIED, False)] * 2
   )
   assert rate.denominator == 3  # in, not excluded
   assert rate.excluded == 0
@@ -82,7 +82,7 @@ def test_the_counts_are_reported_when_they_are_zero():
   """
   rate = rate_of([(RolloutOutcome.PATCH_PRODUCED, True)] * 5)
   assert rate.render("resolved") == (
-      "resolved 5 / 5 (0 system failures excluded, 0 unclassified)"
+    "resolved 5 / 5 (0 system failures excluded, 0 unclassified)"
   )
 
 
@@ -125,8 +125,8 @@ def test_a_batch_that_was_all_ours_has_no_rate_and_says_so():
   rate = rate_of([(RolloutOutcome.SYSTEM_FAILED, False)] * 5)
   assert rate.estimable is False
   assert rate.render("resolved") == (
-      "resolved not estimable — 0 runs counted"
-      " (5 system failures excluded, 0 unclassified)"
+    "resolved not estimable — 0 runs counted"
+    " (5 system failures excluded, 0 unclassified)"
   )
   # The number that would have been reported as a rate is not in the line.
   assert "0 / 0" not in rate.render("resolved")

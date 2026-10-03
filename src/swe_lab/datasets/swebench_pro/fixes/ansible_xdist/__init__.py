@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from ...constants import RUN_SCRIPT_NAME
 from .._seam import (
-    RegisteredFix,
-    render,
-    SweBenchProUnitTestSpec,
-    with_setup,
+  RegisteredFix,
+  render,
+  SweBenchProUnitTestSpec,
+  with_setup,
 )
 
 _ANSIBLE_XDIST_INSTANCE = (
-    "instance_ansible__ansible-a20a52701402a12f91396549df"
-    "04ac55809f68e9-v1055803c3a812189a1133297f7f546857928"
-    "3f86"
+  "instance_ansible__ansible-a20a52701402a12f91396549df"
+  "04ac55809f68e9-v1055803c3a812189a1133297f7f546857928"
+  "3f86"
 )
 
 # Runs from the repo root under `set -e`, after the golden checkout. Rewrites
@@ -35,7 +35,7 @@ fi
 
 
 def _fix_instance_ansible_a20a5270(
-    spec: SweBenchProUnitTestSpec,
+  spec: SweBenchProUnitTestSpec,
 ) -> SweBenchProUnitTestSpec:
   """Pin ``ansible-test units`` to one worker, ending an xdist tmpdir race.
 
@@ -75,12 +75,12 @@ def _fix_instance_ansible_a20a5270(
     The spec with the worker-count pin spliced in.
   """
   return with_setup(
-      spec,
-      mounts={},
-      setup=render(_ANSIBLE_XDIST_SETUP, RUN_SCRIPT=RUN_SCRIPT_NAME),
+    spec,
+    mounts={},
+    setup=render(_ANSIBLE_XDIST_SETUP, RUN_SCRIPT=RUN_SCRIPT_NAME),
   )
 
 
 ANSIBLE_XDIST = RegisteredFix(
-    instances=(_ANSIBLE_XDIST_INSTANCE,), fix=_fix_instance_ansible_a20a5270
+  instances=(_ANSIBLE_XDIST_INSTANCE,), fix=_fix_instance_ansible_a20a5270
 )

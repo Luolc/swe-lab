@@ -27,10 +27,10 @@ _RUN_MARKER = "set +e"
 
 
 def with_setup(
-    spec: SweBenchProUnitTestSpec,
-    *,
-    setup: str,
-    mounts: dict[str, Mount],
+  spec: SweBenchProUnitTestSpec,
+  *,
+  setup: str,
+  mounts: dict[str, Mount],
 ) -> SweBenchProUnitTestSpec:
   """Return ``spec`` with extra setup staged and spliced into its script.
 
@@ -60,8 +60,8 @@ def with_setup(
   markers = [i for i, line in enumerate(lines) if line == _RUN_MARKER]
   if len(markers) != 1:
     raise ValueError(
-        f"expected exactly one {_RUN_MARKER!r} line in the eval script to"
-        f" splice setup before, found {len(markers)}"
+      f"expected exactly one {_RUN_MARKER!r} line in the eval script to"
+      f" splice setup before, found {len(markers)}"
     )
   at = markers[0]
   spliced = [*lines[:at], *setup.strip().splitlines(), *lines[at:]]
@@ -75,9 +75,9 @@ def with_setup(
   # version of this lost `retries`. A fix changes the script and the mounts;
   # everything else is the dataset's and must survive untouched.
   return replace(
-      spec,
-      eval_script="\n".join(spliced) + "\n",
-      mounts={**spec.mounts, **mounts},
+    spec,
+    eval_script="\n".join(spliced) + "\n",
+    mounts={**spec.mounts, **mounts},
   )
 
 

@@ -38,8 +38,8 @@ def find_repo_root(start: epath.PathLike | None = None) -> epath.Path:
     if (candidate / "pyproject.toml").is_file():
       return candidate
   raise RuntimeError(
-      "Could not locate the repository root (no pyproject.toml found above"
-      f" {origin})."
+    "Could not locate the repository root (no pyproject.toml found above"
+    f" {origin})."
   )
 
 

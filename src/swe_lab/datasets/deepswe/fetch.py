@@ -13,9 +13,9 @@ import hashlib
 from etils import epath
 
 from .constants import (
-    HF_REPO_ID,
-    PARQUET_FILENAME,
-    PINNED_DEEPSWE_PARQUET_SHA256,
+  HF_REPO_ID,
+  PARQUET_FILENAME,
+  PINNED_DEEPSWE_PARQUET_SHA256,
 )
 
 
@@ -46,17 +46,17 @@ def ensure_deepswe_parquet(data_dir: epath.PathLike) -> epath.Path:
     from huggingface_hub import hf_hub_download
 
     fetched = hf_hub_download(
-        repo_id=HF_REPO_ID, filename=PARQUET_FILENAME, repo_type="dataset"
+      repo_id=HF_REPO_ID, filename=PARQUET_FILENAME, repo_type="dataset"
     )
     _ = target.write_bytes(epath.Path(fetched).read_bytes())
   actual = hashlib.sha256(target.read_bytes()).hexdigest()
   if actual != PINNED_DEEPSWE_PARQUET_SHA256:
     raise ValueError(
-        f"{target} does not match the pinned sha256:\n"
-        f"  expected {PINNED_DEEPSWE_PARQUET_SHA256}\n"
-        f"  actual   {actual}\n"
-        "If the pin was just bumped, delete the file to re-download; if it"
-        " was not, the published artifact drifted — do not use it, and check"
-        " the HF repo's manifest.json against the pin."
+      f"{target} does not match the pinned sha256:\n"
+      f"  expected {PINNED_DEEPSWE_PARQUET_SHA256}\n"
+      f"  actual   {actual}\n"
+      "If the pin was just bumped, delete the file to re-download; if it"
+      " was not, the published artifact drifted — do not use it, and check"
+      " the HF repo's manifest.json against the pin."
     )
   return target

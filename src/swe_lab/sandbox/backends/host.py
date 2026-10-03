@@ -127,8 +127,8 @@ class DockerHostSandbox(Sandbox):
     self.workspace.mkdir(parents=True, exist_ok=True)
     if not self.reuse and any(self.workspace.iterdir()):
       raise SandboxError(
-          f"workspace {self.workspace} is not empty; pass reuse=True to run "
-          "in it anyway"
+        f"workspace {self.workspace} is not empty; pass reuse=True to run "
+        "in it anyway"
       )
     if self.pull:
       pull_started = time.monotonic()
@@ -143,25 +143,25 @@ class DockerHostSandbox(Sandbox):
     for key in self.pass_env:
       create_args += ["-e", key]
     create_args += [
-        "--label",
-        f"{_OWNER_LABEL}=1",
-        "--label",
-        f"{_INSTANCE_LABEL}={self.spec.instance_id}",
-        "--label",
-        f"{_OWNER_PID_LABEL}={os.getpid()}",
-        "--label",
-        f"{_OWNER_SESSION_LABEL}={_OWNER_SESSION}",
-        "--entrypoint",
-        self.shell,
-        self.spec.image_ref,
-        "-c",
-        "sleep infinity",
+      "--label",
+      f"{_OWNER_LABEL}=1",
+      "--label",
+      f"{_INSTANCE_LABEL}={self.spec.instance_id}",
+      "--label",
+      f"{_OWNER_PID_LABEL}={os.getpid()}",
+      "--label",
+      f"{_OWNER_SESSION_LABEL}={_OWNER_SESSION}",
+      "--entrypoint",
+      self.shell,
+      self.spec.image_ref,
+      "-c",
+      "sleep infinity",
     ]
     created = self._docker(create_args, timeout=_DOCKER_TIMEOUT_S)
     if created.returncode != 0:
       raise SandboxError(
-          f"docker create for {self.spec.image_ref} failed:\n"
-          f"{created.stderr[-2000:]}"
+        f"docker create for {self.spec.image_ref} failed:\n"
+        f"{created.stderr[-2000:]}"
       )
     # The container exists from the moment `create` returns, so ownership of
     # it starts here rather than after `start`. Registering the handle later
@@ -171,12 +171,12 @@ class DockerHostSandbox(Sandbox):
     running = False
     try:
       started = self._docker(
-          ["start", self._container], timeout=_DOCKER_TIMEOUT_S
+        ["start", self._container], timeout=_DOCKER_TIMEOUT_S
       )
       if started.returncode != 0:
         raise SandboxError(
-            f"docker start for {self.spec.image_ref} failed:\n"
-            f"{started.stderr[-2000:]}"
+          f"docker start for {self.spec.image_ref} failed:\n"
+          f"{started.stderr[-2000:]}"
         )
       running = True
     finally:
@@ -190,7 +190,7 @@ class DockerHostSandbox(Sandbox):
       return
     try:
       removed = self._docker(
-          ["rm", "-f", self._container], timeout=_DOCKER_TIMEOUT_S
+        ["rm", "-f", self._container], timeout=_DOCKER_TIMEOUT_S
       )
     except SandboxError as exc:
       _logger.warning("docker teardown failed (swallowed): %s", exc)
@@ -198,7 +198,7 @@ class DockerHostSandbox(Sandbox):
       return
     if removed.returncode != 0:
       _logger.warning(
-          "docker teardown failed (swallowed): %s", removed.stderr.strip()
+        "docker teardown failed (swallowed): %s", removed.stderr.strip()
       )
     self._container = ""
 
@@ -287,40 +287,40 @@ class DockerHostSandbox(Sandbox):
     # /opt/claude-code — the mounted asset's directory is ours to create.
     parent = posixpath.dirname(target.rstrip("/")) or "/"
     made = self._docker(
-        ["exec", self._container, "mkdir", "-p", parent],
-        timeout=_DOCKER_TIMEOUT_S,
+      ["exec", self._container, "mkdir", "-p", parent],
+      timeout=_DOCKER_TIMEOUT_S,
     )
     if made.returncode != 0:
       raise SandboxError(
-          f"mkdir -p of {parent!r} for mount {target!r} failed:\n"
-          f"{made.stderr[-2000:]}"
+        f"mkdir -p of {parent!r} for mount {target!r} failed:\n"
+        f"{made.stderr[-2000:]}"
       )
     copied = self._docker(
-        ["cp", str(src), f"{self._container}:{target}"],
-        timeout=_DOCKER_TIMEOUT_S,
+      ["cp", str(src), f"{self._container}:{target}"],
+      timeout=_DOCKER_TIMEOUT_S,
     )
     if copied.returncode != 0:
       raise SandboxError(
-          f"docker cp to {target!r} failed:\n{copied.stderr[-2000:]}"
+        f"docker cp to {target!r} failed:\n{copied.stderr[-2000:]}"
       )
     chmodded = self._docker(
-        ["exec", self._container, "chmod", format(mount.mode, "o"), target],
-        timeout=_DOCKER_TIMEOUT_S,
+      ["exec", self._container, "chmod", format(mount.mode, "o"), target],
+      timeout=_DOCKER_TIMEOUT_S,
     )
     if chmodded.returncode != 0:
       raise SandboxError(
-          f"chmod of mounted {target!r} failed:\n{chmodded.stderr[-2000:]}"
+        f"chmod of mounted {target!r} failed:\n{chmodded.stderr[-2000:]}"
       )
 
   # --- exec ----------------------------------------------------------------
 
   @override
   def run_script(
-      self,
-      name: str,
-      *,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    name: str,
+    *,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     """Run ``$SANDBOX_WORKSPACE/<name>`` under the shell in the live container.
 
@@ -337,32 +337,32 @@ class DockerHostSandbox(Sandbox):
       The script's exit status and output; exit code 124 on timeout.
     """
     return self._exec(
-        [self.shell, f"{self.mount_at}/{name}"],
-        timeout=timeout,
-        env=env,
+      [self.shell, f"{self.mount_at}/{name}"],
+      timeout=timeout,
+      env=env,
     )
 
   @override
   def run_command(
-      self,
-      command: str,
-      *,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    command: str,
+    *,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     """Run an inline command (``<shell> -c command``) in the live container."""
     return self._exec(
-        [self.shell, "-c", command],
-        timeout=timeout,
-        env=env,
+      [self.shell, "-c", command],
+      timeout=timeout,
+      env=env,
     )
 
   def _exec(
-      self,
-      inner: Sequence[str],
-      *,
-      timeout: float,
-      env: Mapping[str, str] | None,
+    self,
+    inner: Sequence[str],
+    *,
+    timeout: float,
+    env: Mapping[str, str] | None,
   ) -> ExecResult:
     """Run one ``docker exec`` with ``SANDBOX_WORKSPACE`` and extra env set."""
     if not self._container:
@@ -373,11 +373,11 @@ class DockerHostSandbox(Sandbox):
     args += [self._container, *inner]
     try:
       done = subprocess.run(
-          ["docker", *args],
-          capture_output=True,
-          text=True,
-          timeout=timeout,
-          check=False,
+        ["docker", *args],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
       )
       return ExecResult(done.returncode, done.stdout, done.stderr)
     except subprocess.TimeoutExpired as exc:
@@ -390,16 +390,16 @@ class DockerHostSandbox(Sandbox):
 
   def _pull(self, image_ref: str) -> None:
     pulled = self._docker(
-        ["pull", "--platform", self.platform, image_ref],
-        timeout=_PULL_TIMEOUT_S,
+      ["pull", "--platform", self.platform, image_ref],
+      timeout=_PULL_TIMEOUT_S,
     )
     if pulled.returncode != 0:
       raise SandboxError(
-          f"docker pull {image_ref} failed:\n{pulled.stderr[-2000:]}"
+        f"docker pull {image_ref} failed:\n{pulled.stderr[-2000:]}"
       )
 
   def _docker(
-      self, args: list[str], *, timeout: float
+    self, args: list[str], *, timeout: float
   ) -> subprocess.CompletedProcess[str]:
     """Run one ``docker`` subcommand, capturing output.
 
@@ -415,17 +415,17 @@ class DockerHostSandbox(Sandbox):
     """
     try:
       return subprocess.run(
-          ["docker", *args],
-          capture_output=True,
-          text=True,
-          timeout=timeout,
-          check=False,
+        ["docker", *args],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
       )
     except FileNotFoundError as exc:
       raise SandboxError("docker CLI not found on PATH") from exc
     except subprocess.TimeoutExpired as exc:
       raise SandboxError(
-          f"docker {args[0]} timed out after {timeout}s"
+        f"docker {args[0]} timed out after {timeout}s"
       ) from exc
 
 
@@ -435,8 +435,8 @@ _METRIC_NAMESPACE = "sandbox"
 # cgroup v2 / v1 locations of the container's cumulative memory peak and OOM
 # counters, read from *inside* the container so the right cgroup is implied.
 _CGROUP_PEAK_FILES = (
-    "/sys/fs/cgroup/memory.peak",
-    "/sys/fs/cgroup/memory/memory.max_usage_in_bytes",
+  "/sys/fs/cgroup/memory.peak",
+  "/sys/fs/cgroup/memory/memory.max_usage_in_bytes",
 )
 _CGROUP_EVENTS_FILE = "/sys/fs/cgroup/memory.events"
 
@@ -550,8 +550,8 @@ class HostMetricsObserver(SandboxObserver):
       return None
     try:
       result = self.sandbox._docker(  # noqa: SLF001 — same-module contract
-          ["inspect", "-f", "{{json .State.OOMKilled}}", handle],
-          timeout=_DOCKER_TIMEOUT_S,
+        ["inspect", "-f", "{{json .State.OOMKilled}}", handle],
+        timeout=_DOCKER_TIMEOUT_S,
       )
     except SandboxError as exc:
       _logger.warning("docker inspect for metrics failed: %s", exc)
@@ -573,7 +573,7 @@ class HostMetricsObserver(SandboxObserver):
       return None
     try:
       result = self.sandbox._docker(  # noqa: SLF001 — same-module contract
-          ["exec", handle, "cat", path], timeout=_DOCKER_TIMEOUT_S
+        ["exec", handle, "cat", path], timeout=_DOCKER_TIMEOUT_S
       )
     except SandboxError as exc:
       _logger.warning("docker exec cat %s failed: %s", path, exc)

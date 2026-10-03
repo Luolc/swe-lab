@@ -5,35 +5,35 @@ from __future__ import annotations
 import pytest
 
 from swe_lab.harnesses.claude_code.errors import (
-    AnnotationError,
-    classify_error_text,
-    cli_failure,
-    RetryableError,
-    UsageLimitError,
+  AnnotationError,
+  classify_error_text,
+  cli_failure,
+  RetryableError,
+  UsageLimitError,
 )
 
 
 @pytest.mark.parametrize(
-    "text",
-    [
-        "You have reached your usage limit. It resets at 3pm.",
-        "Your credit balance is too low to run this request.",
-        "quota exceeded for this window",
-    ],
+  "text",
+  [
+    "You have reached your usage limit. It resets at 3pm.",
+    "Your credit balance is too low to run this request.",
+    "quota exceeded for this window",
+  ],
 )
 def test_usage_limit_is_fatal(text: str) -> None:
   assert classify_error_text(text) is UsageLimitError
 
 
 @pytest.mark.parametrize(
-    "text",
-    [
-        "429 Too Many Requests",
-        "Error: server overloaded, please try again",
-        "connection reset by peer",
-        "request timed out",
-        "503 Service Unavailable",
-    ],
+  "text",
+  [
+    "429 Too Many Requests",
+    "Error: server overloaded, please try again",
+    "connection reset by peer",
+    "request timed out",
+    "503 Service Unavailable",
+  ],
 )
 def test_transient_is_retryable(text: str) -> None:
   assert classify_error_text(text) is RetryableError

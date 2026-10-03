@@ -28,10 +28,10 @@ def _docker_usable() -> bool:
     return False
   try:
     result = subprocess.run(
-        ["docker", "info"],
-        capture_output=True,
-        timeout=15,
-        check=False,
+      ["docker", "info"],
+      capture_output=True,
+      timeout=15,
+      check=False,
     )
   except (OSError, subprocess.TimeoutExpired):
     return False
@@ -57,7 +57,7 @@ class FakeClaudeBinary:
 
 @pytest.fixture(autouse=True)
 def fake_claude_binary(
-    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+  tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
 ) -> FakeClaudeBinary:
   """Stand in for the pinned agent binary: no download, no ``/opt`` write.
 
@@ -77,13 +77,13 @@ def fake_claude_binary(
     return record.cached if dest is None else epath.Path(dest)
 
   monkeypatch.setattr(
-      "swe_lab.harnesses.claude_code.binary.ensure_claude_binary", _stub
+    "swe_lab.harnesses.claude_code.binary.ensure_claude_binary", _stub
   )
   return record
 
 
 def pytest_collection_modifyitems(
-    config: pytest.Config, items: Iterable[pytest.Item]
+  config: pytest.Config, items: Iterable[pytest.Item]
 ) -> None:
   """Skip Docker-marked tests when no Docker daemon is reachable."""
   del config

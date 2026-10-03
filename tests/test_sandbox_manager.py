@@ -12,17 +12,17 @@ from etils import epath
 import pytest
 
 from swe_lab.sandbox import (
-    Contribution,
-    DockerHostSandbox,
-    ExecResult,
-    GitHubJobSandbox,
-    Inline,
-    LocalFile,
-    Mount,
-    RunStatus,
-    SandboxError,
-    SandboxManager,
-    SandboxSpec,
+  Contribution,
+  DockerHostSandbox,
+  ExecResult,
+  GitHubJobSandbox,
+  Inline,
+  LocalFile,
+  Mount,
+  RunStatus,
+  SandboxError,
+  SandboxManager,
+  SandboxSpec,
 )
 from swe_lab.sandbox.testing import FakeSandbox, RecordingObserver
 
@@ -54,27 +54,27 @@ def test_clean_run_order_status_and_label(tmp_path: Path):
   events: list[str] = []
   sb = _sandbox(tmp_path)
   mgr = _manager(
-      sb,
-      observers=[
-          RecordingObserver("a", events),
-          RecordingObserver("b", events),
-      ],
+    sb,
+    observers=[
+      RecordingObserver("a", events),
+      RecordingObserver("b", events),
+    ],
   )
   with mgr.session() as live:
     events.append("body")
     assert live is sb
   assert events == [
-      "a.mounts",
-      "b.mounts",
-      "a.before_create",
-      "b.before_create",
-      "a.after_create",
-      "b.after_create",
-      "body",
-      "a.before_destroy",
-      "b.before_destroy",
-      "a.after_destroy",
-      "b.after_destroy",
+    "a.mounts",
+    "b.mounts",
+    "a.before_create",
+    "b.before_create",
+    "a.after_create",
+    "b.after_create",
+    "body",
+    "a.before_destroy",
+    "b.before_destroy",
+    "a.after_destroy",
+    "b.after_destroy",
   ]
   assert sb.calls[0] == ("up", "inst")
   assert _down_ran(sb)
@@ -89,7 +89,6 @@ def test_mounts_materialize_after_up(tmp_path: Path):
   seen: list[bool] = []
 
   class Probe(FakeSandbox):
-
     @override
     def up(self) -> None:
       seen.append((self.workspace / "run.sh").is_file())
@@ -110,8 +109,8 @@ def test_before_create_raises(tmp_path: Path):
   events: list[str] = []
   sb = _sandbox(tmp_path)
   mgr = _manager(
-      sb,
-      observers=[RecordingObserver("a", events, raise_in="before_create")],
+    sb,
+    observers=[RecordingObserver("a", events, raise_in="before_create")],
   )
   with pytest.raises(RuntimeError, match="scripted failure"), mgr.session():
     pytest.fail("body must not run")
@@ -125,15 +124,15 @@ def test_before_create_raises(tmp_path: Path):
 def test_duplicate_mount_target(tmp_path: Path):
   sb = _sandbox(tmp_path)
   mgr = _manager(
-      sb,
-      mounts={"x.sh": Mount(Inline(b"a"))},
-      observers=[
-          RecordingObserver("a", extra_mounts={"x.sh": Mount(Inline(b"b"))})
-      ],
+    sb,
+    mounts={"x.sh": Mount(Inline(b"a"))},
+    observers=[
+      RecordingObserver("a", extra_mounts={"x.sh": Mount(Inline(b"b"))})
+    ],
   )
   with (
-      pytest.raises(SandboxError, match="duplicate mount target"),
-      mgr.session(),
+    pytest.raises(SandboxError, match="duplicate mount target"),
+    mgr.session(),
   ):
     pytest.fail("body must not run")
   assert sb.calls == []
@@ -146,7 +145,7 @@ def test_unstageable_mount_is_setup_error(tmp_path: Path):
   # propagates and the sandbox is still torn down.
   sb = _sandbox(tmp_path)
   mgr = _manager(
-      sb, mounts={"agent": Mount(LocalFile(epath.Path(tmp_path / "absent")))}
+    sb, mounts={"agent": Mount(LocalFile(epath.Path(tmp_path / "absent")))}
   )
   with pytest.raises(FileNotFoundError), mgr.session():
     pytest.fail("body must not run")
@@ -172,11 +171,11 @@ def test_after_create_raises(tmp_path: Path):
   events: list[str] = []
   sb = _sandbox(tmp_path)
   mgr = _manager(
-      sb,
-      observers=[
-          RecordingObserver("a", events, raise_in="after_create"),
-          RecordingObserver("b", events),
-      ],
+    sb,
+    observers=[
+      RecordingObserver("a", events, raise_in="after_create"),
+      RecordingObserver("b", events),
+    ],
   )
   with pytest.raises(RuntimeError, match="scripted failure"), mgr.session():
     pytest.fail("body must not run")
@@ -203,13 +202,13 @@ def test_before_destroy_raises_after_clean_body(tmp_path: Path):
   events: list[str] = []
   sb = _sandbox(tmp_path)
   mgr = _manager(
-      sb,
-      observers=[
-          RecordingObserver("a", events, raise_in="before_destroy"),
-          RecordingObserver(
-              "b", events, contribution=Contribution(metrics={"m": 1.0})
-          ),
-      ],
+    sb,
+    observers=[
+      RecordingObserver("a", events, raise_in="before_destroy"),
+      RecordingObserver(
+        "b", events, contribution=Contribution(metrics={"m": 1.0})
+      ),
+    ],
   )
   with mgr.session():
     pass
@@ -223,7 +222,7 @@ def test_before_destroy_raises_after_clean_body(tmp_path: Path):
 def test_before_destroy_raises_after_body_error_keeps_primary(tmp_path: Path):
   sb = _sandbox(tmp_path)
   mgr = _manager(
-      sb, observers=[RecordingObserver("a", raise_in="before_destroy")]
+    sb, observers=[RecordingObserver("a", raise_in="before_destroy")]
   )
   with mgr.session():
     _boom(ValueError("body boom"))
@@ -258,16 +257,14 @@ def test_contributions_aggregate_across_observers(tmp_path: Path):
   _ = (sb.workspace / "p.diff").write_bytes(b"diff")
   out = tmp_path / "out"
   mgr = _manager(
-      sb,
-      output_dir=out,
-      observers=[
-          RecordingObserver(
-              "a", contribution=Contribution(artifacts={"patch": "p.diff"})
-          ),
-          RecordingObserver(
-              "b", contribution=Contribution(metrics={"secs": 2.0})
-          ),
-      ],
+    sb,
+    output_dir=out,
+    observers=[
+      RecordingObserver(
+        "a", contribution=Contribution(artifacts={"patch": "p.diff"})
+      ),
+      RecordingObserver("b", contribution=Contribution(metrics={"secs": 2.0})),
+    ],
   )
   with mgr.session():
     pass
@@ -280,7 +277,7 @@ def test_contributions_aggregate_across_observers(tmp_path: Path):
 
 
 def test_a_failed_run_still_collects_what_before_destroy_registered(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """The run we most need evidence from is the one that broke.
 
@@ -298,14 +295,14 @@ def test_a_failed_run_still_collects_what_before_destroy_registered(
   _ = (sb.workspace / "record.tar.gz").write_bytes(b"the actor's own record")
   out = tmp_path / "out"
   mgr = _manager(
-      sb,
-      output_dir=out,
-      observers=[
-          RecordingObserver(
-              "a",
-              contribution=Contribution(artifacts={"record": "record.tar.gz"}),
-          )
-      ],
+    sb,
+    output_dir=out,
+    observers=[
+      RecordingObserver(
+        "a",
+        contribution=Contribution(artifacts={"record": "record.tar.gz"}),
+      )
+    ],
   )
 
   with mgr.session():  # the body fails, the way a real rollout does
@@ -318,7 +315,7 @@ def test_a_failed_run_still_collects_what_before_destroy_registered(
 
 
 def test_one_failing_hook_does_not_take_the_other_diagnostics_with_it(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """A broken diagnostic must cost its own output and nothing else.
 
@@ -336,15 +333,15 @@ def test_one_failing_hook_does_not_take_the_other_diagnostics_with_it(
   _ = (sb.workspace / "record.tar.gz").write_bytes(b"the actor's own record")
   out = tmp_path / "out"
   mgr = _manager(
-      sb,
-      output_dir=out,
-      observers=[
-          RecordingObserver("broken", raise_in="before_destroy"),
-          RecordingObserver(
-              "intact",
-              contribution=Contribution(artifacts={"record": "record.tar.gz"}),
-          ),
-      ],
+    sb,
+    output_dir=out,
+    observers=[
+      RecordingObserver("broken", raise_in="before_destroy"),
+      RecordingObserver(
+        "intact",
+        contribution=Contribution(artifacts={"record": "record.tar.gz"}),
+      ),
+    ],
   )
 
   with mgr.session():
@@ -358,23 +355,23 @@ def test_inline_artifacts_land_without_touching_the_sandbox(tmp_path: Path):
   sb = _sandbox(tmp_path)
   out = tmp_path / "out"
   mgr = _manager(
-      sb,
-      output_dir=out,
-      observers=[
-          RecordingObserver(
-              "a",
-              contribution=Contribution(
-                  inline_artifacts={"conversation.json": b'{"messages":[]}'}
-              ),
-          )
-      ],
+    sb,
+    output_dir=out,
+    observers=[
+      RecordingObserver(
+        "a",
+        contribution=Contribution(
+          inline_artifacts={"conversation.json": b'{"messages":[]}'}
+        ),
+      )
+    ],
   )
   with mgr.session():
     pass
   # Written straight from the observer's own bytes: no write into the sandbox
   # and no fetch back out (two transfers a remote sandbox would pay twice for).
   assert mgr.result.artifacts == {
-      "conversation.json": out / "conversation.json"
+    "conversation.json": out / "conversation.json"
   }
   assert (out / "conversation.json").read_bytes() == b'{"messages":[]}'
   assert not any(call[0] == "fetch" for call in sb.calls)
@@ -382,14 +379,13 @@ def test_inline_artifacts_land_without_touching_the_sandbox(tmp_path: Path):
 
 
 def test_an_artifact_that_never_landed_is_omitted_not_recorded(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # A `fetch` that quietly produces nothing (a remote sandbox whose connection
   # dropped) must not leave a phantom path in `artifacts`: the downstream
   # persist would raise FileNotFoundError on it and take the whole record with
   # it. What did land is still collected.
   class _SilentFetch(FakeSandbox):
-
     @override
     def fetch(self, name: str, dest: epath.PathLike) -> None:
       self.calls.append(("fetch", name))
@@ -401,16 +397,16 @@ def test_an_artifact_that_never_landed_is_omitted_not_recorded(
   _ = (sb.workspace / "p.diff").write_bytes(b"diff")
   out = tmp_path / "out"
   mgr = _manager(
-      sb,
-      output_dir=out,
-      observers=[
-          RecordingObserver(
-              "a",
-              contribution=Contribution(
-                  artifacts={"patch": "p.diff", "agent.log": "gone.log"}
-              ),
-          )
-      ],
+    sb,
+    output_dir=out,
+    observers=[
+      RecordingObserver(
+        "a",
+        contribution=Contribution(
+          artifacts={"patch": "p.diff", "agent.log": "gone.log"}
+        ),
+      )
+    ],
   )
   with mgr.session():
     pass
@@ -420,7 +416,7 @@ def test_an_artifact_that_never_landed_is_omitted_not_recorded(
 
 
 def test_an_absolute_in_sandbox_filename_still_lands_in_the_output_dir(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # `output_dir / "/var/log/agent.log"` is `/var/log/agent.log` — naming the
   # host file after the in-sandbox filename would write straight out of the
@@ -432,29 +428,29 @@ def test_an_absolute_in_sandbox_filename_still_lands_in_the_output_dir(
   _ = outside.write_bytes(b"log")
   out = tmp_path / "out"
   mgr = _manager(
-      sb,
-      output_dir=out,
-      observers=[
-          RecordingObserver(
-              "a",
-              contribution=Contribution(
-                  artifacts={"agent.log": str(outside)},
-                  inline_artifacts={"notes.txt": b"hi"},
-              ),
-          )
-      ],
+    sb,
+    output_dir=out,
+    observers=[
+      RecordingObserver(
+        "a",
+        contribution=Contribution(
+          artifacts={"agent.log": str(outside)},
+          inline_artifacts={"notes.txt": b"hi"},
+        ),
+      )
+    ],
   )
   with mgr.session():
     pass
   assert mgr.result.artifacts == {
-      "agent.log": out / "agent.log",
-      "notes.txt": out / "notes.txt",
+    "agent.log": out / "agent.log",
+    "notes.txt": out / "notes.txt",
   }
   assert (out / "agent.log").read_bytes() == b"log"
 
 
 def test_two_observers_sharing_a_filename_do_not_overwrite_each_other(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # A harness and an eval both produce `stderr.log` in the sandbox; only their
   # namespaced NAMES differ, so only names can keep them apart on the host.
@@ -463,22 +459,20 @@ def test_two_observers_sharing_a_filename_do_not_overwrite_each_other(
   _ = (sb.workspace / "stderr.log").write_bytes(b"from the sandbox")
   out = tmp_path / "out"
   mgr = _manager(
-      sb,
-      output_dir=out,
-      observers=[
-          RecordingObserver(
-              "a",
-              contribution=Contribution(
-                  artifacts={"agent.stderr.log": "stderr.log"}
-              ),
-          ),
-          RecordingObserver(
-              "b",
-              contribution=Contribution(
-                  inline_artifacts={"eval.stderr.log": b"from the eval"}
-              ),
-          ),
-      ],
+    sb,
+    output_dir=out,
+    observers=[
+      RecordingObserver(
+        "a",
+        contribution=Contribution(artifacts={"agent.stderr.log": "stderr.log"}),
+      ),
+      RecordingObserver(
+        "b",
+        contribution=Contribution(
+          inline_artifacts={"eval.stderr.log": b"from the eval"}
+        ),
+      ),
+    ],
   )
   with mgr.session():
     pass
@@ -491,15 +485,13 @@ def test_an_artifact_name_that_is_a_path_is_refused(tmp_path: Path):
   # rejected outright rather than nesting (or escaping) the output dir.
   sb = _sandbox(tmp_path)
   mgr = _manager(
-      sb,
-      observers=[
-          RecordingObserver(
-              "a",
-              contribution=Contribution(
-                  artifacts={"../../etc/passwd": "p.diff"}
-              ),
-          )
-      ],
+    sb,
+    observers=[
+      RecordingObserver(
+        "a",
+        contribution=Contribution(artifacts={"../../etc/passwd": "p.diff"}),
+      )
+    ],
   )
   with mgr.session():
     pass
@@ -512,15 +504,15 @@ def test_an_artifact_name_cannot_be_claimed_by_both_channels(tmp_path: Path):
   # from two observers is a collision either way — caught before any fetch.
   sb = _sandbox(tmp_path)
   mgr = _manager(
-      sb,
-      observers=[
-          RecordingObserver(
-              "a", contribution=Contribution(artifacts={"patch": "p.diff"})
-          ),
-          RecordingObserver(
-              "b", contribution=Contribution(inline_artifacts={"patch": b"x"})
-          ),
-      ],
+    sb,
+    observers=[
+      RecordingObserver(
+        "a", contribution=Contribution(artifacts={"patch": "p.diff"})
+      ),
+      RecordingObserver(
+        "b", contribution=Contribution(inline_artifacts={"patch": b"x"})
+      ),
+    ],
   )
   with mgr.session():
     pass
@@ -532,11 +524,11 @@ def test_colliding_contributions_error_a_clean_run(tmp_path: Path):
   clash = Contribution(metrics={"secs": 1.0})
   sb = _sandbox(tmp_path)
   mgr = _manager(
-      sb,
-      observers=[
-          RecordingObserver("a", contribution=clash),
-          RecordingObserver("b", contribution=clash),
-      ],
+    sb,
+    observers=[
+      RecordingObserver("a", contribution=clash),
+      RecordingObserver("b", contribution=clash),
+    ],
   )
   with mgr.session():
     pass

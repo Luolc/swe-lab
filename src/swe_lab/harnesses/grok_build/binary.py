@@ -48,10 +48,10 @@ LINUX_X64 = "linux-x86_64"
 # sha256 of the bare binary (there is no archive), keyed by (version,
 # platform). Measured 2026-08-11 for the pin above.
 BINARY_SHA256: dict[tuple[str, str], str] = {
-    (
-        "1.0.0",
-        "linux-x86_64",
-    ): "28dbc967a5843dae2374b6834dadbab95354e685c7e5c8dc750b92a4e5fc7c3e",
+  (
+    "1.0.0",
+    "linux-x86_64",
+  ): "28dbc967a5843dae2374b6834dadbab95354e685c7e5c8dc750b92a4e5fc7c3e",
 }
 
 _FETCH_TIMEOUT_S = 60.0
@@ -79,7 +79,7 @@ def latest_version(channel: str = "stable") -> str:
 
 
 def binary_url(
-    *, version: str = PINNED_GROK_BUILD_VERSION, platform: str = LINUX_X64
+  *, version: str = PINNED_GROK_BUILD_VERSION, platform: str = LINUX_X64
 ) -> str:
   """Return the download URL of the bare binary.
 
@@ -111,18 +111,18 @@ def binary_checksum(version: str, platform: str) -> str:
   checksum = BINARY_SHA256.get((version, platform))
   if checksum is None:
     raise ValueError(
-        f"no pinned sha256 for grok {version}/{platform}; add one to"
-        " BINARY_SHA256 after verifying the download (the official installer"
-        " performs no verification of its own)"
+      f"no pinned sha256 for grok {version}/{platform}; add one to"
+      " BINARY_SHA256 after verifying the download (the official installer"
+      " performs no verification of its own)"
     )
   return checksum
 
 
 def binary_cache_path(
-    *,
-    version: str = PINNED_GROK_BUILD_VERSION,
-    platform: str = LINUX_X64,
-    repo_root: epath.PathLike | None = None,
+  *,
+  version: str = PINNED_GROK_BUILD_VERSION,
+  platform: str = LINUX_X64,
+  repo_root: epath.PathLike | None = None,
 ) -> epath.Path:
   """Return the on-disk cache path of the ``version``/``platform`` binary.
 
@@ -140,22 +140,22 @@ def binary_cache_path(
   """
   root = repo_root or find_repo_root()
   return (
-      cache_root(root)
-      / _BIN_SUBDIR
-      / _CACHE_NAMESPACE
-      / version
-      / platform
-      / "grok"
+    cache_root(root)
+    / _BIN_SUBDIR
+    / _CACHE_NAMESPACE
+    / version
+    / platform
+    / "grok"
   )
 
 
 def ensure_grok_binary(
-    *,
-    version: str = PINNED_GROK_BUILD_VERSION,
-    platform: str = LINUX_X64,
-    dest: epath.PathLike | None = None,
-    repo_root: epath.PathLike | None = None,
-    refresh: bool = False,
+  *,
+  version: str = PINNED_GROK_BUILD_VERSION,
+  platform: str = LINUX_X64,
+  dest: epath.PathLike | None = None,
+  repo_root: epath.PathLike | None = None,
+  refresh: bool = False,
 ) -> epath.Path:
   """Ensure the pinned Grok binary is at ``dest``, checksum-verified.
 
@@ -183,11 +183,11 @@ def ensure_grok_binary(
     ValueError: If no checksum is pinned, or the download does not match it.
   """
   target = (
-      epath.Path(dest)
-      if dest is not None
-      else binary_cache_path(
-          version=version, platform=platform, repo_root=repo_root
-      )
+    epath.Path(dest)
+    if dest is not None
+    else binary_cache_path(
+      version=version, platform=platform, repo_root=repo_root
+    )
   )
   if not refresh and target.is_file():
     return target
@@ -197,8 +197,8 @@ def ensure_grok_binary(
   actual = hashlib.sha256(data).hexdigest()
   if actual != expected:
     raise ValueError(
-        f"checksum mismatch for grok {version}/{platform}: "
-        f"expected {expected}, got {actual}"
+      f"checksum mismatch for grok {version}/{platform}: "
+      f"expected {expected}, got {actual}"
     )
   target.parent.mkdir(parents=True, exist_ok=True)
   _ = target.write_bytes(data)

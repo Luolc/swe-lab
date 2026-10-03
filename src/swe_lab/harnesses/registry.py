@@ -62,6 +62,6 @@ def build_harness(name: str) -> Harness:
     factory = _REGISTRY[name]
   except KeyError:
     raise KeyError(
-        f"unknown harness {name!r}; registered: {registered_harnesses()}"
+      f"unknown harness {name!r}; registered: {registered_harnesses()}"
     ) from None
   return factory()

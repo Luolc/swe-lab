@@ -25,9 +25,9 @@ import logging
 from typing import override
 
 from swe_lab.git.history import (
-    build_purge_script,
-    build_report_script,
-    GitHistoryReport,
+  build_purge_script,
+  build_report_script,
+  GitHistoryReport,
 )
 from swe_lab.sandbox.errors import SandboxError
 from swe_lab.sandbox.observer import ArtifactSchema, SandboxObserver
@@ -104,12 +104,12 @@ class GitHistoryPurgeObserver(SandboxObserver):
   def output_schema(self) -> tuple[ArtifactSchema, ...]:
     """Declare the integrity report — required, because it is the evidence."""
     return (
-        ArtifactSchema(
-            INTEGRITY_ARTIFACT,
-            description=(
-                "git-history state before/after the purge, and the assertions"
-            ),
+      ArtifactSchema(
+        INTEGRITY_ARTIFACT,
+        description=(
+          "git-history state before/after the purge, and the assertions"
         ),
+      ),
     )
 
   @override
@@ -133,34 +133,34 @@ class GitHistoryPurgeObserver(SandboxObserver):
       self.after = self.before
     else:
       sb.write(
-          PURGE_SCRIPT_NAME,
-          build_purge_script(workdir=workdir).encode("utf-8"),
+        PURGE_SCRIPT_NAME,
+        build_purge_script(workdir=workdir).encode("utf-8"),
       )
       result = sb.run_script(PURGE_SCRIPT_NAME, timeout=_PURGE_TIMEOUT_S)
       if result.timed_out or result.exit_code == _TIMEOUT_EXIT_CODE:
         raise GitHistoryPurgeTimeoutError(
-            f"git-history purge did not finish within {_PURGE_TIMEOUT_S:.0f}s."
-            " The repo is not known to be contaminated — the purge simply did"
-            " not run to completion, so this is worth retrying."
+          f"git-history purge did not finish within {_PURGE_TIMEOUT_S:.0f}s."
+          " The repo is not known to be contaminated — the purge simply did"
+          " not run to completion, so this is worth retrying."
         )
       if result.exit_code != 0:
         # A purge that failed removed nothing, so the repo still leaks.
         raise GitHistoryLeakError(
-            f"git-history purge failed (exit {result.exit_code}):"
-            f" {(result.stderr or result.stdout).strip()[-500:]}"
+          f"git-history purge failed (exit {result.exit_code}):"
+          f" {(result.stderr or result.stdout).strip()[-500:]}"
         )
       self.after = self._report(sb, workdir)
 
     violations = self.after.violations()
     if violations:
       raise GitHistoryLeakError(
-          "future git history is still reachable after the purge — refusing to"
-          " run the agent against a contaminated repo: " + "; ".join(violations)
+        "future git history is still reachable after the purge — refusing to"
+        " run the agent against a contaminated repo: " + "; ".join(violations)
       )
     _logger.info(
-        "git history purged: %d future commits before, %d after",
-        self.before.future_commits,
-        self.after.future_commits,
+      "git history purged: %d future commits before, %d after",
+      self.before.future_commits,
+      self.after.future_commits,
     )
 
   @override
@@ -182,19 +182,19 @@ class GitHistoryPurgeObserver(SandboxObserver):
     if self.before is None or self.after is None:
       return None
     payload = {
-        "purged": self.purge,
-        "before": self.before.to_dict(),
-        "after": self.after.to_dict(),
-        "violations": list(self.after.violations()),
+      "purged": self.purge,
+      "before": self.before.to_dict(),
+      "after": self.after.to_dict(),
+      "violations": list(self.after.violations()),
     }
     return Contribution(
-        inline_artifacts={
-            INTEGRITY_ARTIFACT: json.dumps(payload, indent=2).encode("utf-8")
-        },
-        metrics={
-            CLEAN_METRIC: float(not self.after.violations()),
-            FUTURE_BEFORE_METRIC: float(self.before.future_commits),
-        },
+      inline_artifacts={
+        INTEGRITY_ARTIFACT: json.dumps(payload, indent=2).encode("utf-8")
+      },
+      metrics={
+        CLEAN_METRIC: float(not self.after.violations()),
+        FUTURE_BEFORE_METRIC: float(self.before.future_commits),
+      },
     )
 
   def _check_solution_sha_is_real(self) -> None:
@@ -224,17 +224,17 @@ class GitHistoryPurgeObserver(SandboxObserver):
       return  # already-purged image: nothing here to prove
     if not self.before.solution_reachable:
       raise GitHistoryLeakError(
-          f"the fix commit {self.solution_sha} is not in this repo, but"
-          f" {self.before.future_commits} future commits are — so the sha is"
-          " wrong (a changed instance-id format, most likely) and asserting it"
-          " is unreachable after the purge would prove nothing"
+        f"the fix commit {self.solution_sha} is not in this repo, but"
+        f" {self.before.future_commits} future commits are — so the sha is"
+        " wrong (a changed instance-id format, most likely) and asserting it"
+        " is unreachable after the purge would prove nothing"
       )
     if self.before.solution_is_future is False:
       raise GitHistoryLeakError(
-          f"the commit {self.solution_sha} is an ancestor of HEAD, so it is"
-          " past history, not the fix — the id most likely yielded its"
-          " environment-setup sha instead. Purging cannot remove it, and"
-          " asserting on it would prove nothing"
+        f"the commit {self.solution_sha} is an ancestor of HEAD, so it is"
+        " past history, not the fix — the id most likely yielded its"
+        " environment-setup sha instead. Purging cannot remove it, and"
+        " asserting on it would prove nothing"
       )
 
   def _report(self, sb: SandboxFs, workdir: str) -> GitHistoryReport:
@@ -252,16 +252,16 @@ class GitHistoryPurgeObserver(SandboxObserver):
         unverifiable repo is treated exactly like a contaminated one.
     """
     sb.write(
-        REPORT_SCRIPT_NAME,
-        build_report_script(
-            workdir=workdir, solution_sha=self.solution_sha
-        ).encode("utf-8"),
+      REPORT_SCRIPT_NAME,
+      build_report_script(
+        workdir=workdir, solution_sha=self.solution_sha
+      ).encode("utf-8"),
     )
     result = sb.run_script(REPORT_SCRIPT_NAME, timeout=_REPORT_TIMEOUT_S)
     try:
       return GitHistoryReport.from_json(result.stdout)
     except (TypeError, ValueError) as exc:
       raise GitHistoryLeakError(
-          "could not verify the repo's git history (the report script produced"
-          f" no usable output, exit {result.exit_code}): {exc}"
+        "could not verify the repo's git history (the report script produced"
+        f" no usable output, exit {result.exit_code}): {exc}"
       ) from exc

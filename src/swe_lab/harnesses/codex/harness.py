@@ -29,48 +29,48 @@ from typing import override
 from swe_lab.conversation import Conversation, ConversationObserver
 from swe_lab.harnesses.base import AgentOutcome, Harness
 from swe_lab.harnesses.common import (
-    AgentInfoObserver,
-    env_exports,
-    home_fallback_lines,
-    read_text,
-    status_tail,
+  AgentInfoObserver,
+  env_exports,
+  home_fallback_lines,
+  read_text,
+  status_tail,
 )
 from swe_lab.harnesses.observer import HarnessOutcomeObserver
 from swe_lab.sandbox import (
-    AgentAsset,
-    ExecResult,
-    Inline,
-    Mount,
-    Mounts,
-    SandboxFs,
-    SandboxObserver,
+  AgentAsset,
+  ExecResult,
+  Inline,
+  Mount,
+  Mounts,
+  SandboxFs,
+  SandboxObserver,
 )
 
 from .binary import PINNED_CODEX_VERSION
 from .constants import (
-    AGENT_ENV_NAME,
-    AGENT_EXIT_CODE_NAME,
-    AGENT_HOME,
-    AGENT_SCRIPT_NAME,
-    AGENT_STDERR_NAME,
-    AUTO_COMPACT_LIMIT_KEY,
-    BINARY_AT,
-    CODE_MODE_HOST_AT,
-    codex_config_dir,
-    CODEX_HOME_ENV,
-    CONTEXT_WINDOW_KEY,
-    DEFAULT_AUTO_COMPACT_FRACTION,
-    DEFAULT_CONTEXT_WINDOW,
-    DEFAULT_EFFORT,
-    DEFAULT_MODEL,
-    Effort,
-    EFFORT_CONFIG_KEY,
-    EVENT_STREAM_NAME,
-    INFO_ARTIFACT,
-    LAST_MESSAGE_NAME,
-    PROJECT_DOC_BYTES_KEY,
-    PROMPT_FILENAME,
-    UNATTENDED_ISOLATION_FLAGS,
+  AGENT_ENV_NAME,
+  AGENT_EXIT_CODE_NAME,
+  AGENT_HOME,
+  AGENT_SCRIPT_NAME,
+  AGENT_STDERR_NAME,
+  AUTO_COMPACT_LIMIT_KEY,
+  BINARY_AT,
+  CODE_MODE_HOST_AT,
+  codex_config_dir,
+  CODEX_HOME_ENV,
+  CONTEXT_WINDOW_KEY,
+  DEFAULT_AUTO_COMPACT_FRACTION,
+  DEFAULT_CONTEXT_WINDOW,
+  DEFAULT_EFFORT,
+  DEFAULT_MODEL,
+  Effort,
+  EFFORT_CONFIG_KEY,
+  EVENT_STREAM_NAME,
+  INFO_ARTIFACT,
+  LAST_MESSAGE_NAME,
+  PROJECT_DOC_BYTES_KEY,
+  PROMPT_FILENAME,
+  UNATTENDED_ISOLATION_FLAGS,
 )
 from .convert import event_stream_outcome, event_stream_to_conversation
 from .provider import CodexProvider
@@ -175,9 +175,9 @@ class CodexHarness(Harness):
     """
     if not 0.0 < self.auto_compact_fraction < 1.0:
       raise ValueError(
-          "auto_compact_fraction must be strictly between 0 and 1, got"
-          f" {self.auto_compact_fraction!r}: compaction has to start before"
-          " the context budget is spent to be worth anything"
+        "auto_compact_fraction must be strictly between 0 and 1, got"
+        f" {self.auto_compact_fraction!r}: compaction has to start before"
+        " the context budget is spent to be worth anything"
       )
 
   @property
@@ -208,15 +208,15 @@ class CodexHarness(Harness):
     Codex-specific lives.
     """
     return (
-        # First: record which build the sandbox actually got, before anything
-        # can go wrong with the run it describes.
-        AgentInfoObserver(
-            binary=BINARY_AT,
-            artifact=INFO_ARTIFACT,
-            probes=("--version", "--help", "exec --help"),
-        ),
-        ConversationObserver(producer=self),
-        HarnessOutcomeObserver(harness=self),
+      # First: record which build the sandbox actually got, before anything
+      # can go wrong with the run it describes.
+      AgentInfoObserver(
+        binary=BINARY_AT,
+        artifact=INFO_ARTIFACT,
+        probes=("--version", "--help", "exec --help"),
+      ),
+      ConversationObserver(producer=self),
+      HarnessOutcomeObserver(harness=self),
     )
 
   @override
@@ -229,22 +229,22 @@ class CodexHarness(Harness):
     assets.
     """
     from .binary import (
-        asset_materializer,
-        CODE_MODE_HOST_STEM,
-        CODEX_STEM,
+      asset_materializer,
+      CODE_MODE_HOST_STEM,
+      CODEX_STEM,
     )
 
     return (
-        AgentAsset(
-            path=BINARY_AT,
-            version=self.version,
-            fetch=asset_materializer(CODEX_STEM, self.version),
-        ),
-        AgentAsset(
-            path=CODE_MODE_HOST_AT,
-            version=self.version,
-            fetch=asset_materializer(CODE_MODE_HOST_STEM, self.version),
-        ),
+      AgentAsset(
+        path=BINARY_AT,
+        version=self.version,
+        fetch=asset_materializer(CODEX_STEM, self.version),
+      ),
+      AgentAsset(
+        path=CODE_MODE_HOST_AT,
+        version=self.version,
+        fetch=asset_materializer(CODE_MODE_HOST_STEM, self.version),
+      ),
     )
 
   @override
@@ -266,20 +266,20 @@ class CodexHarness(Harness):
       The two staged files.
     """
     return {
-        AGENT_SCRIPT_NAME: Mount(
-            Inline(self._invocation_script(workdir).encode()), executable=True
-        ),
-        AGENT_ENV_NAME: Mount(Inline(b"")),
+      AGENT_SCRIPT_NAME: Mount(
+        Inline(self._invocation_script(workdir).encode()), executable=True
+      ),
+      AGENT_ENV_NAME: Mount(Inline(b"")),
     }
 
   @override
   def run(
-      self,
-      sb: SandboxFs,
-      *,
-      prompt: str,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    sb: SandboxFs,
+    *,
+    prompt: str,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     """Land the prompt, fill in the env file, then run the staged script.
 
@@ -314,10 +314,10 @@ class CodexHarness(Harness):
     name and knows how to parse it.
     """
     return {
-        "event_stream.jsonl": EVENT_STREAM_NAME,
-        "last_message.txt": LAST_MESSAGE_NAME,
-        "stderr.log": AGENT_STDERR_NAME,
-        "exit_code.txt": AGENT_EXIT_CODE_NAME,
+      "event_stream.jsonl": EVENT_STREAM_NAME,
+      "last_message.txt": LAST_MESSAGE_NAME,
+      "stderr.log": AGENT_STDERR_NAME,
+      "exit_code.txt": AGENT_EXIT_CODE_NAME,
     }
 
   @override
@@ -379,23 +379,23 @@ class CodexHarness(Harness):
     event_stream = f'"$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}'
     last_message = f'"$SANDBOX_WORKSPACE"/{LAST_MESSAGE_NAME}'
     lines = [
-        "set -u",
-        # The image's HOME wins (warm toolchain caches live under it, #240).
-        # CODEX_HOME stays pinned to our own clean directory: config isolation
-        # does not ride on HOME, so the split costs nothing here.
-        *home_fallback_lines(),
-        f"export {CODEX_HOME_ENV}={codex_home}",
-        f"mkdir -p {codex_home}",
-        # Caller-injected env (empty unless ``run(env=...)`` filled it in).
-        # Sourced after the defaults above so a caller can override them.
-        f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}',
+      "set -u",
+      # The image's HOME wins (warm toolchain caches live under it, #240).
+      # CODEX_HOME stays pinned to our own clean directory: config isolation
+      # does not ride on HOME, so the split costs nothing here.
+      *home_fallback_lines(),
+      f"export {CODEX_HOME_ENV}={codex_home}",
+      f"mkdir -p {codex_home}",
+      # Caller-injected env (empty unless ``run(env=...)`` filled it in).
+      # Sourced after the defaults above so a caller can override them.
+      f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}',
     ]
     flags = [
-        "exec",
-        "--json",
-        "--dangerously-bypass-approvals-and-sandbox",
-        f"-C {shlex.quote(workdir)}",
-        f"-o {last_message}",
+      "exec",
+      "--json",
+      "--dangerously-bypass-approvals-and-sandbox",
+      f"-C {shlex.quote(workdir)}",
+      f"-o {last_message}",
     ]
     if self.model is not None:
       flags.append(f"--model {shlex.quote(self.model)}")
@@ -406,7 +406,7 @@ class CodexHarness(Harness):
       # Codex compacting at a limit computed for its own, much smaller default.
       flags.append(f"-c {CONTEXT_WINDOW_KEY}={self.context_window}")
       flags.append(
-          f"-c {AUTO_COMPACT_LIMIT_KEY}={self.auto_compact_token_limit}"
+        f"-c {AUTO_COMPACT_LIMIT_KEY}={self.auto_compact_token_limit}"
       )
     if self.skip_git_repo_check:
       flags.append("--skip-git-repo-check")
@@ -416,7 +416,7 @@ class CodexHarness(Harness):
       # config *file*, not the overrides).
       flags.append(f"-c {PROJECT_DOC_BYTES_KEY}=0")
     provider_overrides = (
-        self.provider.config_overrides() if self.provider is not None else ()
+      self.provider.config_overrides() if self.provider is not None else ()
     )
     for setting in (*provider_overrides, *self.extra_config):
       flags.append(f"-c {shlex.quote(setting)}")
@@ -424,10 +424,7 @@ class CodexHarness(Harness):
 
     exit_file = f'"$SANDBOX_WORKSPACE"/{AGENT_EXIT_CODE_NAME}'
     lines += [
-        (
-            f"{binary} {' '.join(flags)}"
-            f" < {prompt} > {event_stream} 2> {stderr}"
-        ),
-        *status_tail(exit_file),
+      (f"{binary} {' '.join(flags)} < {prompt} > {event_stream} 2> {stderr}"),
+      *status_tail(exit_file),
     ]
     return "\n".join(lines) + "\n"

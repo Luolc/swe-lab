@@ -27,12 +27,12 @@ from dataclasses import dataclass, field
 from typing import override
 
 from swe_lab.sandbox import (
-    ArtifactSchema,
-    Contribution,
-    ExecResult,
-    qualified_name,
-    SandboxFs,
-    SandboxObserver,
+  ArtifactSchema,
+  Contribution,
+  ExecResult,
+  qualified_name,
+  SandboxFs,
+  SandboxObserver,
 )
 
 from .base import AgentOutcome, Harness
@@ -94,12 +94,12 @@ class HarnessOutcomeObserver(SandboxObserver):
     completed run.
     """
     return tuple(
-        ArtifactSchema(
-            qualified_name(self.harness.name, role),
-            required=False,
-            description=f"the {self.harness.name} run's native {role}",
-        )
-        for role in self.harness.native_outputs()
+      ArtifactSchema(
+        qualified_name(self.harness.name, role),
+        required=False,
+        description=f"the {self.harness.name} run's native {role}",
+      )
+      for role in self.harness.native_outputs()
     )
 
   @override
@@ -117,14 +117,14 @@ class HarnessOutcomeObserver(SandboxObserver):
     self.outcome = self.harness.outcome(sb)
     self.usage = self.harness.usage(sb)
     self.collected = {
-        qualified_name(self.harness.name, role): filename
-        for role, filename in self.harness.native_outputs().items()
-        if sb.exists(filename)  # only register what actually landed
+      qualified_name(self.harness.name, role): filename
+      for role, filename in self.harness.native_outputs().items()
+      if sb.exists(filename)  # only register what actually landed
     }
     return Contribution(
-        artifacts=dict(self.collected),
-        inline_artifacts=self._exec_output(),
-        metrics=self._metrics(),
+      artifacts=dict(self.collected),
+      inline_artifacts=self._exec_output(),
+      metrics=self._metrics(),
     )
 
   def _exec_output(self) -> dict[str, bytes]:
@@ -139,13 +139,13 @@ class HarnessOutcomeObserver(SandboxObserver):
     if self.exec_result is None:
       return {}
     streams = {
-        "exec_stdout.log": self.exec_result.stdout,
-        "exec_stderr.log": self.exec_result.stderr,
+      "exec_stdout.log": self.exec_result.stdout,
+      "exec_stderr.log": self.exec_result.stderr,
     }
     return {
-        qualified_name(self.harness.name, name): text.encode("utf-8")
-        for name, text in streams.items()
-        if text
+      qualified_name(self.harness.name, name): text.encode("utf-8")
+      for name, text in streams.items()
+      if text
     }
 
   def _metrics(self) -> dict[str, float]:
@@ -153,13 +153,13 @@ class HarnessOutcomeObserver(SandboxObserver):
     metrics = {COMPLETE_METRIC: float(self.complete)}
     if self.wall_seconds is not None:
       metrics[qualified_name(self.harness.name, "wall_seconds")] = (
-          self.wall_seconds
+        self.wall_seconds
       )
     if self.exec_result is not None:
       metrics[qualified_name(self.harness.name, "exit_code")] = float(
-          self.exec_result.exit_code
+        self.exec_result.exit_code
       )
       metrics[qualified_name(self.harness.name, "timed_out")] = float(
-          self.exec_result.timed_out
+        self.exec_result.timed_out
       )
     return metrics

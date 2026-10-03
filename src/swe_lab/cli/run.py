@@ -11,28 +11,28 @@ from etils import epath
 import typer
 
 from swe_lab.cli.overrides import (
-    apply_overrides,
-    OverrideError,
-    parse_overrides,
+  apply_overrides,
+  OverrideError,
+  parse_overrides,
 )
 from swe_lab.cli.persist_wiring import run_store, run_ts
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.sandbox import (
-    ArtifactSchema,
-    LocalFile,
-    Mount,
-    SandboxError,
-    Store,
+  ArtifactSchema,
+  LocalFile,
+  Mount,
+  SandboxError,
+  Store,
 )
 from swe_lab.workflow import (
-    EntryOutcome,
-    registered_workflows,
-    Workflow,
-    workflow_definition,
-    WorkflowError,
-    WorkflowOutcome,
+  EntryOutcome,
+  registered_workflows,
+  Workflow,
+  workflow_definition,
+  WorkflowError,
+  WorkflowOutcome,
 )
 
 # Imported for its registrations: the built-in workflow definitions.
@@ -62,52 +62,52 @@ class ExitCode:
 
 
 def run_cmd(
-    ctx: typer.Context,
-    workflow: Annotated[
-        str, typer.Argument(help="Registered workflow name (see --list).")
-    ] = "",
-    instance_id: Annotated[
-        str, typer.Argument(help="The instance to run it against.")
-    ] = "",
-    list_: Annotated[
-        bool,
-        typer.Option("--list", help="List registered workflows and exit."),
-    ] = False,
-    dataset: Annotated[
-        str, typer.Option(help="Dataset the instance belongs to.")
-    ] = "swebench_pro",
-    sweep: Annotated[
-        str, typer.Option(help="Sweep id the run's records are keyed under.")
-    ] = "adhoc",
-    rollout_id: Annotated[
-        int, typer.Option(help="Which sample of the instance this run is.")
-    ] = 0,
-    inputs: Annotated[
-        list[str] | None,
-        typer.Option(
-            "--input",
-            help="A workflow input, as NAME=PATH (or just PATH when the "
-            "workflow leaves exactly one unsupplied).",
-        ),
-    ] = None,
-    persist: Annotated[
-        bool, typer.Option(help="Persist the run to the T1 store.")
-    ] = False,
-    resume: Annotated[
-        bool,
-        typer.Option(help="Honor terminal markers instead of re-running."),
-    ] = False,
-    output_root: Annotated[
-        str,
-        typer.Option(
-            help=(
-                "Where run outputs land. Defaults to the repo's .cache/runs —"
-                " which is inside this checkout, so a worktree removed later"
-                " takes them with it. Point it outside for a run whose"
-                " evidence has to outlive the checkout."
-            )
-        ),
-    ] = "",
+  ctx: typer.Context,
+  workflow: Annotated[
+    str, typer.Argument(help="Registered workflow name (see --list).")
+  ] = "",
+  instance_id: Annotated[
+    str, typer.Argument(help="The instance to run it against.")
+  ] = "",
+  list_: Annotated[
+    bool,
+    typer.Option("--list", help="List registered workflows and exit."),
+  ] = False,
+  dataset: Annotated[
+    str, typer.Option(help="Dataset the instance belongs to.")
+  ] = "swebench_pro",
+  sweep: Annotated[
+    str, typer.Option(help="Sweep id the run's records are keyed under.")
+  ] = "adhoc",
+  rollout_id: Annotated[
+    int, typer.Option(help="Which sample of the instance this run is.")
+  ] = 0,
+  inputs: Annotated[
+    list[str] | None,
+    typer.Option(
+      "--input",
+      help="A workflow input, as NAME=PATH (or just PATH when the "
+      "workflow leaves exactly one unsupplied).",
+    ),
+  ] = None,
+  persist: Annotated[
+    bool, typer.Option(help="Persist the run to the T1 store.")
+  ] = False,
+  resume: Annotated[
+    bool,
+    typer.Option(help="Honor terminal markers instead of re-running."),
+  ] = False,
+  output_root: Annotated[
+    str,
+    typer.Option(
+      help=(
+        "Where run outputs land. Defaults to the repo's .cache/runs —"
+        " which is inside this checkout, so a worktree removed later"
+        " takes them with it. Point it outside for a run whose"
+        " evidence has to outlive the checkout."
+      )
+    ),
+  ] = "",
 ) -> None:
   """Run a registered workflow against one instance.
 
@@ -151,9 +151,7 @@ def run_cmd(
   # the resume paths that look here. So the location is a decision the caller
   # makes, and one they can make per run.
   runs_root = (
-      epath.Path(output_root)
-      if output_root
-      else cache_root(root) / _RUNS_SUBDIR
+    epath.Path(output_root) if output_root else cache_root(root) / _RUNS_SUBDIR
   )
   output_dir = runs_root / workflow / instance.instance_id / f"r{rollout_id}"
   if not resume:
@@ -164,19 +162,19 @@ def run_cmd(
 
   store = run_store(root, persist_to_t1=persist, scratch=output_dir)
   built = Workflow(
-      store=store,
-      sweep_id=sweep,
-      rollout_id=rollout_id,
-      entries=entries,
+    store=store,
+    sweep_id=sweep,
+    rollout_id=rollout_id,
+    entries=entries,
   )
   try:
     outcome = built.execute(
-        instance,
-        inputs=supplied,
-        output_dir=output_dir,
-        run_ts=run_ts(),
-        resume=resume,
-        extra_record=instance.run_provenance(),
+      instance,
+      inputs=supplied,
+      output_dir=output_dir,
+      run_ts=run_ts(),
+      resume=resume,
+      extra_record=instance.run_provenance(),
     )
   except WorkflowError as error:
     raise typer.BadParameter(_explain(error, workflow, entries)) from error
@@ -186,7 +184,7 @@ def run_cmd(
   # downstream to consume even when the record behind it is not there.
   _refuse_a_record_that_did_not_land(store, outcome.record_key)
   summary = _summarize(
-      outcome, workflow=workflow, instance=instance, persist=persist
+    outcome, workflow=workflow, instance=instance, persist=persist
   )
   print(json.dumps(summary, indent=2))
   raise typer.Exit(_exit_code(outcome))
@@ -215,16 +213,16 @@ def _refuse_a_record_that_did_not_land(store: Store, key: str) -> None:
     _ = store.get_bytes(key)
   except SandboxError as error:  # every Store documents this for a missing key
     print(
-        f"run reported record_key {key!r}, but it cannot be read back"
-        f" ({type(error).__name__}); the run is being failed rather than"
-        " reported as a success with no evidence behind it",
-        file=sys.stderr,
+      f"run reported record_key {key!r}, but it cannot be read back"
+      f" ({type(error).__name__}); the run is being failed rather than"
+      " reported as a success with no evidence behind it",
+      file=sys.stderr,
     )
     raise typer.Exit(ExitCode.FAILED) from error
 
 
 def _supplied_inputs(
-    raw: Sequence[str], entries: Sequence[Any]
+  raw: Sequence[str], entries: Sequence[Any]
 ) -> dict[str, Mount]:
   """Turn ``--input`` arguments into the workflow's caller inputs.
 
@@ -275,8 +273,8 @@ def _sole_unbound_input(entries: Sequence[Any], item: str) -> str:
     return unbound[0].name
   names = ", ".join(schema.name for schema in unbound) or "none"
   raise typer.BadParameter(
-      f"--input {item}: this workflow does not have exactly one input to"
-      f" supply (unbound: {names}); spell it as --input NAME=PATH"
+    f"--input {item}: this workflow does not have exactly one input to"
+    f" supply (unbound: {names}); spell it as --input NAME=PATH"
   )
 
 
@@ -298,9 +296,9 @@ def _unbound_inputs(entries: Sequence[Any]) -> list[ArtifactSchema]:
   for entry in entries:
     for schema in entry.task.input_schema():
       if (
-          schema.required
-          and schema.name not in produced
-          and entry.task.inputs_builder is None
+        schema.required
+        and schema.name not in produced
+        and entry.task.inputs_builder is None
       ):
         unbound.append(schema)
     # An entry's own outputs satisfy the entries after it, never itself.
@@ -326,14 +324,12 @@ def _declared_outputs(entry: Any) -> set[str]:
   except Exception:  # noqa: BLE001 — an instance-derived schema is unknowable here
     return set()
   return {
-      schema.name
-      for observer in observers
-      for schema in observer.output_schema()
+    schema.name for observer in observers for schema in observer.output_schema()
   }
 
 
 def _explain(
-    error: WorkflowError, workflow: str, entries: Sequence[Any]
+  error: WorkflowError, workflow: str, entries: Sequence[Any]
 ) -> str:
   """Turn a bind-time refusal into something a person can act on.
 
@@ -357,28 +353,28 @@ def _explain(
   if "nothing produces" not in str(error) or not unbound:
     return str(error)
   wanted = ", ".join(
-      f"{schema.name} ({schema.description})"
-      if schema.description
-      else schema.name
-      for schema in unbound
+    f"{schema.name} ({schema.description})"
+    if schema.description
+    else schema.name
+    for schema in unbound
   )
   how = (
-      "--input ./your-file"
-      if len(unbound) == 1
-      else "--input NAME=PATH, once per input"
+    "--input ./your-file"
+    if len(unbound) == 1
+    else "--input NAME=PATH, once per input"
   )
   return (
-      f"workflow {workflow!r} needs an input you did not supply: {wanted}."
-      f" Supply it with {how}"
+    f"workflow {workflow!r} needs an input you did not supply: {wanted}."
+    f" Supply it with {how}"
   )
 
 
 def _summarize(
-    outcome: WorkflowOutcome,
-    *,
-    workflow: str,
-    instance: TaskInstance[Any],
-    persist: bool,
+  outcome: WorkflowOutcome,
+  *,
+  workflow: str,
+  instance: TaskInstance[Any],
+  persist: bool,
 ) -> dict[str, object]:
   """Build the run's JSON summary from what the run already recorded.
 
@@ -396,13 +392,13 @@ def _summarize(
     The summary, ready to print.
   """
   return {
-      "workflow": workflow,
-      "instance_id": instance.instance_id,
-      "succeeded": outcome.succeeded,
-      "entries": [
-          _entry_json(entry, persist=persist) for entry in outcome.entries
-      ],
-      "record_key": outcome.record_key,
+    "workflow": workflow,
+    "instance_id": instance.instance_id,
+    "succeeded": outcome.succeeded,
+    "entries": [
+      _entry_json(entry, persist=persist) for entry in outcome.entries
+    ],
+    "record_key": outcome.record_key,
   } | instance.run_provenance()
 
 
@@ -417,8 +413,8 @@ def _entry_json(outcome: EntryOutcome, *, persist: bool) -> dict[str, object]:
     The entry's summary object.
   """
   summary: dict[str, object] = {
-      "key": outcome.key,
-      "status": outcome.status.value,
+    "key": outcome.key,
+    "status": outcome.status.value,
   }
   if outcome.missing_inputs:
     summary["missing_inputs"] = list(outcome.missing_inputs)

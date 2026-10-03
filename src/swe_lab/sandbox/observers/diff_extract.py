@@ -13,10 +13,10 @@ from dataclasses import dataclass, field
 from typing import override
 
 from swe_lab.git.patch import (
-    build_baseline_script,
-    build_extraction_script,
-    is_effectively_empty,
-    strip_binary_hunks,
+  build_baseline_script,
+  build_extraction_script,
+  is_effectively_empty,
+  strip_binary_hunks,
 )
 from swe_lab.sandbox.errors import SandboxError
 from swe_lab.sandbox.observer import ArtifactSchema, SandboxObserver
@@ -119,7 +119,7 @@ class DiffExtractObserver(SandboxObserver):
     if not self.baseline:
       return
     body = build_baseline_script(
-        workdir=sb.spec.workdir, output_path=BASE_REF_NAME
+      workdir=sb.spec.workdir, output_path=BASE_REF_NAME
     )
     # `> patch.base_ref.txt` is relative to the shell cwd, which run_script
     # does NOT put in the workspace — cd there first, exactly as the
@@ -132,15 +132,15 @@ class DiffExtractObserver(SandboxObserver):
     if result.exit_code != 0:
       detail = (result.stderr or result.stdout).strip()[-500:]
       raise SandboxError(
-          "could not commit the pre-agent baseline (exit"
-          f" {result.exit_code}): {detail}"
+        "could not commit the pre-agent baseline (exit"
+        f" {result.exit_code}): {detail}"
       )
     sha = _read_patch(sb, BASE_REF_NAME).strip()
     if not sha:
       raise SandboxError(
-          "the pre-agent baseline commit produced no sha; refusing to fall"
-          " back to base_commit, which would fold the image's own worktree"
-          " changes into the agent's patch"
+        "the pre-agent baseline commit produced no sha; refusing to fall"
+        " back to base_commit, which would fold the image's own worktree"
+        " changes into the agent's patch"
       )
     self.base_ref = sha
 
@@ -148,23 +148,23 @@ class DiffExtractObserver(SandboxObserver):
   def output_schema(self) -> tuple[ArtifactSchema, ...]:
     """Declare the clean patch (the deliverable) and the raw diff (audit)."""
     base = (
-        (
-            ArtifactSchema(
-                BASE_REF_NAME,
-                description="the sha the patch was diffed against",
-            ),
-        )
-        if self.baseline
-        else ()
+      (
+        ArtifactSchema(
+          BASE_REF_NAME,
+          description="the sha the patch was diffed against",
+        ),
+      )
+      if self.baseline
+      else ()
     )
     return (
-        ArtifactSchema(PATCH_NAME, description="the extracted clean patch"),
-        ArtifactSchema(
-            RAW_PATCH_NAME,
-            required=False,
-            description="the raw in-sandbox git diff, kept for audit",
-        ),
-        *base,
+      ArtifactSchema(PATCH_NAME, description="the extracted clean patch"),
+      ArtifactSchema(
+        RAW_PATCH_NAME,
+        required=False,
+        description="the raw in-sandbox git diff, kept for audit",
+      ),
+      *base,
     )
 
   @override
@@ -172,10 +172,10 @@ class DiffExtractObserver(SandboxObserver):
     """Run the extraction in-container, then clean + register the patch."""
     self.base_ref = self.base_ref or sb.spec.base_commit
     body = build_extraction_script(
-        workdir=sb.spec.workdir,
-        base_ref=self.base_ref,
-        output_path=RAW_PATCH_NAME,  # relative; cd below lands it in-workspace
-        exclude_globs=self.exclude_globs,
+      workdir=sb.spec.workdir,
+      base_ref=self.base_ref,
+      output_path=RAW_PATCH_NAME,  # relative; cd below lands it in-workspace
+      exclude_globs=self.exclude_globs,
     )
     # `git … > patch.raw.diff` is relative to the shell cwd, so cd into the
     # workspace ($SANDBOX_WORKSPACE, set on every backend) — one script text
@@ -198,26 +198,26 @@ class DiffExtractObserver(SandboxObserver):
     # so nothing namespaces them and the artifact name simply *is* the filename
     # (which already carries the format).
     artifacts = (
-        {RAW_PATCH_NAME: RAW_PATCH_NAME} if sb.exists(RAW_PATCH_NAME) else {}
+      {RAW_PATCH_NAME: RAW_PATCH_NAME} if sb.exists(RAW_PATCH_NAME) else {}
     )
     # The base ref is handed over from memory, not fetched from the workspace:
     # the file has sat in a directory the agent can write to for the whole
     # run, and the copy captured in `after_create` — before the agent started —
     # is the one that cannot have been tampered with.
     base_ref = (
-        {BASE_REF_NAME: f"{self.base_ref}\n".encode()} if self.baseline else {}
+      {BASE_REF_NAME: f"{self.base_ref}\n".encode()} if self.baseline else {}
     )
     return Contribution(
-        artifacts=artifacts,
-        inline_artifacts={
-            PATCH_NAME: self.patch.encode("utf-8"),
-            **base_ref,
-        },
-        # What the extraction *found*, as metrics: a persisted attempt has to
-        # be readable on its own, and "the patch is empty" is the difference
-        # between an agent that failed and one that changed nothing.
-        metrics={
-            EMPTY_METRIC: float(self.is_empty),
-            BINARY_STRIPPED_METRIC: float(self.binary_stripped),
-        },
+      artifacts=artifacts,
+      inline_artifacts={
+        PATCH_NAME: self.patch.encode("utf-8"),
+        **base_ref,
+      },
+      # What the extraction *found*, as metrics: a persisted attempt has to
+      # be readable on its own, and "the patch is empty" is the difference
+      # between an agent that failed and one that changed nothing.
+      metrics={
+        EMPTY_METRIC: float(self.is_empty),
+        BINARY_STRIPPED_METRIC: float(self.binary_stripped),
+      },
     )

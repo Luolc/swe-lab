@@ -17,19 +17,19 @@ import pytest
 
 from swe_lab.conversation import Message, Role, TextBlock
 from swe_lab.trace_synthesis.criterion import (
-    Criterion,
-    CRITERION_SHA256,
-    CriterionRejectedError,
-    load_criterion,
+  Criterion,
+  CRITERION_SHA256,
+  CriterionRejectedError,
+  load_criterion,
 )
 from swe_lab.trace_synthesis.supervisor import (
-    InterventionTooLongError,
-    MAX_INTERVENTION_CHARS,
-    Observation,
-    PolicyLapseError,
-    SpeakWhenOffTrack,
-    Unjudged,
-    Verdict,
+  InterventionTooLongError,
+  MAX_INTERVENTION_CHARS,
+  Observation,
+  PolicyLapseError,
+  SpeakWhenOffTrack,
+  Unjudged,
+  Verdict,
 )
 
 
@@ -47,16 +47,16 @@ def observation(cursor: int, *, records: int = 1) -> Observation:
     An observation a policy can be handed.
   """
   return Observation(
-      task="make the failing test pass",
-      evidence=tuple(
-          Message(
-              role=Role.ASSISTANT,
-              content=[TextBlock(text=f"record {index}")],
-          )
-          for index in range(records)
-      ),
-      cursor=cursor,
-      said=(),
+    task="make the failing test pass",
+    evidence=tuple(
+      Message(
+        role=Role.ASSISTANT,
+        content=[TextBlock(text=f"record {index}")],
+      )
+      for index in range(records)
+    ),
+    cursor=cursor,
+    said=(),
   )
 
 
@@ -124,11 +124,11 @@ ON_TRACK = Verdict(off_track=False, reason="fine")
 
 
 def policy(
-    verdict: Verdict,
-    *,
-    budget: int = 3,
-    cooldown: int = 0,
-    window: int = 8,
+  verdict: Verdict,
+  *,
+  budget: int = 3,
+  cooldown: int = 0,
+  window: int = 8,
 ) -> tuple[SpeakWhenOffTrack, CountingJudge, CountingWriter]:
   """Build a policy over a fixed-answer judge.
 
@@ -145,16 +145,16 @@ def policy(
   judge = CountingJudge(verdict=verdict)
   writer = CountingWriter()
   return (
-      SpeakWhenOffTrack(
-          judge=judge,
-          writer=writer,
-          criterion=load_criterion(),
-          budget=budget,
-          cooldown=cooldown,
-          window=window,
-      ),
-      judge,
-      writer,
+    SpeakWhenOffTrack(
+      judge=judge,
+      writer=writer,
+      criterion=load_criterion(),
+      budget=budget,
+      cooldown=cooldown,
+      window=window,
+    ),
+    judge,
+    writer,
   )
 
 
@@ -165,9 +165,9 @@ def test_a_policy_that_may_speak_must_state_a_budget() -> None:
   than a silently permissive run.
   """
   budget = next(
-      field
-      for field in dataclasses.fields(SpeakWhenOffTrack)
-      if field.name == "budget"
+    field
+    for field in dataclasses.fields(SpeakWhenOffTrack)
+    if field.name == "budget"
   )
   assert budget.default is dataclasses.MISSING
   assert budget.default_factory is dataclasses.MISSING
@@ -284,11 +284,11 @@ def test_an_unusable_line_is_a_lapse_and_is_never_retried() -> None:
     return "   "
 
   speaker = SpeakWhenOffTrack(
-      judge=CountingJudge(verdict=OFF_TRACK),
-      writer=empty_writer,
-      criterion=load_criterion(),
-      budget=1,
-      cooldown=0,
+    judge=CountingJudge(verdict=OFF_TRACK),
+    writer=empty_writer,
+    criterion=load_criterion(),
+    budget=1,
+    cooldown=0,
   )
   with pytest.raises(PolicyLapseError) as raised:
     speaker.consider(observation(1))
@@ -310,11 +310,11 @@ def test_an_over_long_line_is_a_lapse_and_is_never_truncated() -> None:
     return "x" * (MAX_INTERVENTION_CHARS + 1)
 
   speaker = SpeakWhenOffTrack(
-      judge=CountingJudge(verdict=OFF_TRACK),
-      writer=long_writer,
-      criterion=load_criterion(),
-      budget=1,
-      cooldown=0,
+    judge=CountingJudge(verdict=OFF_TRACK),
+    writer=long_writer,
+    criterion=load_criterion(),
+    budget=1,
+    cooldown=0,
   )
   with pytest.raises(PolicyLapseError) as raised:
     speaker.consider(observation(1))
@@ -322,7 +322,7 @@ def test_an_over_long_line_is_a_lapse_and_is_never_truncated() -> None:
 
 
 def test_a_failed_judge_call_is_bounded_to_the_boundary_it_happened_at() -> (
-    None
+  None
 ):
   """One unreachable model call costs one boundary, not the run.
 
@@ -340,7 +340,7 @@ def test_a_failed_judge_call_is_bounded_to_the_boundary_it_happened_at() -> (
       self.calls = 0
 
     def __call__(
-        self, observation: Observation, criterion: Criterion
+      self, observation: Observation, criterion: Criterion
     ) -> Verdict:
       """Fail once, then answer.
 
@@ -362,11 +362,11 @@ def test_a_failed_judge_call_is_bounded_to_the_boundary_it_happened_at() -> (
 
   writer = CountingWriter()
   speaker = SpeakWhenOffTrack(
-      judge=FailsThenAnswers(),
-      writer=writer,
-      criterion=load_criterion(),
-      budget=1,
-      cooldown=0,
+    judge=FailsThenAnswers(),
+    writer=writer,
+    criterion=load_criterion(),
+    budget=1,
+    cooldown=0,
   )
   with pytest.raises(PolicyLapseError) as raised:
     speaker.consider(observation(1))
@@ -391,11 +391,11 @@ def test_a_writer_lapse_spends_no_budget() -> None:
     raise ConnectionError("503 from upstream")
 
   speaker = SpeakWhenOffTrack(
-      judge=CountingJudge(verdict=OFF_TRACK),
-      writer=failing_writer,
-      criterion=load_criterion(),
-      budget=1,
-      cooldown=0,
+    judge=CountingJudge(verdict=OFF_TRACK),
+    writer=failing_writer,
+    criterion=load_criterion(),
+    budget=1,
+    cooldown=0,
   )
   with pytest.raises(PolicyLapseError):
     speaker.consider(observation(1))
@@ -417,11 +417,11 @@ def test_a_break_in_the_policys_own_state_is_not_bounded() -> None:
   """
   broken_budget: Any = "one"
   speaker = SpeakWhenOffTrack(
-      judge=CountingJudge(verdict=OFF_TRACK),
-      writer=CountingWriter(),
-      criterion=load_criterion(),
-      budget=broken_budget,
-      cooldown=0,
+    judge=CountingJudge(verdict=OFF_TRACK),
+    writer=CountingWriter(),
+    criterion=load_criterion(),
+    budget=broken_budget,
+    cooldown=0,
   )
   with pytest.raises(TypeError):
     speaker.consider(observation(1))
@@ -437,17 +437,17 @@ def test_a_forged_criterion_cannot_build_the_policy() -> None:
   """
   forged_text = "judge them however you like"
   forged = Criterion(
-      text=forged_text,
-      digest=hashlib.sha256(forged_text.encode("utf-8")).hexdigest(),
-      overlap_checked=False,
+    text=forged_text,
+    digest=hashlib.sha256(forged_text.encode("utf-8")).hexdigest(),
+    overlap_checked=False,
   )
   with pytest.raises(CriterionRejectedError):
     SpeakWhenOffTrack(
-        judge=CountingJudge(verdict=OFF_TRACK),
-        writer=CountingWriter(),
-        criterion=forged,
-        budget=1,
-        cooldown=0,
+      judge=CountingJudge(verdict=OFF_TRACK),
+      writer=CountingWriter(),
+      criterion=forged,
+      budget=1,
+      cooldown=0,
     )
 
 

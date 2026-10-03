@@ -31,61 +31,61 @@ from typing import Any, override
 from swe_lab.conversation import Conversation, ConversationObserver
 from swe_lab.harnesses.base import AgentOutcome, Harness
 from swe_lab.harnesses.common import (
-    AgentInfoObserver,
-    env_exports,
-    home_fallback_lines,
-    read_text,
-    status_tail,
+  AgentInfoObserver,
+  env_exports,
+  home_fallback_lines,
+  read_text,
+  status_tail,
 )
 from swe_lab.harnesses.observer import HarnessOutcomeObserver
 from swe_lab.sandbox import (
-    AgentAsset,
-    ExecResult,
-    Inline,
-    Mount,
-    Mounts,
-    SandboxError,
-    SandboxFs,
-    SandboxObserver,
-    WORKSPACE_ENV,
+  AgentAsset,
+  ExecResult,
+  Inline,
+  Mount,
+  Mounts,
+  SandboxError,
+  SandboxFs,
+  SandboxObserver,
+  WORKSPACE_ENV,
 )
 from swe_lab.trace_synthesis.segmented_loop import (
-    SegmentedRun,
-    SegmentedSupervision,
-    SegmentRequest,
+  SegmentedRun,
+  SegmentedSupervision,
+  SegmentRequest,
 )
 from swe_lab.trace_synthesis.vocabulary import SUPERVISOR_LOG_NAME
 
 from .binary import PINNED_CLAUDE_CODE_VERSION
 from .capture import Capture, Effort
 from .constants import (
-    AGENT_ENV_NAME,
-    AGENT_EXIT_CODE_NAME,
-    AGENT_HOME,
-    AGENT_SCRIPT_NAME,
-    AGENT_STDERR_NAME,
-    ANTHROPIC_API,
-    BINARY_AT,
-    DEFAULT_MODEL,
-    EVENT_STREAM_NAME,
-    INFO_ARTIFACT,
-    MAX_PROMPT_BYTES,
-    PROMPT_FILENAME,
-    PROXY_BASE_URL,
-    PROXY_BINARY_AT,
-    PROXY_LOG_NAME,
-    PROXY_PORT,
-    PROXY_STDERR_NAME,
-    STREAM_JSON_PROMPT_NAME,
-    UNATTENDED_DENIED_TOOLS,
+  AGENT_ENV_NAME,
+  AGENT_EXIT_CODE_NAME,
+  AGENT_HOME,
+  AGENT_SCRIPT_NAME,
+  AGENT_STDERR_NAME,
+  ANTHROPIC_API,
+  BINARY_AT,
+  DEFAULT_MODEL,
+  EVENT_STREAM_NAME,
+  INFO_ARTIFACT,
+  MAX_PROMPT_BYTES,
+  PROMPT_FILENAME,
+  PROXY_BASE_URL,
+  PROXY_BINARY_AT,
+  PROXY_LOG_NAME,
+  PROXY_PORT,
+  PROXY_STDERR_NAME,
+  STREAM_JSON_PROMPT_NAME,
+  UNATTENDED_DENIED_TOOLS,
 )
 from .convert import (
-    event_stream_outcome,
-    event_stream_to_conversation,
-    event_stream_usage,
-    proxy_log_outcome,
-    proxy_log_to_conversation,
-    user_event_line,
+  event_stream_outcome,
+  event_stream_to_conversation,
+  event_stream_usage,
+  proxy_log_outcome,
+  proxy_log_to_conversation,
+  user_event_line,
 )
 from .native_transcript import NativeTranscriptObserver
 
@@ -127,28 +127,28 @@ def _reaper_lines() -> list[str]:
     The lines, in order.
   """
   return [
-      f"{_REAPED_PIDS_VAR}=",
-      # TERM, a bounded grace, then KILL whatever is left. `wait` is not
-      # used: `kill "$p"; wait "$p"` per pid deadlocks with more than
-      # one background job, and a bare `wait` proved non-terminating in
-      # some environments. The escalation is what makes the guarantee
-      # true rather than likely — a child that ignores or delays TERM
-      # would otherwise outlive the grace period silently, and `run`
-      # would return while the capture log was still being written.
-      # A KILLed proxy truncates its log at a line boundary (each record
-      # is written and closed), so the cost of escalating is partial
-      # capture, never a corrupt file.
-      "trap '"
-      f'for _pid in ${_REAPED_PIDS_VAR}; do kill "$_pid" 2>/dev/null;'
-      " done; _left=50;"
-      ' while [ "$_left" -gt 0 ]; do _any=;'
-      f" for _pid in ${_REAPED_PIDS_VAR}; do"
-      ' kill -0 "$_pid" 2>/dev/null && _any=1; done;'
-      ' [ -n "$_any" ] || break; _left=$((_left-1)); sleep 0.1; done;'
-      f" for _pid in ${_REAPED_PIDS_VAR}; do"
-      ' kill -0 "$_pid" 2>/dev/null && kill -9 "$_pid" 2>/dev/null;'
-      " done"
-      "' EXIT",
+    f"{_REAPED_PIDS_VAR}=",
+    # TERM, a bounded grace, then KILL whatever is left. `wait` is not
+    # used: `kill "$p"; wait "$p"` per pid deadlocks with more than
+    # one background job, and a bare `wait` proved non-terminating in
+    # some environments. The escalation is what makes the guarantee
+    # true rather than likely — a child that ignores or delays TERM
+    # would otherwise outlive the grace period silently, and `run`
+    # would return while the capture log was still being written.
+    # A KILLed proxy truncates its log at a line boundary (each record
+    # is written and closed), so the cost of escalating is partial
+    # capture, never a corrupt file.
+    "trap '"
+    f'for _pid in ${_REAPED_PIDS_VAR}; do kill "$_pid" 2>/dev/null;'
+    " done; _left=50;"
+    ' while [ "$_left" -gt 0 ]; do _any=;'
+    f" for _pid in ${_REAPED_PIDS_VAR}; do"
+    ' kill -0 "$_pid" 2>/dev/null && _any=1; done;'
+    ' [ -n "$_any" ] || break; _left=$((_left-1)); sleep 0.1; done;'
+    f" for _pid in ${_REAPED_PIDS_VAR}; do"
+    ' kill -0 "$_pid" 2>/dev/null && kill -9 "$_pid" 2>/dev/null;'
+    " done"
+    "' EXIT",
   ]
 
 
@@ -165,11 +165,11 @@ def _reap(pid_var: str) -> str:
 
 
 def _proxy_start_lines(
-    *,
-    target: str,
-    port: int,
-    log_name: str,
-    own_log_name: str,
+  *,
+  target: str,
+  port: int,
+  log_name: str,
+  own_log_name: str,
 ) -> list[str]:
   """Return the script lines that start one in-sandbox recording proxy.
 
@@ -220,26 +220,26 @@ def _proxy_start_lines(
   # running the agent against a proxy nobody confirmed.
   probe = f"(exec 3<>/dev/tcp/127.0.0.1/{port}) 2>/dev/null"
   return [
-      (
-          f"{binary} --port {port} --target {shlex.quote(target)}"
-          f" --output {log} > {own_log} 2>&1 &"
-      ),
-      f"{pid_var}=$!",
-      _reap(pid_var),
-      f"{wait_var}=0",
-      f"until {probe}; do",
-      f'  if ! kill -0 "${pid_var}" 2>/dev/null; then',
-      f'    echo "FATAL: the capture proxy exited; see {own_log_name}" >&2',
-      f"    exit {_MISCONFIGURED_EXIT}",
-      "  fi",
-      f"  {wait_var}=$(({wait_var}+1))",
-      f'  if [ "${wait_var}" -ge {_PROXY_READY_ATTEMPTS} ]; then',
-      f'    echo "FATAL: the capture proxy never listened on port'
-      f' {port}; see {own_log_name}" >&2',
-      f"    exit {_MISCONFIGURED_EXIT}",
-      "  fi",
-      f"  sleep {_PROXY_READY_INTERVAL_S}",
-      "done",
+    (
+      f"{binary} --port {port} --target {shlex.quote(target)}"
+      f" --output {log} > {own_log} 2>&1 &"
+    ),
+    f"{pid_var}=$!",
+    _reap(pid_var),
+    f"{wait_var}=0",
+    f"until {probe}; do",
+    f'  if ! kill -0 "${pid_var}" 2>/dev/null; then',
+    f'    echo "FATAL: the capture proxy exited; see {own_log_name}" >&2',
+    f"    exit {_MISCONFIGURED_EXIT}",
+    "  fi",
+    f"  {wait_var}=$(({wait_var}+1))",
+    f'  if [ "${wait_var}" -ge {_PROXY_READY_ATTEMPTS} ]; then',
+    f'    echo "FATAL: the capture proxy never listened on port'
+    f' {port}; see {own_log_name}" >&2',
+    f"    exit {_MISCONFIGURED_EXIT}",
+    "  fi",
+    f"  sleep {_PROXY_READY_INTERVAL_S}",
+    "done",
   ]
 
 
@@ -370,13 +370,13 @@ class ClaudeCodeHarness(Harness):
       Whether the run wants the agent's own event stream.
     """
     return (
-        self.capture != "proxy"
-        # The segmented loop reads each segment's terminal ``result`` event to
-        # learn whether the cut was the turn budget or the actor finishing, and
-        # that event exists only in the agent's own narration. Under ``PROXY``
-        # capture the wire is still the trace; this keeps the loop's instrument
-        # alive beside it, exactly as the mechanism above does.
-        or self.segmented is not None
+      self.capture != "proxy"
+      # The segmented loop reads each segment's terminal ``result`` event to
+      # learn whether the cut was the turn budget or the actor finishing, and
+      # that event exists only in the agent's own narration. Under ``PROXY``
+      # capture the wire is still the trace; this keeps the loop's instrument
+      # alive beside it, exactly as the mechanism above does.
+      or self.segmented is not None
     )
 
   @property
@@ -408,12 +408,12 @@ class ClaudeCodeHarness(Harness):
     that runs after the record is gone.
     """
     return (
-        # First: record which build the sandbox actually got, before anything
-        # can go wrong with the run it describes.
-        AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT),
-        ConversationObserver(producer=self),
-        HarnessOutcomeObserver(harness=self),
-        NativeTranscriptObserver(),
+      # First: record which build the sandbox actually got, before anything
+      # can go wrong with the run it describes.
+      AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT),
+      ConversationObserver(producer=self),
+      HarnessOutcomeObserver(harness=self),
+      NativeTranscriptObserver(),
     )
 
   @override
@@ -433,21 +433,21 @@ class ClaudeCodeHarness(Harness):
 
     version = self.version
     agent = AgentAsset(
-        path=BINARY_AT,
-        version=version,
-        fetch=lambda dest: ensure_claude_binary(version=version, dest=dest),
+      path=BINARY_AT,
+      version=version,
+      fetch=lambda dest: ensure_claude_binary(version=version, dest=dest),
     )
     assets = [agent]
     if self.capture == "proxy":
       assets.append(
-          AgentAsset(
-              path=PROXY_BINARY_AT,
-              # cc-reverse-proxy is a single unversioned Go file in a sibling
-              # checkout, so its content hash *is* its release (see the
-              # module).
-              version=proxy_source_version(),
-              fetch=lambda dest: ensure_proxy_binary(dest=dest),
-          )
+        AgentAsset(
+          path=PROXY_BINARY_AT,
+          # cc-reverse-proxy is a single unversioned Go file in a sibling
+          # checkout, so its content hash *is* its release (see the
+          # module).
+          version=proxy_source_version(),
+          fetch=lambda dest: ensure_proxy_binary(dest=dest),
+        )
       )
     return tuple(assets)
 
@@ -470,20 +470,20 @@ class ClaudeCodeHarness(Harness):
       The two staged files.
     """
     return {
-        AGENT_SCRIPT_NAME: Mount(
-            Inline(self._invocation_script(workdir).encode()), executable=True
-        ),
-        AGENT_ENV_NAME: Mount(Inline(b"")),
+      AGENT_SCRIPT_NAME: Mount(
+        Inline(self._invocation_script(workdir).encode()), executable=True
+      ),
+      AGENT_ENV_NAME: Mount(Inline(b"")),
     }
 
   @override
   def run(
-      self,
-      sb: SandboxFs,
-      *,
-      prompt: str,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    sb: SandboxFs,
+    *,
+    prompt: str,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     """Land the prompt, fill in the env file, then run the staged script.
 
@@ -512,8 +512,8 @@ class ClaudeCodeHarness(Harness):
       # here, where the size is known and the message can say so, rather than
       # staging it and reading the cap back as an opaque agent failure.
       raise SandboxError(
-          f"prompt is {len(prompt.encode())} bytes; Claude Code caps piped"
-          f" stdin at {MAX_PROMPT_BYTES}"
+        f"prompt is {len(prompt.encode())} bytes; Claude Code caps piped"
+        f" stdin at {MAX_PROMPT_BYTES}"
       )
     self._land_prompt(sb, prompt)
     if env:
@@ -545,7 +545,7 @@ class ClaudeCodeHarness(Harness):
       sb.write(STREAM_JSON_PROMPT_NAME, user_event_line(prompt).encode())
 
   def _run_segmented(
-      self, sb: SandboxFs, *, task: str, timeout: float
+    self, sb: SandboxFs, *, task: str, timeout: float
   ) -> ExecResult:
     """Run the actor in segments, consulting the policy at each cut.
 
@@ -584,14 +584,14 @@ class ClaudeCodeHarness(Harness):
       # this the second blind run of the pair.
       if not guidebook.strip():
         raise GuidebookMissingError(
-            "no guidebook before actor start:"
-            f" {self.segmented.guidebook_name!r} is absent or empty, so a"
-            " guided run would be an unguided one under a guided key"
+          "no guidebook before actor start:"
+          f" {self.segmented.guidebook_name!r} is absent or empty, so a"
+          " guided run would be an unguided one under a guided key"
         )
       _ = sb.run_command(
-          f'rm -f -- "${WORKSPACE_ENV}"/'
-          f"{shlex.quote(self.segmented.guidebook_name)}",
-          timeout=min(timeout, 10.0),
+        f'rm -f -- "${WORKSPACE_ENV}"/'
+        f"{shlex.quote(self.segmented.guidebook_name)}",
+        timeout=min(timeout, 10.0),
       )
 
     def launch(request: SegmentRequest) -> ExecResult:
@@ -600,34 +600,34 @@ class ClaudeCodeHarness(Harness):
         # file here would be read as segment 0's own output.
         sb.write(EVENT_STREAM_NAME, b"")
       sb.write(
-          AGENT_SCRIPT_NAME,
-          self._invocation_script(
-              sb.spec.workdir,
-              resume_session_id=request.resume_session_id,
-              resume_at_message_id=request.resume_at_message_id,
-          ).encode(),
-          executable=True,
+        AGENT_SCRIPT_NAME,
+        self._invocation_script(
+          sb.spec.workdir,
+          resume_session_id=request.resume_session_id,
+          resume_at_message_id=request.resume_at_message_id,
+        ).encode(),
+        executable=True,
       )
       self._land_prompt(sb, request.prompt)
       return sb.run_script(AGENT_SCRIPT_NAME, timeout=request.timeout)
 
     rows: list[Mapping[str, Any]] = []
     loop = SegmentedRun(
-        supervision=self.segmented,
-        task=task,
-        launch=launch,
-        read_stream=lambda: read_text(sb, EVENT_STREAM_NAME),
-        log=rows.append,
-        # Only ``PROXY`` capture records the request bodies, and the seam
-        # guard reads nothing else. A run without one is not quietly trusted:
-        # the loop refuses at its first anchored resume, because "the check
-        # could not run" and "the seam held" must not look the same.
-        read_wire=(
-            (lambda: read_text(sb, PROXY_LOG_NAME))
-            if self.capture == "proxy"
-            else None
-        ),
-        guidebook=guidebook,
+      supervision=self.segmented,
+      task=task,
+      launch=launch,
+      read_stream=lambda: read_text(sb, EVENT_STREAM_NAME),
+      log=rows.append,
+      # Only ``PROXY`` capture records the request bodies, and the seam
+      # guard reads nothing else. A run without one is not quietly trusted:
+      # the loop refuses at its first anchored resume, because "the check
+      # could not run" and "the seam held" must not look the same.
+      read_wire=(
+        (lambda: read_text(sb, PROXY_LOG_NAME))
+        if self.capture == "proxy"
+        else None
+      ),
+      guidebook=guidebook,
     )
     try:
       return loop.run(timeout=timeout)
@@ -636,8 +636,8 @@ class ClaudeCodeHarness(Harness):
       # most worth having: without it a crashed loop leaves no record of which
       # segments it had already cut.
       sb.write(
-          SUPERVISOR_LOG_NAME,
-          "".join(json.dumps(row) + "\n" for row in rows).encode(),
+        SUPERVISOR_LOG_NAME,
+        "".join(json.dumps(row) + "\n" for row in rows).encode(),
       )
 
   @override
@@ -656,14 +656,14 @@ class ClaudeCodeHarness(Harness):
     one file is both.
     """
     trace = (
-        {
-            "proxy_log.jsonl": PROXY_LOG_NAME,
-            # The proxy's own log, not the trace: what it said about itself,
-            # which is the only evidence available when capture came up empty.
-            "proxy_stderr.log": PROXY_STDERR_NAME,
-        }
-        if self.capture == "proxy"
-        else {"event_stream.jsonl": EVENT_STREAM_NAME}
+      {
+        "proxy_log.jsonl": PROXY_LOG_NAME,
+        # The proxy's own log, not the trace: what it said about itself,
+        # which is the only evidence available when capture came up empty.
+        "proxy_stderr.log": PROXY_STDERR_NAME,
+      }
+      if self.capture == "proxy"
+      else {"event_stream.jsonl": EVENT_STREAM_NAME}
     )
     if self.capture == "proxy" and self._narrates_event_stream:
       trace |= {"event_stream.jsonl": EVENT_STREAM_NAME}
@@ -674,8 +674,8 @@ class ClaudeCodeHarness(Harness):
       # corpus that carries no marker (task 22 §6.5).
       trace |= {"supervisor.jsonl": SUPERVISOR_LOG_NAME}
     return trace | {
-        "stderr.log": AGENT_STDERR_NAME,
-        "exit_code.txt": AGENT_EXIT_CODE_NAME,
+      "stderr.log": AGENT_STDERR_NAME,
+      "exit_code.txt": AGENT_EXIT_CODE_NAME,
     }
 
   @override
@@ -715,10 +715,10 @@ class ClaudeCodeHarness(Harness):
     return event_stream_usage(read_text(sb, EVENT_STREAM_NAME))
 
   def actor_argv(
-      self,
-      *,
-      resume_session_id: str | None = None,
-      resume_at_message_id: str | None = None,
+    self,
+    *,
+    resume_session_id: str | None = None,
+    resume_at_message_id: str | None = None,
   ) -> tuple[str, ...]:
     """Return the agent's command as the tokens a process would exec.
 
@@ -754,33 +754,33 @@ class ClaudeCodeHarness(Harness):
     # hangs an unattended run in its own way (see the constant).
     denied = ",".join(UNATTENDED_DENIED_TOOLS)
     argv = [
-        BINARY_AT,
-        "-p",
-        "--model",
-        self.model,
-        "--output-format",
-        *(
-            ("stream-json", "--verbose")
-            if self._narrates_event_stream
-            else ("json",)
-        ),
-        "--dangerously-skip-permissions",
-        "--disallowedTools",
-        denied,
-        "--effort",
-        self.effort,
-        # Undocumented in --help on 2.1.220, but accepted — verified against a
-        # bogus flag in the same position, which is rejected outright. Under
-        # segmentation this bounds one segment rather than the run; see
-        # `max_turns`.
-        "--max-turns",
-        str(
-            int(
-                self.max_turns
-                if self.segmented is None
-                else self.segmented.turns_per_segment
-            )
-        ),
+      BINARY_AT,
+      "-p",
+      "--model",
+      self.model,
+      "--output-format",
+      *(
+        ("stream-json", "--verbose")
+        if self._narrates_event_stream
+        else ("json",)
+      ),
+      "--dangerously-skip-permissions",
+      "--disallowedTools",
+      denied,
+      "--effort",
+      self.effort,
+      # Undocumented in --help on 2.1.220, but accepted — verified against a
+      # bogus flag in the same position, which is rejected outright. Under
+      # segmentation this bounds one segment rather than the run; see
+      # `max_turns`.
+      "--max-turns",
+      str(
+        int(
+          self.max_turns
+          if self.segmented is None
+          else self.segmented.turns_per_segment
+        )
+      ),
     ]
     if resume_session_id is not None:
       argv += ["--resume", resume_session_id]
@@ -814,11 +814,11 @@ class ClaudeCodeHarness(Harness):
     return f'"$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}'
 
   def _invocation_script(
-      self,
-      workdir: str,
-      *,
-      resume_session_id: str | None = None,
-      resume_at_message_id: str | None = None,
+    self,
+    workdir: str,
+    *,
+    resume_session_id: str | None = None,
+    resume_at_message_id: str | None = None,
   ) -> str:
     """Build the run script for an *unattended* run.
 
@@ -868,22 +868,22 @@ class ClaudeCodeHarness(Harness):
     config_dir = shlex.quote(f"{AGENT_HOME}/.claude")
     stderr = f'"$SANDBOX_WORKSPACE"/{AGENT_STDERR_NAME}'
     lines = [
-        "set -u",
-        # The image's HOME wins (warm toolchain caches live under it, #240);
-        # the CONFIG stays ours — pinned below, so an image cannot inject
-        # agent instructions through ~/.claude.json / $HOME/.claude (the
-        # ADR-0010 door, which deferring config discovery would reopen).
-        *home_fallback_lines(),
-        f"export CLAUDE_CONFIG_DIR={config_dir}",
-        f"mkdir -p {config_dir}",
-        # Some builds refuse --dangerously-skip-permissions as root unless a
-        # sandbox is signalled; the throwaway container is our sandbox.
-        "export IS_SANDBOX=1",
-        # Caller-injected env (empty unless ``run(env=...)`` filled it in).
-        # Sourced *here* deliberately: after the defaults above, so a caller can
-        # override them, but before the capture wiring below, so it cannot
-        # clobber the proxy URL this run was wired to.
-        f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}',
+      "set -u",
+      # The image's HOME wins (warm toolchain caches live under it, #240);
+      # the CONFIG stays ours — pinned below, so an image cannot inject
+      # agent instructions through ~/.claude.json / $HOME/.claude (the
+      # ADR-0010 door, which deferring config discovery would reopen).
+      *home_fallback_lines(),
+      f"export CLAUDE_CONFIG_DIR={config_dir}",
+      f"mkdir -p {config_dir}",
+      # Some builds refuse --dangerously-skip-permissions as root unless a
+      # sandbox is signalled; the throwaway container is our sandbox.
+      "export IS_SANDBOX=1",
+      # Caller-injected env (empty unless ``run(env=...)`` filled it in).
+      # Sourced *here* deliberately: after the defaults above, so a caller can
+      # override them, but before the capture wiring below, so it cannot
+      # clobber the proxy URL this run was wired to.
+      f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}',
     ]
     # One cleanup owner, before anything is backgrounded: two helpers each
     # installing their own `EXIT` trap would leave only the later one, and the
@@ -896,10 +896,10 @@ class ClaudeCodeHarness(Harness):
     # event stream is the only *live* view of the actor there is.
     if self.capture == "proxy":
       lines += _proxy_start_lines(
-          target=self.proxy_target,
-          port=PROXY_PORT,
-          log_name=PROXY_LOG_NAME,
-          own_log_name=PROXY_STDERR_NAME,
+        target=self.proxy_target,
+        port=PROXY_PORT,
+        log_name=PROXY_LOG_NAME,
+        own_log_name=PROXY_STDERR_NAME,
       )
       lines.append(f"export ANTHROPIC_BASE_URL={PROXY_BASE_URL}")
     if self._narrates_event_stream:
@@ -916,8 +916,8 @@ class ClaudeCodeHarness(Harness):
       # After the caller env block on purpose: this bound is the harness's, and
       # a prompt-supplied env must not raise it.
       lines.append(
-          "export CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS="
-          f"{int(self.subagent_wait_ceiling_ms)}"
+        "export CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS="
+        f"{int(self.subagent_wait_ceiling_ms)}"
       )
 
     if self.bare:
@@ -925,11 +925,11 @@ class ClaudeCodeHarness(Harness):
       # would otherwise surface as a plain-text "Not logged in" result on
       # stdout — a *successful-looking* run that did nothing.
       lines += [
-          'if [ -z "${ANTHROPIC_API_KEY:-}" ]; then',
-          '  echo "FATAL: --bare needs ANTHROPIC_API_KEY (it does not read'
-          ' OAuth or the keychain)" >&2',
-          f"  exit {_MISCONFIGURED_EXIT}",
-          "fi",
+        'if [ -z "${ANTHROPIC_API_KEY:-}" ]; then',
+        '  echo "FATAL: --bare needs ANTHROPIC_API_KEY (it does not read'
+        ' OAuth or the keychain)" >&2',
+        f"  exit {_MISCONFIGURED_EXIT}",
+        "fi",
       ]
 
     stdin_source = self._stdin_path()
@@ -939,17 +939,19 @@ class ClaudeCodeHarness(Harness):
     # inlining it into the argv — no shell-quoting hazard for a large,
     # arbitrary prompt.
     command = (
-        f"{shlex.join(
-            self.actor_argv(
-                resume_session_id=resume_session_id,
-                resume_at_message_id=resume_at_message_id,
-            )
-        )}"
-        f" < {stdin_source} {capture_redirect} 2> {stderr}"
+      f"{
+        shlex.join(
+          self.actor_argv(
+            resume_session_id=resume_session_id,
+            resume_at_message_id=resume_at_message_id,
+          )
+        )
+      }"
+      f" < {stdin_source} {capture_redirect} 2> {stderr}"
     )
     lines += [
-        f"cd {shlex.quote(workdir)}",
-        command,
-        *status_tail(exit_file),
+      f"cd {shlex.quote(workdir)}",
+      command,
+      *status_tail(exit_file),
     ]
     return "\n".join(lines) + "\n"

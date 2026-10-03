@@ -38,15 +38,15 @@ from typing import Any, Literal, Protocol
 
 from swe_lab.conversation import Message, Role, ToolResultBlock
 from swe_lab.trace_synthesis.context_components import (
-    CompleteAssistantTurnSelector,
-    EvidenceSelector,
-    INITIAL_RUNNING_STATE,
+  CompleteAssistantTurnSelector,
+  EvidenceSelector,
+  INITIAL_RUNNING_STATE,
 )
 from swe_lab.trace_synthesis.criterion import (
-    Criterion,
-    CRITERION_SHA256,
-    CriterionRejectedError,
-    shingles,
+  Criterion,
+  CRITERION_SHA256,
+  CriterionRejectedError,
+  shingles,
 )
 
 # The cap is the enforceable part of the intervention's shape. "Short,
@@ -121,13 +121,13 @@ def _check_writer_output(text: str, guidebook: str | None) -> None:
   """Reject shallow answer-like forms without claiming semantic safety."""
   if _FENCED_CODE.search(text):
     raise WriterOutputRejectedError(
-        "writer output contains a fenced code block"
+      "writer output contains a fenced code block"
     )
   if _DIFF_HUNK.search(text):
     raise WriterOutputRejectedError("writer output contains a diff hunk header")
   if guidebook is not None and shingles(text) & shingles(guidebook):
     raise WriterOutputRejectedError(
-        "writer output copies an eight-word guidebook shingle"
+      "writer output copies an eight-word guidebook shingle"
     )
 
 
@@ -171,11 +171,11 @@ class PolicyLapseError(Exception):
   judge_input: Mapping[str, Any] | None
 
   def __init__(
-      self,
-      message: str,
-      *,
-      finish_reason: str | None = None,
-      judge_input: Mapping[str, Any] | None = None,
+    self,
+    message: str,
+    *,
+    finish_reason: str | None = None,
+    judge_input: Mapping[str, Any] | None = None,
   ) -> None:
     """Record the lapse together with what is known about the call behind it.
 
@@ -211,7 +211,7 @@ class Intervention:
       raise ValueError("an intervention may not be empty")
     if len(self.text) > MAX_INTERVENTION_CHARS:
       raise InterventionTooLongError(
-          f"{len(self.text)} chars > {MAX_INTERVENTION_CHARS}"
+        f"{len(self.text)} chars > {MAX_INTERVENTION_CHARS}"
       )
 
   def rendered(self) -> str:
@@ -300,7 +300,7 @@ class SpeakPolicy(Protocol):
     ...
 
   def consider(
-      self, observation: Observation
+    self, observation: Observation
   ) -> Intervention | Unjudged | None:
     """Decide whether to speak at this point.
 
@@ -469,7 +469,7 @@ class SpeakWhenOffTrack:
   cooldown: int = 4
   window: int = 8
   selector: EvidenceSelector = dataclasses.field(
-      default_factory=CompleteAssistantTurnSelector
+    default_factory=CompleteAssistantTurnSelector
   )
   said_visibility: SaidVisibility = "writer"
 
@@ -486,8 +486,8 @@ class SpeakWhenOffTrack:
     """
     if self.criterion.digest != CRITERION_SHA256:
       raise CriterionRejectedError(
-          f"policy criterion {self.criterion.digest} is not the pinned"
-          f" {CRITERION_SHA256}"
+        f"policy criterion {self.criterion.digest} is not the pinned"
+        f" {CRITERION_SHA256}"
       )
 
   @property
@@ -514,7 +514,7 @@ class SpeakWhenOffTrack:
     return self._running_state
 
   def consider(
-      self, observation: Observation
+    self, observation: Observation
   ) -> Intervention | Unjudged | None:
     """Decide whether to speak at this boundary.
 
@@ -552,9 +552,9 @@ class SpeakWhenOffTrack:
         :class:`Intervention` refused.
     """
     windowed = dataclasses.replace(
-        observation,
-        evidence=self.selector.select(observation.evidence, limit=self.window),
-        running_state=self._running_state,
+      observation,
+      evidence=self.selector.select(observation.evidence, limit=self.window),
+      running_state=self._running_state,
     )
     if not windowed.evidence:
       return Unjudged(reason="no actor evidence in the window")
@@ -562,9 +562,9 @@ class SpeakWhenOffTrack:
       verdict = self.judge(windowed, self.criterion)
     except Exception as error:  # noqa: BLE001 - re-raised with its scope named
       raise PolicyLapseError(
-          f"judge call failed: {error!r}",
-          finish_reason=getattr(error, "finish_reason", None),
-          judge_input=getattr(error, "judge_input", None),
+        f"judge call failed: {error!r}",
+        finish_reason=getattr(error, "finish_reason", None),
+        judge_input=getattr(error, "judge_input", None),
       ) from error
     self._verdicts.append(verdict)
     self._running_state = verdict.running_state
@@ -574,19 +574,19 @@ class SpeakWhenOffTrack:
     if len(self._spoken_at) >= self.budget:
       return None
     if self._spoken_at and observation.cursor - self._spoken_at[-1] < (
-        self.cooldown
+      self.cooldown
     ):
       return None
 
     try:
       writer_observation = WriterObservation(
-          task=windowed.task,
-          evidence=windowed.evidence,
-          cursor=windowed.cursor,
-          said=windowed.said,
-          guidebook=windowed.guidebook,
-          running_state=windowed.running_state,
-          verdict=verdict,
+        task=windowed.task,
+        evidence=windowed.evidence,
+        cursor=windowed.cursor,
+        said=windowed.said,
+        guidebook=windowed.guidebook,
+        running_state=windowed.running_state,
+        verdict=verdict,
       )
       text = self.writer(writer_observation, self.criterion)
       _check_writer_output(text, observation.guidebook)
@@ -659,8 +659,8 @@ def lapsed_judge_request(error: PolicyLapseError) -> dict[str, object]:
   if error.judge_input is None:
     return {}
   return {
-      "judge_input": error.judge_input,
-      "judge_prompt_sha256": judge_prompt_sha256(error.judge_input),
+    "judge_input": error.judge_input,
+    "judge_prompt_sha256": judge_prompt_sha256(error.judge_input),
   }
 
 

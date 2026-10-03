@@ -163,5 +163,5 @@ def merge_contributions(contributions: list[Contribution]) -> Contribution:
         raise SandboxError(f"two observers contributed metric {name!r}")
       metrics[name] = value
   return Contribution(
-      artifacts=artifacts, inline_artifacts=inline, metrics=metrics
+    artifacts=artifacts, inline_artifacts=inline, metrics=metrics
   )

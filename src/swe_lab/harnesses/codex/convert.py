@@ -23,27 +23,27 @@ import json
 from typing import Any
 
 from swe_lab.conversation import (
-    Conversation,
-    Message,
-    ReasoningBlock,
-    Role,
-    TextBlock,
-    ToolResultBlock,
-    ToolUseBlock,
+  Conversation,
+  Message,
+  ReasoningBlock,
+  Role,
+  TextBlock,
+  ToolResultBlock,
+  ToolUseBlock,
 )
 from swe_lab.harnesses.base import AgentOutcome
 
 # Item types that are a *tool call*: the item's own payload is the call's
 # input, and what it produced is the result. Everything else is plain content.
 _TOOL_ITEMS = frozenset(
-    {
-        "command_execution",
-        "file_change",
-        "mcp_tool_call",
-        "collab_tool_call",
-        "web_search",
-        "todo_list",
-    }
+  {
+    "command_execution",
+    "file_change",
+    "mcp_tool_call",
+    "collab_tool_call",
+    "web_search",
+    "todo_list",
+  }
 )
 
 
@@ -117,13 +117,13 @@ def _tool_messages(item: dict[str, Any], kind: str) -> list[Message]:
   item_id = str(item.get("id", ""))
   call = ToolUseBlock(id=item_id, name=kind, input=_tool_input(item, kind))
   result = ToolResultBlock(
-      tool_use_id=item_id,
-      content=_tool_output(item, kind),
-      is_error=_tool_failed(item),
+    tool_use_id=item_id,
+    content=_tool_output(item, kind),
+    is_error=_tool_failed(item),
   )
   return [
-      Message(role=Role.ASSISTANT, content=[call]),
-      Message(role=Role.USER, content=[result]),
+    Message(role=Role.ASSISTANT, content=[call]),
+    Message(role=Role.USER, content=[result]),
   ]
 
 

@@ -21,39 +21,39 @@ from .storage import DEFAULT_DATASET
 def main() -> int:
   """Run the annotation CLI and return the process exit status."""
   parser = argparse.ArgumentParser(
-      prog="python -m swe_lab.pipelines.related_files",
-      description="Annotate one SWE-Bench instance's relevant code snippets.",
+    prog="python -m swe_lab.pipelines.related_files",
+    description="Annotate one SWE-Bench instance's relevant code snippets.",
   )
   _ = parser.add_argument("instance_id", help="Instance id to annotate.")
   _ = parser.add_argument(
-      "--model", default=DEFAULT_MODEL, help="Claude model (default: sonnet)."
+    "--model", default=DEFAULT_MODEL, help="Claude model (default: sonnet)."
   )
   _ = parser.add_argument(
-      "--dataset", default=DEFAULT_DATASET, help="Dataset name."
+    "--dataset", default=DEFAULT_DATASET, help="Dataset name."
   )
   _ = parser.add_argument(
-      "--samples",
-      type=int,
-      default=DEFAULT_SAMPLES,
-      help=f"Independent samples to aggregate (default: {DEFAULT_SAMPLES}).",
+    "--samples",
+    type=int,
+    default=DEFAULT_SAMPLES,
+    help=f"Independent samples to aggregate (default: {DEFAULT_SAMPLES}).",
   )
   _ = parser.add_argument(
-      "--capture",
-      choices=get_args(Capture.__value__),
-      default="stream",
-      help=(
-          "Trace source: 'proxy' (reverse proxy, raw wire record) or 'stream'"
-          " (claude stream-json, no proxy). Default: stream."
-      ),
+    "--capture",
+    choices=get_args(Capture.__value__),
+    default="stream",
+    help=(
+      "Trace source: 'proxy' (reverse proxy, raw wire record) or 'stream'"
+      " (claude stream-json, no proxy). Default: stream."
+    ),
   )
   args = parser.parse_args()
 
   result = annotate_by_id_with_aggregation(
-      args.instance_id,
-      dataset=args.dataset,
-      samples=args.samples,
-      model=args.model,
-      capture=args.capture,
+    args.instance_id,
+    dataset=args.dataset,
+    samples=args.samples,
+    model=args.model,
+    capture=args.capture,
   )
 
   agg = result.aggregate

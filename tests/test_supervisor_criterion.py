@@ -15,11 +15,11 @@ import pathlib
 import pytest
 
 from swe_lab.trace_synthesis.criterion import (
-    Criterion,
-    CRITERION_PATH,
-    CRITERION_SHA256,
-    CriterionRejectedError,
-    load_criterion,
+  Criterion,
+  CRITERION_PATH,
+  CRITERION_SHA256,
+  CriterionRejectedError,
+  load_criterion,
 )
 
 GOLD_PATCH = """diff --git a/src/pkg/parser.py b/src/pkg/parser.py
@@ -50,14 +50,13 @@ def forged(tmp_path: pathlib.Path, text: str) -> tuple[pathlib.Path, str]:
 def test_the_committed_criterion_matches_its_pinned_digest() -> None:
   """The artifact and the constant move together, or the loader rejects."""
   assert (
-      hashlib.sha256(CRITERION_PATH.read_bytes()).hexdigest()
-      == CRITERION_SHA256
+    hashlib.sha256(CRITERION_PATH.read_bytes()).hexdigest() == CRITERION_SHA256
   )
   assert isinstance(load_criterion(), Criterion)
 
 
 def test_a_criterion_quoting_the_gold_patch_is_rejected(
-    tmp_path: pathlib.Path,
+  tmp_path: pathlib.Path,
 ) -> None:
   """§3.1's named test: a criterion carrying the fix fails the check.
 
@@ -65,30 +64,30 @@ def test_a_criterion_quoting_the_gold_patch_is_rejected(
   loader-level refusal; no run is stopped by it until a rollout path calls in.
   """
   path, digest = forged(
-      tmp_path,
-      "# Criterion\n\nPrefer this shape:\n\n"
-      '    return [part.strip() for part in text.split(",") if part.strip()]\n',
+    tmp_path,
+    "# Criterion\n\nPrefer this shape:\n\n"
+    '    return [part.strip() for part in text.split(",") if part.strip()]\n',
   )
   with pytest.raises(CriterionRejectedError, match="word run"):
     load_criterion(gold_patch=GOLD_PATCH, path=path, digest=digest)
 
 
 def test_a_criterion_naming_a_changed_file_is_rejected(
-    tmp_path: pathlib.Path,
+  tmp_path: pathlib.Path,
 ) -> None:
   """The cheap redundant half: the criterion may not name where the fix went.
 
   Not even when it quotes none of it.
   """
   path, digest = forged(
-      tmp_path, "# Criterion\n\nLook closely at src/pkg/parser.py.\n"
+    tmp_path, "# Criterion\n\nLook closely at src/pkg/parser.py.\n"
   )
   with pytest.raises(CriterionRejectedError, match="path"):
     load_criterion(gold_patch=GOLD_PATCH, path=path, digest=digest)
 
 
 def test_an_edited_criterion_is_rejected_by_the_loader(
-    tmp_path: pathlib.Path,
+  tmp_path: pathlib.Path,
 ) -> None:
   """Instance-independence is enforced by the digest, not by inspection.
 
@@ -96,15 +95,15 @@ def test_an_edited_criterion_is_rejected_by_the_loader(
   """
   path = tmp_path / "edited.md"
   path.write_text(
-      CRITERION_PATH.read_text(encoding="utf-8") + "\nand one more thing\n",
-      encoding="utf-8",
+    CRITERION_PATH.read_text(encoding="utf-8") + "\nand one more thing\n",
+    encoding="utf-8",
   )
   with pytest.raises(CriterionRejectedError, match="digest"):
     load_criterion(path=path)
 
 
 def test_a_missing_criterion_is_rejected_by_the_loader(
-    tmp_path: pathlib.Path,
+  tmp_path: pathlib.Path,
 ) -> None:
   """An absent artifact is a refusal, never a silently empty criterion."""
   with pytest.raises(CriterionRejectedError):

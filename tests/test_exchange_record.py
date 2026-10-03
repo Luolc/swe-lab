@@ -11,53 +11,53 @@ from swe_lab.pipelines.related_files.exchange import build_exchange_from_proxy
 
 _MESSAGE_KEYS = {"role", "content", "id", "model", "stop_reason", "usage"}
 _RECORD_KEYS = {
-    "source",
-    "complete",
-    "model",
-    "messages",
-    "system",
-    "tools",
-    "extra_info",
+  "source",
+  "complete",
+  "model",
+  "messages",
+  "system",
+  "tools",
+  "extra_info",
 }
 
 
 def _raw_proxy_record(home: str) -> dict[str, object]:
   user_text = (
-      "The user's email address is jane@roe.example.\n"
-      f"working dir: {home}/dev/x/file.py"
+    "The user's email address is jane@roe.example.\n"
+    f"working dir: {home}/dev/x/file.py"
   )
   body = {
-      "model": "claude-sonnet-4-6",
-      "max_tokens": 32000,
-      "system": [{"type": "text", "text": "Git user: Jane Roe\nrest"}],
-      "tools": [{"name": "Read"}],
-      "messages": [
-          {"role": "user", "content": [{"type": "text", "text": user_text}]}
-      ],
-      "metadata": {"user_id": "device+account json"},
+    "model": "claude-sonnet-4-6",
+    "max_tokens": 32000,
+    "system": [{"type": "text", "text": "Git user: Jane Roe\nrest"}],
+    "tools": [{"name": "Read"}],
+    "messages": [
+      {"role": "user", "content": [{"type": "text", "text": user_text}]}
+    ],
+    "metadata": {"user_id": "device+account json"},
   }
   answer = {
-      "role": "assistant",
-      "content": [{"type": "text", "text": "done"}],
-      "id": "msg_1",
-      "model": "claude-sonnet-4-6",
-      "stop_reason": "end_turn",
-      "usage": {"output_tokens": 3},
+    "role": "assistant",
+    "content": [{"type": "text", "text": "done"}],
+    "id": "msg_1",
+    "model": "claude-sonnet-4-6",
+    "stop_reason": "end_turn",
+    "usage": {"output_tokens": 3},
   }
   return {
-      "complete": True,
-      "request": {
-          "body": body,
-          "headers": {
-              "Authorization": "Bearer sk-ant-oat01-SECRET",
-              "X-App": "cli",
-          },
+    "complete": True,
+    "request": {
+      "body": body,
+      "headers": {
+        "Authorization": "Bearer sk-ant-oat01-SECRET",
+        "X-App": "cli",
       },
-      "response": {
-          "message": answer,
-          "headers": {"Anthropic-Organization-Id": "org-uuid-123"},
-          "status": 200,
-      },
+    },
+    "response": {
+      "message": answer,
+      "headers": {"Anthropic-Organization-Id": "org-uuid-123"},
+      "status": 200,
+    },
   }
 
 

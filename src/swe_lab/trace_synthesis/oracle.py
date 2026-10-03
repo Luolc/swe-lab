@@ -45,36 +45,36 @@ from typing import Any, override
 from swe_lab.conversation.observer import CONVERSATION_NAME
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.unit_test import (
-    ARTIFACT_NAMESPACE,
-    BaselineVerifyObserver,
-    ENTRYSCRIPT_NAME,
-    VERDICT_NAME,
+  ARTIFACT_NAMESPACE,
+  BaselineVerifyObserver,
+  ENTRYSCRIPT_NAME,
+  VERDICT_NAME,
 )
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.harnesses import Harness
 from swe_lab.rollout import outcome_of, PROMPT_NAME
 from swe_lab.sandbox import (
-    AgentAsset,
-    ArtifactSchema,
-    Contribution,
-    ExecResult,
-    Inline,
-    merge_mounts,
-    Mount,
-    Mounts,
-    qualified_name,
-    SandboxError,
-    SandboxFs,
-    SandboxObserver,
+  AgentAsset,
+  ArtifactSchema,
+  Contribution,
+  ExecResult,
+  Inline,
+  merge_mounts,
+  Mount,
+  Mounts,
+  qualified_name,
+  SandboxError,
+  SandboxFs,
+  SandboxObserver,
 )
 from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
 from swe_lab.workflow import AttemptResult, InputsBuilder, Task
 
 from .guidebook import (
-    GUIDEBOOK_NAME,
-    RUBRIC_FIELDS,
-    STAGE_FIELDS,
-    validate_guidebook,
+  GUIDEBOOK_NAME,
+  RUBRIC_FIELDS,
+  STAGE_FIELDS,
+  validate_guidebook,
 )
 
 _logger = logging.getLogger(__name__)
@@ -109,7 +109,7 @@ def _grading_spec(instance: TaskInstance[Any]) -> UnitTestSpec[Any]:
     reset to its recorded baseline first.
   """
   return instance.unit_test_spec(
-      apply_patch=True, patch_name=PATCH_NAME, patch_baseline=True
+    apply_patch=True, patch_name=PATCH_NAME, patch_baseline=True
   )
 
 
@@ -129,17 +129,17 @@ def privileged_mounts(instance: TaskInstance[Any]) -> Mounts:
   """
   spec = _grading_spec(instance)
   mounts = merge_mounts(
-      dict(spec.mounts),
-      {
-          ENTRYSCRIPT_NAME: Mount(
-              Inline(spec.eval_script.encode()), executable=True
-          )
-      },
+    dict(spec.mounts),
+    {
+      ENTRYSCRIPT_NAME: Mount(
+        Inline(spec.eval_script.encode()), executable=True
+      )
+    },
   )
   gold = instance.gold_patch()
   if gold is not None:
     mounts = merge_mounts(
-        mounts, {GOLD_PATCH_NAME: Mount(Inline(gold.encode()), read_only=True)}
+      mounts, {GOLD_PATCH_NAME: Mount(Inline(gold.encode()), read_only=True)}
     )
   return mounts
 
@@ -175,36 +175,36 @@ def build_oracle_prompt(instance: TaskInstance[Any], *, resolved: bool) -> str:
   spec = instance.sandbox_spec()
   fix = instance.solution_sha()
   history = (
-      f"Its git history is intact: the upstream fix commit is `{fix}`"
-      f" (`git show {fix}` shows it, `git diff {spec.base_commit} {fix}`"
-      " the whole change)."
-      if fix
-      else "Its git history is intact, but the dataset records no upstream"
-      " fix commit for this task."
+    f"Its git history is intact: the upstream fix commit is `{fix}`"
+    f" (`git show {fix}` shows it, `git diff {spec.base_commit} {fix}`"
+    " the whole change)."
+    if fix
+    else "Its git history is intact, but the dataset records no upstream"
+    " fix commit for this task."
   )
   # The agent whose attempt is being explained — named for what its verdict
   # says it did, so no sentence of the brief contradicts the verdict beside it.
   actor = "successful agent" if resolved else "failed agent"
   files = [
-      (
-          CONVERSATION_NAME,
-          f"the {actor}'s full conversation — every tool call and"
-          " result, as typed JSON",
-      ),
-      (
-          ATTEMPT_VERDICT_NAME,
-          "the grader's verdict on its patch; `summary` names the graded"
-          " tests it passed"
-          if resolved
-          else "the grader's verdict on its patch; `summary` names the tests"
-          " it failed",
-      ),
-      (PATCH_NAME, "the patch it submitted"),
-      (
-          BASE_REF_NAME,
-          "the commit the submitted patch was diffed against — the grading"
-          " procedure verifies the tree and resets to it before applying",
-      ),
+    (
+      CONVERSATION_NAME,
+      f"the {actor}'s full conversation — every tool call and"
+      " result, as typed JSON",
+    ),
+    (
+      ATTEMPT_VERDICT_NAME,
+      "the grader's verdict on its patch; `summary` names the graded"
+      " tests it passed"
+      if resolved
+      else "the grader's verdict on its patch; `summary` names the tests"
+      " it failed",
+    ),
+    (PATCH_NAME, "the patch it submitted"),
+    (
+      BASE_REF_NAME,
+      "the commit the submitted patch was diffed against — the grading"
+      " procedure verifies the tree and resets to it before applying",
+    ),
   ]
   # A dataset without a reference patch gets a brief that says so — every
   # sentence below that mentions the reference is conditioned on this, so the
@@ -214,48 +214,47 @@ def build_oracle_prompt(instance: TaskInstance[Any], *, resolved: bool) -> str:
     files.append((GOLD_PATCH_NAME, "the reference solution"))
   grading = _grading_spec(instance)
   files.append(
-      (
-          ENTRYSCRIPT_NAME,
-          "the exact grading procedure, as the grader runs it. It resets the"
-          f" repository, applies `{PATCH_NAME}` and runs the graded"
-          f' tests — run `bash "$SANDBOX_WORKSPACE/{ENTRYSCRIPT_NAME}"` to'
-          " reproduce the verdict (it discards any edits you made first)",
-      )
+    (
+      ENTRYSCRIPT_NAME,
+      "the exact grading procedure, as the grader runs it. It resets the"
+      f" repository, applies `{PATCH_NAME}` and runs the graded"
+      f' tests — run `bash "$SANDBOX_WORKSPACE/{ENTRYSCRIPT_NAME}"` to'
+      " reproduce the verdict (it discards any edits you made first)",
+    )
   )
   files.extend(
-      (name, "a file the grading procedure reads")
-      for name in sorted(grading.mounts)
+    (name, "a file the grading procedure reads")
+    for name in sorted(grading.mounts)
   )
   table = "\n".join(f"| `{name}` | {what} |" for name, what in files)
   fields = "\n".join(f"**{name}.** …" for name in STAGE_FIELDS)
   rubric_fields = "\n".join(f"**{name}.** …" for name in RUBRIC_FIELDS)
   statement = instance.prompt().rstrip("\n")
   privileges = (
-      "its full conversation, the grader's verdict, the reference solution"
-      " and the grading procedure"
-      if has_reference
-      else "its full conversation, the grader's verdict and the grading"
-      " procedure"
+    "its full conversation, the grader's verdict, the reference solution"
+    " and the grading procedure"
+    if has_reference
+    else "its full conversation, the grader's verdict and the grading procedure"
   )
   diagnose = (
-      "Read the verdict, then the submitted patch\n   against the reference,"
-      " then the conversation."
-      if has_reference
-      else "Read the verdict, then the submitted patch,\n   then the"
-      " conversation."
+    "Read the verdict, then the submitted patch\n   against the reference,"
+    " then the conversation."
+    if has_reference
+    else "Read the verdict, then the submitted patch,\n   then the"
+    " conversation."
   )
   # The one job, and the reading that leads to it — the whole difference
   # between the two briefs. A passed attempt is not narrated as a failure: it
   # is read for the steps nothing in the evidence forced, which are exactly
   # the ones a blind agent can get wrong.
   job = (
-      "solve the task correctly, and reach that solution by evidence"
-      " rather than by luck."
-      if resolved
-      else "solve the task correctly."
+    "solve the task correctly, and reach that solution by evidence"
+    " rather than by luck."
+    if resolved
+    else "solve the task correctly."
   )
   premise = (
-      """
+    """
 **This attempt passed.** Do not write it up as a failure and do not invent
 one: a guidebook that narrates a failure which did not happen is wrong about
 the only run it has evidence for. An attempt that passed still contains steps
@@ -265,19 +264,19 @@ the repository forcing it, and it happened to be right. A blind agent
 repeating this task can guess differently. Those steps are what this guidebook
 exists to make deliberate.
 """
-      if resolved
-      else ""
+    if resolved
+    else ""
   )
   method_one = (
-      f"""1. **Find what was guessed, not what went wrong.** {diagnose} For
+    f"""1. **Find what was guessed, not what went wrong.** {diagnose} For
    every decision that shaped the patch, ask what in the task statement, the
    repository or an earlier stage *forced* it — and mark the ones nothing
    did. Those are the guesses. Reproduce the result with the grading
    procedure when that is what it takes to be sure of what actually passed. A
    guidebook written from a vague sense that the agent "did it right"
    teaches nothing."""
-      if resolved
-      else f"""1. **Diagnose before you write.** {diagnose} Find the exact
+    if resolved
+    else f"""1. **Diagnose before you write.** {diagnose} Find the exact
    decision at which the attempt went wrong and the evidence in the
    conversation for why the agent made it. Reproduce the failure with the
    grading procedure when that is what it takes to be sure. A guidebook
@@ -285,13 +284,13 @@ exists to make deliberate.
    teaches nothing."""
   )
   decision_rule = (
-      """- **Make the guessed step a decision, not a formality.** Name the
+    """- **Make the guessed step a decision, not a formality.** Name the
   fork the successful agent resolved without evidence, the observation that
   shows it *is* a fork, and how to resolve it without guessing. If the
   statement genuinely underdetermines it, say what satisfies every reading
   rather than picking one."""
-      if resolved
-      else """- **Make the failing stage a decision, not a formality.** Name
+    if resolved
+    else """- **Make the failing stage a decision, not a formality.** Name
   the fork the failed agent got wrong, the observation that shows it *is* a
   fork, and how to resolve it without guessing. If the statement genuinely
   underdetermines it, say what satisfies every reading rather than picking
@@ -431,28 +430,28 @@ def attempt_resolved(sb: SandboxFs) -> bool:
   """
   if not sb.exists(ATTEMPT_VERDICT_NAME):
     raise SandboxError(
-        f"required input(s) missing: [{ATTEMPT_VERDICT_NAME!r}] — the"
-        " Oracle's brief is written from the verdict, so supply it (a"
-        " workflow edge or the caller's bytes)"
+      f"required input(s) missing: [{ATTEMPT_VERDICT_NAME!r}] — the"
+      " Oracle's brief is written from the verdict, so supply it (a"
+      " workflow edge or the caller's bytes)"
     )
   raw = sb.read(ATTEMPT_VERDICT_NAME).decode("utf-8", "backslashreplace")
   try:
     facts = json.loads(raw)
   except json.JSONDecodeError as error:
     raise SandboxError(
-        f"the verdict at {ATTEMPT_VERDICT_NAME!r} is not JSON: {error}"
+      f"the verdict at {ATTEMPT_VERDICT_NAME!r} is not JSON: {error}"
     ) from error
   resolved = facts.get("resolved") if isinstance(facts, dict) else None
   if not isinstance(resolved, bool):
     raise SandboxError(
-        f"the verdict at {ATTEMPT_VERDICT_NAME!r} carries no boolean 'resolved'"
-        f" (got {resolved!r}); Verdict.facts() always does"
+      f"the verdict at {ATTEMPT_VERDICT_NAME!r} carries no boolean 'resolved'"
+      f" (got {resolved!r}); Verdict.facts() always does"
     )
   return resolved
 
 
 def oracle_prompt(
-    sb: SandboxFs, instance: TaskInstance[Any]
+  sb: SandboxFs, instance: TaskInstance[Any]
 ) -> Mapping[str, bytes]:
   """Build the Oracle's brief for the attempt declared as inputs.
 
@@ -464,9 +463,9 @@ def oracle_prompt(
     The prompt input, by store name.
   """
   return {
-      PROMPT_NAME: build_oracle_prompt(
-          instance, resolved=attempt_resolved(sb)
-      ).encode("utf-8")
+    PROMPT_NAME: build_oracle_prompt(
+      instance, resolved=attempt_resolved(sb)
+    ).encode("utf-8")
   }
 
 
@@ -500,10 +499,10 @@ class GuidebookObserver(SandboxObserver):
   def output_schema(self) -> tuple[ArtifactSchema, ...]:
     """Declare the guidebook — required: a run without one produced nothing."""
     return (
-        ArtifactSchema(
-            GUIDEBOOK_NAME,
-            description="the Oracle's staged guidebook for a blind actor",
-        ),
+      ArtifactSchema(
+        GUIDEBOOK_NAME,
+        description="the Oracle's staged guidebook for a blind actor",
+      ),
     )
 
   @override
@@ -526,14 +525,14 @@ class GuidebookObserver(SandboxObserver):
       # Recorded, never enforced: the guidebook is used either way.
       _logger.warning("guidebook problems: %s", "; ".join(self.problems))
     return Contribution(
-        inline_artifacts={GUIDEBOOK_NAME: text.encode("utf-8")},
-        metrics={
-            PRESENT_METRIC: 1.0,
-            VALID_METRIC: float(self.valid),
-            STAGES_METRIC: float(
-                text.count("\n## Stage ") + text.startswith("## Stage ")
-            ),
-        },
+      inline_artifacts={GUIDEBOOK_NAME: text.encode("utf-8")},
+      metrics={
+        PRESENT_METRIC: 1.0,
+        VALID_METRIC: float(self.valid),
+        STAGES_METRIC: float(
+          text.count("\n## Stage ") + text.startswith("## Stage ")
+        ),
+      },
     )
 
 
@@ -567,7 +566,7 @@ class OracleAnalysisTask(Task):
   # Redeclared only to change the base's default; `kw_only` restated so the
   # defaulted field stays keyword-only behind the positional `harness`.
   inputs_builder: InputsBuilder | None = field(
-      default=oracle_prompt, kw_only=True
+    default=oracle_prompt, kw_only=True
   )
   env: Mapping[str, str] | None = None
   instructions: str | None = None
@@ -587,9 +586,9 @@ class OracleAnalysisTask(Task):
       The merged staging set (duplicate targets refused).
     """
     return merge_mounts(
-        super().mounts(instance),
-        self.harness.mounts(instance.sandbox_spec().workdir),
-        privileged_mounts(instance),
+      super().mounts(instance),
+      self.harness.mounts(instance.sandbox_spec().workdir),
+      privileged_mounts(instance),
     )
 
   @override
@@ -615,9 +614,9 @@ class OracleAnalysisTask(Task):
       ``GuidebookObserver``.
     """
     return (
-        BaselineVerifyObserver(workdir=instance.sandbox_spec().workdir),
-        *self.harness.observers(),
-        GuidebookObserver(),
+      BaselineVerifyObserver(workdir=instance.sandbox_spec().workdir),
+      *self.harness.observers(),
+      GuidebookObserver(),
     )
 
   @override
@@ -628,28 +627,28 @@ class OracleAnalysisTask(Task):
       The brief plus the four files the solving pipeline produced.
     """
     return (
-        ArtifactSchema(PROMPT_NAME, description="the Oracle's brief"),
-        ArtifactSchema(
-            CONVERSATION_NAME,
-            description="the blind rollout's typed conversation",
-        ),
-        ArtifactSchema(
-            PATCH_NAME,
-            description="the patch the rollout submitted",
-        ),
-        ArtifactSchema(
-            BASE_REF_NAME,
-            description="the sha the submitted patch was diffed against",
-        ),
-        ArtifactSchema(
-            ATTEMPT_VERDICT_NAME,
-            description="the grader's verdict on the submitted patch",
-        ),
+      ArtifactSchema(PROMPT_NAME, description="the Oracle's brief"),
+      ArtifactSchema(
+        CONVERSATION_NAME,
+        description="the blind rollout's typed conversation",
+      ),
+      ArtifactSchema(
+        PATCH_NAME,
+        description="the patch the rollout submitted",
+      ),
+      ArtifactSchema(
+        BASE_REF_NAME,
+        description="the sha the submitted patch was diffed against",
+      ),
+      ArtifactSchema(
+        ATTEMPT_VERDICT_NAME,
+        description="the grader's verdict on the submitted patch",
+      ),
     )
 
   @override
   def action(
-      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+    self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
   ) -> ExecResult:
     """Run the agent against the staged brief.
 
@@ -740,5 +739,5 @@ def guidebook_of(result: AttemptResult) -> GuidebookObserver | None:
     ``None`` if the result came from a task that composed none.
   """
   return next(
-      (o for o in result.observers if isinstance(o, GuidebookObserver)), None
+    (o for o in result.observers if isinstance(o, GuidebookObserver)), None
   )

@@ -53,7 +53,7 @@ class ArtifactSchema:
 
 
 def merge_output_schemas(
-    *schemas: Sequence[ArtifactSchema],
+  *schemas: Sequence[ArtifactSchema],
 ) -> tuple[ArtifactSchema, ...]:
   """Merge per-observer output schemas; a duplicate store name is an error.
 
@@ -75,7 +75,7 @@ def merge_output_schemas(
     for artifact in schema:
       if artifact.name in merged:
         raise SandboxError(
-            f"duplicate output name {artifact.name!r}: two observers declare it"
+          f"duplicate output name {artifact.name!r}: two observers declare it"
         )
       merged[artifact.name] = artifact
   return tuple(merged.values())
@@ -124,7 +124,7 @@ class SandboxObserver:
     del sb
 
   def on_error(
-      self, sb: SandboxFs, error: BaseException
+    self, sb: SandboxFs, error: BaseException
   ) -> Contribution | None:
     """React to a failed setup/body while the sandbox is still live."""
     del sb, error
@@ -153,7 +153,7 @@ class CompositeObserver(SandboxObserver):
   def output_schema(self) -> Sequence[ArtifactSchema]:
     """Merge the children's output schemas (duplicate names refused)."""
     return merge_output_schemas(
-        *(child.output_schema() for child in self.observers)
+      *(child.output_schema() for child in self.observers)
     )
 
   @override
@@ -172,7 +172,7 @@ class CompositeObserver(SandboxObserver):
   def before_destroy(self, sb: SandboxFs) -> Contribution | None:
     """Fan out ``before_destroy`` and merge the children's contributions."""
     return self._merged(
-        [c for child in self.observers if (c := child.before_destroy(sb))]
+      [c for child in self.observers if (c := child.before_destroy(sb))]
     )
 
   @override
@@ -183,11 +183,11 @@ class CompositeObserver(SandboxObserver):
 
   @override
   def on_error(
-      self, sb: SandboxFs, error: BaseException
+    self, sb: SandboxFs, error: BaseException
   ) -> Contribution | None:
     """Fan out ``on_error`` and merge the children's contributions."""
     return self._merged(
-        [c for child in self.observers if (c := child.on_error(sb, error))]
+      [c for child in self.observers if (c := child.on_error(sb, error))]
     )
 
   def _merged(self, contributions: list[Contribution]) -> Contribution | None:

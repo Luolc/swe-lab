@@ -16,22 +16,22 @@ import pytest
 from swe_lab.harnesses import AgentOutcome, registered_harnesses
 from swe_lab.harnesses.common import home_fallback_lines
 from swe_lab.harnesses.grok_build import (
-    event_stream_outcome,
-    event_stream_to_conversation,
-    GrokBuildAuthObserver,
-    GrokBuildHarness,
+  event_stream_outcome,
+  event_stream_to_conversation,
+  GrokBuildAuthObserver,
+  GrokBuildHarness,
 )
 from swe_lab.harnesses.grok_build.binary import (
-    binary_checksum,
-    BINARY_SHA256,
-    binary_url,
-    LINUX_X64,
-    PINNED_GROK_BUILD_VERSION,
+  binary_checksum,
+  BINARY_SHA256,
+  binary_url,
+  LINUX_X64,
+  PINNED_GROK_BUILD_VERSION,
 )
 from swe_lab.harnesses.grok_build.constants import (
-    AGENT_SCRIPT_NAME,
-    EVENT_STREAM_NAME,
-    grok_config_dir,
+  AGENT_SCRIPT_NAME,
+  EVENT_STREAM_NAME,
+  grok_config_dir,
 )
 from swe_lab.sandbox import Inline, SandboxError, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
@@ -41,43 +41,43 @@ from swe_lab.sandbox.testing import FakeSandbox
 # fixture: it proves the terminal error shape). Note the schema: Claude Code's
 # stream-json, which is the whole basis for the converter delegation.
 _INIT_EVENT: dict[str, object] = {
-    "type": "system",
-    "subtype": "init",
-    "session_id": "",
-    "apiKeySource": "user",
-    "model": "unknown",
-    "cwd": "",
-    "permissionMode": "default",
-    "tools": [],
-    "slash_commands": [],
-    "mcp_servers": [],
-    "skills": [],
-    "uuid": "2e148a59-e904-4a92-b062-a4823abd77e0",
+  "type": "system",
+  "subtype": "init",
+  "session_id": "",
+  "apiKeySource": "user",
+  "model": "unknown",
+  "cwd": "",
+  "permissionMode": "default",
+  "tools": [],
+  "slash_commands": [],
+  "mcp_servers": [],
+  "skills": [],
+  "uuid": "2e148a59-e904-4a92-b062-a4823abd77e0",
 }
 _ERROR_RESULT: dict[str, object] = {
-    "type": "result",
-    "subtype": "error_during_execution",
-    "is_error": True,
-    "duration_ms": 0,
-    "num_turns": 0,
-    "stop_reason": None,
-    "total_cost_usd": 0.0,
-    "errors": ["Not signed in. To authenticate without a browser, run: ..."],
+  "type": "result",
+  "subtype": "error_during_execution",
+  "is_error": True,
+  "duration_ms": 0,
+  "num_turns": 0,
+  "stop_reason": None,
+  "total_cost_usd": 0.0,
+  "errors": ["Not signed in. To authenticate without a browser, run: ..."],
 }
 # The shapes a healthy run emits (Anthropic Messages wire format, per the
 # output-format name and the claude_code schema it matches).
 _ASSISTANT_EVENT: dict[str, object] = {
-    "type": "assistant",
-    "message": {
-        "role": "assistant",
-        "content": [{"type": "text", "text": "PONG"}],
-    },
+  "type": "assistant",
+  "message": {
+    "role": "assistant",
+    "content": [{"type": "text", "text": "PONG"}],
+  },
 }
 _SUCCESS_RESULT: dict[str, object] = {
-    "type": "result",
-    "subtype": "success",
-    "is_error": False,
-    "num_turns": 1,
+  "type": "result",
+  "subtype": "success",
+  "is_error": False,
+  "num_turns": 1,
 }
 
 
@@ -94,8 +94,8 @@ def _script(harness: GrokBuildHarness, workdir: str = "/app") -> str:
 def _sandbox(workspace: Path) -> FakeSandbox:
   """Build a docker-free sandbox whose file ops hit a real local dir."""
   return FakeSandbox(
-      spec=SandboxSpec("grok__probe-1", "img:tag", "/app", "base"),
-      workspace=epath.Path(workspace),
+    spec=SandboxSpec("grok__probe-1", "img:tag", "/app", "base"),
+    workspace=epath.Path(workspace),
   )
 
 
@@ -125,10 +125,10 @@ def test_max_turns_is_reachable_for_this_harness():
   # Grok HAS --max-turns (Codex does not), so the error_max_turns subtype is a
   # real ending here and must map to the non-retryable budget outcome.
   raw = _stream(
-      [
-          _INIT_EVENT,
-          {"type": "result", "subtype": "error_max_turns", "is_error": True},
-      ]
+    [
+      _INIT_EVENT,
+      {"type": "result", "subtype": "error_max_turns", "is_error": True},
+    ]
   )
   assert event_stream_outcome(raw) is AgentOutcome.MAX_TURNS
   assert AgentOutcome.MAX_TURNS.retryable is False
@@ -137,8 +137,8 @@ def test_max_turns_is_reachable_for_this_harness():
 def test_absent_and_truncated_traces_read_as_such():
   assert event_stream_outcome("") is AgentOutcome.NO_OUTPUT
   assert (
-      event_stream_outcome(_stream([_INIT_EVENT, _ASSISTANT_EVENT]))
-      is AgentOutcome.TRUNCATED
+    event_stream_outcome(_stream([_INIT_EVENT, _ASSISTANT_EVENT]))
+    is AgentOutcome.TRUNCATED
   )
 
 
@@ -158,7 +158,7 @@ def test_the_script_runs_unattended_and_reports_status_out_of_band():
   assert "--permission-mode bypassPermissions" in script
   assert "--output-format streaming-messages-json" in script
   assert (
-      "--prompt-file" in script
+    "--prompt-file" in script
   )  # Grok Build's native prompt delivery — no stdin
   # The agent's own status is PROPAGATED, not flattened to 0. Nothing gates on
   # it (no backend raises on a non-zero exec; RunStatus is not derived from
@@ -202,15 +202,15 @@ def test_the_home_layout_matches_the_other_harnesses():
 def test_the_harness_stages_no_binary():
   # The binary is the backend's to place (ADR-0003).
   assert set(GrokBuildHarness().mounts("/app")) == {
-      AGENT_SCRIPT_NAME,
-      "agent_env.sh",
+    AGENT_SCRIPT_NAME,
+    "agent_env.sh",
   }
 
 
 def test_an_invalid_env_name_is_refused_not_silently_dropped(tmp_path: Path):
   with pytest.raises(SandboxError, match="invalid environment variable"):
     _ = GrokBuildHarness().run(
-        _sandbox(tmp_path), prompt="p", timeout=1.0, env={"not a name": "v"}
+      _sandbox(tmp_path), prompt="p", timeout=1.0, env={"not a name": "v"}
     )
 
 
@@ -227,10 +227,10 @@ def test_bare_is_on_by_default_and_closes_every_door_that_has_a_switch():
   assert GrokBuildHarness().bare is True
   script = _script(GrokBuildHarness())
   for flag in (
-      "--no-plan",
-      "--no-subagents",
-      "--no-memory",
-      "--disable-web-search",
+    "--no-plan",
+    "--no-subagents",
+    "--no-memory",
+    "--disable-web-search",
   ):
     assert flag in script, flag
 
@@ -312,15 +312,15 @@ def test_the_credential_is_never_shown_in_a_repr():
 
 
 @pytest.mark.parametrize(
-    ("payload", "message"),
-    [
-        (b"   ", "is empty"),
-        (b"not json", "not valid JSON"),
-        (b'["a list"]', "must be a JSON object"),
-    ],
+  ("payload", "message"),
+  [
+    (b"   ", "is empty"),
+    (b"not json", "not valid JSON"),
+    (b'["a list"]', "must be a JSON object"),
+  ],
 )
 def test_an_unusable_credential_is_refused_on_the_host(
-    payload: bytes, message: str
+  payload: bytes, message: str
 ):
   with pytest.raises(SandboxError, match=message):
     _ = GrokBuildAuthObserver(auth_json=payload)
@@ -342,10 +342,10 @@ def test_grok_build_is_selectable_by_name_through_the_cli():
 
   assert "grok_build" in registered_harnesses()
   entries = apply_overrides(
-      workflow_definition("rollout"),
-      parse_overrides(
-          ["--rollout.harness=grok_build", "--rollout.harness.effort=low"]
-      ),
+    workflow_definition("rollout"),
+    parse_overrides(
+      ["--rollout.harness=grok_build", "--rollout.harness.effort=low"]
+    ),
   )
   task = entries[0].task
   assert isinstance(task, CodingAgentTask)
@@ -356,16 +356,16 @@ def test_grok_build_is_selectable_by_name_through_the_cli():
 def test_a_field_of_another_agent_is_refused_with_the_valid_ones():
 
   from swe_lab.cli.overrides import (
-      apply_overrides,
-      OverrideError,
-      parse_overrides,
+    apply_overrides,
+    OverrideError,
+    parse_overrides,
   )
   from swe_lab.workflow.registry import workflow_definition
 
   with pytest.raises(OverrideError, match="not a field of GrokBuildHarness"):
     _ = apply_overrides(
-        workflow_definition("rollout"),
-        parse_overrides(
-            ["--rollout.harness=grok_build", "--rollout.harness.capture=proxy"]
-        ),
+      workflow_definition("rollout"),
+      parse_overrides(
+        ["--rollout.harness=grok_build", "--rollout.harness.capture=proxy"]
+      ),
     )

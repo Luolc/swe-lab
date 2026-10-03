@@ -127,9 +127,9 @@ class AgentAsset:
     """
     if self.fetch is None:
       raise SandboxError(
-          f"asset {self.path!r} (version {self.version}) declares no fetch,"
-          " so this backend cannot transfer it; either the harness should"
-          " supply one, or this sandbox should resolve it from its own store"
+        f"asset {self.path!r} (version {self.version}) declares no fetch,"
+        " so this backend cannot transfer it; either the harness should"
+        " supply one, or this sandbox should resolve it from its own store"
       )
     return self.fetch
 
@@ -158,12 +158,12 @@ class MountedAssetsObserver(SandboxObserver):
       Target path → mount, one per asset.
     """
     return {
-        asset.path: Mount(
-            LocalFile(asset.require_fetch()(None)),
-            executable=asset.executable,
-            read_only=asset.read_only,
-        )
-        for asset in self.assets
+      asset.path: Mount(
+        LocalFile(asset.require_fetch()(None)),
+        executable=asset.executable,
+        read_only=asset.read_only,
+      )
+      for asset in self.assets
     }
 
 

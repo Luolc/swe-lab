@@ -59,7 +59,7 @@ PARQUET_FILENAME = "test-00000-of-00001.parquet"
 #     -> `siblings[].lfs.sha256` for `data/test-00000-of-00001.parquet`.
 #   Both gave the same digest and the same size (7,816,820 bytes).
 PINNED_SWEBENCH_PRO_PARQUET_SHA256 = (
-    "c8cd7115496ad4e9a8b21d088cef576a65bf821bb542b24336f13f714cef13f8"
+  "c8cd7115496ad4e9a8b21d088cef576a65bf821bb542b24336f13f714cef13f8"
 )
 
 # --- Harness / workspace file names ------------------------------------------

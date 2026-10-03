@@ -32,12 +32,12 @@ import subprocess
 from etils import epath
 
 from swe_lab.harnesses.claude_code.redaction import (
-    BODY_IDENTITY_PATH,
-    kept_headers,
-    REDACTED,
-    REDACTED_MARKERS,
-    SENSITIVE_HEADERS,
-    Upstream,
+  BODY_IDENTITY_PATH,
+  kept_headers,
+  REDACTED,
+  REDACTED_MARKERS,
+  SENSITIVE_HEADERS,
+  Upstream,
 )
 
 # Where the run's trace (the audit record + the ``complete`` signal) comes from,
@@ -70,7 +70,7 @@ def parse_stream_events(stdout: str) -> list[dict[str, object]]:
 
 
 def final_result_event(
-    events: list[dict[str, object]],
+  events: list[dict[str, object]],
 ) -> dict[str, object] | None:
   """Return the last terminal ``result`` event, or ``None`` if absent."""
   for event in reversed(events):
@@ -80,7 +80,7 @@ def final_result_event(
 
 
 def _last_assistant_message(
-    events: list[dict[str, object]],
+  events: list[dict[str, object]],
 ) -> dict[str, object] | None:
   for event in reversed(events):
     message = event.get("message")
@@ -103,7 +103,7 @@ def _stream_complete(result_event: dict[str, object]) -> bool:
   ``stop_reason``, so we do not depend on it.
   """
   return result_event.get("subtype") == "success" and not result_event.get(
-      "is_error", False
+    "is_error", False
   )
 
 
@@ -157,11 +157,11 @@ _FAKE_HOME = "/Users/aturing"
 _EMAIL_SENTENCE_RE = re.compile(r"(The user's email address is )\S+")
 _GIT_USER_LINE_RE = re.compile(r"(Git user: )[^\n]+")
 _PROXY_PARAM_FIELDS = (
-    "max_tokens",
-    "stream",
-    "thinking",
-    "output_config",
-    "context_management",
+  "max_tokens",
+  "stream",
+  "thinking",
+  "output_config",
+  "context_management",
 )
 
 
@@ -179,8 +179,8 @@ def _scrub_headers(headers: object) -> object:
   if not isinstance(headers, dict):
     return headers
   return {
-      key: (REDACTED if str(key).lower() in SENSITIVE_HEADERS else value)
-      for key, value in headers.items()
+    key: (REDACTED if str(key).lower() in SENSITIVE_HEADERS else value)
+    for key, value in headers.items()
   }
 
 
@@ -196,8 +196,8 @@ def _scrub_metadata(metadata: object) -> object:
     return metadata
   identity = BODY_IDENTITY_PATH[-1]
   return {
-      key: (REDACTED if key == identity else value)
-      for key, value in metadata.items()
+    key: (REDACTED if key == identity else value)
+    for key, value in metadata.items()
   }
 
 
@@ -205,11 +205,11 @@ def _git_config(key: str) -> str:
   """Return the ``git config`` value for ``key`` (empty on any failure)."""
   try:
     result = subprocess.run(
-        ["git", "config", "--get", key],
-        capture_output=True,
-        text=True,
-        timeout=5,
-        check=False,
+      ["git", "config", "--get", key],
+      capture_output=True,
+      text=True,
+      timeout=5,
+      check=False,
     )
   except (OSError, subprocess.SubprocessError):
     return ""
@@ -251,8 +251,8 @@ def _redact_pii(record: dict[str, object]) -> dict[str, object]:
   name = _git_config("user.name")
   email = _git_config("user.email")
   return {
-      key: _redact_value(value, home, name, email)
-      for key, value in record.items()
+    key: _redact_value(value, home, name, email)
+    for key, value in record.items()
   }
 
 
@@ -279,28 +279,28 @@ def build_exchange_from_proxy(raw: dict[str, object]) -> dict[str, object]:
     messages_src.append(response_message)
 
   return _redact_pii(
-      {
-          "source": "proxy",
-          "complete": bool(raw.get("complete", False)),
-          "model": body.get("model"),
-          "messages": [_normalize_message(m) for m in messages_src],
-          "system": body.get("system"),
-          "tools": body.get("tools"),
-          "extra_info": {
-              "request_headers": _scrub_headers(request.get("headers")),
-              "response_headers": _scrub_headers(response.get("headers")),
-              "status": response.get("status"),
-              "request_params": {
-                  field: body.get(field) for field in _PROXY_PARAM_FIELDS
-              },
-              "metadata": _scrub_metadata(body.get("metadata")),
-          },
-      }
+    {
+      "source": "proxy",
+      "complete": bool(raw.get("complete", False)),
+      "model": body.get("model"),
+      "messages": [_normalize_message(m) for m in messages_src],
+      "system": body.get("system"),
+      "tools": body.get("tools"),
+      "extra_info": {
+        "request_headers": _scrub_headers(request.get("headers")),
+        "response_headers": _scrub_headers(response.get("headers")),
+        "status": response.get("status"),
+        "request_params": {
+          field: body.get(field) for field in _PROXY_PARAM_FIELDS
+        },
+        "metadata": _scrub_metadata(body.get("metadata")),
+      },
+    }
   )
 
 
 def build_exchange_from_stream(
-    events: list[dict[str, object]],
+  events: list[dict[str, object]],
 ) -> dict[str, object]:
   """Map parsed ``stream-json`` events to the unified exchange schema.
 
@@ -320,15 +320,15 @@ def build_exchange_from_stream(
   final_message = _last_assistant_message(events)
   model = final_message.get("model") if final_message else None
   return _redact_pii(
-      {
-          "source": "stream",
-          "complete": _stream_complete(result_event),
-          "model": model,
-          "messages": [_normalize_message(m) for m in messages_src],
-          "system": None,
-          "tools": None,
-          "extra_info": {"result": result_event},
-      }
+    {
+      "source": "stream",
+      "complete": _stream_complete(result_event),
+      "model": model,
+      "messages": [_normalize_message(m) for m in messages_src],
+      "system": None,
+      "tools": None,
+      "extra_info": {"result": result_event},
+    }
   )
 
 
@@ -353,17 +353,17 @@ class OperatorIdentity:
   def of_this_machine(cls) -> OperatorIdentity:
     """Read the identity this machine's records would leak."""
     return cls(
-        home=str(epath.Path("~").expanduser()),
-        name=_git_config("user.name"),
-        email=_git_config("user.email"),
+      home=str(epath.Path("~").expanduser()),
+      name=_git_config("user.name"),
+      email=_git_config("user.email"),
     )
 
 
 def exchange_publication_blockers(
-    record: dict[str, object],
-    *,
-    identity: OperatorIdentity,
-    upstream: Upstream = "anthropic",
+  record: dict[str, object],
+  *,
+  identity: OperatorIdentity,
+  upstream: Upstream = "anthropic",
 ) -> list[str]:
   """Return every reason this exchange record must not be published.
 
@@ -409,20 +409,18 @@ def exchange_publication_blockers(
 
 
 def _operator_identity_findings(
-    record: dict[str, object], identity: OperatorIdentity
+  record: dict[str, object], identity: OperatorIdentity
 ) -> list[str]:
   """Find the operator's real identity anywhere in the record's values."""
   markers = (
-      ("operator home path", identity.home),
-      ("operator git name", identity.name),
-      ("operator email", identity.email),
+    ("operator home path", identity.home),
+    ("operator git name", identity.name),
+    ("operator email", identity.email),
   )
   findings: list[str] = []
   for key, value in record.items():
     blob = json.dumps(value, ensure_ascii=False)
     findings += [
-        f"{key} {label}"
-        for label, needle in markers
-        if needle and needle in blob
+      f"{key} {label}" for label, needle in markers if needle and needle in blob
     ]
   return findings

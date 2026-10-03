@@ -38,9 +38,9 @@ COMBINED_PARQUET_NAME = "annotations.parquet"
 
 
 def dataset_dir(
-    dataset: str = DEFAULT_DATASET,
-    *,
-    repo_root: epath.PathLike | None = None,
+  dataset: str = DEFAULT_DATASET,
+  *,
+  repo_root: epath.PathLike | None = None,
 ) -> epath.Path:
   """Return the per-dataset folder of ``intermediate/`` and the parquet."""
   root = outputs_root(repo_root or find_repo_root())
@@ -48,37 +48,37 @@ def dataset_dir(
 
 
 def intermediate_dir(
-    dataset: str = DEFAULT_DATASET,
-    *,
-    repo_root: epath.PathLike | None = None,
+  dataset: str = DEFAULT_DATASET,
+  *,
+  repo_root: epath.PathLike | None = None,
 ) -> epath.Path:
   """Return the folder of every instance's per-run intermediates."""
   return dataset_dir(dataset, repo_root=repo_root) / INTERMEDIATE_DIRNAME
 
 
 def combined_parquet_path(
-    dataset: str = DEFAULT_DATASET,
-    *,
-    repo_root: epath.PathLike | None = None,
+  dataset: str = DEFAULT_DATASET,
+  *,
+  repo_root: epath.PathLike | None = None,
 ) -> epath.Path:
   """Return the path of the combined deliverable parquet for a dataset."""
   return dataset_dir(dataset, repo_root=repo_root) / COMBINED_PARQUET_NAME
 
 
 def instance_dir(
-    instance_id: str,
-    *,
-    dataset: str = DEFAULT_DATASET,
-    repo_root: epath.PathLike | None = None,
+  instance_id: str,
+  *,
+  dataset: str = DEFAULT_DATASET,
+  repo_root: epath.PathLike | None = None,
 ) -> epath.Path:
   """Return the directory of one instance's intermediate artifacts."""
   return intermediate_dir(dataset, repo_root=repo_root) / instance_id
 
 
 def iter_aggregate_paths(
-    dataset: str = DEFAULT_DATASET,
-    *,
-    repo_root: epath.PathLike | None = None,
+  dataset: str = DEFAULT_DATASET,
+  *,
+  repo_root: epath.PathLike | None = None,
 ) -> Iterator[epath.Path]:
   """Yield every instance's ``aggregate.json`` under ``intermediate/``.
 
@@ -96,22 +96,22 @@ def load_aggregate(path: epath.PathLike) -> Annotation:
 
 
 def store_run(
-    instance_id: str,
-    label: str,
-    result: RunResult,
-    *,
-    dataset: str = DEFAULT_DATASET,
-    repo_root: epath.PathLike | None = None,
+  instance_id: str,
+  label: str,
+  result: RunResult,
+  *,
+  dataset: str = DEFAULT_DATASET,
+  repo_root: epath.PathLike | None = None,
 ) -> tuple[epath.Path, epath.Path]:
   """Write one run's annotation + last exchange under the instance dir.
 
   ``label`` is e.g. ``candidate_1`` or ``aggregate``. Returns the two paths.
   """
   return _write(
-      instance_dir(instance_id, dataset=dataset, repo_root=repo_root),
-      label,
-      result.annotation,
-      result.last_record,
+    instance_dir(instance_id, dataset=dataset, repo_root=repo_root),
+    label,
+    result.annotation,
+    result.last_record,
   )
 
 
@@ -121,10 +121,10 @@ def candidate_label(index: int) -> str:
 
 
 def _write(
-    directory: epath.PathLike,
-    label: str,
-    annotation: Annotation,
-    last_record: dict[str, object],
+  directory: epath.PathLike,
+  label: str,
+  annotation: Annotation,
+  last_record: dict[str, object],
 ) -> tuple[epath.Path, epath.Path]:
   directory = epath.Path(directory)
   directory.mkdir(parents=True, exist_ok=True)
@@ -133,6 +133,6 @@ def _write(
 
   last_exchange_path = directory / f"{label}.last_exchange.json"
   _ = last_exchange_path.write_text(
-      json.dumps(last_record, indent=2, ensure_ascii=False) + "\n"
+    json.dumps(last_record, indent=2, ensure_ascii=False) + "\n"
   )
   return annotation_path, last_exchange_path

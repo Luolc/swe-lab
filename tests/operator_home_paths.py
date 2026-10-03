@@ -50,24 +50,24 @@ _HOME_PATH = re.compile(r"/(?:home|Users)/[A-Za-z0-9._-]+")
 # — one immutable fact per entry, added by somebody who wrote the line and read
 # by somebody who reviewed it, and a list that can only shrink.
 NON_OPERATOR_HOMES: dict[str, str] = {
-    "/home/vuls": (
-        "SWE-bench Pro problem-statement text, copied verbatim into"
-        " experiments/eval_issues/truncated_golden_test_names/fixed_rows.json."
-        " It names a container user in a third-party project's issue, not an"
-        " operator; redacting it would falsify the dataset record the"
-        " experiment exists to examine, which is a worse defect than the one"
-        " this guard is for."
-    ),
-    "/Users/aturing": (
-        "`_FAKE_HOME` in swe_lab.pipelines.related_files.exchange — the"
-        " deliberately fake identity the trace redactor substitutes, and the"
-        " value its tests assert survives into the redacted blob."
-    ),
-    "/Users/realperson": (
-        "the synthetic `OperatorIdentity` in tests/test_publication_gate.py,"
-        " which exists so that the publication gate can be shown to catch an"
-        " operator home path in a message body."
-    ),
+  "/home/vuls": (
+    "SWE-bench Pro problem-statement text, copied verbatim into"
+    " experiments/eval_issues/truncated_golden_test_names/fixed_rows.json."
+    " It names a container user in a third-party project's issue, not an"
+    " operator; redacting it would falsify the dataset record the"
+    " experiment exists to examine, which is a worse defect than the one"
+    " this guard is for."
+  ),
+  "/Users/aturing": (
+    "`_FAKE_HOME` in swe_lab.pipelines.related_files.exchange — the"
+    " deliberately fake identity the trace redactor substitutes, and the"
+    " value its tests assert survives into the redacted blob."
+  ),
+  "/Users/realperson": (
+    "the synthetic `OperatorIdentity` in tests/test_publication_gate.py,"
+    " which exists so that the publication gate can be shown to catch an"
+    " operator home path in a message body."
+  ),
 }
 
 
@@ -93,7 +93,7 @@ def operator_home_paths_in(text: str) -> list[str]:
     Each offending match, in order, duplicates kept.
   """
   return [
-      found for found in home_paths_in(text) if found not in NON_OPERATOR_HOMES
+    found for found in home_paths_in(text) if found not in NON_OPERATOR_HOMES
   ]
 
 
@@ -119,7 +119,7 @@ def offenders(paths: Iterable[pathlib.Path | str]) -> list[str]:
       continue
     for number, line in enumerate(text.splitlines(), start=1):
       found.extend(
-          f"{path}:{number}: {match}" for match in operator_home_paths_in(line)
+        f"{path}:{number}: {match}" for match in operator_home_paths_in(line)
       )
   return found
 
@@ -138,11 +138,11 @@ def main(argv: Sequence[str]) -> int:
     print(finding)
   if found:
     print(
-        "\nAn operator home path must not be committed (docs/conventions.md)."
-        " Write it home-relative instead — `~/...`, and `.expanduser()` where"
-        " code resolves it. A home directory that is genuinely nobody's goes"
-        " in NON_OPERATOR_HOMES in tests/operator_home_paths.py, with the"
-        " reason it is there."
+      "\nAn operator home path must not be committed (docs/conventions.md)."
+      " Write it home-relative instead — `~/...`, and `.expanduser()` where"
+      " code resolves it. A home directory that is genuinely nobody's goes"
+      " in NON_OPERATOR_HOMES in tests/operator_home_paths.py, with the"
+      " reason it is there."
     )
   return 1 if found else 0
 

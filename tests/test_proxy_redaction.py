@@ -11,51 +11,47 @@ from __future__ import annotations
 import json
 
 from swe_lab.harnesses.claude_code.redaction import (
-    REDACTED,
-    SENSITIVE_HEADERS,
-    unredacted_fields,
+  REDACTED,
+  SENSITIVE_HEADERS,
+  unredacted_fields,
 )
 
 
 def _record(
-    *, authorization: str, organization: str, user_id: str = REDACTED
+  *, authorization: str, organization: str, user_id: str = REDACTED
 ) -> str:
   """One capture record, shaped as cc-reverse-proxy writes it."""
   # A masked Set-Cookie is the whole value replaced, not a cookie whose crumb
   # happens to be the placeholder — mirroring what the proxy actually writes.
   cookie = (
-      REDACTED
-      if organization == REDACTED
-      else f"__cf_bm={organization}; path=/"
+    REDACTED if organization == REDACTED else f"__cf_bm={organization}; path=/"
   )
   return json.dumps(
-      {
-          "request": {
-              "headers": {
-                  "Authorization": authorization,
-                  "X-Api-Key": authorization,
-                  "Cookie": authorization,
-                  "Proxy-Authorization": authorization,
-                  "Anthropic-Beta": "interleaved-thinking-2025-05-14",
-                  "X-Claude-Code-Session-Id": "3f2b1c4d-session",
-              },
-              "body": {"messages": [], "metadata": {"user_id": user_id}},
-          },
-          "response": {
-              "status": 200,
-              "headers": {
-                  "Anthropic-Organization-Id": organization,
-                  "Anthropic-Workspace-Id": organization,
-                  "Anthropic-Ratelimit-Unified-Representative-Claim": (
-                      organization
-                  ),
-                  "Request-Id": "req_011Cabcd",
-                  "Anthropic-Ratelimit-Unified-Status": "allowed",
-                  "Anthropic-Ratelimit-Unified-Reset": "2026-09-01T12:00:00Z",
-                  "Set-Cookie": cookie,
-              },
-          },
-      }
+    {
+      "request": {
+        "headers": {
+          "Authorization": authorization,
+          "X-Api-Key": authorization,
+          "Cookie": authorization,
+          "Proxy-Authorization": authorization,
+          "Anthropic-Beta": "interleaved-thinking-2025-05-14",
+          "X-Claude-Code-Session-Id": "3f2b1c4d-session",
+        },
+        "body": {"messages": [], "metadata": {"user_id": user_id}},
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Anthropic-Organization-Id": organization,
+          "Anthropic-Workspace-Id": organization,
+          "Anthropic-Ratelimit-Unified-Representative-Claim": (organization),
+          "Request-Id": "req_011Cabcd",
+          "Anthropic-Ratelimit-Unified-Status": "allowed",
+          "Anthropic-Ratelimit-Unified-Reset": "2026-09-01T12:00:00Z",
+          "Set-Cookie": cookie,
+        },
+      },
+    }
   )
 
 
@@ -70,22 +66,22 @@ def test_a_raw_capture_is_caught_on_both_sides() -> None:
   # The failure this exists to prevent, asserted in both directions at once:
   # a credential on the request and the operator's identity on the response.
   capture = (
-      _record(
-          authorization="Bearer sk-ant-live-value",
-          organization="org_realvalue",
-      )
-      + "\n"
+    _record(
+      authorization="Bearer sk-ant-live-value",
+      organization="org_realvalue",
+    )
+    + "\n"
   )
   findings = unredacted_fields(capture)
   assert findings == [
-      "record 1 request Authorization",
-      "record 1 request X-Api-Key",
-      "record 1 request Cookie",
-      "record 1 request Proxy-Authorization",
-      "record 1 response Anthropic-Organization-Id",
-      "record 1 response Anthropic-Workspace-Id",
-      "record 1 response Anthropic-Ratelimit-Unified-Representative-Claim",
-      "record 1 response Set-Cookie",
+    "record 1 request Authorization",
+    "record 1 request X-Api-Key",
+    "record 1 request Cookie",
+    "record 1 request Proxy-Authorization",
+    "record 1 response Anthropic-Organization-Id",
+    "record 1 response Anthropic-Workspace-Id",
+    "record 1 response Anthropic-Ratelimit-Unified-Representative-Claim",
+    "record 1 response Set-Cookie",
   ]
 
 
@@ -94,15 +90,15 @@ def test_an_account_id_in_the_request_body_is_caught() -> None:
   # call this capture clean. That is the defect this test exists for: every
   # header is masked and the record is still not safe to keep.
   capture = (
-      _record(
-          authorization=REDACTED,
-          organization=REDACTED,
-          user_id="account-identifier",
-      )
-      + "\n"
+    _record(
+      authorization=REDACTED,
+      organization=REDACTED,
+      user_id="account-identifier",
+    )
+    + "\n"
   )
   assert unredacted_fields(capture) == [
-      "record 1 request body.metadata.user_id"
+    "record 1 request body.metadata.user_id"
   ]
 
 
@@ -116,11 +112,11 @@ def test_identifiers_and_telemetry_are_not_treated_as_secrets() -> None:
   # holds `…-Representative-Claim`, which is identity — and a wildcard keep-rule
   # is exactly what let that one through the first time. A keep-list is a list.
   for name in (
-      "x-claude-code-session-id",
-      "request-id",
-      "anthropic-beta",
-      "anthropic-ratelimit-unified-status",
-      "anthropic-ratelimit-unified-reset",
+    "x-claude-code-session-id",
+    "request-id",
+    "anthropic-beta",
+    "anthropic-ratelimit-unified-status",
+    "anthropic-ratelimit-unified-reset",
   ):
     assert name not in SENSITIVE_HEADERS
   assert "anthropic-ratelimit-unified-representative-claim" in SENSITIVE_HEADERS
@@ -133,10 +129,10 @@ def test_findings_name_the_offending_record() -> None:
   dirty = _record(authorization="Bearer live", organization=REDACTED)
   findings = unredacted_fields(f"{clean}\n{dirty}\n")
   assert findings == [
-      "record 2 request Authorization",
-      "record 2 request X-Api-Key",
-      "record 2 request Cookie",
-      "record 2 request Proxy-Authorization",
+    "record 2 request Authorization",
+    "record 2 request X-Api-Key",
+    "record 2 request Cookie",
+    "record 2 request Proxy-Authorization",
   ]
 
 
@@ -148,8 +144,8 @@ def test_a_truncated_capture_is_still_checkable() -> None:
   dirty = _record(authorization="Bearer live", organization=REDACTED)
   truncated = f"{clean}\n{dirty}\n" + '{"request": {"headers": {"Auth'
   assert unredacted_fields(truncated) == [
-      "record 2 request Authorization",
-      "record 2 request X-Api-Key",
-      "record 2 request Cookie",
-      "record 2 request Proxy-Authorization",
+    "record 2 request Authorization",
+    "record 2 request X-Api-Key",
+    "record 2 request Cookie",
+    "record 2 request Proxy-Authorization",
   ]

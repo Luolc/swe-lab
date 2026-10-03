@@ -63,7 +63,7 @@ class RepoProvider(ABC):
 
   @abstractmethod
   def provision(
-      self, instance: RepoInstance, *, variant: str = ""
+    self, instance: RepoInstance, *, variant: str = ""
   ) -> epath.Path:
     """Return a path to a checkout of ``instance`` ready to read.
 
@@ -127,7 +127,7 @@ class GitCheckoutProvider(RepoProvider):
     return self.mirrors_dir / f"{_repo_slug(repo)}.git"
 
   def checkout_path(
-      self, instance: RepoInstance, *, variant: str = ""
+    self, instance: RepoInstance, *, variant: str = ""
   ) -> epath.Path:
     """Return the checkout path for ``instance`` (suffixed by ``variant``)."""
     name = instance.instance_id
@@ -137,7 +137,7 @@ class GitCheckoutProvider(RepoProvider):
 
   @override
   def provision(
-      self, instance: RepoInstance, *, variant: str = ""
+    self, instance: RepoInstance, *, variant: str = ""
   ) -> epath.Path:
     """Return a worktree of ``instance.repo`` checked out at its base commit."""
     with _PROVISION_LOCK:
@@ -147,30 +147,30 @@ class GitCheckoutProvider(RepoProvider):
   # -- internals -------------------------------------------------------------
 
   def _git(
-      self,
-      *args: str,
-      cwd: epath.PathLike | None = None,
-      timeout: float = 600.0,
+    self,
+    *args: str,
+    cwd: epath.PathLike | None = None,
+    timeout: float = 600.0,
   ) -> str:
     # Always bound git ops: a stalled clone/fetch (network) must not hang the
     # whole pipeline forever.
     try:
       result = subprocess.run(
-          ["git", *args],
-          cwd=None if cwd is None else str(cwd),
-          capture_output=True,
-          text=True,
-          check=False,
-          timeout=timeout,
+        ["git", *args],
+        cwd=None if cwd is None else str(cwd),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=timeout,
       )
     except subprocess.TimeoutExpired as exc:
       raise GitError(
-          f"git {' '.join(args)} timed out after {timeout:.0f}s"
+        f"git {' '.join(args)} timed out after {timeout:.0f}s"
       ) from exc
     if result.returncode != 0:
       raise GitError(
-          f"git {' '.join(args)} failed ({result.returncode}):\n"
-          f"{result.stderr.strip()}"
+        f"git {' '.join(args)} failed ({result.returncode}):\n"
+        f"{result.stderr.strip()}"
       )
     return result.stdout.strip()
 
@@ -202,7 +202,7 @@ class GitCheckoutProvider(RepoProvider):
       raise GitError(f"Commit {commit} not available in mirror {mirror}.")
 
   def _ensure_checkout(
-      self, mirror: epath.PathLike, instance: RepoInstance, *, variant: str = ""
+    self, mirror: epath.PathLike, instance: RepoInstance, *, variant: str = ""
   ) -> epath.Path:
     checkout = self.checkout_path(instance, variant=variant)
     commit = instance.base_commit
@@ -229,12 +229,12 @@ class GitCheckoutProvider(RepoProvider):
     # self-heals instead of failing "missing but already registered".
     _ = self._git("worktree", "prune", cwd=mirror)
     _ = self._git(
-        "worktree",
-        "add",
-        "--force",
-        "--detach",
-        str(checkout),
-        commit,
-        cwd=mirror,
+      "worktree",
+      "add",
+      "--force",
+      "--detach",
+      str(checkout),
+      commit,
+      cwd=mirror,
     )
     return checkout

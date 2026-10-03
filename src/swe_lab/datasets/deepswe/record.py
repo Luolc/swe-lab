@@ -91,7 +91,7 @@ class DeepSweInstance(TaskInstance[DeepSweVerdict]):
   def sandbox_spec(self) -> SandboxSpec:
     """Return the run context — image, ``/app``, the normalized base sha."""
     return SandboxSpec(
-        self.instance_id, self.docker_image, WORKDIR, self.base_commit
+      self.instance_id, self.docker_image, WORKDIR, self.base_commit
     )
 
   @override
@@ -116,12 +116,12 @@ class DeepSweInstance(TaskInstance[DeepSweVerdict]):
 
   @override
   def unit_test_spec(
-      self,
-      *,
-      apply_patch: bool,
-      patch_name: str = PATCH_NAME,
-      checkout_golden_tests: bool = True,
-      patch_baseline: bool = False,
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
+    checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
   ) -> UnitTestSpec[DeepSweVerdict]:
     """Compile this instance's unit-test spec (their verifier, verbatim).
 
@@ -142,23 +142,23 @@ class DeepSweInstance(TaskInstance[DeepSweVerdict]):
     """
     del checkout_golden_tests
     return compile_unit_test(
-        apply_patch=apply_patch,
-        patch_name=patch_name,
-        patch_baseline=patch_baseline,
-        test_sh=self.test_sh,
-        grader_py=self.grader_py,
-        config_json=self.config_json,
-        test_patch=self.test_patch,
+      apply_patch=apply_patch,
+      patch_name=patch_name,
+      patch_baseline=patch_baseline,
+      test_sh=self.test_sh,
+      grader_py=self.grader_py,
+      config_json=self.config_json,
+      test_patch=self.test_patch,
     )
 
   @override
   def run_provenance(self) -> dict[str, object]:
     """Return the facts a reader needs to interpret a result."""
     return {
-        "dataset": "deepswe",
-        "language": self.language,
-        "upstream_repo": self.upstream_repo,
-        "upstream_license": self.upstream_license,
-        "repository_url": self.repository_url,
-        "ext_id": self.ext_id,
+      "dataset": "deepswe",
+      "language": self.language,
+      "upstream_repo": self.upstream_repo,
+      "upstream_license": self.upstream_license,
+      "repository_url": self.repository_url,
+      "ext_id": self.ext_id,
     }

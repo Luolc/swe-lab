@@ -106,36 +106,36 @@ from .tutanota_build_server import TUTANOTA_BUILD_SERVER
 from .tutanota_clock import TUTANOTA_CLOCK
 
 __all__ = [
-    "InstanceFix",
-    "SweBenchProUnitTestSpec",
-    "applied_fix_name",
-    "apply_instance_fix",
-    "fixed_instances",
-    "register_fix",
-    "with_setup",
+  "InstanceFix",
+  "SweBenchProUnitTestSpec",
+  "applied_fix_name",
+  "apply_instance_fix",
+  "fixed_instances",
+  "register_fix",
+  "with_setup",
 ]
 
 # Every fix subpackage, in no particular order — each one names the instances it
 # covers, so adding a fix is adding a subpackage and a line here.
 _REGISTERED = (
-    ELEMENT_WEB_WYSIWYG,
-    ANSIBLE_XDIST,
-    ELEMENT_WEB_JOINRULE,
-    TELEPORT_FNCACHE,
-    TUTANOTA_CLOCK,
-    TUTANOTA_BUILD_SERVER,
+  ELEMENT_WEB_WYSIWYG,
+  ANSIBLE_XDIST,
+  ELEMENT_WEB_JOINRULE,
+  TELEPORT_FNCACHE,
+  TUTANOTA_CLOCK,
+  TUTANOTA_BUILD_SERVER,
 )
 
 # instance_id -> the fix applied to its spec after compilation.
 _FIXES: dict[str, InstanceFix] = {
-    instance_id: registered.fix
-    for registered in _REGISTERED
-    for instance_id in registered.instances
+  instance_id: registered.fix
+  for registered in _REGISTERED
+  for instance_id in registered.instances
 }
 
 
 def apply_instance_fix(
-    instance_id: str, spec: SweBenchProUnitTestSpec
+  instance_id: str, spec: SweBenchProUnitTestSpec
 ) -> SweBenchProUnitTestSpec:
   """Apply this instance's fix, if it has one.
 

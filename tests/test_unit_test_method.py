@@ -21,56 +21,56 @@ import pytest
 
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.swebench_pro.unit_test import (
-    OutputState,
-    REQUIRED_TESTS_NAME,
-    SweBenchProGrader,
-    SweBenchProVerdict,
+  OutputState,
+  REQUIRED_TESTS_NAME,
+  SweBenchProGrader,
+  SweBenchProVerdict,
 )
 from swe_lab.evaluation.unit_test import (
-    ENTRYSCRIPT_NAME,
-    gold_patch,
-    UnitTestTask,
-    verdict_of,
+  ENTRYSCRIPT_NAME,
+  gold_patch,
+  UnitTestTask,
+  verdict_of,
 )
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec
 from swe_lab.git.patch import BASELINE_VERIFY_SCRIPT_NAME
 from swe_lab.sandbox import (
-    Contribution,
-    ExecResult,
-    FilesystemStore,
-    Inline,
-    Mount,
-    RunStatus,
-    SandboxError,
-    SandboxFs,
-    SandboxObserver,
-    SandboxSpec,
+  Contribution,
+  ExecResult,
+  FilesystemStore,
+  Inline,
+  Mount,
+  RunStatus,
+  SandboxError,
+  SandboxFs,
+  SandboxObserver,
+  SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.observers.diff_extract import BASE_REF_NAME
 from swe_lab.sandbox.testing import FakeSandbox, FakeSandboxConfig
 from swe_lab.workflow import (
-    AttemptResult,
-    run_task,
-    TaskAddress,
-    TaskOutcome,
-    TaskRunOutcome,
+  AttemptResult,
+  run_task,
+  TaskAddress,
+  TaskOutcome,
+  TaskRunOutcome,
 )
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
 
 
 def _fake(
-    tmp_path: Path,
-    *,
-    run_results: list[ExecResult] | None = None,
-    up_error: Exception | None = None,
+  tmp_path: Path,
+  *,
+  run_results: list[ExecResult] | None = None,
+  up_error: Exception | None = None,
 ) -> FakeSandbox:
   return FakeSandbox(
-      spec=SPEC,
-      workspace=epath.Path(tmp_path / "ws"),
-      run_results=list(run_results or []),
-      up_error=up_error,
+    spec=SPEC,
+    workspace=epath.Path(tmp_path / "ws"),
+    run_results=list(run_results or []),
+    up_error=up_error,
   )
 
 
@@ -97,64 +97,64 @@ class _Instance(TaskInstance[SweBenchProVerdict]):
 
   @override
   def unit_test_spec(
-      self,
-      *,
-      apply_patch: bool,
-      patch_name: str = PATCH_NAME,
-      checkout_golden_tests: bool = True,
-      patch_baseline: bool = False,
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
+    checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     del apply_patch, checkout_golden_tests
     return replace(self.spec, patch_name=patch_name)
 
 
 def _unit_test_spec(
-    required: list[str], passed: list[str]
+  required: list[str], passed: list[str]
 ) -> UnitTestSpec[SweBenchProVerdict]:
   # The fake sandbox does not run the eval script, so the "results" are the
   # required_tests.json mount + an output.json we stage as if the run wrote it.
   output = json.dumps(
-      {"tests": [{"name": n, "status": "PASSED"} for n in passed]}
+    {"tests": [{"name": n, "status": "PASSED"} for n in passed]}
   )
   return UnitTestSpec(
-      eval_script="echo eval\n",
-      mounts={
-          REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(required).encode())),
-          "output.json": Mount(Inline(output.encode())),
-      },
-      grader=SweBenchProGrader(),
+    eval_script="echo eval\n",
+    mounts={
+      REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(required).encode())),
+      "output.json": Mount(Inline(output.encode())),
+    },
+    grader=SweBenchProGrader(),
   )
 
 
 def _grade(
-    sandbox: FakeSandbox,
-    spec: UnitTestSpec[SweBenchProVerdict],
-    *,
-    output_dir: Path,
-    gold: str | None = None,
-    **kwargs: object,
+  sandbox: FakeSandbox,
+  spec: UnitTestSpec[SweBenchProVerdict],
+  *,
+  output_dir: Path,
+  gold: str | None = None,
+  **kwargs: object,
 ) -> AttemptResult:
   """Run the eval task over a caller-supplied patch (the standalone shape)."""
   task: UnitTestTask[SweBenchProVerdict] = UnitTestTask()
   return task.execute(
-      sandbox,
-      _Instance(spec=spec, gold=gold),
-      output_dir=output_dir,
-      timeout=60.0,
-      extra_mounts={
-          PATCH_NAME: Mount(Inline(b"CANDIDATE")),
-          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
-      },
-      **kwargs,  # pyright: ignore[reportArgumentType]
+    sandbox,
+    _Instance(spec=spec, gold=gold),
+    output_dir=output_dir,
+    timeout=60.0,
+    extra_mounts={
+      PATCH_NAME: Mount(Inline(b"CANDIDATE")),
+      BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+    },
+    **kwargs,  # pyright: ignore[reportArgumentType]
   )
 
 
 def test_run_stages_entryscript_and_grades(tmp_path: Path):
   sandbox = _fake(tmp_path)
   result = _grade(
-      sandbox,
-      _unit_test_spec(["a", "b"], ["a", "b"]),
-      output_dir=tmp_path / "o",
+    sandbox,
+    _unit_test_spec(["a", "b"], ["a", "b"]),
+    output_dir=tmp_path / "o",
   )
   # the eval script is run as entryscript.sh (a workspace file, by name),
   # preceded by the baseline verify the default now composes (ADR-0014)
@@ -168,7 +168,7 @@ def test_run_stages_entryscript_and_grades(tmp_path: Path):
 
 def test_run_partial_pass_not_resolved(tmp_path: Path):
   result = _grade(
-      _fake(tmp_path), _unit_test_spec(["a", "b"], ["a"]), output_dir=tmp_path
+    _fake(tmp_path), _unit_test_spec(["a", "b"], ["a"]), output_dir=tmp_path
   )
   verdict = verdict_of(result)
   assert verdict is not None and verdict.resolved is False
@@ -177,9 +177,9 @@ def test_run_partial_pass_not_resolved(tmp_path: Path):
 def test_grader_runs_even_when_body_exec_fails(tmp_path: Path):
   # a nonzero entryscript still lets before_destroy grade (task-02 semantics)
   result = _grade(
-      _fake(tmp_path, run_results=[ExecResult(1, "", "boom")]),
-      _unit_test_spec(["a"], ["a"]),
-      output_dir=tmp_path / "o",
+    _fake(tmp_path, run_results=[ExecResult(1, "", "boom")]),
+    _unit_test_spec(["a"], ["a"]),
+    output_dir=tmp_path / "o",
   )
   # the body did not raise; it returned 1
   assert result.run.status is RunStatus.SUCCESS
@@ -188,11 +188,11 @@ def test_grader_runs_even_when_body_exec_fails(tmp_path: Path):
 
 
 def _spec_with_outputs(
-    required: list[str], passed: list[str]
+  required: list[str], passed: list[str]
 ) -> UnitTestSpec[SweBenchProVerdict]:
   spec = _unit_test_spec(required, passed)
   return replace(
-      spec, native_outputs={"output.json": "output.json", "logs": "stdout.log"}
+    spec, native_outputs={"output.json": "output.json", "logs": "stdout.log"}
   )
 
 
@@ -203,7 +203,7 @@ def test_registers_the_entryscript_and_the_datasets_outputs(tmp_path: Path):
   sandbox.workspace.mkdir(parents=True, exist_ok=True)
   _ = (sandbox.workspace / "stdout.log").write_text("test output")
   result = _grade(
-      sandbox, _spec_with_outputs(["a"], ["a"]), output_dir=tmp_path / "o"
+    sandbox, _spec_with_outputs(["a"], ["a"]), output_dir=tmp_path / "o"
   )
   assert "unit_test.entryscript.sh" in result.run.artifacts
   # staged by the spec's mounts
@@ -214,21 +214,21 @@ def test_registers_the_entryscript_and_the_datasets_outputs(tmp_path: Path):
 def test_absent_outputs_are_skipped_best_effort(tmp_path: Path):
   # A run that died mid-script registers fewer files, never a broken reference.
   result = _grade(
-      _fake(tmp_path),
-      _spec_with_outputs(["a"], ["a"]),
-      output_dir=tmp_path / "o",
+    _fake(tmp_path),
+    _spec_with_outputs(["a"], ["a"]),
+    output_dir=tmp_path / "o",
   )
   assert (
-      "unit_test.logs" not in result.run.artifacts
+    "unit_test.logs" not in result.run.artifacts
   )  # stdout.log never written
   assert "unit_test.entryscript.sh" in result.run.artifacts  # this one did land
 
 
 def test_metrics_carry_the_verdict_and_the_execution(tmp_path: Path):
   result = _grade(
-      _fake(tmp_path, run_results=[ExecResult(3, "", "boom")]),
-      _unit_test_spec(["a", "b"], ["a"]),
-      output_dir=tmp_path / "o",
+    _fake(tmp_path, run_results=[ExecResult(3, "", "boom")]),
+    _unit_test_spec(["a", "b"], ["a"]),
+    output_dir=tmp_path / "o",
   )
   m = result.run.metrics
   assert m["unit_test.score"] == 0.0 and m["unit_test.resolved"] == 0.0
@@ -245,9 +245,9 @@ def test_a_timed_out_run_is_reported_as_timeout(tmp_path: Path):
   # knows better. Without this a killed eval looked like one that produced
   # nothing.
   result = _grade(
-      _fake(tmp_path, run_results=[ExecResult(124, "", "", timed_out=True)]),
-      _unit_test_spec(["a"], ["a"]),
-      output_dir=tmp_path / "o",
+    _fake(tmp_path, run_results=[ExecResult(124, "", "", timed_out=True)]),
+    _unit_test_spec(["a"], ["a"]),
+    output_dir=tmp_path / "o",
   )
   assert result.run.status is RunStatus.TIMEOUT
   assert result.run.metrics["unit_test.timed_out"] == 1.0
@@ -258,14 +258,14 @@ def test_env_reaches_the_entryscript(tmp_path: Path):
   sandbox = _fake(tmp_path)
   task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(env={"MY_FLAG": "1"})
   _ = task.execute(
-      sandbox,
-      _Instance(spec=_unit_test_spec(["a"], ["a"])),
-      output_dir=tmp_path / "o",
-      timeout=60.0,
-      extra_mounts={
-          PATCH_NAME: Mount(Inline(b"CANDIDATE")),
-          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
-      },
+    sandbox,
+    _Instance(spec=_unit_test_spec(["a"], ["a"])),
+    output_dir=tmp_path / "o",
+    timeout=60.0,
+    extra_mounts={
+      PATCH_NAME: Mount(Inline(b"CANDIDATE")),
+      BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+    },
   )
   # The env is the *entryscript's*; the baseline verify ahead of it gets none.
   assert sandbox.script_envs == [None, {"MY_FLAG": "1"}]
@@ -278,17 +278,16 @@ def test_extra_observers_run_after_the_methods_own(tmp_path: Path):
 
   @final
   class _Probe(SandboxObserver):
-
     @override
     def before_destroy(self, sb: SandboxFs) -> None:
       del sb
       seen.append("probe")
 
   result = _grade(
-      _fake(tmp_path),
-      _unit_test_spec(["a"], ["a"]),
-      output_dir=tmp_path / "o",
-      extra_observers=[_Probe()],
+    _fake(tmp_path),
+    _unit_test_spec(["a"], ["a"]),
+    output_dir=tmp_path / "o",
+    extra_observers=[_Probe()],
   )
   assert seen == ["probe"]  # it ran
   verdict = verdict_of(result)
@@ -297,9 +296,9 @@ def test_extra_observers_run_after_the_methods_own(tmp_path: Path):
 
 def test_setup_failure_is_captured_not_raised(tmp_path: Path):
   result = _grade(
-      _fake(tmp_path, up_error=SandboxError("no docker")),
-      _unit_test_spec(["a"], ["a"]),
-      output_dir=tmp_path / "o",
+    _fake(tmp_path, up_error=SandboxError("no docker")),
+    _unit_test_spec(["a"], ["a"]),
+    output_dir=tmp_path / "o",
   )
   assert result.run.status is RunStatus.SETUP_ERROR
   assert isinstance(result.run.error, SandboxError)
@@ -311,11 +310,9 @@ def test_backend_observers_feed_the_eval_result(tmp_path: Path):
   # backend's runtime metrics land in the same RunResult (and, mechanically,
   # in a persisted record's metrics) with no composition change.
   class _MeteredFake(FakeSandbox):
-
     @override
     def observers(self) -> tuple[SandboxObserver, ...]:
       class _Meter(SandboxObserver):
-
         @override
         def before_destroy(self, sb: SandboxFs) -> Contribution | None:
           del sb
@@ -325,7 +322,7 @@ def test_backend_observers_feed_the_eval_result(tmp_path: Path):
 
   sandbox = _MeteredFake(spec=SPEC, workspace=epath.Path(tmp_path / "ws"))
   result = _grade(
-      sandbox, _unit_test_spec(["a"], ["a"]), output_dir=tmp_path / "o"
+    sandbox, _unit_test_spec(["a"], ["a"]), output_dir=tmp_path / "o"
   )
   verdict = verdict_of(result)
   assert verdict is not None and verdict.resolved is True
@@ -340,13 +337,13 @@ def test_the_gold_builder_fills_the_patch_input_itself(tmp_path: Path):
   # input from the instance's reference solution.
   sandbox = _fake(tmp_path)
   task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
-      inputs_builder=gold_patch, patch_baseline=False
+    inputs_builder=gold_patch, patch_baseline=False
   )
   result = task.execute(
-      sandbox,
-      _Instance(spec=_unit_test_spec(["a"], ["a"]), gold="GOLD DIFF"),
-      output_dir=tmp_path / "o",
-      timeout=60.0,
+    sandbox,
+    _Instance(spec=_unit_test_spec(["a"], ["a"]), gold="GOLD DIFF"),
+    output_dir=tmp_path / "o",
+    timeout=60.0,
   )
   assert result.run.status is RunStatus.SUCCESS
   assert (sandbox.workspace / PATCH_NAME).read_text() == "GOLD DIFF"
@@ -356,13 +353,13 @@ def test_the_gold_builder_refuses_an_instance_without_one(tmp_path: Path):
   # Asking to grade a reference solution that does not exist is a caller
   # error, recorded as the attempt's failure rather than graded as unresolved.
   task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
-      inputs_builder=gold_patch, patch_baseline=False
+    inputs_builder=gold_patch, patch_baseline=False
   )
   result = task.execute(
-      _fake(tmp_path),
-      _Instance(spec=_unit_test_spec(["a"], ["a"]), gold=None),
-      output_dir=tmp_path / "o",
-      timeout=60.0,
+    _fake(tmp_path),
+    _Instance(spec=_unit_test_spec(["a"], ["a"]), gold=None),
+    output_dir=tmp_path / "o",
+    timeout=60.0,
   )
   assert result.run.status is RunStatus.RUN_ERROR
   assert "gold patch" in str(result.run.error)
@@ -373,18 +370,18 @@ def test_a_custom_patch_name_reaches_the_schema_and_the_spec():
   # The declared input and the compiled script read the same name by
   # construction — the task threads it into both.
   task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
-      patch_name="candidate.diff"
+    patch_name="candidate.diff"
   )
   instance = _Instance(spec=_unit_test_spec(["a"], ["a"]))
   assert [s.name for s in task.input_schema()] == [
-      "candidate.diff",
-      BASE_REF_NAME,
+    "candidate.diff",
+    BASE_REF_NAME,
   ]
   assert (
-      instance.unit_test_spec(
-          apply_patch=True, patch_name=task.patch_name
-      ).patch_name
-      == "candidate.diff"
+    instance.unit_test_spec(
+      apply_patch=True, patch_name=task.patch_name
+    ).patch_name
+    == "candidate.diff"
   )
 
 
@@ -400,19 +397,19 @@ def test_baseline_grading_declares_the_base_ref_as_a_second_input():
 
   baseline: UnitTestTask[SweBenchProVerdict] = UnitTestTask(patch_baseline=True)
   assert [s.name for s in baseline.input_schema()] == [
-      "patch.diff",
-      BASE_REF_NAME,
+    "patch.diff",
+    BASE_REF_NAME,
   ]
   # …and it is the default (ADR-0014). Opting back to `base_commit` drops it,
   # and no-apply mode has no inputs to gain either way.
   assert [s.name for s in UnitTestTask().input_schema()] == [
-      "patch.diff",
-      BASE_REF_NAME,
+    "patch.diff",
+    BASE_REF_NAME,
   ]
   plain: UnitTestTask[SweBenchProVerdict] = UnitTestTask(patch_baseline=False)
   assert [s.name for s in plain.input_schema()] == ["patch.diff"]
   no_apply: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
-      apply_patch=False, patch_baseline=True
+    apply_patch=False, patch_baseline=True
   )
   assert list(no_apply.input_schema()) == []
 
@@ -436,19 +433,18 @@ def test_baseline_mode_composes_the_verify_observer_first():
   # run — with no patch there is no base to hold anyone to.
   plain: UnitTestTask[SweBenchProVerdict] = UnitTestTask(patch_baseline=False)
   assert not any(
-      isinstance(o, BaselineVerifyObserver) for o in plain.observers(instance)
+    isinstance(o, BaselineVerifyObserver) for o in plain.observers(instance)
   )
   no_apply: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
-      apply_patch=False, patch_baseline=True
+    apply_patch=False, patch_baseline=True
   )
   assert not any(
-      isinstance(o, BaselineVerifyObserver)
-      for o in no_apply.observers(instance)
+    isinstance(o, BaselineVerifyObserver) for o in no_apply.observers(instance)
   )
 
 
 def test_the_verify_observer_fails_the_run_ungraded_on_a_mismatch(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   from etils import epath
 
@@ -458,20 +454,20 @@ def test_the_verify_observer_fails_the_run_ungraded_on_a_mismatch(
 
   # `baseline_sha=None`: this test drives the verify script itself.
   sb = FakeSandbox(
-      spec=SandboxSpec("x", "img:tag", "/app", "base"),
-      workspace=epath.Path(tmp_path),
-      baseline_sha=None,
+    spec=SandboxSpec("x", "img:tag", "/app", "base"),
+    workspace=epath.Path(tmp_path),
+    baseline_sha=None,
   )
   sb.run_results = [
-      ExecResult(1, "", "grading tree differs from the patch base: ...")
+    ExecResult(1, "", "grading tree differs from the patch base: ...")
   ]
   with pytest.raises(SandboxError, match="baseline verification failed"):
     BaselineVerifyObserver(workdir="/app").after_create(sb)
   # And on a healthy tree it verifies quietly.
   clean = FakeSandbox(
-      spec=SandboxSpec("x", "img:tag", "/app", "base"),
-      workspace=epath.Path(tmp_path / "ok"),
-      baseline_sha=None,
+    spec=SandboxSpec("x", "img:tag", "/app", "base"),
+    workspace=epath.Path(tmp_path / "ok"),
+    baseline_sha=None,
   )
   BaselineVerifyObserver(workdir="/app").after_create(clean)
   assert clean.scripts == ["baseline_verify.sh"]
@@ -499,50 +495,48 @@ class _RewritingGrader(Grader[SweBenchProVerdict]):
     del sb
     self.calls += 1
     passed = (
-        frozenset({"a"})
-        if self.calls >= self.passes_on_attempt
-        else frozenset()
+      frozenset({"a"}) if self.calls >= self.passes_on_attempt else frozenset()
     )
     return SweBenchProVerdict(
-        passed=passed,
-        missing=frozenset({"a"}) - passed,
-        output_state=OutputState.OK,
-        required=frozenset({"a"}),
+      passed=passed,
+      missing=frozenset({"a"}) - passed,
+      output_state=OutputState.OK,
+      required=frozenset({"a"}),
     )
 
 
 def _flaky_spec(*, passes_on_attempt: int) -> UnitTestSpec[SweBenchProVerdict]:
   """Build a spec that only grades as passing from the Nth grading on."""
   return UnitTestSpec(
-      eval_script="echo eval\n",
-      mounts={
-          REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
-          "output.json": Mount(Inline(json.dumps({"tests": []}).encode())),
-      },
-      grader=_RewritingGrader(passes_on_attempt),
+    eval_script="echo eval\n",
+    mounts={
+      REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
+      "output.json": Mount(Inline(json.dumps({"tests": []}).encode())),
+    },
+    grader=_RewritingGrader(passes_on_attempt),
   )
 
 
 def _run_eval(
-    tmp_path: Path, *, passes_on_attempt: int, retries: int
+  tmp_path: Path, *, passes_on_attempt: int, retries: int
 ) -> tuple[TaskRunOutcome, FakeSandboxConfig, FilesystemStore]:
   """Run the eval task through run_task on the fake backend."""
   store = FilesystemStore(epath.Path(tmp_path / "store"))
   config = FakeSandboxConfig()
   outcome = run_task(
-      UnitTestTask(),
-      _Instance(spec=_flaky_spec(passes_on_attempt=passes_on_attempt)),
-      store=store,
-      address=TaskAddress(sweep_id="sw", rollout_id=0, task="unit_test"),
-      sandbox=config,
-      output_dir=tmp_path / "out",
-      timeout=60.0,
-      retries=retries,
-      run_ts="ts-0",
-      extra_mounts={
-          PATCH_NAME: Mount(Inline(b"CANDIDATE")),
-          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
-      },
+    UnitTestTask(),
+    _Instance(spec=_flaky_spec(passes_on_attempt=passes_on_attempt)),
+    store=store,
+    address=TaskAddress(sweep_id="sw", rollout_id=0, task="unit_test"),
+    sandbox=config,
+    output_dir=tmp_path / "out",
+    timeout=60.0,
+    retries=retries,
+    run_ts="ts-0",
+    extra_mounts={
+      PATCH_NAME: Mount(Inline(b"CANDIDATE")),
+      BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+    },
   )
   return outcome, config, store
 
@@ -593,7 +587,7 @@ def test_the_verdict_travels_whole_as_an_artifact(tmp_path: Path):
   verdict is already invalid.
   """
   result = _grade(
-      _fake(tmp_path), _unit_test_spec(["a", "b"], ["a"]), output_dir=tmp_path
+    _fake(tmp_path), _unit_test_spec(["a", "b"], ["a"]), output_dir=tmp_path
   )
   verdict = verdict_of(result)
   assert verdict is not None
@@ -601,15 +595,15 @@ def test_the_verdict_travels_whole_as_an_artifact(tmp_path: Path):
   facts = json.loads(artifact.read_text())
   assert facts == verdict.facts()
   assert facts == {
-      "resolved": False,
-      "score": 0.0,
-      "metrics": {"passed": 1.0, "missing": 1.0, "required": 2.0},
-      "summary": {
-          "output_state": OutputState.OK.value,
-          "first_missing": "b",
-          "passed": ["a"],
-          "missing": ["b"],
-      },
+    "resolved": False,
+    "score": 0.0,
+    "metrics": {"passed": 1.0, "missing": 1.0, "required": 2.0},
+    "summary": {
+      "output_state": OutputState.OK.value,
+      "first_missing": "b",
+      "passed": ["a"],
+      "missing": ["b"],
+    },
   }
   declared = {s.name: s for s in result.output_schema}
   assert declared["unit_test.verdict.json"].required is True

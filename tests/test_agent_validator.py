@@ -9,20 +9,20 @@ import sys
 
 from swe_lab.pipelines.related_files import agent_validator
 from swe_lab.pipelines.related_files.agent_validator import (
-    CATEGORIES,
-    count_addressable_lines,
-    validate_output,
+  CATEGORIES,
+  count_addressable_lines,
+  validate_output,
 )
 from swe_lab.pipelines.related_files.schema import SnippetCategory
 
 
 def _snippet(**overrides: object) -> dict[str, object]:
   base: dict[str, object] = {
-      "file_path": "a.py",
-      "start_line": 1,
-      "end_line": 2,
-      "category": "referenced-function",
-      "description": "why",
+    "file_path": "a.py",
+    "start_line": 1,
+    "end_line": 2,
+    "category": "referenced-function",
+    "description": "why",
   }
   base.update(overrides)
   return base
@@ -58,8 +58,8 @@ def test_trailing_newline_end_line_is_valid(tmp_path: Path) -> None:
   # (the empty final line the Read tool shows). end_line 3 must be accepted.
   (tmp_path / "a.py").write_text("a\nb\n")
   out = _write_output(
-      tmp_path / "out.json",
-      [_snippet(start_line=1, end_line=3)],
+    tmp_path / "out.json",
+    [_snippet(start_line=1, end_line=3)],
   )
   assert validate_output(out, tmp_path) == []
 
@@ -81,8 +81,8 @@ def test_file_not_found_is_flagged(tmp_path: Path) -> None:
 def test_bad_category_and_range(tmp_path: Path) -> None:
   (tmp_path / "a.py").write_text("a\nb\nc\n")
   out = _write_output(
-      tmp_path / "o.json",
-      [_snippet(category="nonsense", start_line=3, end_line=2)],
+    tmp_path / "o.json",
+    [_snippet(category="nonsense", start_line=3, end_line=2)],
   )
   problems = validate_output(out, tmp_path)
   msgs = problems[0].messages
@@ -110,20 +110,20 @@ def test_runs_as_standalone_script(tmp_path: Path) -> None:
   out = _write_output(tmp_path / "out.json", [_snippet(end_line=2)])
 
   ok = subprocess.run(
-      [sys.executable, agent_validator.__file__, str(out), str(tmp_path)],
-      capture_output=True,
-      text=True,
-      check=False,
+    [sys.executable, agent_validator.__file__, str(out), str(tmp_path)],
+    capture_output=True,
+    text=True,
+    check=False,
   )
   assert ok.returncode == 0
   assert "OK" in ok.stdout
 
   bad = _write_output(tmp_path / "bad.json", [_snippet(end_line=99)])
   failed = subprocess.run(
-      [sys.executable, agent_validator.__file__, str(bad), str(tmp_path)],
-      capture_output=True,
-      text=True,
-      check=False,
+    [sys.executable, agent_validator.__file__, str(bad), str(tmp_path)],
+    capture_output=True,
+    text=True,
+    check=False,
   )
   assert failed.returncode == 1
   assert "FAILED" in failed.stdout

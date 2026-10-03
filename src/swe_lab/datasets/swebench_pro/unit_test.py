@@ -21,16 +21,16 @@ from swe_lab.evaluation.verdict import Grader, UnitTestSpec, Verdict
 from swe_lab.sandbox import Inline, Mount, Mounts, SandboxFs
 
 from .constants import (
-    BASH,
-    EVAL_HOME,
-    OUTPUT_JSON_NAME,
-    PARSER_NAME,
-    PATCH_NAME,
-    PYTHON,
-    RUN_SCRIPT_NAME,
-    STDERR_LOG_NAME,
-    STDOUT_LOG_NAME,
-    WORKDIR,
+  BASH,
+  EVAL_HOME,
+  OUTPUT_JSON_NAME,
+  PARSER_NAME,
+  PATCH_NAME,
+  PYTHON,
+  RUN_SCRIPT_NAME,
+  STDERR_LOG_NAME,
+  STDOUT_LOG_NAME,
+  WORKDIR,
 )
 
 # The compiled expectation, staged into the workspace and read by the grader.
@@ -85,19 +85,19 @@ class SweBenchProVerdict(Verdict):
     test family broke.
     """
     return {
-        "output_state": self.output_state.value,
-        "first_missing": min(self.missing) if self.missing else None,
-        "passed": sorted(self.passed),
-        "missing": sorted(self.missing),
+      "output_state": self.output_state.value,
+      "first_missing": min(self.missing) if self.missing else None,
+      "passed": sorted(self.passed),
+      "missing": sorted(self.missing),
     }
 
   @override
   def metrics(self) -> dict[str, float]:
     """Return counts a sweep can aggregate."""
     return {
-        "passed": float(len(self.passed)),
-        "missing": float(len(self.missing)),
-        "required": float(len(self.required)),
+      "passed": float(len(self.passed)),
+      "missing": float(len(self.missing)),
+      "required": float(len(self.required)),
     }
 
 
@@ -125,10 +125,10 @@ class SweBenchProGrader(Grader[SweBenchProVerdict]):
     required = frozenset(json.loads(sb.read(REQUIRED_TESTS_NAME)))
     passed, output_state = _parse_output(sb)
     return SweBenchProVerdict(
-        passed=passed,
-        missing=required - passed,
-        output_state=output_state,
-        required=required,
+      passed=passed,
+      missing=required - passed,
+      output_state=output_state,
+      required=required,
     )
 
 
@@ -155,22 +155,22 @@ def _parse_output(sb: SandboxFs) -> tuple[frozenset[str], OutputState]:
     return frozenset(), OutputState.UNPARSEABLE
   tests = data.get("tests", [])
   passed = frozenset(
-      test["name"]
-      for test in tests
-      if isinstance(test, dict) and test.get("status") == "PASSED"
+    test["name"]
+    for test in tests
+    if isinstance(test, dict) and test.get("status") == "PASSED"
   )
   return passed, OutputState.OK
 
 
 def _build_eval_script(
-    *,
-    base_commit: str,
-    selected_test_files_to_run: Sequence[str],
-    golden_test_checkout_cmd: str,
-    apply_patch: bool,
-    patch_name: str,
-    checkout_golden_tests: bool,
-    patch_baseline: bool = False,
+  *,
+  base_commit: str,
+  selected_test_files_to_run: Sequence[str],
+  golden_test_checkout_cmd: str,
+  apply_patch: bool,
+  patch_name: str,
+  checkout_golden_tests: bool,
+  patch_baseline: bool = False,
 ) -> str:
   """Build the in-container eval script (ports Scale's create_entryscript).
 
@@ -210,47 +210,47 @@ def _build_eval_script(
   # pytest parametrize id.
   selected = shlex.quote(",".join(selected_test_files_to_run))
   lines = [
-      # A failed *setup* step has to stop the run. Without this, a `git apply`
-      # that failed fell through and the tests graded the wrong tree — an
-      # unresolved verdict with nothing saying the patch never applied.
-      "set -e",
-      # An image that sets no HOME makes a toolchain that needs one fail every
-      # test for a reason that looks nothing like the cause (Go's build cache
-      # lives in `$HOME/.cache/go-build`). A *fallback*, so the image's own
-      # value still wins: an instance image often pre-warms its caches under
-      # it, and relocating would force a re-download that `--no-network` turns
-      # from a slowdown into a failure.
-      #
-      # Each tier tests for a non-empty *value* rather than an exit code:
-      # `getent` in a pipeline reports `cut`'s status, which succeeds on empty
-      # input, so a UID with no passwd entry (`docker run -u 1000`, OpenShift's
-      # random UIDs) would leave HOME empty — worse than unset, since `~/.cache`
-      # then resolves to the unwritable `/.cache`.
-      '[ -n "${HOME:-}" ] || HOME="$(getent passwd "$(id -u)" 2>/dev/null'
-      ' | cut -d: -f6)"',
-      f'[ -n "${{HOME:-}}" ] || HOME={EVAL_HOME}',
-      "export HOME",
-      'mkdir -p "$HOME"',
-      f"cd {WORKDIR}",
-      # Symmetric with extraction (ADR-0001), which diffs under
-      # `core.autocrlf=false`: a checkout or apply that renormalized CRLF<->LF
-      # would either fail to apply or silently alter content. Two knobs because
-      # they cover different halves — `autocrlf` off stops conversion for files
-      # with no `text` attribute, `eol=lf` fixes the checkout direction for
-      # files that have one. Both are already git's default on Linux, so this
-      # only bites an image that turned normalization on, which is the point.
-      # Not airtight: a per-path `eol=` in the repo's own `.gitattributes` wins
-      # over any config.
-      #
-      # Repo level rather than a per-invocation `-c`, because some of what
-      # follows we do not author: the dataset's `golden_test_checkout_cmd` and
-      # the harness's run script.
-      "git config core.autocrlf false",
-      "git config core.eol lf",
-      (
-          f"rm -f {_WS}/{OUTPUT_JSON_NAME} {_WS}/{STDOUT_LOG_NAME}"
-          f" {_WS}/{STDERR_LOG_NAME}"
-      ),
+    # A failed *setup* step has to stop the run. Without this, a `git apply`
+    # that failed fell through and the tests graded the wrong tree — an
+    # unresolved verdict with nothing saying the patch never applied.
+    "set -e",
+    # An image that sets no HOME makes a toolchain that needs one fail every
+    # test for a reason that looks nothing like the cause (Go's build cache
+    # lives in `$HOME/.cache/go-build`). A *fallback*, so the image's own
+    # value still wins: an instance image often pre-warms its caches under
+    # it, and relocating would force a re-download that `--no-network` turns
+    # from a slowdown into a failure.
+    #
+    # Each tier tests for a non-empty *value* rather than an exit code:
+    # `getent` in a pipeline reports `cut`'s status, which succeeds on empty
+    # input, so a UID with no passwd entry (`docker run -u 1000`, OpenShift's
+    # random UIDs) would leave HOME empty — worse than unset, since `~/.cache`
+    # then resolves to the unwritable `/.cache`.
+    '[ -n "${HOME:-}" ] || HOME="$(getent passwd "$(id -u)" 2>/dev/null'
+    ' | cut -d: -f6)"',
+    f'[ -n "${{HOME:-}}" ] || HOME={EVAL_HOME}',
+    "export HOME",
+    'mkdir -p "$HOME"',
+    f"cd {WORKDIR}",
+    # Symmetric with extraction (ADR-0001), which diffs under
+    # `core.autocrlf=false`: a checkout or apply that renormalized CRLF<->LF
+    # would either fail to apply or silently alter content. Two knobs because
+    # they cover different halves — `autocrlf` off stops conversion for files
+    # with no `text` attribute, `eol=lf` fixes the checkout direction for
+    # files that have one. Both are already git's default on Linux, so this
+    # only bites an image that turned normalization on, which is the point.
+    # Not airtight: a per-path `eol=` in the repo's own `.gitattributes` wins
+    # over any config.
+    #
+    # Repo level rather than a per-invocation `-c`, because some of what
+    # follows we do not author: the dataset's `golden_test_checkout_cmd` and
+    # the harness's run script.
+    "git config core.autocrlf false",
+    "git config core.eol lf",
+    (
+      f"rm -f {_WS}/{OUTPUT_JSON_NAME} {_WS}/{STDOUT_LOG_NAME}"
+      f" {_WS}/{STDERR_LOG_NAME}"
+    ),
   ]
   if patch_baseline:
     # No reset here at all: in baseline mode the tree was already verified and
@@ -262,45 +262,45 @@ def _build_eval_script(
     pass
   else:
     lines += [
-        f"git reset --hard {base_commit}",
-        "git clean -fd",
-        f"git checkout {base_commit}",
+      f"git reset --hard {base_commit}",
+      "git clean -fd",
+      f"git checkout {base_commit}",
     ]
   if apply_patch:
     lines.append(f"git apply -v {_WS}/{shlex.quote(patch_name)}")
   if checkout_golden_tests and golden_test_checkout_cmd:
     lines.append(golden_test_checkout_cmd)
   lines += [
-      # A failing test suite is a *result*, not an error: the parser still has
-      # to run and turn it into output.json, so the run is gradeable.
-      "set +e",
-      (
-          f"{BASH} {_WS}/{RUN_SCRIPT_NAME} {selected}"
-          f" > {_WS}/{STDOUT_LOG_NAME} 2> {_WS}/{STDERR_LOG_NAME}"
-      ),
-      # The parser, though, must succeed — no output.json means no verdict.
-      "set -e",
-      (
-          f"{PYTHON} {_WS}/{PARSER_NAME} {_WS}/{STDOUT_LOG_NAME}"
-          f" {_WS}/{STDERR_LOG_NAME} {_WS}/{OUTPUT_JSON_NAME}"
-      ),
+    # A failing test suite is a *result*, not an error: the parser still has
+    # to run and turn it into output.json, so the run is gradeable.
+    "set +e",
+    (
+      f"{BASH} {_WS}/{RUN_SCRIPT_NAME} {selected}"
+      f" > {_WS}/{STDOUT_LOG_NAME} 2> {_WS}/{STDERR_LOG_NAME}"
+    ),
+    # The parser, though, must succeed — no output.json means no verdict.
+    "set -e",
+    (
+      f"{PYTHON} {_WS}/{PARSER_NAME} {_WS}/{STDOUT_LOG_NAME}"
+      f" {_WS}/{STDERR_LOG_NAME} {_WS}/{OUTPUT_JSON_NAME}"
+    ),
   ]
   return "\n".join(lines) + "\n"
 
 
 def compile_unit_test(
-    *,
-    apply_patch: bool,
-    patch_name: str = PATCH_NAME,
-    checkout_golden_tests: bool = True,
-    patch_baseline: bool = False,
-    base_commit: str,
-    selected_test_files_to_run: Sequence[str],
-    golden_test_checkout_cmd: str,
-    fail_to_pass: Sequence[str],
-    pass_to_pass: Sequence[str],
-    run_script: bytes,
-    parser: bytes,
+  *,
+  apply_patch: bool,
+  patch_name: str = PATCH_NAME,
+  checkout_golden_tests: bool = True,
+  patch_baseline: bool = False,
+  base_commit: str,
+  selected_test_files_to_run: Sequence[str],
+  golden_test_checkout_cmd: str,
+  fail_to_pass: Sequence[str],
+  pass_to_pass: Sequence[str],
+  run_script: bytes,
+  parser: bytes,
 ) -> UnitTestSpec[SweBenchProVerdict]:
   """Compile one instance's unit-test evaluation spec from its fields.
 
@@ -336,30 +336,30 @@ def compile_unit_test(
   """
   required = sorted(frozenset(fail_to_pass) | frozenset(pass_to_pass))
   mounts: Mounts = {
-      RUN_SCRIPT_NAME: Mount(Inline(run_script)),
-      PARSER_NAME: Mount(Inline(parser)),
-      REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(required).encode())),
+    RUN_SCRIPT_NAME: Mount(Inline(run_script)),
+    PARSER_NAME: Mount(Inline(parser)),
+    REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(required).encode())),
   }
   eval_script = _build_eval_script(
-      base_commit=base_commit,
-      selected_test_files_to_run=selected_test_files_to_run,
-      golden_test_checkout_cmd=golden_test_checkout_cmd,
-      apply_patch=apply_patch,
-      patch_name=patch_name,
-      checkout_golden_tests=checkout_golden_tests,
-      patch_baseline=patch_baseline,
+    base_commit=base_commit,
+    selected_test_files_to_run=selected_test_files_to_run,
+    golden_test_checkout_cmd=golden_test_checkout_cmd,
+    apply_patch=apply_patch,
+    patch_name=patch_name,
+    checkout_golden_tests=checkout_golden_tests,
+    patch_baseline=patch_baseline,
   )
   return UnitTestSpec(
-      eval_script=eval_script,
-      mounts=mounts,
-      grader=SweBenchProGrader(),
-      patch_name=patch_name,
-      # Kept so a grading that went wrong can be read afterwards: the parsed
-      # result, and — the useful part when it did go wrong — the raw test logs
-      # the parser was fed. Registered best-effort by the method.
-      native_outputs={
-          OUTPUT_JSON_NAME: OUTPUT_JSON_NAME,
-          STDOUT_LOG_NAME: STDOUT_LOG_NAME,
-          STDERR_LOG_NAME: STDERR_LOG_NAME,
-      },
+    eval_script=eval_script,
+    mounts=mounts,
+    grader=SweBenchProGrader(),
+    patch_name=patch_name,
+    # Kept so a grading that went wrong can be read afterwards: the parsed
+    # result, and — the useful part when it did go wrong — the raw test logs
+    # the parser was fed. Registered best-effort by the method.
+    native_outputs={
+      OUTPUT_JSON_NAME: OUTPUT_JSON_NAME,
+      STDOUT_LOG_NAME: STDOUT_LOG_NAME,
+      STDERR_LOG_NAME: STDERR_LOG_NAME,
+    },
   )

@@ -15,34 +15,34 @@ import subprocess
 import pytest
 
 from swe_lab.git.patch import (
-    build_baseline_script,
-    build_extraction_script,
-    is_effectively_empty,
-    strip_binary_hunks,
+  build_baseline_script,
+  build_extraction_script,
+  is_effectively_empty,
+  strip_binary_hunks,
 )
 
 # --- pure helpers ------------------------------------------------------------
 
 _TEXT_DIFF = (
-    "diff --git a/foo.py b/foo.py\n"
-    "index e69de29..d95f3ad 100644\n"
-    "--- a/foo.py\n"
-    "+++ b/foo.py\n"
-    "@@ -0,0 +1 @@\n"
-    "+print('hi')\n"
+  "diff --git a/foo.py b/foo.py\n"
+  "index e69de29..d95f3ad 100644\n"
+  "--- a/foo.py\n"
+  "+++ b/foo.py\n"
+  "@@ -0,0 +1 @@\n"
+  "+print('hi')\n"
 )
 _BINARY_DIFF = (
-    "diff --git a/logo.png b/logo.png\n"
-    "new file mode 100644\n"
-    "index 0000000..a1b2c3d\n"
-    "Binary files /dev/null and b/logo.png differ\n"
+  "diff --git a/logo.png b/logo.png\n"
+  "new file mode 100644\n"
+  "index 0000000..a1b2c3d\n"
+  "Binary files /dev/null and b/logo.png differ\n"
 )
 _GIT_BINARY_DIFF = (
-    "diff --git a/blob.bin b/blob.bin\n"
-    "index 0000000..a1b2c3d 100644\n"
-    "GIT binary patch\n"
-    "literal 4\n"
-    "Lc$@aA00\n\n"
+  "diff --git a/blob.bin b/blob.bin\n"
+  "index 0000000..a1b2c3d 100644\n"
+  "GIT binary patch\n"
+  "literal 4\n"
+  "Lc$@aA00\n\n"
 )
 
 
@@ -73,20 +73,20 @@ def test_is_effectively_empty() -> None:
 
 def _git(repo: Path, *args: str) -> str:
   env = {
-      "GIT_AUTHOR_NAME": "t",
-      "GIT_AUTHOR_EMAIL": "t@t",
-      "GIT_COMMITTER_NAME": "t",
-      "GIT_COMMITTER_EMAIL": "t@t",
-      "GIT_CONFIG_GLOBAL": "/dev/null",
-      "GIT_CONFIG_SYSTEM": "/dev/null",
-      "PATH": _PATH,
+    "GIT_AUTHOR_NAME": "t",
+    "GIT_AUTHOR_EMAIL": "t@t",
+    "GIT_COMMITTER_NAME": "t",
+    "GIT_COMMITTER_EMAIL": "t@t",
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "GIT_CONFIG_SYSTEM": "/dev/null",
+    "PATH": _PATH,
   }
   out = subprocess.run(
-      ["git", "-C", str(repo), *args],
-      capture_output=True,
-      text=True,
-      check=True,
-      env=env,
+    ["git", "-C", str(repo), *args],
+    capture_output=True,
+    text=True,
+    check=True,
+    env=env,
   )
   return out.stdout.strip()
 
@@ -106,21 +106,21 @@ def _init_repo(tmp_path: Path) -> tuple[Path, str]:
 
 
 def _run_extraction(
-    repo: Path, base_ref: str, *, exclude_globs: tuple[str, ...] = ()
+  repo: Path, base_ref: str, *, exclude_globs: tuple[str, ...] = ()
 ) -> str:
   out_path = repo.parent / "patch.diff"
   script = build_extraction_script(
-      workdir=str(repo),
-      base_ref=base_ref,
-      output_path=str(out_path),
-      exclude_globs=exclude_globs,
+    workdir=str(repo),
+    base_ref=base_ref,
+    output_path=str(out_path),
+    exclude_globs=exclude_globs,
   )
   subprocess.run(
-      ["bash", "-c", script],
-      check=True,
-      capture_output=True,
-      text=True,
-      env={"PATH": _PATH},
+    ["bash", "-c", script],
+    check=True,
+    capture_output=True,
+    text=True,
+    env={"PATH": _PATH},
   )
   return out_path.read_bytes().decode("utf-8", "replace")
 
@@ -130,11 +130,11 @@ def _run_baseline(repo: Path) -> str:
   out_path = repo.parent / "base_ref.txt"
   script = build_baseline_script(workdir=str(repo), output_path=str(out_path))
   subprocess.run(
-      ["bash", "-c", script],
-      check=True,
-      capture_output=True,
-      text=True,
-      env={"PATH": _PATH},
+    ["bash", "-c", script],
+    check=True,
+    capture_output=True,
+    text=True,
+    env={"PATH": _PATH},
   )
   return out_path.read_text().strip()
 
@@ -172,7 +172,7 @@ def test_extraction_empty_when_no_changes(tmp_path: Path) -> None:
 
 
 def test_a_stub_agent_produces_an_empty_patch_on_a_dirty_image(
-    tmp_path: Path,
+  tmp_path: Path,
 ) -> None:
   """No agent ran, so the patch is empty — even on a dirty image (ADR-0014).
 
@@ -188,7 +188,7 @@ def test_a_stub_agent_produces_an_empty_patch_on_a_dirty_image(
   # The image ships untracked state — as NodeBB's does — and no agent runs.
   (repo / "appendonlydir").mkdir()
   _ = (repo / "appendonlydir" / "appendonly.aof.1.incr.aof").write_text(
-      "SELECT\n*2\n" * 500
+    "SELECT\n*2\n" * 500
   )
 
   # Guard against a vacuous pass: against `base_commit` the image's own files
@@ -200,7 +200,7 @@ def test_a_stub_agent_produces_an_empty_patch_on_a_dirty_image(
 
 
 def test_the_baseline_still_captures_the_work_of_an_agent_that_did_edit(
-    tmp_path: Path,
+  tmp_path: Path,
 ) -> None:
   """The default must not buy an empty patch by suppressing real edits."""
   repo, _ = _init_repo(tmp_path)
@@ -271,10 +271,10 @@ def test_extraction_roundtrips_through_git_apply(tmp_path: Path) -> None:
   # Fresh clone at base, then apply — mirrors what evaluation does.
   clone = tmp_path / "clone"
   subprocess.run(
-      ["git", "clone", "-q", str(repo), str(clone)],
-      check=True,
-      capture_output=True,
-      env={"PATH": _PATH},
+    ["git", "clone", "-q", str(repo), str(clone)],
+    check=True,
+    capture_output=True,
+    env={"PATH": _PATH},
   )
   _git(clone, "checkout", "-q", base)
   patch_file = tmp_path / "p.diff"
@@ -301,10 +301,10 @@ def test_every_engine_git_command_carries_the_scoped_ownership_grant():
   """
   from swe_lab.git.history import build_purge_script
   from swe_lab.git.patch import (
-      build_baseline_script,
-      build_baseline_verify_script,
-      build_extraction_script,
-      isolated_git_env,
+    build_baseline_script,
+    build_baseline_verify_script,
+    build_extraction_script,
+    isolated_git_env,
   )
 
   env = isolated_git_env("/app")
@@ -317,14 +317,14 @@ def test_every_engine_git_command_carries_the_scoped_ownership_grant():
   assert "GIT_CONFIG_GLOBAL=/dev/null" in env
 
   scripts = {
-      "extract": build_extraction_script(
-          workdir="/app", base_ref="base", output_path="out.diff"
-      ),
-      "baseline": build_baseline_script(workdir="/app", output_path="sha.txt"),
-      "verify": build_baseline_verify_script(
-          workdir="/app", base_ref_path="sha.txt"
-      ),
-      "purge": build_purge_script(workdir="/app"),
+    "extract": build_extraction_script(
+      workdir="/app", base_ref="base", output_path="out.diff"
+    ),
+    "baseline": build_baseline_script(workdir="/app", output_path="sha.txt"),
+    "verify": build_baseline_verify_script(
+      workdir="/app", base_ref_path="sha.txt"
+    ),
+    "purge": build_purge_script(workdir="/app"),
   }
   # The purge exports the env once in its preamble; every later git inherits
   # it from the shell. The other three prefix each invocation instead, so for
@@ -334,9 +334,9 @@ def test_every_engine_git_command_carries_the_scoped_ownership_grant():
   assert "export GIT_CONFIG_KEY_0=safe.directory" in scripts.pop("purge")
   for name, script in scripts.items():
     git_lines = [
-        line
-        for line in script.splitlines()
-        if " git " in f" {line} " and "echo" not in line
+      line
+      for line in script.splitlines()
+      if " git " in f" {line} " and "echo" not in line
     ]
     assert git_lines, name
     for line in git_lines:

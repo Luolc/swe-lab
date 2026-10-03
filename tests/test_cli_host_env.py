@@ -8,12 +8,12 @@ import os
 import pytest
 
 from swe_lab.cli.host_env import (
-    adopt_host_scoped_credentials,
-    HOST_OAUTH_TOKEN_ENV,
+  adopt_host_scoped_credentials,
+  HOST_OAUTH_TOKEN_ENV,
 )
 from swe_lab.credential_sources import (
-    adopted_credential_sources,
-    forget_adoptions,
+  adopted_credential_sources,
+  forget_adoptions,
 )
 from swe_lab.harnesses.claude_code.constants import OAUTH_TOKEN_ENV
 
@@ -32,7 +32,7 @@ def _forget() -> Iterator[None]:  # pyright: ignore[reportUnusedFunction]
 
 
 def test_the_repo_scoped_token_is_adopted_under_the_name_a_run_reads(
-    monkeypatch: pytest.MonkeyPatch,
+  monkeypatch: pytest.MonkeyPatch,
 ):
   # The whole point of the repo-scoped name: `.envrc.local` exports it so an
   # interactive `claude` in this directory never picks the token up, and the
@@ -44,7 +44,7 @@ def test_the_repo_scoped_token_is_adopted_under_the_name_a_run_reads(
 
 
 def test_an_existing_canonical_token_is_never_overwritten(
-    monkeypatch: pytest.MonkeyPatch,
+  monkeypatch: pytest.MonkeyPatch,
 ):
   # CI sets the canonical name straight from the repository secret, and a
   # developer may export it for one command. Either way the caller has already
@@ -57,7 +57,7 @@ def test_an_existing_canonical_token_is_never_overwritten(
 
 
 def test_an_explicitly_emptied_canonical_token_is_left_empty(
-    monkeypatch: pytest.MonkeyPatch,
+  monkeypatch: pytest.MonkeyPatch,
 ):
   # `CLAUDE_CODE_OAUTH_TOKEN= swe-lab run …` is someone blanking the credential
   # for one command. It is *set*, so the shim has nothing to decide: restoring
@@ -70,7 +70,7 @@ def test_an_explicitly_emptied_canonical_token_is_left_empty(
 
 
 def test_an_empty_repo_scoped_token_is_not_adopted(
-    monkeypatch: pytest.MonkeyPatch,
+  monkeypatch: pytest.MonkeyPatch,
 ):
   # The source side is the other way round: there is nothing to copy, and
   # copying it would manufacture the empty canonical variable the branch above
@@ -82,7 +82,7 @@ def test_an_empty_repo_scoped_token_is_not_adopted(
 
 
 def test_nothing_to_adopt_leaves_the_environment_alone(
-    monkeypatch: pytest.MonkeyPatch,
+  monkeypatch: pytest.MonkeyPatch,
 ):
   monkeypatch.delenv(OAUTH_TOKEN_ENV, raising=False)
   monkeypatch.delenv(HOST_OAUTH_TOKEN_ENV, raising=False)
@@ -91,7 +91,7 @@ def test_nothing_to_adopt_leaves_the_environment_alone(
 
 
 def test_nothing_adopted_is_recorded_as_nothing(
-    monkeypatch: pytest.MonkeyPatch,
+  monkeypatch: pytest.MonkeyPatch,
 ):
   # What CI looks like: it sets the canonical names itself, so there is no
   # adoption to report and the run record carries no such field at all.

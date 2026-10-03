@@ -21,21 +21,21 @@ from typing import Any, override
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec, Verdict
 from swe_lab.git.patch import (
-    BASELINE_VERIFY_SCRIPT_NAME,
-    build_baseline_verify_script,
+  BASELINE_VERIFY_SCRIPT_NAME,
+  build_baseline_verify_script,
 )
 from swe_lab.sandbox import (
-    ArtifactSchema,
-    Contribution,
-    ExecResult,
-    Inline,
-    merge_mounts,
-    Mount,
-    Mounts,
-    qualified_name,
-    SandboxError,
-    SandboxFs,
-    SandboxObserver,
+  ArtifactSchema,
+  Contribution,
+  ExecResult,
+  Inline,
+  merge_mounts,
+  Mount,
+  Mounts,
+  qualified_name,
+  SandboxError,
+  SandboxFs,
+  SandboxObserver,
 )
 from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
 from swe_lab.workflow import AttemptResult, Task
@@ -97,22 +97,22 @@ class UnitTestParseObserver[V: Verdict](SandboxObserver):
     they are registered — a run that died mid-script produces fewer.
     """
     return (
+      ArtifactSchema(
+        qualified_name(self.name, ENTRYSCRIPT_NAME),
+        description="the script that ran",
+      ),
+      ArtifactSchema(
+        qualified_name(self.name, VERDICT_NAME),
+        description="the graded verdict: resolved, score, metrics, summary",
+      ),
+      *(
         ArtifactSchema(
-            qualified_name(self.name, ENTRYSCRIPT_NAME),
-            description="the script that ran",
-        ),
-        ArtifactSchema(
-            qualified_name(self.name, VERDICT_NAME),
-            description="the graded verdict: resolved, score, metrics, summary",
-        ),
-        *(
-            ArtifactSchema(
-                qualified_name(self.name, name),
-                required=False,
-                description=f"the run's {name}",
-            )
-            for name in self.native_outputs
-        ),
+          qualified_name(self.name, name),
+          required=False,
+          description=f"the run's {name}",
+        )
+        for name in self.native_outputs
+      ),
     )
 
   @override
@@ -128,24 +128,24 @@ class UnitTestParseObserver[V: Verdict](SandboxObserver):
     """
     self.verdict = self.grader.grade(sb)
     artifacts = {
-        qualified_name(self.name, name): filename
-        # Same best-effort filter as the diff-extract observer: a run that died
-        # mid-script simply registers fewer files, never a broken reference.
-        for name, filename in self._declared_outputs().items()
-        if sb.exists(filename)
+      qualified_name(self.name, name): filename
+      # Same best-effort filter as the diff-extract observer: a run that died
+      # mid-script simply registers fewer files, never a broken reference.
+      for name, filename in self._declared_outputs().items()
+      if sb.exists(filename)
     }
     # The verdict is already in hand, so it is contributed inline like the
     # exec output: nothing is written into the sandbox to be fetched back.
     inline = {
-        qualified_name(self.name, VERDICT_NAME): json.dumps(
-            self.verdict.facts(), indent=2, sort_keys=True
-        ).encode("utf-8"),
-        **self._exec_output(),
+      qualified_name(self.name, VERDICT_NAME): json.dumps(
+        self.verdict.facts(), indent=2, sort_keys=True
+      ).encode("utf-8"),
+      **self._exec_output(),
     }
     return Contribution(
-        artifacts=artifacts,
-        inline_artifacts=inline,
-        metrics=self._metrics(),
+      artifacts=artifacts,
+      inline_artifacts=inline,
+      metrics=self._metrics(),
     )
 
   def _exec_output(self) -> dict[str, bytes]:
@@ -161,13 +161,13 @@ class UnitTestParseObserver[V: Verdict](SandboxObserver):
     if self.exec_result is None:
       return {}
     streams = {
-        "exec_stdout.log": self.exec_result.stdout,
-        "exec_stderr.log": self.exec_result.stderr,
+      "exec_stdout.log": self.exec_result.stdout,
+      "exec_stderr.log": self.exec_result.stderr,
     }
     return {
-        qualified_name(self.name, name): text.encode("utf-8")
-        for name, text in streams.items()
-        if text
+      qualified_name(self.name, name): text.encode("utf-8")
+      for name, text in streams.items()
+      if text
     }
 
   def _declared_outputs(self) -> dict[str, str]:
@@ -187,13 +187,12 @@ class UnitTestParseObserver[V: Verdict](SandboxObserver):
       metrics["exit_code"] = float(self.exec_result.exit_code)
       metrics["timed_out"] = float(self.exec_result.timed_out)
     return {
-        qualified_name(self.name, name): value
-        for name, value in metrics.items()
+      qualified_name(self.name, name): value for name, value in metrics.items()
     }
 
 
 def gold_patch(
-    sb: SandboxFs, instance: TaskInstance[Any]
+  sb: SandboxFs, instance: TaskInstance[Any]
 ) -> Mapping[str, bytes]:
   """Build the task's patch input from the instance's own gold patch.
 
@@ -221,7 +220,7 @@ def gold_patch(
   patch = instance.gold_patch()
   if patch is None:
     raise SandboxError(
-        f"instance {instance.instance_id!r} carries no gold patch to grade"
+      f"instance {instance.instance_id!r} carries no gold patch to grade"
     )
   return {PATCH_NAME: patch.encode("utf-8")}
 
@@ -269,17 +268,17 @@ class BaselineVerifyObserver(SandboxObserver):
         stderr) or any other failure to verify — never graded, by design.
     """
     body = build_baseline_verify_script(
-        workdir=self.workdir, base_ref_path=self.base_ref_name
+      workdir=self.workdir, base_ref_path=self.base_ref_name
     )
     script = f'cd "$SANDBOX_WORKSPACE"\n{body}'
     sb.write(BASELINE_VERIFY_SCRIPT_NAME, script.encode("utf-8"))
     result = sb.run_script(
-        BASELINE_VERIFY_SCRIPT_NAME, timeout=_BASELINE_VERIFY_TIMEOUT_S
+      BASELINE_VERIFY_SCRIPT_NAME, timeout=_BASELINE_VERIFY_TIMEOUT_S
     )
     if result.exit_code != 0:
       detail = (result.stderr or result.stdout).strip()[-500:]
       raise SandboxError(
-          f"baseline verification failed (exit {result.exit_code}): {detail}"
+        f"baseline verification failed (exit {result.exit_code}): {detail}"
       )
 
 
@@ -357,12 +356,12 @@ class UnitTestTask[V: Verdict](Task):
     # is the work anyway.
     if self.patch_baseline:
       return instance.unit_test_spec(
-          apply_patch=self.apply_patch,
-          patch_name=self.patch_name,
-          patch_baseline=True,
+        apply_patch=self.apply_patch,
+        patch_name=self.patch_name,
+        patch_baseline=True,
       )
     spec: UnitTestSpec[V] = instance.unit_test_spec(
-        apply_patch=self.apply_patch, patch_name=self.patch_name
+      apply_patch=self.apply_patch, patch_name=self.patch_name
     )
     return spec
 
@@ -384,12 +383,12 @@ class UnitTestTask[V: Verdict](Task):
     """
     spec = self._compile(instance)
     return merge_mounts(
-        dict(spec.mounts),
-        {
-            ENTRYSCRIPT_NAME: Mount(
-                Inline(spec.eval_script.encode()), executable=True
-            )
-        },
+      dict(spec.mounts),
+      {
+        ENTRYSCRIPT_NAME: Mount(
+          Inline(spec.eval_script.encode()), executable=True
+        )
+      },
     )
 
   @override
@@ -404,13 +403,13 @@ class UnitTestTask[V: Verdict](Task):
     """
     spec = self._compile(instance)  # same spec, by the purity contract
     verify = (
-        (BaselineVerifyObserver(workdir=instance.sandbox_spec().workdir),)
-        if self.apply_patch and self.patch_baseline
-        else ()
+      (BaselineVerifyObserver(workdir=instance.sandbox_spec().workdir),)
+      if self.apply_patch and self.patch_baseline
+      else ()
     )
     return (
-        *verify,
-        UnitTestParseObserver(spec.grader, native_outputs=spec.native_outputs),
+      *verify,
+      UnitTestParseObserver(spec.grader, native_outputs=spec.native_outputs),
     )
 
   @override
@@ -422,20 +421,20 @@ class UnitTestTask[V: Verdict](Task):
     """
     if self.apply_patch:
       base = (
-          (
-              ArtifactSchema(
-                  BASE_REF_NAME,
-                  description="the sha the patch was diffed against",
-              ),
-          )
-          if self.patch_baseline
-          else ()
+        (
+          ArtifactSchema(
+            BASE_REF_NAME,
+            description="the sha the patch was diffed against",
+          ),
+        )
+        if self.patch_baseline
+        else ()
       )
       return (
-          ArtifactSchema(
-              self.patch_name, description="the candidate patch to grade"
-          ),
-          *base,
+        ArtifactSchema(
+          self.patch_name, description="the candidate patch to grade"
+        ),
+        *base,
       )
     return ()
 
@@ -488,12 +487,12 @@ class UnitTestTask[V: Verdict](Task):
     """
     verdict = verdict_of(result)
     return super().should_retry(result) or (
-        verdict is not None and not verdict.resolved
+      verdict is not None and not verdict.resolved
     )
 
   @override
   def action(
-      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+    self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
   ) -> ExecResult:
     """Run the entryscript once.
 
@@ -524,7 +523,7 @@ def verdict_of(result: AttemptResult) -> Verdict | None:
     the result came from a task that composed no unit-test observer.
   """
   parse = next(
-      (o for o in result.observers if isinstance(o, UnitTestParseObserver)),
-      None,
+    (o for o in result.observers if isinstance(o, UnitTestParseObserver)),
+    None,
   )
   return parse.verdict if parse is not None else None

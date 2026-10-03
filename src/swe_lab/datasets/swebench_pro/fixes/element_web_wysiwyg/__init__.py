@@ -8,16 +8,16 @@ import hashlib
 from swe_lab.sandbox import Inline, Mount
 
 from .._seam import (
-    RegisteredFix,
-    render,
-    SweBenchProUnitTestSpec,
-    with_setup,
+  RegisteredFix,
+  render,
+  SweBenchProUnitTestSpec,
+  with_setup,
 )
 from .tarball import TARBALL_B64
 
 _WYSIWYG_INSTANCE = (
-    "instance_element-hq__element-web"
-    "-aec454dd6feeb93000380523cbb0b3681c0275fd-vnan"
+  "instance_element-hq__element-web"
+  "-aec454dd6feeb93000380523cbb0b3681c0275fd-vnan"
 )
 _WYSIWYG_TARBALL_NAME = "matrix-wysiwyg-1.4.1.tgz"
 _WYSIWYG_PACKAGE = "node_modules/@matrix-org/matrix-wysiwyg"
@@ -51,7 +51,7 @@ fi
 
 
 def _fix_instance_element_web_aec454dd(
-    spec: SweBenchProUnitTestSpec,
+  spec: SweBenchProUnitTestSpec,
 ) -> SweBenchProUnitTestSpec:
   """Replace ``@matrix-org/matrix-wysiwyg`` 1.4.0 with the fixed 1.4.1.
 
@@ -86,17 +86,17 @@ def _fix_instance_element_web_aec454dd(
   """
   tarball = wysiwyg_tarball()
   return with_setup(
-      spec,
-      mounts={_WYSIWYG_TARBALL_NAME: Mount(Inline(tarball))},
-      setup=render(
-          _WYSIWYG_SETUP,
-          TARBALL=_WYSIWYG_TARBALL_NAME,
-          # Derived from the vendored bytes rather than written down twice, so
-          # the check in the container cannot drift from what is mounted.
-          SHA512=hashlib.sha512(tarball).hexdigest(),
-          PACKAGE=_WYSIWYG_PACKAGE,
-          VERSION=_WYSIWYG_VERSION,
-      ),
+    spec,
+    mounts={_WYSIWYG_TARBALL_NAME: Mount(Inline(tarball))},
+    setup=render(
+      _WYSIWYG_SETUP,
+      TARBALL=_WYSIWYG_TARBALL_NAME,
+      # Derived from the vendored bytes rather than written down twice, so
+      # the check in the container cannot drift from what is mounted.
+      SHA512=hashlib.sha512(tarball).hexdigest(),
+      PACKAGE=_WYSIWYG_PACKAGE,
+      VERSION=_WYSIWYG_VERSION,
+    ),
   )
 
 
@@ -106,5 +106,5 @@ def wysiwyg_tarball() -> bytes:
 
 
 ELEMENT_WEB_WYSIWYG = RegisteredFix(
-    instances=(_WYSIWYG_INSTANCE,), fix=_fix_instance_element_web_aec454dd
+  instances=(_WYSIWYG_INSTANCE,), fix=_fix_instance_element_web_aec454dd
 )

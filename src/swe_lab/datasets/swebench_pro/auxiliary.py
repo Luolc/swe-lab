@@ -17,26 +17,26 @@ from etils import epath
 from swe_lab.paths import cache_root, find_repo_root
 
 from .constants import (
-    GITHUB_RAW_BASE,
-    HARNESS_FETCH_TIMEOUT_S,
-    HARNESS_SUBDIR,
-    PARSER_NAME,
-    RUN_SCRIPT_NAME,
-    SCALE_SWEBENCH_PRO_COMMIT,
-    SCALE_SWEBENCH_PRO_REPO,
+  GITHUB_RAW_BASE,
+  HARNESS_FETCH_TIMEOUT_S,
+  HARNESS_SUBDIR,
+  PARSER_NAME,
+  RUN_SCRIPT_NAME,
+  SCALE_SWEBENCH_PRO_COMMIT,
+  SCALE_SWEBENCH_PRO_REPO,
 )
 
 
 def github_raw_url(instance_id: str, filename: str) -> str:
   """Return the raw GitHub URL of one auxiliary file at the pinned commit."""
   return (
-      f"{GITHUB_RAW_BASE}/{SCALE_SWEBENCH_PRO_REPO}/{SCALE_SWEBENCH_PRO_COMMIT}"
-      f"/run_scripts/{instance_id}/{filename}"
+    f"{GITHUB_RAW_BASE}/{SCALE_SWEBENCH_PRO_REPO}/{SCALE_SWEBENCH_PRO_COMMIT}"
+    f"/run_scripts/{instance_id}/{filename}"
   )
 
 
 def auxiliary_dir(
-    instance_id: str, *, repo_root: epath.PathLike | None = None
+  instance_id: str, *, repo_root: epath.PathLike | None = None
 ) -> epath.Path:
   """Return the gitignored cache dir for one instance's auxiliary files."""
   root = repo_root or find_repo_root()
@@ -44,10 +44,10 @@ def auxiliary_dir(
 
 
 def fetch_auxiliary(
-    instance_id: str,
-    *,
-    repo_root: epath.PathLike | None = None,
-    refresh: bool = False,
+  instance_id: str,
+  *,
+  repo_root: epath.PathLike | None = None,
+  refresh: bool = False,
 ) -> tuple[epath.Path, epath.Path]:
   """Ensure ``run_script.sh`` + ``parser.py`` are cached; return their paths.
 

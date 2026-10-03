@@ -21,11 +21,11 @@ import shlex
 from typing import override
 
 from swe_lab.sandbox import (
-    ArtifactSchema,
-    Contribution,
-    SandboxError,
-    SandboxFs,
-    SandboxObserver,
+  ArtifactSchema,
+  Contribution,
+  SandboxError,
+  SandboxFs,
+  SandboxObserver,
 )
 
 _logger = logging.getLogger(__name__)
@@ -119,11 +119,11 @@ class AgentInfoObserver(SandboxObserver):
   def output_schema(self) -> Sequence[ArtifactSchema]:
     """Declare the info file — advisory, since a run is valid without it."""
     return (
-        ArtifactSchema(
-            self.artifact,
-            required=False,
-            description="the agent's own --version and --help output",
-        ),
+      ArtifactSchema(
+        self.artifact,
+        required=False,
+        description="the agent's own --version and --help output",
+      ),
     )
 
   @override
@@ -200,13 +200,13 @@ def home_fallback_lines() -> list[str]:
     The lines, in order.
   """
   return [
-      # Each tier tests a non-empty VALUE, not an exit code: `getent | cut`
-      # reports cut's status, which succeeds on empty input.
-      '[ -n "${HOME:-}" ] || HOME="$(getent passwd "$(id -u)" 2>/dev/null'
-      ' | cut -d: -f6)"',
-      f'[ -n "${{HOME:-}}" ] || HOME={HOME_LAST_RESORT}',
-      "export HOME",
-      'mkdir -p "$HOME"',
+    # Each tier tests a non-empty VALUE, not an exit code: `getent | cut`
+    # reports cut's status, which succeeds on empty input.
+    '[ -n "${HOME:-}" ] || HOME="$(getent passwd "$(id -u)" 2>/dev/null'
+    ' | cut -d: -f6)"',
+    f'[ -n "${{HOME:-}}" ] || HOME={HOME_LAST_RESORT}',
+    "export HOME",
+    'mkdir -p "$HOME"',
   ]
 
 
@@ -243,10 +243,10 @@ def status_tail(exit_code_file: str) -> list[str]:
     The tail lines, in order.
   """
   return [
-      # `set -u` is on but `set -e` is not, so execution reaches here whatever
-      # the agent did. Capture on the very next line, before anything can
-      # overwrite `$?`.
-      "status=$?",
-      f"printf '%s\\n' \"$status\" > {exit_code_file}",
-      'exit "$status"',
+    # `set -u` is on but `set -e` is not, so execution reaches here whatever
+    # the agent did. Capture on the very next line, before anything can
+    # overwrite `$?`.
+    "status=$?",
+    f"printf '%s\\n' \"$status\" > {exit_code_file}",
+    'exit "$status"',
   ]

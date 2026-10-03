@@ -18,10 +18,10 @@ import subprocess
 # Relative: `tests` is a package, and the sibling module is also run as a
 # script by the pre-commit hook, so it stays importable either way.
 from .operator_home_paths import (
-    home_paths_in,
-    NON_OPERATOR_HOMES,
-    offenders,
-    operator_home_paths_in,
+  home_paths_in,
+  NON_OPERATOR_HOMES,
+  offenders,
+  operator_home_paths_in,
 )
 
 _REPO = pathlib.Path(__file__).resolve().parents[1]
@@ -41,10 +41,10 @@ def _tracked_files() -> list[pathlib.Path]:
     The tracked files.
   """
   listing = subprocess.run(
-      ["git", "-C", str(_REPO), "ls-files", "-z"],
-      capture_output=True,
-      check=True,
-      text=True,
+    ["git", "-C", str(_REPO), "ls-files", "-z"],
+    capture_output=True,
+    check=True,
+    text=True,
   ).stdout
   return [_REPO / name for name in listing.split("\0") if name]
 
@@ -71,7 +71,7 @@ def test_a_finding_names_the_file_and_the_line(tmp_path: pathlib.Path) -> None:
   """A finding has to be actionable: which file, which line, which match."""
   recorded = tmp_path / "cmd.txt"
   recorded.write_text(
-      f"cwd=/tmp/probe/ws\nPROBE_LOG={_UNKNOWN_HOME}/dev/x/hook_log.jsonl\n"
+    f"cwd=/tmp/probe/ws\nPROBE_LOG={_UNKNOWN_HOME}/dev/x/hook_log.jsonl\n"
   )
   assert offenders([recorded]) == [f"{recorded}:2: {_UNKNOWN_HOME}"]
 

@@ -61,20 +61,20 @@ def _preamble(workdir: str) -> list[str]:
   """
   quoted = shlex.quote(workdir)
   return [
-      "set -eu",
-      # The shared engine-git env: isolation + the workdir-scoped
-      # safe.directory grant (#244) — exported once, covering every git in
-      # this script, including the repo-root check just below (which would
-      # otherwise report "not a git repository root" on an ownership-affected
-      # image, hiding the real cause).
-      *(f"export {assignment}" for assignment in isolated_git_env(workdir)),
-      f'cd {quoted} || {{ echo "FATAL: no such directory: {workdir}" >&2;'
-      " exit 78; }",
-      # Refuse to touch anything unless *this* directory is itself a repo: with
-      # no check, git would happily walk up to an enclosing one.
-      'test "$(git rev-parse --show-toplevel 2>/dev/null)" = "$(pwd -P)"'
-      f' || {{ echo "FATAL: {workdir} is not a git repository root" >&2;'
-      " exit 78; }",
+    "set -eu",
+    # The shared engine-git env: isolation + the workdir-scoped
+    # safe.directory grant (#244) — exported once, covering every git in
+    # this script, including the repo-root check just below (which would
+    # otherwise report "not a git repository root" on an ownership-affected
+    # image, hiding the real cause).
+    *(f"export {assignment}" for assignment in isolated_git_env(workdir)),
+    f'cd {quoted} || {{ echo "FATAL: no such directory: {workdir}" >&2;'
+    " exit 78; }",
+    # Refuse to touch anything unless *this* directory is itself a repo: with
+    # no check, git would happily walk up to an enclosing one.
+    'test "$(git rev-parse --show-toplevel 2>/dev/null)" = "$(pwd -P)"'
+    f' || {{ echo "FATAL: {workdir} is not a git repository root" >&2;'
+    " exit 78; }",
   ]
 
 
@@ -96,57 +96,57 @@ def build_purge_script(*, workdir: str) -> str:
     The shell script text, newline-terminated.
   """
   lines = [
-      *_preamble(workdir),
-      'BASE="$(git rev-parse HEAD)"',
-      # HEAD must not be a branch ref we are about to delete.
-      'git checkout --detach --quiet "$BASE"',
-      # Symbolic refs FIRST, individually. `refs/remotes/origin/HEAD` is a
-      # symref to `origin/main`, and `update-ref --stdin` refuses to delete a
-      # symref together with its target ("multiple updates for ...") — which
-      # aborts the whole transaction and purges *nothing*. Verified against a
-      # real image; the upstream reference implementation has this bug.
-      "git for-each-ref --format='%(refname) %(symref)'"
-      " refs/heads refs/remotes refs/tags |"
-      " while read -r ref target; do"
-      ' [ -n "${target:-}" ] && git symbolic-ref --delete "$ref" || true;'
-      " done",
-      # Every remaining branch and remote-tracking ref, atomically.
-      "git for-each-ref --format='delete %(refname)' refs/heads refs/remotes"
-      " | git update-ref --stdin",
-      # Tags: keep one only if its commit is an ANCESTOR of the base — the
-      # property "nothing reachable outside the base's history", stated
-      # directly rather than proxied by a timestamp. A timestamp proxy leaked:
-      # a fix commit dated *equal* to the base survived a `-gt` test and four
-      # tags still reached it (tutanota, measured). Rebases, cherry-picks,
-      # imported history and clock skew all decouple date from ancestry, so no
-      # threshold makes timestamps a partial order over the graph.
-      #
-      # `--no-merged` is that test, done by git in ONE traversal. Spelling it
-      # as a shell loop calling `merge-base` per tag was correct and far too
-      # slow: teleport carries 5240 tags, which measured at ~366s and blew the
-      # purge timeout on 76 of 731 instances. This runs in ~1s and was verified
-      # to select the identical set on 400-tag samples across three repos.
-      # `--no-merged` peels annotated tags itself, so the `^{}` indirection the
-      # loop needed is still covered.
-      'git for-each-ref --no-merged "$BASE"'
-      " --format='delete %(refname)' refs/tags"
-      " | git update-ref --stdin",
-      # Remotes (the config URL leaks where to look), and the stray HEAD files.
-      'for r in $(git remote); do git remote remove "$r"; done',
-      "rm -f .git/FETCH_HEAD .git/ORIG_HEAD",
-      # The reflog leaks commit messages after the refs are gone; the prune is
-      # what stops an unreferenced object answering to a bare sha.
-      "git reflog expire --expire=now --all",
-      # `--aggressive` is deliberately omitted: measured at ~2.5x the time for
-      # ~10% more space, and it blocks nothing extra — bare-sha access is
-      # already dead without it.
-      "git gc --prune=now --quiet",
+    *_preamble(workdir),
+    'BASE="$(git rev-parse HEAD)"',
+    # HEAD must not be a branch ref we are about to delete.
+    'git checkout --detach --quiet "$BASE"',
+    # Symbolic refs FIRST, individually. `refs/remotes/origin/HEAD` is a
+    # symref to `origin/main`, and `update-ref --stdin` refuses to delete a
+    # symref together with its target ("multiple updates for ...") — which
+    # aborts the whole transaction and purges *nothing*. Verified against a
+    # real image; the upstream reference implementation has this bug.
+    "git for-each-ref --format='%(refname) %(symref)'"
+    " refs/heads refs/remotes refs/tags |"
+    " while read -r ref target; do"
+    ' [ -n "${target:-}" ] && git symbolic-ref --delete "$ref" || true;'
+    " done",
+    # Every remaining branch and remote-tracking ref, atomically.
+    "git for-each-ref --format='delete %(refname)' refs/heads refs/remotes"
+    " | git update-ref --stdin",
+    # Tags: keep one only if its commit is an ANCESTOR of the base — the
+    # property "nothing reachable outside the base's history", stated
+    # directly rather than proxied by a timestamp. A timestamp proxy leaked:
+    # a fix commit dated *equal* to the base survived a `-gt` test and four
+    # tags still reached it (tutanota, measured). Rebases, cherry-picks,
+    # imported history and clock skew all decouple date from ancestry, so no
+    # threshold makes timestamps a partial order over the graph.
+    #
+    # `--no-merged` is that test, done by git in ONE traversal. Spelling it
+    # as a shell loop calling `merge-base` per tag was correct and far too
+    # slow: teleport carries 5240 tags, which measured at ~366s and blew the
+    # purge timeout on 76 of 731 instances. This runs in ~1s and was verified
+    # to select the identical set on 400-tag samples across three repos.
+    # `--no-merged` peels annotated tags itself, so the `^{}` indirection the
+    # loop needed is still covered.
+    'git for-each-ref --no-merged "$BASE"'
+    " --format='delete %(refname)' refs/tags"
+    " | git update-ref --stdin",
+    # Remotes (the config URL leaks where to look), and the stray HEAD files.
+    'for r in $(git remote); do git remote remove "$r"; done',
+    "rm -f .git/FETCH_HEAD .git/ORIG_HEAD",
+    # The reflog leaks commit messages after the refs are gone; the prune is
+    # what stops an unreferenced object answering to a bare sha.
+    "git reflog expire --expire=now --all",
+    # `--aggressive` is deliberately omitted: measured at ~2.5x the time for
+    # ~10% more space, and it blocks nothing extra — bare-sha access is
+    # already dead without it.
+    "git gc --prune=now --quiet",
   ]
   return "\n".join(lines) + "\n"
 
 
 def build_report_script(
-    *, workdir: str, solution_sha: str | None = None
+  *, workdir: str, solution_sha: str | None = None
 ) -> str:
   """Build the shell that reports repo state and the three assertions as JSON.
 
@@ -176,42 +176,41 @@ def build_report_script(
     The shell script text, newline-terminated. Its stdout is one JSON object.
   """
   lines = [
-      *_preamble(workdir),
-      # Past the guard, a probe that cannot answer must report rather than
-      # abort — the caller decides what a missing number means.
-      "set +e",
-      'BASE="$(git rev-parse HEAD 2>/dev/null || echo "")"',
-      'BASE_TS="$(git show -s --format=%ct "$BASE" 2>/dev/null || echo 0)"',
-      "REFS=$(git for-each-ref 2>/dev/null | wc -l)",
-      "TAGS=$(git for-each-ref refs/tags 2>/dev/null | wc -l)",
-      "HEADS=$(git for-each-ref refs/heads 2>/dev/null | wc -l)",
-      "REMOTE_REFS=$(git for-each-ref refs/remotes 2>/dev/null | wc -l)",
-      "REMOTES=$(git remote 2>/dev/null | wc -l)",
-      "REFLOG=$(git reflog 2>/dev/null | wc -l)",
-      # THE assertion: commits reachable from some ref but NOT from the base —
-      # graph reachability, which is the property itself rather than a proxy
-      # for it. It replaced a committer-timestamp comparison that missed a fix
-      # commit dated exactly at the base (tutanota, measured): timestamps are
-      # not a partial order over the graph, so no threshold makes them one.
-      # Also needs no `date`, which matters on the Alpine images this dataset
-      # ships with only busybox.
-      'FUTURE=$(git rev-list --all --not "$BASE" --count 2>/dev/null'
-      " || echo 0)",
-      'if [ -n "$BASE" ] && git cat-file -e "$BASE" 2>/dev/null;'
-      " then BASE_OK=true; else BASE_OK=false; fi",
+    *_preamble(workdir),
+    # Past the guard, a probe that cannot answer must report rather than
+    # abort — the caller decides what a missing number means.
+    "set +e",
+    'BASE="$(git rev-parse HEAD 2>/dev/null || echo "")"',
+    'BASE_TS="$(git show -s --format=%ct "$BASE" 2>/dev/null || echo 0)"',
+    "REFS=$(git for-each-ref 2>/dev/null | wc -l)",
+    "TAGS=$(git for-each-ref refs/tags 2>/dev/null | wc -l)",
+    "HEADS=$(git for-each-ref refs/heads 2>/dev/null | wc -l)",
+    "REMOTE_REFS=$(git for-each-ref refs/remotes 2>/dev/null | wc -l)",
+    "REMOTES=$(git remote 2>/dev/null | wc -l)",
+    "REFLOG=$(git reflog 2>/dev/null | wc -l)",
+    # THE assertion: commits reachable from some ref but NOT from the base —
+    # graph reachability, which is the property itself rather than a proxy
+    # for it. It replaced a committer-timestamp comparison that missed a fix
+    # commit dated exactly at the base (tutanota, measured): timestamps are
+    # not a partial order over the graph, so no threshold makes them one.
+    # Also needs no `date`, which matters on the Alpine images this dataset
+    # ships with only busybox.
+    'FUTURE=$(git rev-list --all --not "$BASE" --count 2>/dev/null || echo 0)',
+    'if [ -n "$BASE" ] && git cat-file -e "$BASE" 2>/dev/null;'
+    " then BASE_OK=true; else BASE_OK=false; fi",
   ]
   if solution_sha:
     quoted = shlex.quote(solution_sha)
     lines += [
-        # Existence alone does not prove we were handed the *fix* commit: an
-        # instance id also carries an environment-setup sha, and that one is
-        # sometimes an ancestor of HEAD (observed on vuls). So record whether
-        # it is future history too — only a commit that is both present and
-        # future can be the answer this purge exists to remove.
-        f"if git cat-file -e {quoted} 2>/dev/null; then SOL=true;"
-        f" if git merge-base --is-ancestor {quoted} HEAD 2>/dev/null;"
-        " then SOL_FUTURE=false; else SOL_FUTURE=true; fi;"
-        " else SOL=false; SOL_FUTURE=null; fi",
+      # Existence alone does not prove we were handed the *fix* commit: an
+      # instance id also carries an environment-setup sha, and that one is
+      # sometimes an ancestor of HEAD (observed on vuls). So record whether
+      # it is future history too — only a commit that is both present and
+      # future can be the answer this purge exists to remove.
+      f"if git cat-file -e {quoted} 2>/dev/null; then SOL=true;"
+      f" if git merge-base --is-ancestor {quoted} HEAD 2>/dev/null;"
+      " then SOL_FUTURE=false; else SOL_FUTURE=true; fi;"
+      " else SOL=false; SOL_FUTURE=null; fi",
     ]
   else:
     lines.append("SOL=null")
@@ -225,17 +224,17 @@ def build_report_script(
 # keys are all derived from this, and ``test_the_report_script_emits_exactly_
 # the_dataclass_fields`` fails if it ever drifts from ``GitHistoryReport``.
 _SHELL_VARS: tuple[tuple[str, str], ...] = (
-    ("base_sha", "BASE"),
-    ("refs", "REFS"),
-    ("tags", "TAGS"),
-    ("heads", "HEADS"),
-    ("remote_refs", "REMOTE_REFS"),
-    ("remotes", "REMOTES"),
-    ("reflog", "REFLOG"),
-    ("future_commits", "FUTURE"),
-    ("base_reachable", "BASE_OK"),
-    ("solution_reachable", "SOL"),
-    ("solution_is_future", "SOL_FUTURE"),
+  ("base_sha", "BASE"),
+  ("refs", "REFS"),
+  ("tags", "TAGS"),
+  ("heads", "HEADS"),
+  ("remote_refs", "REMOTE_REFS"),
+  ("remotes", "REMOTES"),
+  ("reflog", "REFLOG"),
+  ("future_commits", "FUTURE"),
+  ("base_reachable", "BASE_OK"),
+  ("solution_reachable", "SOL"),
+  ("solution_is_future", "SOL_FUTURE"),
 )
 
 
@@ -257,8 +256,8 @@ def _emit_json() -> str:
   # is there to catch.
   types = {field.name: str(field.type) for field in fields(GitHistoryReport)}
   pairs = [
-      f'"{name}":"%s"' if types[name] == "str" else f'"{name}":%s'
-      for name, _ in _SHELL_VARS
+    f'"{name}":"%s"' if types[name] == "str" else f'"{name}":%s'
+    for name, _ in _SHELL_VARS
   ]
   args = " ".join(f'"${var}"' for _, var in _SHELL_VARS)
   return f"printf '{{{','.join(pairs)}}}\\n' {args}"
@@ -332,12 +331,12 @@ class GitHistoryReport:
       ValueError: If no JSON object is present, or the line does not parse.
     """
     line = next(
-        (
-            candidate
-            for candidate in reversed(text.strip().splitlines())
-            if candidate.startswith("{")
-        ),
-        None,
+      (
+        candidate
+        for candidate in reversed(text.strip().splitlines())
+        if candidate.startswith("{")
+      ),
+      None,
     )
     if line is None:
       raise ValueError(f"no JSON object in report output: {text!r}")
@@ -356,13 +355,13 @@ class GitHistoryReport:
     failures: list[str] = []
     if not self.base_reachable:
       failures.append(
-          f"base commit {self.base_sha or '<unknown>'} is unreachable"
-          " (extraction and grading depend on it)"
+        f"base commit {self.base_sha or '<unknown>'} is unreachable"
+        " (extraction and grading depend on it)"
       )
     if self.solution_reachable:
       failures.append("the solution commit is still reachable")
     if self.future_commits:
       failures.append(
-          f"{self.future_commits} reachable commit(s) postdate the base commit"
+        f"{self.future_commits} reachable commit(s) postdate the base commit"
       )
     return tuple(failures)

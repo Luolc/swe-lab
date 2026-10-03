@@ -20,23 +20,23 @@ import pytest
 
 from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
 from swe_lab.trace_synthesis.supervisor import (
-    evidence_of,
-    Intervention,
-    InterventionTooLongError,
-    MAX_INTERVENTION_CHARS,
-    Observation,
+  evidence_of,
+  Intervention,
+  InterventionTooLongError,
+  MAX_INTERVENTION_CHARS,
+  Observation,
 )
 
 # Exactly what a policy may see. Adding a field to Observation must fail this
 # test, which is the point: a denylist catches the names we thought of, an
 # allowlist catches the one we did not.
 ALLOWED_OBSERVATION_FIELDS = {
-    "task",
-    "evidence",
-    "cursor",
-    "said",
-    "guidebook",
-    "running_state",
+  "task",
+  "evidence",
+  "cursor",
+  "said",
+  "guidebook",
+  "running_state",
 }
 
 
@@ -50,11 +50,11 @@ def assistant_event(text: str) -> dict[str, object]:
     One decoded ``stream-json`` event.
   """
   return {
-      "type": "assistant",
-      "message": {
-          "role": "assistant",
-          "content": [{"type": "text", "text": text}],
-      },
+    "type": "assistant",
+    "message": {
+      "role": "assistant",
+      "content": [{"type": "text", "text": text}],
+    },
   }
 
 
@@ -68,13 +68,13 @@ def tool_result_event(text: str) -> dict[str, object]:
     One decoded ``stream-json`` event.
   """
   return {
-      "type": "user",
-      "message": {
-          "role": "user",
-          "content": [
-              {"type": "tool_result", "tool_use_id": "t1", "content": text}
-          ],
-      },
+    "type": "user",
+    "message": {
+      "role": "user",
+      "content": [
+        {"type": "tool_result", "tool_use_id": "t1", "content": text}
+      ],
+    },
   }
 
 
@@ -88,8 +88,8 @@ def user_text_event(text: str) -> dict[str, object]:
     One decoded ``stream-json`` event.
   """
   return {
-      "type": "user",
-      "message": {"role": "user", "content": [{"type": "text", "text": text}]},
+    "type": "user",
+    "message": {"role": "user", "content": [{"type": "text", "text": text}]},
   }
 
 
@@ -125,28 +125,28 @@ def test_a_policy_may_see_exactly_these_six_things() -> None:
 
 
 @pytest.mark.parametrize(
-    "privileged_field",
-    [
-        "gold_patch",
-        "reference_patch",
-        "test_patch",
-        "hidden_tests",
-        "fail_to_pass",
-        "pass_to_pass",
-        "fix_commit",
-    ],
+  "privileged_field",
+  [
+    "gold_patch",
+    "reference_patch",
+    "test_patch",
+    "hidden_tests",
+    "fail_to_pass",
+    "pass_to_pass",
+    "fix_commit",
+  ],
 )
 def test_supervisor_input_rejects_separate_privileged_material(
-    privileged_field: str,
+  privileged_field: str,
 ) -> None:
   """The guidebook is the only privileged derivative in the interface."""
   values: dict[str, Any] = {
-      "task": "the task",
-      "evidence": (),
-      "cursor": 0,
-      "said": (),
-      "guidebook": "the reviewed derivative",
-      privileged_field: "PRIVILEGED-SENTINEL",
+    "task": "the task",
+    "evidence": (),
+    "cursor": 0,
+    "said": (),
+    "guidebook": "the reviewed derivative",
+    privileged_field: "PRIVILEGED-SENTINEL",
   }
 
   with pytest.raises(TypeError, match=privileged_field):
@@ -176,10 +176,10 @@ def test_the_supervisors_own_words_never_come_back_as_evidence() -> None:
   actor did.
   """
   events = [
-      user_text_event("Fix the failing colour test"),
-      assistant_event("I will run the tests"),
-      tool_result_event("3 failed"),
-      user_text_event(Intervention(text="check the ordering").rendered()),
+    user_text_event("Fix the failing colour test"),
+    assistant_event("I will run the tests"),
+    tool_result_event("3 failed"),
+    user_text_event(Intervention(text="check the ordering").rendered()),
   ]
   evidence = evidence_of(events)
   assert "supervisor_note" not in text_of(evidence)
@@ -195,11 +195,11 @@ def test_no_user_text_is_evidence_whoever_wrote_it() -> None:
   is handed over at construction.
   """
   events = [
-      user_text_event("Fix the failing colour test"),
-      assistant_event("working on it"),
-      tool_result_event("3 failed"),
-      user_text_event(Intervention(text="check the ordering").rendered()),
-      user_text_event("actually, try the other file"),
+    user_text_event("Fix the failing colour test"),
+    assistant_event("working on it"),
+    tool_result_event("3 failed"),
+    user_text_event(Intervention(text="check the ordering").rendered()),
+    user_text_event("actually, try the other file"),
   ]
   evidence = evidence_of(events)
   assert [m.role for m in evidence] == [Role.ASSISTANT, Role.USER]

@@ -61,33 +61,33 @@ from typing import Any
 import urllib.request
 
 from swe_lab.trace_synthesis.context_components import (
-    CompleteAssistantTurnSelector,
-    EvidenceRenderer,
-    EvidenceSelector,
-    MAX_RUNNING_STATE_CHARS,
-    PairedToolEvidenceRenderer,
-    PromptBuilder,
-    RUNNING_STATE_INSTRUCTIONS,
-    SupervisorPromptBuilder,
+  CompleteAssistantTurnSelector,
+  EvidenceRenderer,
+  EvidenceSelector,
+  MAX_RUNNING_STATE_CHARS,
+  PairedToolEvidenceRenderer,
+  PromptBuilder,
+  RUNNING_STATE_INSTRUCTIONS,
+  SupervisorPromptBuilder,
 )
 from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
 from swe_lab.trace_synthesis.supervisor import (
-    MAX_INTERVENTION_CHARS,
-    Observation,
-    SaidVisibility,
-    SpeakWhenOffTrack,
-    Verdict,
+  MAX_INTERVENTION_CHARS,
+  Observation,
+  SaidVisibility,
+  SpeakWhenOffTrack,
+  Verdict,
 )
 
 #: Every sampling parameter we may send. Recorded as ``None`` when not sent, so
 #: absence is readable rather than merely missing.
 SAMPLING_KEYS: tuple[str, ...] = (
-    "temperature",
-    "top_p",
-    "top_k",
-    "max_tokens",
-    "seed",
-    "stop",
+  "temperature",
+  "top_p",
+  "top_k",
+  "max_tokens",
+  "seed",
+  "stop",
 )
 
 #: Where a request goes and what comes back. Injected so tests make no call.
@@ -103,29 +103,29 @@ CALL_TIMEOUT_SECONDS = 180.0
 #: a caller-configured gateway need not enforce it.
 JUDGE_TOOL_NAME = "submit_supervision_verdict"
 JUDGE_TOOL: Mapping[str, Any] = {
-    "name": JUDGE_TOOL_NAME,
-    "description": "Submit the supervision verdict.",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "off_track": {"type": "boolean"},
-            "reason": {"type": "string"},
-            "running_state": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": MAX_RUNNING_STATE_CHARS,
-            },
-            "deviation_started_steps_ago": {
-                "anyOf": [{"type": "integer"}, {"type": "null"}]
-            },
-        },
-        "required": [
-            "off_track",
-            "reason",
-            "running_state",
-        ],
-        "additionalProperties": False,
+  "name": JUDGE_TOOL_NAME,
+  "description": "Submit the supervision verdict.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "off_track": {"type": "boolean"},
+      "reason": {"type": "string"},
+      "running_state": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": MAX_RUNNING_STATE_CHARS,
+      },
+      "deviation_started_steps_ago": {
+        "anyOf": [{"type": "integer"}, {"type": "null"}]
+      },
     },
+    "required": [
+      "off_track",
+      "reason",
+      "running_state",
+    ],
+    "additionalProperties": False,
+  },
 }
 
 
@@ -169,17 +169,17 @@ def default_supervisor_base_url() -> str:
     The base URL, without a trailing slash guarantee — the transport strips it.
   """
   from swe_lab.harnesses.claude_code.constants import (  # noqa: PLC0415
-      ANTHROPIC_API,
+    ANTHROPIC_API,
   )
 
   return os.environ.get(ANTHROPIC_BASE_URL_ENV, "") or ANTHROPIC_API
 
 
 def messages_transport(
-    payload: Mapping[str, Any],
-    *,
-    base_url: str,
-    api_key_env: str,
+  payload: Mapping[str, Any],
+  *,
+  base_url: str,
+  api_key_env: str,
 ) -> Mapping[str, Any]:
   """Send one Anthropic Messages request and return the decoded answer.
 
@@ -210,22 +210,22 @@ def messages_transport(
   api_key = os.environ.get(api_key_env, "")
   if not api_key:
     raise RuntimeError(
-        f"no supervisor key: {api_key_env} is unset or empty in this"
-        " shell, so the supervisor cannot reach a model. This is a missing"
-        " credential, not a broken instance or image — see docs/conventions.md"
-        " (Secrets) for the op:// reference that fills it."
+      f"no supervisor key: {api_key_env} is unset or empty in this"
+      " shell, so the supervisor cannot reach a model. This is a missing"
+      " credential, not a broken instance or image — see docs/conventions.md"
+      " (Secrets) for the op:// reference that fills it."
     )
   request = urllib.request.Request(
-      f"{base_url.rstrip('/')}/v1/messages",
-      data=json.dumps(dict(payload)).encode(),
-      headers={
-          "x-api-key": api_key,
-          "anthropic-version": "2023-06-01",
-          "Content-Type": "application/json",
-      },
+    f"{base_url.rstrip('/')}/v1/messages",
+    data=json.dumps(dict(payload)).encode(),
+    headers={
+      "x-api-key": api_key,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
   )
   with urllib.request.urlopen(
-      request, timeout=CALL_TIMEOUT_SECONDS
+    request, timeout=CALL_TIMEOUT_SECONDS
   ) as response:
     decoded: Mapping[str, Any] = json.loads(response.read())
   return decoded
@@ -317,11 +317,11 @@ class JudgeAnswerError(ValueError):
   judge_input: Mapping[str, Any] | None
 
   def __init__(
-      self,
-      message: str,
-      *,
-      finish_reason: str | None,
-      judge_input: Mapping[str, Any] | None = None,
+    self,
+    message: str,
+    *,
+    finish_reason: str | None,
+    judge_input: Mapping[str, Any] | None = None,
   ) -> None:
     """Record the answer shape failure together with the call behind it.
 
@@ -400,33 +400,33 @@ def _sampling_sent(payload: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _verdict_from_answer(
-    answer: Mapping[str, Any],
-    *,
-    payload: Mapping[str, Any],
-    finish_reason: str | None,
+  answer: Mapping[str, Any],
+  *,
+  payload: Mapping[str, Any],
+  finish_reason: str | None,
 ) -> Verdict:
   """Validate one tool input and return its verdict."""
   expected_fields = {
-      "off_track",
-      "reason",
-      "running_state",
+    "off_track",
+    "reason",
+    "running_state",
   }
   allowed_fields = expected_fields | {"deviation_started_steps_ago"}
   missing_fields = expected_fields - answer.keys()
   if missing_fields:
     missing = ", ".join(sorted(missing_fields))
     raise JudgeAnswerError(
-        "unusable judge answer: missing required tool input fields: " + missing,
-        finish_reason=finish_reason,
-        judge_input=payload,
+      "unusable judge answer: missing required tool input fields: " + missing,
+      finish_reason=finish_reason,
+      judge_input=payload,
     )
   unexpected_fields = answer.keys() - allowed_fields
   if unexpected_fields:
     unexpected = ", ".join(sorted(unexpected_fields))
     raise JudgeAnswerError(
-        f"unusable judge answer: unexpected tool input fields: {unexpected}",
-        finish_reason=finish_reason,
-        judge_input=payload,
+      f"unusable judge answer: unexpected tool input fields: {unexpected}",
+      finish_reason=finish_reason,
+      judge_input=payload,
     )
 
   off_track = answer["off_track"]
@@ -434,42 +434,42 @@ def _verdict_from_answer(
   # correction — so the shape is required rather than converted.
   if type(off_track) is not bool:
     raise JudgeAnswerError(
-        "unusable judge answer:"
-        f" off_track must be a JSON boolean, got {type(off_track).__name__}",
-        finish_reason=finish_reason,
-        judge_input=payload,
+      "unusable judge answer:"
+      f" off_track must be a JSON boolean, got {type(off_track).__name__}",
+      finish_reason=finish_reason,
+      judge_input=payload,
     )
 
   reason = answer["reason"]
   if type(reason) is not str:
     raise JudgeAnswerError(
-        "unusable judge answer: reason must be a JSON string, got"
-        f" {type(reason).__name__}",
-        finish_reason=finish_reason,
-        judge_input=payload,
+      "unusable judge answer: reason must be a JSON string, got"
+      f" {type(reason).__name__}",
+      finish_reason=finish_reason,
+      judge_input=payload,
     )
 
   running_state = answer["running_state"]
   if type(running_state) is not str:
     raise JudgeAnswerError(
-        "unusable judge answer: running_state must be a JSON string, got"
-        f" {type(running_state).__name__}",
-        finish_reason=finish_reason,
-        judge_input=payload,
+      "unusable judge answer: running_state must be a JSON string, got"
+      f" {type(running_state).__name__}",
+      finish_reason=finish_reason,
+      judge_input=payload,
     )
   if not running_state.strip():
     raise JudgeAnswerError(
-        "unusable judge answer: running_state must not be blank",
-        finish_reason=finish_reason,
-        judge_input=payload,
+      "unusable judge answer: running_state must not be blank",
+      finish_reason=finish_reason,
+      judge_input=payload,
     )
   if len(running_state) > MAX_RUNNING_STATE_CHARS:
     raise JudgeAnswerError(
-        "unusable judge answer: running_state has"
-        f" {len(running_state):,} characters, over the"
-        f" {MAX_RUNNING_STATE_CHARS:,} limit",
-        finish_reason=finish_reason,
-        judge_input=payload,
+      "unusable judge answer: running_state has"
+      f" {len(running_state):,} characters, over the"
+      f" {MAX_RUNNING_STATE_CHARS:,} limit",
+      finish_reason=finish_reason,
+      judge_input=payload,
     )
 
   # Read with `.get` and type-checked rather than coerced: an answer that
@@ -481,17 +481,17 @@ def _verdict_from_answer(
   # `true` here would be recorded as "1 step ago".
   if started is not None and type(started) is not int:
     raise JudgeAnswerError(
-        "unusable judge answer: deviation_started_steps_ago must be a JSON"
-        f" integer or null, got {type(started).__name__}",
-        finish_reason=finish_reason,
-        judge_input=payload,
+      "unusable judge answer: deviation_started_steps_ago must be a JSON"
+      f" integer or null, got {type(started).__name__}",
+      finish_reason=finish_reason,
+      judge_input=payload,
     )
   return Verdict(
-      off_track=off_track,
-      reason=reason,
-      running_state=running_state,
-      deviation_started_steps_ago=started,
-      judge_input=dict(payload),
+    off_track=off_track,
+    reason=reason,
+    running_state=running_state,
+    deviation_started_steps_ago=started,
+    judge_input=dict(payload),
   )
 
 
@@ -545,7 +545,7 @@ class ModelJudge:
   calls: list[Call] = dataclasses.field(default_factory=list)
   instructions: str | None = None
   prompt_builder: PromptBuilder = dataclasses.field(
-      default_factory=SupervisorPromptBuilder
+    default_factory=SupervisorPromptBuilder
   )
 
   def __call__(self, observation: Observation, criterion: Criterion) -> Verdict:
@@ -567,70 +567,70 @@ class ModelJudge:
     instructions = self.instructions
     if instructions is None:
       instructions = (
-          GUIDED_JUDGE_INSTRUCTIONS
-          if observation.guidebook is not None
-          else JUDGE_INSTRUCTIONS
+        GUIDED_JUDGE_INSTRUCTIONS
+        if observation.guidebook is not None
+        else JUDGE_INSTRUCTIONS
       ) + (LOCATE_DEVIATION_INSTRUCTION if self.locate_deviation else "")
     payload = {
-        "model": self.model,
-        "max_tokens": self.max_tokens,
-        "system": instructions,
-        "messages": [
-            {
-                "role": "user",
-                "content": self.prompt_builder.build(observation, criterion),
-            }
-        ],
-        "tools": [JUDGE_TOOL],
-        "tool_choice": {"type": "tool", "name": JUDGE_TOOL_NAME},
+      "model": self.model,
+      "max_tokens": self.max_tokens,
+      "system": instructions,
+      "messages": [
+        {
+          "role": "user",
+          "content": self.prompt_builder.build(observation, criterion),
+        }
+      ],
+      "tools": [JUDGE_TOOL],
+      "tool_choice": {"type": "tool", "name": JUDGE_TOOL_NAME},
     }
     try:
       response = self.transport(payload)
     except Exception as error:  # noqa: BLE001 - re-raised with the request
       raise JudgeTransportError(
-          f"judge transport failed: {error!r}", judge_input=payload
+        f"judge transport failed: {error!r}", judge_input=payload
       ) from error
     finish_reason = response.get("stop_reason")
     content = response.get("content")
     self.calls.append(
-        Call(
-            requested_model=self.model,
-            response_model=response.get("model"),
-            sampling_sent=_sampling_sent(payload),
-            raw=content,
-            finish_reason=finish_reason,
-        )
+      Call(
+        requested_model=self.model,
+        response_model=response.get("model"),
+        sampling_sent=_sampling_sent(payload),
+        raw=content,
+        finish_reason=finish_reason,
+      )
     )
     if not isinstance(content, list):
       raise JudgeAnswerError(
-          "unusable judge answer: expected a content list",
-          finish_reason=finish_reason,
-          judge_input=payload,
+        "unusable judge answer: expected a content list",
+        finish_reason=finish_reason,
+        judge_input=payload,
       )
     matching_tool_uses = [
-        block
-        for block in content
-        if isinstance(block, Mapping)
-        and block.get("type") == "tool_use"
-        and block.get("name") == JUDGE_TOOL_NAME
+      block
+      for block in content
+      if isinstance(block, Mapping)
+      and block.get("type") == "tool_use"
+      and block.get("name") == JUDGE_TOOL_NAME
     ]
     if len(matching_tool_uses) != 1:
       raise JudgeAnswerError(
-          f"unusable judge answer: expected exactly one {JUDGE_TOOL_NAME}"
-          f" tool call, got {len(matching_tool_uses)}",
-          finish_reason=finish_reason,
-          judge_input=payload,
+        f"unusable judge answer: expected exactly one {JUDGE_TOOL_NAME}"
+        f" tool call, got {len(matching_tool_uses)}",
+        finish_reason=finish_reason,
+        judge_input=payload,
       )
 
     answer = matching_tool_uses[0].get("input")
     if not isinstance(answer, Mapping):
       raise JudgeAnswerError(
-          "unusable judge answer: tool input must be an object",
-          finish_reason=finish_reason,
-          judge_input=payload,
+        "unusable judge answer: tool input must be an object",
+        finish_reason=finish_reason,
+        judge_input=payload,
       )
     return _verdict_from_answer(
-        answer, payload=payload, finish_reason=finish_reason
+      answer, payload=payload, finish_reason=finish_reason
     )
 
 
@@ -676,9 +676,9 @@ class ModelWriter:
   calls: list[Call] = dataclasses.field(default_factory=list)
   instructions: str | None = None
   prompt_builder: PromptBuilder = dataclasses.field(
-      default_factory=lambda: SupervisorPromptBuilder(
-          running_state_instructions=None, include_said=True
-      )
+    default_factory=lambda: SupervisorPromptBuilder(
+      running_state_instructions=None, include_said=True
+    )
   )
 
   def __call__(self, observation: Observation, criterion: Criterion) -> str:
@@ -700,72 +700,72 @@ class ModelWriter:
     instructions = self.instructions
     if instructions is None:
       instructions = (
-          GUIDED_WRITER_INSTRUCTIONS
-          if observation.guidebook is not None
-          else WRITER_INSTRUCTIONS
+        GUIDED_WRITER_INSTRUCTIONS
+        if observation.guidebook is not None
+        else WRITER_INSTRUCTIONS
       )
     payload = {
-        "model": self.model,
-        "max_tokens": self.max_tokens,
-        "system": instructions,
-        "messages": [
-            {
-                "role": "user",
-                "content": self.prompt_builder.build(observation, criterion),
-            },
-        ],
+      "model": self.model,
+      "max_tokens": self.max_tokens,
+      "system": instructions,
+      "messages": [
+        {
+          "role": "user",
+          "content": self.prompt_builder.build(observation, criterion),
+        },
+      ],
     }
     response = self.transport(payload)
     finish_reason = response.get("stop_reason")
     content = response.get("content")
     self.calls.append(
-        Call(
-            requested_model=self.model,
-            response_model=response.get("model"),
-            sampling_sent=_sampling_sent(payload),
-            raw=content,
-            finish_reason=finish_reason,
-        )
+      Call(
+        requested_model=self.model,
+        response_model=response.get("model"),
+        sampling_sent=_sampling_sent(payload),
+        raw=content,
+        finish_reason=finish_reason,
+      )
     )
     if not isinstance(content, list):
       raise ValueError("unusable writer answer: expected a content list")
     text_blocks = [
-        block
-        for block in content
-        if isinstance(block, Mapping) and block.get("type") == "text"
+      block
+      for block in content
+      if isinstance(block, Mapping) and block.get("type") == "text"
     ]
     if len(text_blocks) != 1:
       raise ValueError(
-          "unusable writer answer: expected exactly one text block, got"
-          f" {len(text_blocks)}"
+        "unusable writer answer: expected exactly one text block, got"
+        f" {len(text_blocks)}"
       )
 
     text = text_blocks[0].get("text")
     if type(text) is not str:
       raise ValueError(
-          "unusable writer answer: text must be a string, got"
-          f" {type(text).__name__}"
+        "unusable writer answer: text must be a string, got"
+        f" {type(text).__name__}"
       )
     return text
 
 
 def supervising_policy(
-    *,
-    model: str,
-    transport: Transport,
-    budget: int,
-    cooldown: int = 4,
-    window: int = 8,
-    gold_patch: str | None = None,
-    criterion_path: pathlib.Path | None = None,
-    locate_deviation: bool = False,
-    said_visibility: SaidVisibility = "writer",
-    instructions: str | None = None,
-    writer_instructions: str | None = None,
-    running_state_instructions: str | None = None,
-    selector: EvidenceSelector | None = None,
-    renderer: EvidenceRenderer | None = None,
-    prompt_builder: PromptBuilder | None = None,
+  *,
+  model: str,
+  transport: Transport,
+  budget: int,
+  cooldown: int = 4,
+  window: int = 8,
+  gold_patch: str | None = None,
+  criterion_path: pathlib.Path | None = None,
+  locate_deviation: bool = False,
+  said_visibility: SaidVisibility = "writer",
+  instructions: str | None = None,
+  writer_instructions: str | None = None,
+  running_state_instructions: str | None = None,
+  selector: EvidenceSelector | None = None,
+  renderer: EvidenceRenderer | None = None,
+  prompt_builder: PromptBuilder | None = None,
 ) -> SpeakWhenOffTrack:
   """Build the judging policy, or reject the artifact.
 
@@ -823,47 +823,47 @@ def supervising_policy(
     The policy, holding a criterion whose digest is the pinned one.
   """
   criterion = (
-      load_criterion(gold_patch=gold_patch, path=criterion_path)
-      if criterion_path is not None
-      else load_criterion(gold_patch=gold_patch)
+    load_criterion(gold_patch=gold_patch, path=criterion_path)
+    if criterion_path is not None
+    else load_criterion(gold_patch=gold_patch)
   )
   if prompt_builder is None:
     renderer = renderer or PairedToolEvidenceRenderer()
     judge_prompt_builder = SupervisorPromptBuilder(
-        renderer=renderer,
-        running_state_instructions=(
-            running_state_instructions
-            if running_state_instructions is not None
-            else RUNNING_STATE_INSTRUCTIONS
-        ),
-        include_said=said_visibility == "both",
+      renderer=renderer,
+      running_state_instructions=(
+        running_state_instructions
+        if running_state_instructions is not None
+        else RUNNING_STATE_INSTRUCTIONS
+      ),
+      include_said=said_visibility == "both",
     )
     writer_prompt_builder = SupervisorPromptBuilder(
-        renderer=renderer,
-        running_state_instructions=None,
-        include_said=said_visibility in {"writer", "both"},
+      renderer=renderer,
+      running_state_instructions=None,
+      include_said=said_visibility in {"writer", "both"},
     )
   else:
     judge_prompt_builder = prompt_builder
     writer_prompt_builder = prompt_builder
   return SpeakWhenOffTrack(
-      judge=ModelJudge(
-          model=model,
-          transport=transport,
-          locate_deviation=locate_deviation,
-          instructions=instructions,
-          prompt_builder=judge_prompt_builder,
-      ),
-      writer=ModelWriter(
-          model=model,
-          transport=transport,
-          instructions=writer_instructions,
-          prompt_builder=writer_prompt_builder,
-      ),
-      criterion=criterion,
-      budget=budget,
-      cooldown=cooldown,
-      window=window,
-      selector=selector or CompleteAssistantTurnSelector(),
-      said_visibility=said_visibility,
+    judge=ModelJudge(
+      model=model,
+      transport=transport,
+      locate_deviation=locate_deviation,
+      instructions=instructions,
+      prompt_builder=judge_prompt_builder,
+    ),
+    writer=ModelWriter(
+      model=model,
+      transport=transport,
+      instructions=writer_instructions,
+      prompt_builder=writer_prompt_builder,
+    ),
+    criterion=criterion,
+    budget=budget,
+    cooldown=cooldown,
+    window=window,
+    selector=selector or CompleteAssistantTurnSelector(),
+    said_visibility=said_visibility,
   )

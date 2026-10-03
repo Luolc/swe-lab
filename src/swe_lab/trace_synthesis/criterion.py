@@ -33,12 +33,12 @@ import pathlib
 import re
 
 CRITERION_PATH = (
-    pathlib.Path(__file__).parent / "criteria" / "general-practice.md"
+  pathlib.Path(__file__).parent / "criteria" / "general-practice.md"
 )
 """The artifact. One file, in the repository, shipped with the package."""
 
 CRITERION_SHA256 = (
-    "ffb2dadfe2b36eb3f44f28c4282a8d51e84e1c943558500787cbb0518e2900a1"
+  "ffb2dadfe2b36eb3f44f28c4282a8d51e84e1c943558500787cbb0518e2900a1"
 )
 """The pinned digest of :data:`CRITERION_PATH`.
 
@@ -98,7 +98,7 @@ class Criterion:
     found = hashlib.sha256(self.text.encode("utf-8")).hexdigest()
     if found != self.digest:
       raise CriterionRejectedError(
-          f"criterion digest {self.digest} does not describe its text ({found})"
+        f"criterion digest {self.digest} does not describe its text ({found})"
       )
 
 
@@ -113,16 +113,16 @@ def shingles(text: str) -> set[tuple[str, ...]]:
   """
   words = [match.group().lower() for match in _WORD.finditer(text)]
   return {
-      tuple(words[index : index + SHINGLE_WORDS])
-      for index in range(len(words) - SHINGLE_WORDS + 1)
+    tuple(words[index : index + SHINGLE_WORDS])
+    for index in range(len(words) - SHINGLE_WORDS + 1)
   }
 
 
 def load_criterion(
-    *,
-    gold_patch: str | None = None,
-    path: pathlib.Path = CRITERION_PATH,
-    digest: str = CRITERION_SHA256,
+  *,
+  gold_patch: str | None = None,
+  path: pathlib.Path = CRITERION_PATH,
+  digest: str = CRITERION_SHA256,
 ) -> Criterion:
   """Load the criterion, or reject the artifact.
 
@@ -145,14 +145,14 @@ def load_criterion(
     raw = path.read_bytes()
   except OSError as error:
     raise CriterionRejectedError(
-        f"criterion unreadable at {path}: {error}"
+      f"criterion unreadable at {path}: {error}"
     ) from error
 
   found = hashlib.sha256(raw).hexdigest()
   if found != digest:
     raise CriterionRejectedError(
-        f"criterion digest {found} does not match the pinned {digest}; the"
-        " criterion must be byte-identical for every instance"
+      f"criterion digest {found} does not match the pinned {digest}; the"
+      " criterion must be byte-identical for every instance"
     )
 
   text = raw.decode("utf-8")
@@ -160,20 +160,20 @@ def load_criterion(
     return Criterion(text=text, digest=found, overlap_checked=False)
 
   shared_paths = sorted(
-      changed
-      for changed in set(_DIFF_PATH.findall(gold_patch))
-      if changed in text
+    changed
+    for changed in set(_DIFF_PATH.findall(gold_patch))
+    if changed in text
   )
   if shared_paths:
     raise CriterionRejectedError(
-        f"criterion names {len(shared_paths)} path(s) changed by the gold patch"
+      f"criterion names {len(shared_paths)} path(s) changed by the gold patch"
     )
 
   shared = shingles(text) & shingles(gold_patch)
   if shared:
     raise CriterionRejectedError(
-        f"criterion shares {len(shared)} {SHINGLE_WORDS}-word run(s) with the"
-        " gold patch"
+      f"criterion shares {len(shared)} {SHINGLE_WORDS}-word run(s) with the"
+      " gold patch"
     )
 
   return Criterion(text=text, digest=found, overlap_checked=True)

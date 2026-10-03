@@ -7,12 +7,12 @@ import polars as pl
 import pytest
 
 from swe_lab.datasets.deepswe.build_parquet import (
-    build_row,
-    build_rows,
-    COLUMNS,
-    parse_provenance,
-    row_content_hash,
-    verify_round_trip,
+  build_row,
+  build_rows,
+  COLUMNS,
+  parse_provenance,
+  row_content_hash,
+  verify_round_trip,
 )
 
 _PROVENANCE = """
@@ -24,13 +24,13 @@ _PROVENANCE = """
 
 
 def _write_task(
-    root: Path, task_id: str, *, base_commit: str = "a" * 40
+  root: Path, task_id: str, *, base_commit: str = "a" * 40
 ) -> Path:
   d = root / "tasks" / task_id
   (d / "tests").mkdir(parents=True)
   (d / "solution").mkdir()
   _ = (d / "task.toml").write_text(
-      f"""
+    f"""
 schema_version = "1.3"
 [task]
 name = "datacurve/{task_id}"
@@ -56,7 +56,7 @@ storage_mb = 20480
   )
   _ = (d / "instruction.md").write_text(f"solve {task_id}\n")
   _ = (d / "tests" / "config.json").write_text(
-      json.dumps({"f2p_node_ids": ["pkg.TestNew"], "p2p_node_ids": ["pkg.T0"]})
+    json.dumps({"f2p_node_ids": ["pkg.TestNew"], "p2p_node_ids": ["pkg.T0"]})
   )
   _ = (d / "tests" / "test.sh").write_text("#!/bin/bash\n")
   _ = (d / "tests" / "grader.py").write_text("# grader\n")
@@ -67,7 +67,7 @@ storage_mb = 20480
 
 
 def test_a_row_carries_every_column_and_the_derived_lists_match(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   d = _write_task(tmp_path, "demo-task")
   row = build_row(d, parse_provenance(_PROVENANCE))
@@ -87,25 +87,25 @@ def test_a_short_sha_is_normalized_beside_the_verbatim_value(tmp_path: Path):
   d = _write_task(tmp_path, "short-sha-task", base_commit="68dafce")
   full = "68dafce" + "b" * 33
   row = build_row(
-      d,
-      parse_provenance(_PROVENANCE),
-      base_commit_fixes={"short-sha-task": full},
+    d,
+    parse_provenance(_PROVENANCE),
+    base_commit_fixes={"short-sha-task": full},
   )
   assert row["base_commit_hash"] == "68dafce"
   assert row["base_commit"] == full
 
 
 def test_a_fix_that_does_not_extend_the_recorded_prefix_is_refused(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # A "fix" disagreeing with the value it claims to complete is itself wrong;
   # silently preferring either side would bake the error into the dataset.
   d = _write_task(tmp_path, "short-sha-task", base_commit="68dafce")
   with pytest.raises(ValueError, match="does not extend"):
     _ = build_row(
-        d,
-        parse_provenance(_PROVENANCE),
-        base_commit_fixes={"short-sha-task": "c" * 40},
+      d,
+      parse_provenance(_PROVENANCE),
+      base_commit_fixes={"short-sha-task": "c" * 40},
     )
 
 

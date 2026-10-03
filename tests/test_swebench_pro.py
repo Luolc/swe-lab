@@ -10,42 +10,42 @@ from etils import epath
 import pytest
 
 from swe_lab.datasets.swebench_pro import (
-    COLUMNS,
-    SweBenchProInstance,
+  COLUMNS,
+  SweBenchProInstance,
 )
 import swe_lab.datasets.swebench_pro.auxiliary as auxiliary
 from swe_lab.datasets.swebench_pro.constants import (
-    HARNESS_SUBDIR,
-    IMAGE_REPO,
-    PARQUET_FILENAME,
-    PARSER_NAME,
-    RUN_SCRIPT_NAME,
-    WORKDIR,
+  HARNESS_SUBDIR,
+  IMAGE_REPO,
+  PARQUET_FILENAME,
+  PARSER_NAME,
+  RUN_SCRIPT_NAME,
+  WORKDIR,
 )
-from swe_lab.datasets.swebench_pro.fetch import ensure_swebench_pro_parquet
 import swe_lab.datasets.swebench_pro.fetch as fetch
+from swe_lab.datasets.swebench_pro.fetch import ensure_swebench_pro_parquet
 from swe_lab.paths import cache_root
 
 
 def _raw(**overrides: str) -> dict[str, str]:
   """Build a minimal valid raw row, with per-test overrides."""
   base = {
-      "repo": "acme/widget",
-      "instance_id": "instance_acme__widget-abc-vnan",
-      "base_commit": "0" * 40,
-      "patch": "diff --git a/x b/x\n",
-      "test_patch": "diff --git a/t b/t\n",
-      "problem_statement": '"**Title**\\n\\nBody"',
-      "requirements": "plain requirements text",
-      "interface": '"Type: Method"',
-      "repo_language": "python",
-      "fail_to_pass": "['a::t1', \"b::t2\"]",
-      "pass_to_pass": '["c::t3"]',
-      "issue_specificity": '["major_bug"]',
-      "issue_categories": '["back_end_knowledge"]',
-      "before_repo_set_cmd": "git reset --hard HEAD",
-      "selected_test_files_to_run": '["test/a.py"]',
-      "dockerhub_tag": "acme.widget-abc",
+    "repo": "acme/widget",
+    "instance_id": "instance_acme__widget-abc-vnan",
+    "base_commit": "0" * 40,
+    "patch": "diff --git a/x b/x\n",
+    "test_patch": "diff --git a/t b/t\n",
+    "problem_statement": '"**Title**\\n\\nBody"',
+    "requirements": "plain requirements text",
+    "interface": '"Type: Method"',
+    "repo_language": "python",
+    "fail_to_pass": "['a::t1', \"b::t2\"]",
+    "pass_to_pass": '["c::t3"]',
+    "issue_specificity": '["major_bug"]',
+    "issue_categories": '["back_end_knowledge"]',
+    "before_repo_set_cmd": "git reset --hard HEAD",
+    "selected_test_files_to_run": '["test/a.py"]',
+    "dockerhub_tag": "acme.widget-abc",
   }
   base.update(overrides)
   return base
@@ -112,23 +112,23 @@ def test_sandbox_spec_is_built_from_the_instance_fields() -> None:
 def test_prompt_combines_the_three_columns() -> None:
   # mirrors Scale's create_problem_statement verbatim
   prompt = SweBenchProInstance.from_raw(
-      _raw(
-          problem_statement="The widget crashes on empty input.",
-          requirements="Must not raise on None.",
-          interface="def render(widget) -> str",
-      )
+    _raw(
+      problem_statement="The widget crashes on empty input.",
+      requirements="Must not raise on None.",
+      interface="def render(widget) -> str",
+    )
   ).prompt()
   assert prompt == (
-      "The widget crashes on empty input.\n\n"
-      "Requirements:\nMust not raise on None.\n\n"
-      "New interfaces introduced:\ndef render(widget) -> str"
+    "The widget crashes on empty input.\n\n"
+    "Requirements:\nMust not raise on None.\n\n"
+    "New interfaces introduced:\ndef render(widget) -> str"
   )
 
 
 def test_prompt_keeps_headers_when_columns_empty() -> None:
   # headers are unconditional, like the original (no per-section omission)
   prompt = SweBenchProInstance.from_raw(
-      _raw(problem_statement="Just the statement.")
+    _raw(problem_statement="Just the statement.")
   ).prompt()
   assert "Just the statement." in prompt
   assert "Requirements:" in prompt
@@ -137,9 +137,7 @@ def test_prompt_keeps_headers_when_columns_empty() -> None:
 
 def test_golden_test_checkout_cmd_is_the_last_line_of_before_cmd() -> None:
   inst = SweBenchProInstance.from_raw(
-      _raw(
-          before_repo_set_cmd="setup one\nsetup two\ngit checkout GOLD -- t.py"
-      )
+    _raw(before_repo_set_cmd="setup one\nsetup two\ngit checkout GOLD -- t.py")
   )
   assert inst.golden_test_checkout_cmd == "git checkout GOLD -- t.py"
   empty = SweBenchProInstance.from_raw(_raw(before_repo_set_cmd="  "))
@@ -154,7 +152,7 @@ def _stage_harness(repo_root: Path, instance_id: str) -> None:
 
 
 def test_run_script_and_parser_read_the_cached_harness(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
   # the default properties fetch-and-cache under find_repo_root(); point that
   # at a pre-staged cache so no network is touched.
@@ -166,7 +164,7 @@ def test_run_script_and_parser_read_the_cached_harness(
 
 
 def test_missing_harness_triggers_a_fetch(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
   # nothing staged → the default property fetches; assert it reaches for the
   # network (raising) rather than silently succeeding.
@@ -180,7 +178,6 @@ def test_run_script_and_parser_are_overridable() -> None:
   # the harness is the instance's business: a subclass supplies it directly,
   # so grading needs no network and no repo checkout.
   class _Embedded(SweBenchProInstance):
-
     @property
     @override
     def run_script(self) -> bytes:
@@ -197,7 +194,7 @@ def test_run_script_and_parser_are_overridable() -> None:
 
 
 def test_a_drifted_parquet_is_rejected_not_silently_loaded(
-    tmp_path: Path,
+  tmp_path: Path,
 ) -> None:
   # The pin anchors nothing if a present-but-wrong file is trusted: a
   # truncated download or a drifted upstream file must fail loudly, the same
@@ -219,7 +216,7 @@ def test_a_missing_parquet_names_the_readme(tmp_path: Path) -> None:
 
 
 def test_a_misnamed_parquet_is_named_as_misnamed_not_broken(
-    tmp_path: Path,
+  tmp_path: Path,
 ) -> None:
   # The pin is keyed to the exact filename as well as content, so a present
   # file under any other name reads as "not found" — the same misleading-
@@ -235,7 +232,7 @@ def test_a_misnamed_parquet_is_named_as_misnamed_not_broken(
 
 
 def test_a_matching_file_is_accepted_and_returned(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   # The rejection paths above prove nothing about the accept path: a verifier
   # that always raises would pass every one of them. Pin the expected digest
@@ -251,9 +248,9 @@ def test_a_matching_file_is_accepted_and_returned(
   content = b"pretend parquet bytes"
   _ = target.write_bytes(content)
   monkeypatch.setattr(
-      fetch,
-      "PINNED_SWEBENCH_PRO_PARQUET_SHA256",
-      hashlib.sha256(content).hexdigest(),
+    fetch,
+    "PINNED_SWEBENCH_PRO_PARQUET_SHA256",
+    hashlib.sha256(content).hexdigest(),
   )
   assert ensure_swebench_pro_parquet(data) == epath.Path(target)
   assert ensure_swebench_pro_parquet(data) == epath.Path(target)

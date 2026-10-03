@@ -7,11 +7,11 @@ from pathlib import Path
 from etils import epath
 
 from swe_lab.sandbox import (
-    AttemptRecord,
-    FilesystemStore,
-    index,
-    persist,
-    promote,
+  AttemptRecord,
+  FilesystemStore,
+  index,
+  persist,
+  promote,
 )
 from swe_lab.sandbox.testing import FakeStore
 
@@ -19,27 +19,27 @@ _SWEEP = "2026-07-30-sonnet"
 
 
 def _record(
-    instance: str,
-    ts: str,
-    *,
-    status: str = "SUCCESS",
-    task: str = "rollout",
-    rollout_id: int = 0,
-    attempt: int = 0,
+  instance: str,
+  ts: str,
+  *,
+  status: str = "SUCCESS",
+  task: str = "rollout",
+  rollout_id: int = 0,
+  attempt: int = 0,
 ) -> AttemptRecord:
   return AttemptRecord(
-      sweep_id=_SWEEP,
-      instance_id=instance,
-      task=task,
-      rollout_id=rollout_id,
-      attempt=attempt,
-      run_ts=ts,
-      status=status,
-      tier="formal",
-      backend="host",
-      model="claude-sonnet-5",
-      metrics={"score": 1.0},
-      extra={"is_empty_patch": False},
+    sweep_id=_SWEEP,
+    instance_id=instance,
+    task=task,
+    rollout_id=rollout_id,
+    attempt=attempt,
+    run_ts=ts,
+    status=status,
+    tier="formal",
+    backend="host",
+    model="claude-sonnet-5",
+    metrics={"score": 1.0},
+    extra={"is_empty_patch": False},
   )
 
 
@@ -56,15 +56,15 @@ def test_persist_uploads_under_run_key_and_appends_shard(tmp_path: Path):
   store = FakeStore()
 
   out = persist(
-      store,
-      _record("flipt__flipt-1", "1706-0"),
-      {"patch.diff": patch, "conversation.json": conv},
+    store,
+    _record("flipt__flipt-1", "1706-0"),
+    {"patch.diff": patch, "conversation.json": conv},
   )
 
   prefix = f"{_SWEEP}/flipt__flipt-1/r0/rollout/a0"
   assert out.artifact_keys == {
-      "patch.diff": f"{prefix}/patch.diff",
-      "conversation.json": f"{prefix}/conversation.json",
+    "patch.diff": f"{prefix}/patch.diff",
+    "conversation.json": f"{prefix}/conversation.json",
   }
   assert store.objects[f"{prefix}/patch.diff"] == b"DIFF"
   assert store.manifests == [out]  # one shard appended, with keys filled
@@ -75,13 +75,13 @@ def test_persist_keeps_failed_runs(tmp_path: Path):
   _ = art.write_text("boom")
   store = FakeStore()
   out = persist(
-      store,
-      _record("acme__widget-1", "0900-0", status="RUN_ERROR"),
-      {"stderr.log": art},
+    store,
+    _record("acme__widget-1", "0900-0", status="RUN_ERROR"),
+    {"stderr.log": art},
   )
   assert out.status == "RUN_ERROR"
   assert store.manifests == [
-      out
+    out
   ]  # failures persist (gate is tier, not success)
 
 
@@ -94,9 +94,9 @@ def test_persist_skips_a_file_that_is_not_there(tmp_path: Path):
   store = FakeStore()
 
   out = persist(
-      store,
-      _record("flipt__flipt-1", "1706-0"),
-      {"patch.diff": art, "claude.info": tmp_path / "claude.info"},
+    store,
+    _record("flipt__flipt-1", "1706-0"),
+    {"patch.diff": art, "claude.info": tmp_path / "claude.info"},
   )
 
   prefix = f"{_SWEEP}/flipt__flipt-1/r0/rollout/a0"
@@ -115,8 +115,8 @@ def test_promote_uploads_whole_workspace_preserving_nesting(tmp_path: Path):
 
   prefix = f"{_SWEEP}/flipt__flipt-1/r0/rollout/a0"
   assert out.artifact_keys == {
-      "patch.diff": f"{prefix}/patch.diff",
-      "diagnostics/git_status.txt": f"{prefix}/diagnostics/git_status.txt",
+    "patch.diff": f"{prefix}/patch.diff",
+    "diagnostics/git_status.txt": f"{prefix}/diagnostics/git_status.txt",
   }
   assert store.objects[f"{prefix}/diagnostics/git_status.txt"] == b"clean"
 

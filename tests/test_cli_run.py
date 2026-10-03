@@ -24,26 +24,26 @@ import swe_lab.cli.run as run_mod
 from swe_lab.conversation import Conversation
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.swebench_pro.unit_test import (
-    REQUIRED_TESTS_NAME,
-    SweBenchProGrader,
-    SweBenchProVerdict,
+  REQUIRED_TESTS_NAME,
+  SweBenchProGrader,
+  SweBenchProVerdict,
 )
 from swe_lab.evaluation.unit_test import UnitTestTask
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.harnesses import (
-    AgentOutcome,
-    Harness,
-    HarnessOutcomeObserver,
-    register_harness,
+  AgentOutcome,
+  Harness,
+  HarnessOutcomeObserver,
+  register_harness,
 )
 from swe_lab.sandbox import (
-    ExecResult,
-    Inline,
-    Mount,
-    Mounts,
-    SandboxFs,
-    SandboxObserver,
-    SandboxSpec,
+  ExecResult,
+  Inline,
+  Mount,
+  Mounts,
+  SandboxFs,
+  SandboxObserver,
+  SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.observers.diff_extract import RAW_PATCH_NAME
@@ -86,12 +86,12 @@ class _StubAgent(Harness):
 
   @override
   def run(
-      self,
-      sb: SandboxFs,
-      *,
-      prompt: str,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    sb: SandboxFs,
+    *,
+    prompt: str,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     PROMPTS.append(prompt)
     if EDITS[0]:
@@ -141,25 +141,25 @@ class _Instance(TaskInstance[SweBenchProVerdict]):
 
   @override
   def unit_test_spec(
-      self,
-      *,
-      apply_patch: bool,
-      patch_name: str = PATCH_NAME,
-      checkout_golden_tests: bool = True,
-      patch_baseline: bool = False,
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
+    checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     del apply_patch, checkout_golden_tests
     output = json.dumps(
-        {"tests": [{"name": n, "status": "PASSED"} for n in self._passed]}
+      {"tests": [{"name": n, "status": "PASSED"} for n in self._passed]}
     )
     return UnitTestSpec(
-        eval_script="echo eval\n",
-        mounts={
-            REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
-            "output.json": Mount(Inline(output.encode())),
-        },
-        grader=SweBenchProGrader(),
-        patch_name=patch_name,
+      eval_script="echo eval\n",
+      mounts={
+        REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
+        "output.json": Mount(Inline(output.encode())),
+      },
+      grader=SweBenchProGrader(),
+      patch_name=patch_name,
     )
 
 
@@ -171,12 +171,12 @@ def _reset() -> None:  # pyright: ignore[reportUnusedFunction]  # autouse
 
 
 def _wire(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    *,
-    passed: list[str] | None = None,
-    gold: str | None = "GOLD DIFF",
-    patch_baseline: bool = True,
+  monkeypatch: pytest.MonkeyPatch,
+  tmp_path: Path,
+  *,
+  passed: list[str] | None = None,
+  gold: str | None = "GOLD DIFF",
+  patch_baseline: bool = True,
 ) -> None:
   """Point the command at a stand-in dataset and a throwaway repo root.
 
@@ -186,12 +186,11 @@ def _wire(
   and the base it was taken against, ADR-0014).
   """
   instance = _Instance(
-      passed=passed if passed is not None else ["a"], gold=gold
+    passed=passed if passed is not None else ["a"], gold=gold
   )
 
   @final
   class _Dataset:
-
     def require(self, instance_id: str) -> _Instance:
       assert instance_id == _INSTANCE_ID
       return instance
@@ -206,16 +205,16 @@ def _wire(
 
   def on_fake(name: str):
     return tuple(
-        replace(
-            entry,
-            sandbox=FakeSandboxConfig(),
-            task=(
-                entry.task
-                if patch_baseline or not isinstance(entry.task, UnitTestTask)
-                else replace(entry.task, patch_baseline=False)
-            ),
-        )
-        for entry in real_definition(name)
+      replace(
+        entry,
+        sandbox=FakeSandboxConfig(),
+        task=(
+          entry.task
+          if patch_baseline or not isinstance(entry.task, UnitTestTask)
+          else replace(entry.task, patch_baseline=False)
+        ),
+      )
+      for entry in real_definition(name)
     )
 
   monkeypatch.setattr(run_mod, "load_dataset", fake_load_dataset)
@@ -254,7 +253,7 @@ def test_list_names_the_workflows_and_their_entries():
 
 
 def test_an_unknown_workflow_lists_the_registered_ones(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   _wire(monkeypatch, tmp_path)
   result = _run("nope", _INSTANCE_ID)
@@ -266,7 +265,7 @@ def test_an_unknown_workflow_lists_the_registered_ones(
 
 
 def test_the_chain_runs_and_grades_what_the_agent_produced(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   _wire(monkeypatch, tmp_path)
   result = _run("rollout_and_unit_test", _INSTANCE_ID, "--rollout.harness=stub")
@@ -274,8 +273,8 @@ def test_the_chain_runs_and_grades_what_the_agent_produced(
   payload = json.loads(result.output)
   assert payload["succeeded"] is True
   assert [entry["key"] for entry in payload["entries"]] == [
-      "rollout",
-      "unit_test",
+    "rollout",
+    "unit_test",
   ]
   # the metrics carry the answer, so the command needs no verdict knowledge
   assert payload["entries"][1]["metrics"]["unit_test.resolved"] == 1.0
@@ -283,38 +282,38 @@ def test_the_chain_runs_and_grades_what_the_agent_produced(
   assert PROMPTS == ["PROMPT: fix it"]
   # …and the eval really got the agent's patch through the edge
   staged = (
-      tmp_path
-      / ".cache"
-      / "runs"
-      / "rollout_and_unit_test"
-      / _INSTANCE_ID
-      / "r0"
-      / "unit_test"
-      / "ws"
-      / "a0"
-      / PATCH_NAME
+    tmp_path
+    / ".cache"
+    / "runs"
+    / "rollout_and_unit_test"
+    / _INSTANCE_ID
+    / "r0"
+    / "unit_test"
+    / "ws"
+    / "a0"
+    / PATCH_NAME
   )
   assert staged.read_text() == "diff --git a/x b/x\n"
 
 
 def test_an_unresolved_grade_is_its_own_exit_code(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   # "Did it run" and "did the patch pass" are different questions: the run
   # succeeded, and the answer was no.
   _wire(monkeypatch, tmp_path, passed=[])
   result = _run(
-      "rollout_and_unit_test",
-      _INSTANCE_ID,
-      "--rollout.harness=stub",
-      "--unit_test.retries=0",
+    "rollout_and_unit_test",
+    _INSTANCE_ID,
+    "--rollout.harness=stub",
+    "--unit_test.retries=0",
   )
   assert result.exit_code == run_mod.ExitCode.UNRESOLVED
   assert json.loads(result.output)["succeeded"] is True
 
 
 def test_an_empty_patch_fails_the_run_at_the_edge(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   _wire(monkeypatch, tmp_path)
   EDITS[0] = False
@@ -331,7 +330,7 @@ def test_an_empty_patch_fails_the_run_at_the_edge(
 
 
 def test_a_workflow_that_needs_an_input_says_which_one(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   _wire(monkeypatch, tmp_path)
   result = _run("unit_test", _INSTANCE_ID)
@@ -345,7 +344,7 @@ def test_a_workflow_that_needs_an_input_says_which_one(
 
 
 def test_one_unbound_input_needs_no_name(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   _wire(monkeypatch, tmp_path, patch_baseline=False)
   candidate = tmp_path / "cand.diff"
@@ -353,28 +352,28 @@ def test_one_unbound_input_needs_no_name(
   result = _run("unit_test", _INSTANCE_ID, "--input", str(candidate))
   assert result.exit_code == run_mod.ExitCode.OK
   staged = (
-      tmp_path
-      / ".cache"
-      / "runs"
-      / "unit_test"
-      / _INSTANCE_ID
-      / "r0"
-      / "unit_test"
-      / "ws"
-      / "a0"
-      / PATCH_NAME
+    tmp_path
+    / ".cache"
+    / "runs"
+    / "unit_test"
+    / _INSTANCE_ID
+    / "r0"
+    / "unit_test"
+    / "ws"
+    / "a0"
+    / PATCH_NAME
   )
   assert staged.read_text() == "CANDIDATE"
 
 
 def test_an_input_may_be_named_and_a_missing_file_is_refused(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   _wire(monkeypatch, tmp_path, patch_baseline=False)
   candidate = tmp_path / "cand.diff"
   _ = candidate.write_text("CANDIDATE")
   named = _run(
-      "unit_test", _INSTANCE_ID, "--input", f"{PATCH_NAME}={candidate}"
+    "unit_test", _INSTANCE_ID, "--input", f"{PATCH_NAME}={candidate}"
   )
   assert named.exit_code == run_mod.ExitCode.OK
   missing = _run("unit_test", _INSTANCE_ID, "--input", "./nowhere.diff")
@@ -383,7 +382,7 @@ def test_an_input_may_be_named_and_a_missing_file_is_refused(
 
 
 def test_gold_grading_is_a_workflow_not_a_flag(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   # The definition builds its own patch from the instance, so it runs from a
   # name alone — no --input, no --gold.
@@ -391,16 +390,16 @@ def test_gold_grading_is_a_workflow_not_a_flag(
   result = _run("gold_unit_test", _INSTANCE_ID)
   assert result.exit_code == run_mod.ExitCode.OK
   staged = (
-      tmp_path
-      / ".cache"
-      / "runs"
-      / "gold_unit_test"
-      / _INSTANCE_ID
-      / "r0"
-      / "unit_test"
-      / "ws"
-      / "a0"
-      / PATCH_NAME
+    tmp_path
+    / ".cache"
+    / "runs"
+    / "gold_unit_test"
+    / _INSTANCE_ID
+    / "r0"
+    / "unit_test"
+    / "ws"
+    / "a0"
+    / PATCH_NAME
   )
   assert staged.read_text() == "GOLD DIFF"
 
@@ -409,7 +408,7 @@ def test_gold_grading_is_a_workflow_not_a_flag(
 
 
 def test_an_override_reaches_the_run_and_a_bad_one_is_refused(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   _wire(monkeypatch, tmp_path, passed=[])
   # retries is the entry's, and spending it is visible in the record
@@ -432,9 +431,9 @@ def test_a_refused_upstream_reads_as_a_bad_argument_not_a_crash():
   traceback, which reads as a bug in the tool rather than a bad flag.
   """
   refused = _run(
-      "from_scratch_guided_trace",
-      _INSTANCE_ID,
-      "--guided_rollout.harness.segmented.api_key_env=",
+    "from_scratch_guided_trace",
+    _INSTANCE_ID,
+    "--guided_rollout.harness.segmented.api_key_env=",
   )
 
   # Click's usage exit, which `CliRunner` surfaces as `SystemExit`; an
@@ -453,10 +452,10 @@ def test_an_upstream_this_repo_has_never_heard_of_is_not_refused():
   do is fail *here*, on the URL.
   """
   accepted = _run(
-      "from_scratch_guided_trace",
-      _INSTANCE_ID,
-      "--guided_rollout.harness.segmented.base_url="
-      "https://gateway.example.internal",
+    "from_scratch_guided_trace",
+    _INSTANCE_ID,
+    "--guided_rollout.harness.segmented.base_url="
+    "https://gateway.example.internal",
   )
 
   assert "api_key_env must name" not in _message(accepted.output)
@@ -464,7 +463,7 @@ def test_an_upstream_this_repo_has_never_heard_of_is_not_refused():
 
 
 def test_persisting_writes_the_run_under_its_sweep(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   _wire(monkeypatch, tmp_path)
   result = _run("gold_unit_test", _INSTANCE_ID, "--persist", "--sweep", "sw1")
@@ -482,9 +481,9 @@ def test_effort_is_overridable_and_a_typo_is_refused():
   # at its default, so the CLI has to be the thing that refuses one — and it
   # should say what is allowed rather than just "no".
   from swe_lab.cli.overrides import (
-      apply_overrides,
-      OverrideError,
-      parse_overrides,
+    apply_overrides,
+    OverrideError,
+    parse_overrides,
   )
   from swe_lab.harnesses.claude_code import ClaudeCodeHarness
   from swe_lab.rollout import CodingAgentTask
@@ -494,7 +493,7 @@ def test_effort_is_overridable_and_a_typo_is_refused():
   del definitions  # imported for its registration side effect
   entries = workflow_definition("rollout")
   applied = apply_overrides(
-      entries, parse_overrides(["--rollout.harness.effort=xhigh"])
+    entries, parse_overrides(["--rollout.harness.effort=xhigh"])
   )
   task = applied[0].task
   assert isinstance(task, CodingAgentTask)
@@ -504,7 +503,7 @@ def test_effort_is_overridable_and_a_typo_is_refused():
 
   with pytest.raises(OverrideError, match="low, medium, high, xhigh, max"):
     _ = apply_overrides(
-        entries, parse_overrides(["--rollout.harness.effort=ultra"])
+      entries, parse_overrides(["--rollout.harness.effort=ultra"])
     )
 
 
@@ -512,7 +511,7 @@ def test_effort_is_overridable_and_a_typo_is_refused():
 
 
 def test_two_rollouts_of_one_instance_both_keep_their_records(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   """`--rollout-id` distinguishes samples, so one must not erase the other.
 
@@ -523,31 +522,31 @@ def test_two_rollouts_of_one_instance_both_keep_their_records(
   _wire(monkeypatch, tmp_path)
   for rollout in ("0", "1"):
     result = _run(
-        "gold_unit_test",
-        _INSTANCE_ID,
-        "--sweep",
-        "sw1",
-        "--rollout-id",
-        rollout,
+      "gold_unit_test",
+      _INSTANCE_ID,
+      "--sweep",
+      "sw1",
+      "--rollout-id",
+      rollout,
     )
     assert result.exit_code == run_mod.ExitCode.OK
 
   runs = tmp_path / ".cache" / "runs" / "gold_unit_test" / _INSTANCE_ID
   for rollout in ("r0", "r1"):
     record = (
-        runs
-        / rollout
-        / "store"
-        / "sw1"
-        / _INSTANCE_ID
-        / rollout
-        / "workflow.json"
+      runs
+      / rollout
+      / "store"
+      / "sw1"
+      / _INSTANCE_ID
+      / rollout
+      / "workflow.json"
     )
     assert record.is_file(), f"{rollout} lost its record to the other run"
 
 
 def test_the_run_can_land_its_outputs_outside_the_checkout(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   """Evidence that has to outlive the worktree needs somewhere else to live.
 
@@ -561,32 +560,32 @@ def test_the_run_can_land_its_outputs_outside_the_checkout(
   elsewhere = tmp_path.parent / "artifacts-outside"
 
   result = _run(
-      "gold_unit_test",
-      _INSTANCE_ID,
-      "--sweep",
-      "sw1",
-      "--output-root",
-      str(elsewhere),
+    "gold_unit_test",
+    _INSTANCE_ID,
+    "--sweep",
+    "sw1",
+    "--output-root",
+    str(elsewhere),
   )
 
   assert result.exit_code == run_mod.ExitCode.OK
   record = (
-      elsewhere
-      / "gold_unit_test"
-      / _INSTANCE_ID
-      / "r0"
-      / "store"
-      / "sw1"
-      / _INSTANCE_ID
-      / "r0"
-      / "workflow.json"
+    elsewhere
+    / "gold_unit_test"
+    / _INSTANCE_ID
+    / "r0"
+    / "store"
+    / "sw1"
+    / _INSTANCE_ID
+    / "r0"
+    / "workflow.json"
   )
   assert record.is_file()
   assert not (tmp_path / ".cache" / "runs").exists()
 
 
 def test_a_record_that_cannot_be_read_back_fails_the_run(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   """Reporting a key nothing can read is a failure, not a success.
 

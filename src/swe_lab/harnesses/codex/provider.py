@@ -83,8 +83,8 @@ def _toml_string(value: str) -> str:
   """
   if any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in value):
     raise SandboxError(
-        f"control character in codex provider value {value!r}; refusing to"
-        " build an override Codex would misread"
+      f"control character in codex provider value {value!r}; refusing to"
+      " build an override Codex would misread"
     )
   escaped = value.replace("\\", "\\\\").replace('"', '\\"')
   return f'"{escaped}"'
@@ -168,25 +168,25 @@ class CodexProvider:
     """
     if not _BARE_KEY_RE.match(self.provider_id):
       raise SandboxError(
-          f"codex provider id {self.provider_id!r} must match"
-          f" {_BARE_KEY_RE.pattern} (a TOML bare key)"
+        f"codex provider id {self.provider_id!r} must match"
+        f" {_BARE_KEY_RE.pattern} (a TOML bare key)"
       )
     if not self.base_url.strip():
       raise SandboxError(
-          "codex provider base_url is empty; omit the provider entirely to use"
-          " the built-in endpoint rather than declaring one that does nothing"
+        "codex provider base_url is empty; omit the provider entirely to use"
+        " the built-in endpoint rather than declaring one that does nothing"
       )
     negative = {
-        name: value
-        for name, value in (
-            ("stream_max_retries", self.stream_max_retries),
-            ("request_max_retries", self.request_max_retries),
-        )
-        if value < 0
+      name: value
+      for name, value in (
+        ("stream_max_retries", self.stream_max_retries),
+        ("request_max_retries", self.request_max_retries),
+      )
+      if value < 0
     }
     if negative:
       raise SandboxError(
-          f"codex provider retry count(s) must not be negative: {negative}"
+        f"codex provider retry count(s) must not be negative: {negative}"
       )
 
   def config_overrides(self) -> tuple[str, ...]:
@@ -207,13 +207,13 @@ class CodexProvider:
     """
     table = f"model_providers.{self.provider_id}"
     return (
-        f"model_provider={_toml_string(self.provider_id)}",
-        f"{table}.name={_toml_string(self.name or self.provider_id)}",
-        f"{table}.base_url={_toml_string(self.base_url)}",
-        f"{table}.env_key={_toml_string(self.env_key)}",
-        f"{table}.wire_api={_toml_string(self.wire_api)}",
-        f"{table}.supports_websockets={_toml_bool(self.supports_websockets)}",
-        f"{table}.requires_openai_auth={_toml_bool(self.requires_openai_auth)}",
-        f"{table}.stream_max_retries={self.stream_max_retries}",
-        f"{table}.request_max_retries={self.request_max_retries}",
+      f"model_provider={_toml_string(self.provider_id)}",
+      f"{table}.name={_toml_string(self.name or self.provider_id)}",
+      f"{table}.base_url={_toml_string(self.base_url)}",
+      f"{table}.env_key={_toml_string(self.env_key)}",
+      f"{table}.wire_api={_toml_string(self.wire_api)}",
+      f"{table}.supports_websockets={_toml_bool(self.supports_websockets)}",
+      f"{table}.requires_openai_auth={_toml_bool(self.requires_openai_auth)}",
+      f"{table}.stream_max_retries={self.stream_max_retries}",
+      f"{table}.request_max_retries={self.request_max_retries}",
     )

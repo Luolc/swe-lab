@@ -6,13 +6,13 @@ from typing import final, override
 from etils import epath
 
 from swe_lab.conversation import (
-    Conversation,
-    CONVERSATION_NAME,
-    ConversationObserver,
-    ConversationProducer,
-    Message,
-    Role,
-    TextBlock,
+  Conversation,
+  CONVERSATION_NAME,
+  ConversationObserver,
+  ConversationProducer,
+  Message,
+  Role,
+  TextBlock,
 )
 from swe_lab.sandbox import SandboxFs, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
@@ -20,7 +20,6 @@ from swe_lab.sandbox.testing import FakeSandbox
 
 @final
 class _StubProducer(ConversationProducer):
-
   def __init__(self, conversation: Conversation) -> None:
     self._conversation = conversation
     self.seen: SandboxFs | None = None
@@ -33,14 +32,14 @@ class _StubProducer(ConversationProducer):
 
 def _sandbox(workspace: Path) -> FakeSandbox:
   return FakeSandbox(
-      spec=SandboxSpec("acme__widget-1", "img:tag", "/app", "abc"),
-      workspace=epath.Path(workspace),
+    spec=SandboxSpec("acme__widget-1", "img:tag", "/app", "abc"),
+    workspace=epath.Path(workspace),
   )
 
 
 def test_writes_the_converted_conversation_and_registers_it(tmp_path: Path):
   conv = Conversation(
-      messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text="hi")])]
+    messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text="hi")])]
   )
   producer = _StubProducer(conv)
   observer = ConversationObserver(producer=producer)

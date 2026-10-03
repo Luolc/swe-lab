@@ -20,10 +20,10 @@ from dataclasses import dataclass
 from typing import override
 
 from swe_lab.sandbox import (
-    ArtifactSchema,
-    Contribution,
-    SandboxFs,
-    SandboxObserver,
+  ArtifactSchema,
+  Contribution,
+  SandboxFs,
+  SandboxObserver,
 )
 
 from .model import Conversation
@@ -77,9 +77,9 @@ class ConversationObserver(SandboxObserver):
   def output_schema(self) -> tuple[ArtifactSchema, ...]:
     """Declare the converted conversation record."""
     return (
-        ArtifactSchema(
-            CONVERSATION_NAME, description="the canonical typed trace"
-        ),
+      ArtifactSchema(
+        CONVERSATION_NAME, description="the canonical typed trace"
+      ),
     )
 
   @override
@@ -99,9 +99,9 @@ class ConversationObserver(SandboxObserver):
     """
     self.conversation = self.producer.to_conversation(sb)
     return Contribution(
-        inline_artifacts={
-            CONVERSATION_NAME: self.conversation.model_dump_json(
-                indent=2
-            ).encode("utf-8")
-        }
+      inline_artifacts={
+        CONVERSATION_NAME: self.conversation.model_dump_json(indent=2).encode(
+          "utf-8"
+        )
+      }
     )

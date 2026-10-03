@@ -23,14 +23,14 @@ from etils import epath
 
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.sandbox import (
-    Inline,
-    LocalFile,
-    merge_output_schemas,
-    Mount,
-    Mounts,
-    SandboxConfig,
-    SandboxError,
-    Store,
+  Inline,
+  LocalFile,
+  merge_output_schemas,
+  Mount,
+  Mounts,
+  SandboxConfig,
+  SandboxError,
+  Store,
 )
 
 from .run_task import run_task, TaskAddress, TaskOutcome, TaskRunOutcome
@@ -106,18 +106,18 @@ class WorkflowEntry:
     """
     if getattr(self.sandbox, "workspace", None) is not None:
       raise WorkflowError(
-          f"entry {self.key!r} declares a sandbox workspace; the runner"
-          " allocates one per attempt, so a declaration could only make two"
-          " attempts share state"
+        f"entry {self.key!r} declares a sandbox workspace; the runner"
+        " allocates one per attempt, so a declaration could only make two"
+        " attempts share state"
       )
     if not math.isfinite(self.timeout) or self.timeout <= 0:
       raise WorkflowError(
-          f"entry {self.key!r}: timeout must be a positive, finite number of"
-          f" seconds, got {self.timeout!r}"
+        f"entry {self.key!r}: timeout must be a positive, finite number of"
+        f" seconds, got {self.timeout!r}"
       )
     if self.retries < 0:
       raise WorkflowError(
-          f"entry {self.key!r}: retries must be >= 0, got {self.retries!r}"
+        f"entry {self.key!r}: retries must be >= 0, got {self.retries!r}"
       )
 
 
@@ -194,18 +194,18 @@ class Workflow:
 
   def _address(self, entry: WorkflowEntry) -> TaskAddress:
     return TaskAddress(
-        sweep_id=self.sweep_id, rollout_id=self.rollout_id, task=entry.key
+      sweep_id=self.sweep_id, rollout_id=self.rollout_id, task=entry.key
     )
 
   def execute(
-      self,
-      instance: TaskInstance[Any],
-      *,
-      inputs: Mapping[str, Mount] | None = None,
-      output_dir: epath.PathLike,
-      run_ts: str,
-      resume: bool = True,
-      extra_record: Mapping[str, object] | None = None,
+    self,
+    instance: TaskInstance[Any],
+    *,
+    inputs: Mapping[str, Mount] | None = None,
+    output_dir: epath.PathLike,
+    run_ts: str,
+    resume: bool = True,
+    extra_record: Mapping[str, object] | None = None,
   ) -> WorkflowOutcome:
     """Bind the instance, resolve the edges, run the entries in order.
 
@@ -247,10 +247,10 @@ class Workflow:
     provided = dict(inputs or {})
     edges = _resolve_edges(self.entries, instance, provided=set(provided))
     consumed = {
-        name
-        for bound in edges.values()
-        for name, producer in bound.items()
-        if producer == INPUTS_KEY
+      name
+      for bound in edges.values()
+      for name, producer in bound.items()
+      if producer == INPUTS_KEY
     }
     dead = sorted(provided.keys() - consumed)
     if dead:
@@ -273,66 +273,66 @@ class Workflow:
         outcomes.append(EntryOutcome(key=entry.key, status=EntryStatus.BLOCKED))
         continue
       staged, missing = self._materialize_inputs(
-          entry,
-          runs,
-          bound=edges[entry.key],
-          provided=provided,
-          staging_dir=output_dir / "edges" / entry.key,
+        entry,
+        runs,
+        bound=edges[entry.key],
+        provided=provided,
+        staging_dir=output_dir / "edges" / entry.key,
       )
       if missing:
         outcomes.append(
-            EntryOutcome(
-                key=entry.key,
-                status=EntryStatus.EDGE_FAILED,
-                missing_inputs=tuple(missing),
-            )
+          EntryOutcome(
+            key=entry.key,
+            status=EntryStatus.EDGE_FAILED,
+            missing_inputs=tuple(missing),
+          )
         )
         failed = True
         continue
       run = run_task(
-          entry.task,
-          instance,
-          store=self.store,
-          address=self._address(entry),
-          sandbox=entry.sandbox,
-          output_dir=output_dir / entry.key,
-          timeout=entry.timeout,
-          retries=entry.retries,
-          resume=resume,
-          run_ts=run_ts,
-          extra_mounts=staged,
-          extra_record=extra_record,
+        entry.task,
+        instance,
+        store=self.store,
+        address=self._address(entry),
+        sandbox=entry.sandbox,
+        output_dir=output_dir / entry.key,
+        timeout=entry.timeout,
+        retries=entry.retries,
+        resume=resume,
+        run_ts=run_ts,
+        extra_mounts=staged,
+        extra_record=extra_record,
       )
       runs[entry.key] = run
       if run.outcome is TaskOutcome.SUCCEEDED:
         outcomes.append(
-            EntryOutcome(key=entry.key, status=EntryStatus.SUCCEEDED, run=run)
+          EntryOutcome(key=entry.key, status=EntryStatus.SUCCEEDED, run=run)
         )
       else:
         outcomes.append(
-            EntryOutcome(key=entry.key, status=EntryStatus.FAILED, run=run)
+          EntryOutcome(key=entry.key, status=EntryStatus.FAILED, run=run)
         )
         failed = True
 
     record_key = self._write_record(
-        outcomes,
-        run_ts,
-        instance_id=instance.instance_id,
-        edges=edges,
-        succeeded=not failed,
+      outcomes,
+      run_ts,
+      instance_id=instance.instance_id,
+      edges=edges,
+      succeeded=not failed,
     )
     return WorkflowOutcome(
-        succeeded=not failed, entries=tuple(outcomes), record_key=record_key
+      succeeded=not failed, entries=tuple(outcomes), record_key=record_key
     )
 
   def _materialize_inputs(
-      self,
-      entry: WorkflowEntry,
-      runs: dict[str, TaskRunOutcome],
-      *,
-      bound: Mapping[str, str],
-      provided: Mapping[str, Mount],
-      staging_dir: epath.Path,
+    self,
+    entry: WorkflowEntry,
+    runs: dict[str, TaskRunOutcome],
+    *,
+    bound: Mapping[str, str],
+    provided: Mapping[str, Mount],
+    staging_dir: epath.Path,
   ) -> tuple[Mounts, list[str]]:
     """Fetch the entry's resolved inputs out of the store (phase B).
 
@@ -366,7 +366,7 @@ class Workflow:
         mount = None if _known_empty(caller) else caller
       else:
         mount = self._fetch_input(
-            runs[producer_key], schema.name, staging_dir / schema.name
+          runs[producer_key], schema.name, staging_dir / schema.name
         )
       if mount is None:
         if schema.required:
@@ -376,7 +376,7 @@ class Workflow:
     return staged, missing
 
   def _fetch_input(
-      self, producer: TaskRunOutcome, name: str, dest: epath.Path
+    self, producer: TaskRunOutcome, name: str, dest: epath.Path
   ) -> Mount | None:
     """Fetch one input out of the producer's recorded artifact.
 
@@ -405,18 +405,17 @@ class Workflow:
   def _record_key(self, instance_id: str) -> str:
     """Return the store key of this run's workflow record."""
     return (
-        f"{self.sweep_id}/{instance_id}/r{self.rollout_id}"
-        f"/{WORKFLOW_RECORD_NAME}"
+      f"{self.sweep_id}/{instance_id}/r{self.rollout_id}/{WORKFLOW_RECORD_NAME}"
     )
 
   def _write_record(
-      self,
-      outcomes: Sequence[EntryOutcome],
-      run_ts: str,
-      *,
-      instance_id: str,
-      edges: Mapping[str, Mapping[str, str]],
-      succeeded: bool,
+    self,
+    outcomes: Sequence[EntryOutcome],
+    run_ts: str,
+    *,
+    instance_id: str,
+    edges: Mapping[str, Mapping[str, str]],
+    succeeded: bool,
   ) -> str:
     """Derive and write the workflow record — last, atomically.
 
@@ -451,32 +450,32 @@ class Workflow:
     for outcome in outcomes:
       run = outcome.run
       entry: dict[str, object] = {
-          "key": outcome.key,
-          "status": outcome.status.value,
-          "attempts": run.attempts if run else 0,
-          "resumed": run.resumed if run else False,
-          "artifact_keys": dict(run.record.artifact_keys) if run else {},
-          "metrics": dict(run.record.metrics) if run else {},
+        "key": outcome.key,
+        "status": outcome.status.value,
+        "attempts": run.attempts if run else 0,
+        "resumed": run.resumed if run else False,
+        "artifact_keys": dict(run.record.artifact_keys) if run else {},
+        "metrics": dict(run.record.metrics) if run else {},
       }
       if outcome.missing_inputs:
         entry["missing_inputs"] = list(outcome.missing_inputs)
       entries_json.append(entry)
     key = self._record_key(instance_id)
     self.store.put_bytes(
-        key,
-        json.dumps(
-            {
-                "sweep_id": self.sweep_id,
-                "instance_id": instance_id,
-                "rollout_id": self.rollout_id,
-                "run_ts": run_ts,
-                "succeeded": succeeded,
-                "entries": entries_json,
-                "edges": {k: dict(v) for k, v in edges.items()},
-            },
-            indent=2,
-            sort_keys=True,
-        ).encode("utf-8"),
+      key,
+      json.dumps(
+        {
+          "sweep_id": self.sweep_id,
+          "instance_id": instance_id,
+          "rollout_id": self.rollout_id,
+          "run_ts": run_ts,
+          "succeeded": succeeded,
+          "entries": entries_json,
+          "edges": {k: dict(v) for k, v in edges.items()},
+        },
+        indent=2,
+        sort_keys=True,
+      ).encode("utf-8"),
     )
     return key
 
@@ -505,7 +504,7 @@ def validate_declaration(entries: Sequence[WorkflowEntry]) -> None:
     raise WorkflowError(f"duplicate entry keys: {sorted(keys)}")
   if INPUTS_KEY in keys:
     raise WorkflowError(
-        f"entry key {INPUTS_KEY!r} is reserved for the workflow's own inputs"
+      f"entry key {INPUTS_KEY!r} is reserved for the workflow's own inputs"
     )
   for entry in entries:
     # TaskAddress re-validates each key's shape; building one here surfaces a
@@ -518,10 +517,10 @@ def validate_declaration(entries: Sequence[WorkflowEntry]) -> None:
 
 
 def _resolve_edges(
-    entries: Sequence[WorkflowEntry],
-    instance: TaskInstance[Any],
-    *,
-    provided: set[str],
+  entries: Sequence[WorkflowEntry],
+  instance: TaskInstance[Any],
+  *,
+  provided: set[str],
 ) -> dict[str, dict[str, str]]:
   """Resolve every input to its producing source at bind time (phase A).
 
@@ -558,8 +557,8 @@ def _resolve_edges(
         producer = explicit[name]
         if producer not in produced.get(name, []):
           raise WorkflowError(
-              f"{entry.key} binds {name!r} to {producer!r}, which is not an"
-              " earlier producer of it"
+            f"{entry.key} binds {name!r} to {producer!r}, which is not an"
+            " earlier producer of it"
           )
         bound[name] = producer
       else:
@@ -575,23 +574,22 @@ def _resolve_edges(
           # (A name that *is* produced still binds by edge either way, and
           # then the builder's own collision check has the last word.)
           if (
-              entry.task.inputs_builder is not None
-              or not schemas[name].required
+            entry.task.inputs_builder is not None or not schemas[name].required
           ):
             continue
           raise WorkflowError(
-              f"nothing produces {name!r}, required by {entry.key}: no"
-              " earlier entry declares it, the workflow's inputs do not"
-              " provide it, and the task builds no inputs of its own"
+            f"nothing produces {name!r}, required by {entry.key}: no"
+            " earlier entry declares it, the workflow's inputs do not"
+            " provide it, and the task builds no inputs of its own"
           )
         else:
           raise WorkflowError(
-              f"{name!r} is produced by {candidates}; bind it explicitly on"
-              f' {entry.key} (inputs=("<producer>/{name}",))'
+            f"{name!r} is produced by {candidates}; bind it explicitly on"
+            f' {entry.key} (inputs=("<producer>/{name}",))'
           )
     edges[entry.key] = bound
     for schema in merge_output_schemas(
-        *(o.output_schema() for o in entry.task.observers(instance))
+      *(o.output_schema() for o in entry.task.observers(instance))
     ):
       produced.setdefault(schema.name, []).append(entry.key)
   return edges
@@ -618,7 +616,7 @@ def _known_empty(mount: Mount) -> bool:
 
 
 def _parse_bindings(
-    entry: WorkflowEntry, declared_inputs: set[str]
+  entry: WorkflowEntry, declared_inputs: set[str]
 ) -> dict[str, str]:
   """Parse an entry's ``"<producer>/<name>"`` bindings into name → producer.
 
@@ -642,13 +640,13 @@ def _parse_bindings(
     producer, sep, name = binding.partition("/")
     if not sep or not producer or not name:
       raise WorkflowError(
-          f"{entry.key}: malformed binding {binding!r}; expected"
-          ' "<producer key>/<input name>"'
+        f"{entry.key}: malformed binding {binding!r}; expected"
+        ' "<producer key>/<input name>"'
       )
     if name not in declared_inputs:
       raise WorkflowError(
-          f"{entry.key} binds {name!r}, which its task does not declare"
-          " as an input"
+        f"{entry.key} binds {name!r}, which its task does not declare"
+        " as an input"
       )
     if name in explicit:
       raise WorkflowError(f"{entry.key} binds {name!r} twice")

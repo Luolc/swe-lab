@@ -6,24 +6,24 @@ from pathlib import Path
 from etils import epath
 
 from swe_lab.datasets.swebench_pro.unit_test import (
-    OutputState,
-    REQUIRED_TESTS_NAME,
-    SweBenchProGrader,
-    SweBenchProVerdict,
+  OutputState,
+  REQUIRED_TESTS_NAME,
+  SweBenchProGrader,
+  SweBenchProVerdict,
 )
 from swe_lab.sandbox import SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
 
 _SPEC = SandboxSpec(
-    instance_id="acme__widget-1",
-    image_ref="img:tag",
-    workdir="/repo",
-    base_commit="abc123",
+  instance_id="acme__widget-1",
+  image_ref="img:tag",
+  workdir="/repo",
+  base_commit="abc123",
 )
 
 
 def _grade(
-    tmp_path: Path, required: list[str], output: str | None
+  tmp_path: Path, required: list[str], output: str | None
 ) -> SweBenchProVerdict:
   """Grade a seeded workspace through a FakeSandbox (the grader's reader).
 
@@ -36,7 +36,7 @@ def _grade(
   if output is not None:
     _ = (ws / "output.json").write_text(output)
   return SweBenchProGrader().grade(
-      FakeSandbox(spec=_SPEC, workspace=epath.Path(ws))
+    FakeSandbox(spec=_SPEC, workspace=epath.Path(ws))
   )
 
 
@@ -92,10 +92,10 @@ def test_grader_is_stateless(tmp_path: Path):
   _ = (ws2 / REQUIRED_TESTS_NAME).write_text(json.dumps(["a", "b"]))
   _ = (ws2 / "output.json").write_text(_passed("a"))
   assert (
-      grader.grade(FakeSandbox(spec=_SPEC, workspace=epath.Path(ws1))).resolved
-      is True
+    grader.grade(FakeSandbox(spec=_SPEC, workspace=epath.Path(ws1))).resolved
+    is True
   )
   assert (
-      grader.grade(FakeSandbox(spec=_SPEC, workspace=epath.Path(ws2))).resolved
-      is False
+    grader.grade(FakeSandbox(spec=_SPEC, workspace=epath.Path(ws2))).resolved
+    is False
   )

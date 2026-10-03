@@ -7,16 +7,14 @@ from etils import epath
 import pytest
 
 from swe_lab.datasets.deepswe.build_parquet import (
-    build_row,
+  build_row,
+  parse_provenance,
 )
 from swe_lab.datasets.deepswe.build_parquet import COLUMNS as BUILDER_COLUMNS
-from swe_lab.datasets.deepswe.build_parquet import (
-    parse_provenance,
-)
 from swe_lab.datasets.deepswe.fetch import ensure_deepswe_parquet
 from swe_lab.datasets.deepswe.record import DeepSweInstance
 from swe_lab.datasets.deepswe.unit_test import (
-    DeepSweGrader,
+  DeepSweGrader,
 )
 from swe_lab.sandbox import SandboxError, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
@@ -38,7 +36,7 @@ def test_the_record_parses_the_builders_own_row(tmp_path: Path):
   assert DeepSweInstance.COLUMNS is BUILDER_COLUMNS  # one home, asserted
   assert inst.instance_id == "demo-task"
   assert inst.sandbox_spec() == SandboxSpec(
-      "demo-task", "example.test/img:demo-task-v1.1", "/app", "a" * 40
+    "demo-task", "example.test/img:demo-task-v1.1", "/app", "a" * 40
   )
   assert inst.prompt() == "solve demo-task\n"
   assert inst.gold_patch() == "diff --git a/s b/s\n"
@@ -49,7 +47,7 @@ def test_the_record_parses_the_builders_own_row(tmp_path: Path):
 
 
 def test_the_eval_script_moves_files_and_never_touches_the_tree(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """Their grader owns patch application; ours owns only the boundary.
 
@@ -63,10 +61,10 @@ def test_the_eval_script_moves_files_and_never_touches_the_tree(
   assert "git" not in script  # no reset, no checkout, no apply — theirs
   assert "cp /logs/verifier/reward.json" in script
   assert sorted(spec.mounts) == [
-      "/tests/config.json",
-      "/tests/grader.py",
-      "/tests/test.patch",
-      "/tests/test.sh",
+    "/tests/config.json",
+    "/tests/grader.py",
+    "/tests/test.patch",
+    "/tests/test.sh",
   ]
   # Self-check mode: no patch is staged, and upstream grades the base state
   # reward-0 by construction.
@@ -80,31 +78,31 @@ def test_baseline_mode_is_refused_not_ignored(tmp_path: Path):
   # patch overlaps image state.
   with pytest.raises(ValueError, match="baseline"):
     _ = _instance(tmp_path).unit_test_spec(
-        apply_patch=True, patch_baseline=True
+      apply_patch=True, patch_baseline=True
     )
 
 
 def _sandbox(tmp_path: Path) -> FakeSandbox:
   return FakeSandbox(
-      spec=SandboxSpec("x", "img:tag", "/app", "base"),
-      workspace=epath.Path(tmp_path),
+    spec=SandboxSpec("x", "img:tag", "/app", "base"),
+    workspace=epath.Path(tmp_path),
   )
 
 
 def test_the_grader_reads_upstreams_verdict(tmp_path: Path):
   _ = (tmp_path / "reward.json").write_text(
-      json.dumps(
-          {
-              "reward": 1,
-              "f2p_total": 20,
-              "f2p_passed": 20,
-              "p2p_total": 3,
-              "p2p_passed": 3,
-              "f2p": 1.0,
-              "p2p": 1.0,
-              "partial": 1.0,
-          }
-      )
+    json.dumps(
+      {
+        "reward": 1,
+        "f2p_total": 20,
+        "f2p_passed": 20,
+        "p2p_total": 3,
+        "p2p_passed": 3,
+        "f2p": 1.0,
+        "p2p": 1.0,
+        "partial": 1.0,
+      }
+    )
   )
   verdict = DeepSweGrader().grade(_sandbox(tmp_path))
   assert verdict.resolved and verdict.score == 1.0
@@ -115,7 +113,7 @@ def test_an_apply_failure_is_graded_zero_not_crashed(tmp_path: Path):
   # Upstream separates the two: apply_failed writes a reward.json (graded,
   # the patch's fault) — only a MISSING reward.json is the crash sentinel.
   _ = (tmp_path / "reward.json").write_text(
-      json.dumps({"reward": 0, "apply_failed": 1, "f2p_total": 5})
+    json.dumps({"reward": 0, "apply_failed": 1, "f2p_total": 5})
   )
   verdict = DeepSweGrader().grade(_sandbox(tmp_path))
   assert verdict.apply_failed and not verdict.resolved

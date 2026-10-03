@@ -120,7 +120,7 @@ class RunPair:
   def cell(self) -> Cell:
     """The 2×2 cell this pair falls in."""
     return cell_of(
-        baseline_pass=self.baseline_pass, guided_pass=self.guided_pass
+      baseline_pass=self.baseline_pass, guided_pass=self.guided_pass
     )
 
 
@@ -188,31 +188,31 @@ class GuidedGain:
       two named marginals, and every incomplete run with what it lacks.
     """
     return {
-        "sweep_id": self.sweep_id,
-        "baseline_key": self.baseline_key,
-        "guided_key": self.guided_key,
-        "runs": [
-            {
-                "instance_id": run.instance_id,
-                "rollout_id": run.rollout_id,
-                "run_ts": run.run_ts,
-                "baseline_pass": run.baseline_pass,
-                "guided_pass": run.guided_pass,
-                "cell": run.cell.value,
-            }
-            for run in self.runs
-        ],
-        "cells": {cell.value: count for cell, count in self.cells().items()},
-        "solved_at_baseline": self.solved_at_baseline,
-        "gained_with_guidebook": self.gained_with_guidebook,
-        "incomplete": [
-            {
-                "instance_id": run.instance_id,
-                "rollout_id": run.rollout_id,
-                "missing": list(run.missing),
-            }
-            for run in self.incomplete
-        ],
+      "sweep_id": self.sweep_id,
+      "baseline_key": self.baseline_key,
+      "guided_key": self.guided_key,
+      "runs": [
+        {
+          "instance_id": run.instance_id,
+          "rollout_id": run.rollout_id,
+          "run_ts": run.run_ts,
+          "baseline_pass": run.baseline_pass,
+          "guided_pass": run.guided_pass,
+          "cell": run.cell.value,
+        }
+        for run in self.runs
+      ],
+      "cells": {cell.value: count for cell, count in self.cells().items()},
+      "solved_at_baseline": self.solved_at_baseline,
+      "gained_with_guidebook": self.gained_with_guidebook,
+      "incomplete": [
+        {
+          "instance_id": run.instance_id,
+          "rollout_id": run.rollout_id,
+          "missing": list(run.missing),
+        }
+        for run in self.incomplete
+      ],
     }
 
   def render(self) -> str:
@@ -229,28 +229,27 @@ class GuidedGain:
     cells = self.cells()
     total = len(self.runs)
     lines = [
-        f"sweep {self.sweep_id}: {total} (instance, rollout) pair(s) graded"
-        f" by both {self.baseline_key} and {self.guided_key},"
-        f" {len(self.incomplete)} incomplete",
-        f"{'':<16}{'guided pass':<18}{'guided fail':<18}",
-        f"{'baseline pass':<16}"
-        f"{'kept ' + str(cells[Cell.KEPT]):<18}"
-        f"{'regressed ' + str(cells[Cell.REGRESSED]):<18}",
-        f"{'baseline fail':<16}"
-        f"{'gained ' + str(cells[Cell.GAINED]):<18}"
-        f"{'unsolved ' + str(cells[Cell.UNSOLVED]):<18}",
-        f"solved at baseline (kept + regressed): {self.solved_at_baseline}"
-        f" / {total}",
-        "gained with the guidebook (baseline fail, guided pass):"
-        f" {self.gained_with_guidebook} / {total}",
-        "regressed with the guidebook (baseline pass, guided fail):"
-        f" {cells[Cell.REGRESSED]} / {total}",
-        f"incomplete, not counted above: {len(self.incomplete)}",
+      f"sweep {self.sweep_id}: {total} (instance, rollout) pair(s) graded"
+      f" by both {self.baseline_key} and {self.guided_key},"
+      f" {len(self.incomplete)} incomplete",
+      f"{'':<16}{'guided pass':<18}{'guided fail':<18}",
+      f"{'baseline pass':<16}"
+      f"{'kept ' + str(cells[Cell.KEPT]):<18}"
+      f"{'regressed ' + str(cells[Cell.REGRESSED]):<18}",
+      f"{'baseline fail':<16}"
+      f"{'gained ' + str(cells[Cell.GAINED]):<18}"
+      f"{'unsolved ' + str(cells[Cell.UNSOLVED]):<18}",
+      f"solved at baseline (kept + regressed): {self.solved_at_baseline}"
+      f" / {total}",
+      "gained with the guidebook (baseline fail, guided pass):"
+      f" {self.gained_with_guidebook} / {total}",
+      "regressed with the guidebook (baseline pass, guided fail):"
+      f" {cells[Cell.REGRESSED]} / {total}",
+      f"incomplete, not counted above: {len(self.incomplete)}",
     ]
     lines.extend(
-        f"  {run.instance_id} r{run.rollout_id}: missing"
-        f" {', '.join(run.missing)}"
-        for run in self.incomplete
+      f"  {run.instance_id} r{run.rollout_id}: missing {', '.join(run.missing)}"
+      for run in self.incomplete
     )
     return "\n".join(lines) + "\n"
 
@@ -271,7 +270,7 @@ def _runs_in(records: Iterable[AttemptRecord]) -> list[tuple[str, int]]:
 
 
 def _workflow_record(
-    store: Store, sweep_id: str, instance_id: str, rollout_id: int
+  store: Store, sweep_id: str, instance_id: str, rollout_id: int
 ) -> Mapping[str, Any] | None:
   """Read one run's workflow record, or ``None`` when the run left none.
 
@@ -310,9 +309,7 @@ def _verdict(entry: Mapping[str, Any] | None) -> bool | None:
     return None
   metrics: Mapping[str, float] = entry.get("metrics", {})
   answers = [
-      value
-      for name, value in metrics.items()
-      if name.endswith(_RESOLVED_SUFFIX)
+    value for name, value in metrics.items() if name.endswith(_RESOLVED_SUFFIX)
   ]
   if not answers:
     return None
@@ -320,11 +317,11 @@ def _verdict(entry: Mapping[str, Any] | None) -> bool | None:
 
 
 def guided_gain(
-    store: Store,
-    *,
-    sweep_id: str,
-    baseline_key: str,
-    guided_key: str,
+  store: Store,
+  *,
+  sweep_id: str,
+  baseline_key: str,
+  guided_key: str,
 ) -> GuidedGain:
   """Take the 2×2 reading over a sweep in the store.
 
@@ -344,42 +341,42 @@ def guided_gain(
     record = _workflow_record(store, sweep_id, instance_id, rollout_id)
     if record is None:
       incomplete.append(
-          IncompleteRun(instance_id, rollout_id, (WORKFLOW_RECORD_NAME,))
+        IncompleteRun(instance_id, rollout_id, (WORKFLOW_RECORD_NAME,))
       )
       continue
     entries: dict[str, Mapping[str, Any]] = {
-        entry["key"]: entry for entry in record.get("entries", [])
+      entry["key"]: entry for entry in record.get("entries", [])
     }
     verdicts = {
-        key: _verdict(entries.get(key)) for key in (baseline_key, guided_key)
+      key: _verdict(entries.get(key)) for key in (baseline_key, guided_key)
     }
     missing = tuple(key for key, answer in verdicts.items() if answer is None)
     if missing:
       incomplete.append(IncompleteRun(instance_id, rollout_id, missing))
       continue
     runs.append(
-        RunPair(
-            instance_id=instance_id,
-            rollout_id=rollout_id,
-            baseline_pass=verdicts[baseline_key] is True,
-            guided_pass=verdicts[guided_key] is True,
-            run_ts=str(record["run_ts"]),
-        )
+      RunPair(
+        instance_id=instance_id,
+        rollout_id=rollout_id,
+        baseline_pass=verdicts[baseline_key] is True,
+        guided_pass=verdicts[guided_key] is True,
+        run_ts=str(record["run_ts"]),
+      )
     )
   return GuidedGain(
-      sweep_id=sweep_id,
-      baseline_key=baseline_key,
-      guided_key=guided_key,
-      runs=tuple(runs),
-      incomplete=tuple(incomplete),
+    sweep_id=sweep_id,
+    baseline_key=baseline_key,
+    guided_key=guided_key,
+    runs=tuple(runs),
+    incomplete=tuple(incomplete),
   )
 
 
 __all__ = [
-    "Cell",
-    "GuidedGain",
-    "IncompleteRun",
-    "RunPair",
-    "cell_of",
-    "guided_gain",
+  "Cell",
+  "GuidedGain",
+  "IncompleteRun",
+  "RunPair",
+  "cell_of",
+  "guided_gain",
 ]

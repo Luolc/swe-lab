@@ -15,15 +15,15 @@ import pytest
 
 from swe_lab.harnesses.claude_code.constants import BINARY_AT
 from swe_lab.sandbox import (
-    AgentAsset,
-    GitHubJobSandbox,
-    Inline,
-    InstalledAssetsObserver,
-    LocalFile,
-    Mount,
-    RunStatus,
-    SandboxManager,
-    SandboxSpec,
+  AgentAsset,
+  GitHubJobSandbox,
+  Inline,
+  InstalledAssetsObserver,
+  LocalFile,
+  Mount,
+  RunStatus,
+  SandboxManager,
+  SandboxSpec,
 )
 
 from .conftest import FakeClaudeBinary
@@ -45,14 +45,14 @@ def test_mount_places_assets_read_only(tmp_path: Path):
   _ = file_src.write_bytes(b"BIN")
   file_at = tmp_path / "assets" / "bin"
   sandbox = GitHubJobSandbox(
-      spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
+    spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
   )
   sandbox.up()
   sandbox.mount(
-      {
-          str(inline_at): Mount(Inline(b"hi"), read_only=True),
-          str(file_at): Mount(LocalFile(epath.Path(file_src)), read_only=True),
-      }
+    {
+      str(inline_at): Mount(Inline(b"hi"), read_only=True),
+      str(file_at): Mount(LocalFile(epath.Path(file_src)), read_only=True),
+    }
   )
   assert inline_at.read_bytes() == b"hi"
   assert file_at.read_bytes() == b"BIN"
@@ -69,15 +69,15 @@ def test_mount_preserves_executable_asset(tmp_path: Path):
   src.chmod(0o755)
   at = tmp_path / "opt" / "claude"
   sandbox = GitHubJobSandbox(
-      spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
+    spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
   )
   sandbox.up()
   sandbox.mount(
-      {
-          str(at): Mount(
-              LocalFile(epath.Path(src)), executable=True, read_only=True
-          )
-      }
+    {
+      str(at): Mount(
+        LocalFile(epath.Path(src)), executable=True, read_only=True
+      )
+    }
   )
   mode = at.stat().st_mode
   assert mode & stat.S_IXUSR  # executable
@@ -87,11 +87,11 @@ def test_mount_preserves_executable_asset(tmp_path: Path):
 def test_run_script_by_workspace_path_with_env(tmp_path: Path):
   ws = _workspace(tmp_path)
   sandbox = GitHubJobSandbox(
-      spec=SPEC, workspace=epath.Path(ws), env={"X": "1"}
+    spec=SPEC, workspace=epath.Path(ws), env={"X": "1"}
   )
   sandbox.up()
   _ = (ws / "main.sh").write_text(
-      'echo "ws=$SANDBOX_WORKSPACE x=$X tok=$TOK"\n'
+    'echo "ws=$SANDBOX_WORKSPACE x=$X tok=$TOK"\n'
   )
   result = sandbox.run_script("main.sh", timeout=5.0, env={"TOK": "t"})
   assert result.ok
@@ -103,7 +103,7 @@ def test_run_script_by_workspace_path_with_env(tmp_path: Path):
 def test_run_command_inline_with_env(tmp_path: Path):
   ws = _workspace(tmp_path)
   sandbox = GitHubJobSandbox(
-      spec=SPEC, workspace=epath.Path(ws), env={"X": "1"}
+    spec=SPEC, workspace=epath.Path(ws), env={"X": "1"}
   )
   sandbox.up()
   result = sandbox.run_command('echo "x=$X"', timeout=5.0)
@@ -133,7 +133,7 @@ def test_run_script_timeout_maps_to_124(tmp_path: Path):
 
 
 def test_a_timed_out_script_takes_its_background_children_with_it(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # The regression this backend needs and the Docker one does not: `down` here
   # is a genuine no-op (the job *is* the container), so anything a timed-out
@@ -145,7 +145,7 @@ def test_a_timed_out_script_takes_its_background_children_with_it(
   sandbox = GitHubJobSandbox(spec=SPEC, workspace=epath.Path(ws))
   sandbox.up()
   _ = (ws / "main.sh").write_text(
-      'sleep 120 &\necho $! > "$SANDBOX_WORKSPACE"/child.pid\nsleep 120\n'
+    'sleep 120 &\necho $! > "$SANDBOX_WORKSPACE"/child.pid\nsleep 120\n'
   )
 
   started = time.monotonic()
@@ -173,12 +173,12 @@ def test_a_timed_out_script_takes_its_background_children_with_it(
 
 
 def test_pass_env_inherits_by_reference(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
   monkeypatch.setenv("SECRET_TOKEN", "s3cr3t")
   ws = _workspace(tmp_path)
   sandbox = GitHubJobSandbox(
-      spec=SPEC, workspace=epath.Path(ws), pass_env=["SECRET_TOKEN"]
+    spec=SPEC, workspace=epath.Path(ws), pass_env=["SECRET_TOKEN"]
   )
   sandbox.up()
   _ = (ws / "main.sh").write_text('echo "tok=$SECRET_TOKEN"\n')
@@ -188,7 +188,7 @@ def test_pass_env_inherits_by_reference(
 
 def test_down_never_raises(tmp_path: Path):
   GitHubJobSandbox(
-      spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
+    spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
   ).down()  # no throw
 
 
@@ -196,14 +196,14 @@ def test_manager_composition_runs_end_to_end(tmp_path: Path):
   # the whole engine over the real sandbox: a staged main writes an artifact
   ws = tmp_path / "run"
   manager = SandboxManager(
-      sandbox=GitHubJobSandbox(spec=SPEC, workspace=epath.Path(ws)),
-      output_dir=epath.Path(ws),
-      mounts={
-          "main.sh": Mount(
-              Inline(b'echo done > "$SANDBOX_WORKSPACE/out.txt"\n'),
-              executable=True,
-          )
-      },
+    sandbox=GitHubJobSandbox(spec=SPEC, workspace=epath.Path(ws)),
+    output_dir=epath.Path(ws),
+    mounts={
+      "main.sh": Mount(
+        Inline(b'echo done > "$SANDBOX_WORKSPACE/out.txt"\n'),
+        executable=True,
+      )
+    },
   )
   with manager.session() as sb:
     _ = sb.run_script("main.sh", timeout=5.0)
@@ -227,27 +227,27 @@ def test_backend_contributes_nothing_of_its_own(tmp_path: Path):
   # the provisioning seam, which is what stopped every backend from having to
   # know which agents exist.
   sandbox = GitHubJobSandbox(
-      spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
+    spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
   )
   assert list(sandbox.observers()) == []
 
 
 def test_this_backend_answers_assets_by_installing_in_place(
-    tmp_path: Path, fake_claude_binary: FakeClaudeBinary
+  tmp_path: Path, fake_claude_binary: FakeClaudeBinary
 ):
   # The case a mount cannot express: the job's filesystem IS the sandbox, so
   # the asset is fetched straight to its final path and no bytes travel.
   sandbox = GitHubJobSandbox(
-      spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
+    spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
   )
   binary = sandbox.asset_observer(
-      (
-          AgentAsset(
-              path=BINARY_AT,
-              version="2.1.212",
-              fetch=_fake_materialize,
-          ),
-      )
+    (
+      AgentAsset(
+        path=BINARY_AT,
+        version="2.1.212",
+        fetch=_fake_materialize,
+      ),
+    )
   )
   assert isinstance(binary, InstalledAssetsObserver)
   sandbox.up()

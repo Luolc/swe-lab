@@ -61,21 +61,21 @@ class Rate:
         denominator, or more runs are unclassified than were counted.
     """
     counts = (
-        self.numerator,
-        self.denominator,
-        self.excluded,
-        self.unclassified,
+      self.numerator,
+      self.denominator,
+      self.excluded,
+      self.unclassified,
     )
     if any(count < 0 for count in counts):
       raise ValueError(f"negative count in {counts}")
     if self.numerator > self.denominator:
       raise ValueError(
-          f"numerator {self.numerator} exceeds denominator {self.denominator}"
+        f"numerator {self.numerator} exceeds denominator {self.denominator}"
       )
     if self.unclassified > self.denominator:
       raise ValueError(
-          f"{self.unclassified} unclassified exceeds the {self.denominator}"
-          " runs counted; unclassified runs are inside the denominator"
+        f"{self.unclassified} unclassified exceeds the {self.denominator}"
+        " runs counted; unclassified runs are inside the denominator"
       )
 
   @property
@@ -113,8 +113,8 @@ class Rate:
       ``resolved 12 / 40 (3 system failures excluded, 2 unclassified)``.
     """
     counts = (
-        f"({self.excluded} system failures excluded,"
-        f" {self.unclassified} unclassified)"
+      f"({self.excluded} system failures excluded,"
+      f" {self.unclassified} unclassified)"
     )
     if not self.estimable:
       # The counts still print: they are the whole content of this line.
@@ -145,8 +145,8 @@ def rate_of(runs: Iterable[tuple[RolloutOutcome, bool]], /) -> Rate:
     if met:
       numerator += 1
   return Rate(
-      numerator=numerator,
-      denominator=denominator,
-      excluded=excluded,
-      unclassified=unclassified,
+    numerator=numerator,
+    denominator=denominator,
+    excluded=excluded,
+    unclassified=unclassified,
   )

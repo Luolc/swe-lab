@@ -17,20 +17,20 @@ a verdict, and the verifier never fails a run — including on its own bugs.
 
 from .replay import replay_run
 from .rules import (
-    check_controls,
-    check_patch,
-    check_trace,
-    HIGH_CONFIDENCE_RULES,
-    merge,
-    VerifierFindings,
+  check_controls,
+  check_patch,
+  check_trace,
+  HIGH_CONFIDENCE_RULES,
+  merge,
+  VerifierFindings,
 )
 
 __all__ = [
-    "HIGH_CONFIDENCE_RULES",
-    "VerifierFindings",
-    "check_controls",
-    "check_patch",
-    "check_trace",
-    "merge",
-    "replay_run",
+  "HIGH_CONFIDENCE_RULES",
+  "VerifierFindings",
+  "check_controls",
+  "check_patch",
+  "check_trace",
+  "merge",
+  "replay_run",
 ]

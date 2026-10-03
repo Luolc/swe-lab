@@ -99,19 +99,19 @@ class NativeTranscriptObserver(SandboxObserver):
       report is what makes their absence readable.
     """
     return (
-        ArtifactSchema(
-            TRANSCRIPT_ARTIFACT,
-            required=False,
-            description=(
-                "the agent's own session record, as the CLI wrote it"
-                " (gzipped tar of the config dir's projects/ subtree)"
-            ),
+      ArtifactSchema(
+        TRANSCRIPT_ARTIFACT,
+        required=False,
+        description=(
+          "the agent's own session record, as the CLI wrote it"
+          " (gzipped tar of the config dir's projects/ subtree)"
         ),
-        ArtifactSchema(
-            REPORT_ARTIFACT,
-            required=False,
-            description="whether that record was found, and what was archived",
-        ),
+      ),
+      ArtifactSchema(
+        REPORT_ARTIFACT,
+        required=False,
+        description="whether that record was found, and what was archived",
+      ),
     )
 
   @override
@@ -128,8 +128,8 @@ class NativeTranscriptObserver(SandboxObserver):
     report = json.dumps(self._report, indent=2, sort_keys=True) + "\n"
     artifacts = {TRANSCRIPT_ARTIFACT: TRANSCRIPT_FILENAME} if archived else {}
     return Contribution(
-        artifacts=artifacts,
-        inline_artifacts={REPORT_ARTIFACT: report.encode()},
+      artifacts=artifacts,
+      inline_artifacts={REPORT_ARTIFACT: report.encode()},
     )
 
   def _archive(self, sb: SandboxFs) -> bool:
