@@ -59,7 +59,7 @@ BASE_COMMIT_FIXES: dict[str, str] = {
   "koota-entity-snapshot-rollback": (
     "72ebef44b8e024d877250f055eea60cdfaa45069"
   ),
-  "langchain-request-coalescing": ("7cef35bfdebd22148a4c62a10bf01f1fde36e722"),
+  "langchain-request-coalescing": "7cef35bfdebd22148a4c62a10bf01f1fde36e722",
 }
 
 # The row schema, in column order. The loader's COLUMNS contract will assert

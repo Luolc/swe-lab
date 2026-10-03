@@ -424,7 +424,7 @@ class CodexHarness(Harness):
 
     exit_file = f'"$SANDBOX_WORKSPACE"/{AGENT_EXIT_CODE_NAME}'
     lines += [
-      (f"{binary} {' '.join(flags)} < {prompt} > {event_stream} 2> {stderr}"),
+      f"{binary} {' '.join(flags)} < {prompt} > {event_stream} 2> {stderr}",
       *status_tail(exit_file),
     ]
     return "\n".join(lines) + "\n"
