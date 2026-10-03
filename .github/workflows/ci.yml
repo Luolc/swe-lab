@@ -73,8 +73,8 @@ jobs:
         # subtracting counts.
         run: uv run pytest -q -rs
 
-      # pyink + ruff + isort + basedpyright + uv-lock. basedpyright type-checks
-      # against .venv, so this runs after `uv sync`.
+      # ruff (lint, imports, format) + basedpyright + pydoclint + uv-lock.
+      # basedpyright type-checks against .venv, so this runs after `uv sync`.
       - name: Format / lint / type-check
         run: uv run pre-commit run --all-files --show-diff-on-failure
 
