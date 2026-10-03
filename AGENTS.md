@@ -209,8 +209,8 @@ test for is a wish, and it silently decays into a lie.
   key, since the library never splits a pool — and the base URL is written onto
   every decision row. How, and the three knobs that move the actor too, are in
   [`docs/conventions.md`](docs/conventions.md#secrets).
-- **Never:** commit secrets / OAuth tokens / `.envrc.local` (enforced by the
-  gitleaks hook + the CI history scan — see [Quality bar](#quality-bar));
+- **Never:** commit `.envrc.local` (credentials are enforced by the gitleaks
+  hook + the CI history scan — see [Quality bar](#quality-bar));
   commit dataset data files or large trace records (gitignored / off-repo on HF
   by design — what that covers, and why an experiment's own committed evidence
   is not it, is in
@@ -220,9 +220,7 @@ test for is a wish, and it silently decays into a lie.
 ## Language of the codebase
 
 Repository language: English (case B in the cross-repo rules,
-`~/.agents/AGENTS.md`) — all code, comments, documentation, commit messages, and
-README content are written in English, regardless of the language of the
-conversation.
+`~/.agents/AGENTS.md`).
 
 ## Naming conventions
 
