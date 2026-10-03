@@ -337,8 +337,10 @@ the one prose copy of it (`AGENTS.md` links here rather than restating it):
   whenever you remove one. `docs/` is exempt on purpose (point-in-time
   records are supposed to name retired code).
 
-`experiments/` is **exempt** from the code-quality hooks (it holds exploratory
-scripts + captured artifacts, not shipped code).
+`experiments/` is **exempt** from the code-quality hooks — `ruff-check`,
+`ruff-format`, `basedpyright`, `pydoclint` (it holds exploratory scripts +
+captured artifacts, not shipped code). `gitleaks`, `no-operator-home-paths` and
+`no-stale-module-refs` still scan it.
 
 ## Naming (see AGENTS.md)
 
