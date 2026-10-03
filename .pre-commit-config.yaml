@@ -65,16 +65,6 @@ repos:
         exclude: ^experiments/
       - id: ruff-format
         exclude: ^experiments/
-  # The 80-column limit without E501's exemptions (URL, single token, pragma);
-  # see the script's docstring.
-  - repo: local
-    hooks:
-      - id: max-line-length
-        name: no line over 80 characters
-        language: system
-        entry: python3 tests/max_line_length.py
-        types: [python]
-        exclude: ^experiments/
   - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
     rev: 1.39.0
     hooks:

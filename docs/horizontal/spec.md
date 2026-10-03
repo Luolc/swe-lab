@@ -578,7 +578,7 @@ actually needed; add it then. Candidate ideas recorded for that moment:
 
 ## Code Style
 
-Repo conventions unchanged: pyink (2-space, line 80), strict camelCase acronyms
+Repo conventions: ruff-format (2-space, line 80), strict camelCase acronyms
 (`SweBenchProInstance`), typed frozen dataclasses for records. Interfaces follow
 [ADR-0002](../decisions/ADR-0002-interface-style-abc-vs-protocol.md): **ABC +
 `@abstractmethod` for behavior interfaces** (`Grader`, `SandboxBackend`,

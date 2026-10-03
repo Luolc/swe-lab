@@ -326,9 +326,6 @@ the one prose copy of it (`AGENTS.md` links here rather than restating it):
   `--fix`. Runs before the formatter.
 - **ruff-format** — the formatter: **line length 80, 2-space indent** (block
   and continuation alike), double quotes, `py313`.
-- **max-line-length** (local) — no line over 80 characters, with none of
-  E501's exemptions (URL, single token, pragma comment); see
-  `tests/max_line_length.py`.
 - **basedpyright** — type checker over `src` + `tests`.
 - **pydoclint** — docstring `Args:`/`Returns:`/`Raises:` must match the
   signature; docstring *types* are deliberately unchecked (see Style).
@@ -361,8 +358,8 @@ with the following repo-wide choices and deviations (full plan + rationale:
   are noun phrases. Types live in annotations only — never repeated in
   docstrings (pydoclint runs with type checks off; basedpyright owns types).
 - **Deviations from the public guide:** 2-space indentation (a repo choice;
-  the public guide says 4); §2.2 *import-modules-not-symbols* is **waived entirely**
-  (symbol imports are fine).
+  the public guide says 4); §2.2 *import-modules-not-symbols* is **waived
+  entirely** (symbol imports are fine).
 - **TODO format (§3.12) is deliberately not adopted**: the guide's
   issue-link-based form presumes an issue tracker and this repo doesn't use
   GitHub issues (short-term: won't). Revisit if issues are ever adopted.
