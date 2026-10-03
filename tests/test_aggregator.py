@@ -1,7 +1,5 @@
 """Tests for the aggregator prompt (pure; no network)."""
 
-from __future__ import annotations
-
 from swe_lab.pipelines.related_files.aggregator import (
   build_aggregator_prompt,
   CANDIDATES_FILE,

@@ -11,8 +11,6 @@ cloud store (``s3`` → R2, task 13) is a config change, not a code change.
 the whole persist / promote / index flow unit-testable without any network.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass

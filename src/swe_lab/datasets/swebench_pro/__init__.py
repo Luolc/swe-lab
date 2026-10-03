@@ -8,8 +8,6 @@ another dataset means adding a sibling package, not touching the general
 loader/eval/rollout flows.
 """
 
-from __future__ import annotations
-
 from .record import COLUMNS, SweBenchProInstance
 
 __all__ = [

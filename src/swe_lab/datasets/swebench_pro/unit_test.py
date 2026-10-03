@@ -8,8 +8,6 @@ takes the instance's fields directly (not the record) and returns the general
 record — the dependency runs one way, ``record`` → ``unit_test``.
 """
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
@@ -149,7 +147,7 @@ def _parse_output(sb: SandboxFs) -> tuple[frozenset[str], OutputState]:
     return frozenset(), OutputState.ABSENT
   try:
     data = json.loads(sb.read(OUTPUT_JSON_NAME))
-  except (json.JSONDecodeError, OSError, ValueError):
+  except json.JSONDecodeError, OSError, ValueError:
     return frozenset(), OutputState.UNPARSEABLE
   if not isinstance(data, dict):
     return frozenset(), OutputState.UNPARSEABLE

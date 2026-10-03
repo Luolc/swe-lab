@@ -1,7 +1,5 @@
 """Tests for the post-run persist step: persist / promote / index."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from etils import epath

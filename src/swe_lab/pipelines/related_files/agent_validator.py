@@ -15,8 +15,6 @@ line. So a 55-line file that ends in a newline has 56 addressable lines, and an
 tool shows the agent.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import json
@@ -176,7 +174,7 @@ def main(argv: list[str] | None = None) -> int:
 def _snippet_count(output_path: Path) -> int:
   try:
     data = json.loads(output_path.read_text())
-  except (OSError, json.JSONDecodeError):
+  except OSError, json.JSONDecodeError:
     return 0
   if isinstance(data, Mapping):
     snippets = data.get("snippets", [])

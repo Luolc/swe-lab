@@ -11,8 +11,6 @@ the name works with no swe-lab change. Built-ins register at import of their
 own package.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable
 
 from .base import Harness

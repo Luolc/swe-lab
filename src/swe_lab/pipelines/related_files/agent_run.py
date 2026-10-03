@@ -13,8 +13,6 @@ several runs of the same instance can execute concurrently without sharing a
 checkout, proxy port, or log path.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
@@ -310,7 +308,7 @@ def invoke_with_retries(
           stream_log=trace_log,
         )
       return cli_result, read_snippets(workspace)
-    except (RetryableError, MissingOutputError):
+    except RetryableError, MissingOutputError:
       if attempt >= max_attempts:
         raise
       backoff = _RETRY_BACKOFFS_S[min(attempt - 1, len(_RETRY_BACKOFFS_S) - 1)]
@@ -406,7 +404,7 @@ def _kill_process_group(proc: subprocess.Popen[str]) -> None:
   """SIGKILL the whole process group (claude + its node grandchildren)."""
   try:
     os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-  except (ProcessLookupError, PermissionError):
+  except ProcessLookupError, PermissionError:
     proc.kill()
 
 

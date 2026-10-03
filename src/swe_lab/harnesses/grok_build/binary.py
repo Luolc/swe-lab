@@ -17,8 +17,6 @@ on every later fetch on every machine, which is the property that protects a
 sweep from a silently changed artifact (task-28 §3's answer, unchanged).
 """
 
-from __future__ import annotations
-
 import hashlib
 import os
 import urllib.request

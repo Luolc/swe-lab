@@ -17,8 +17,6 @@ the cases:
   raises, the attempt fails ungraded, and the runner may retry it.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 import json
 import shlex

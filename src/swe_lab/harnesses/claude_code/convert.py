@@ -35,8 +35,6 @@ at write time by ``cc-reverse-proxy`` (see
 actually ran did so). Conversion neither adds nor removes any of it.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 import json
 from typing import Any

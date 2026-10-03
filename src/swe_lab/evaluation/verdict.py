@@ -7,8 +7,6 @@ method needs to run and grade one instance; each dataset compiles its own record
 into one.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 

@@ -1,7 +1,5 @@
 """tutanota de49d486: a build client that discards its error, then succeeds."""
 
-from __future__ import annotations
-
 from .._seam import (
   RegisteredFix,
   render,

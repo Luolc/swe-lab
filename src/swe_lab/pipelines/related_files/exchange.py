@@ -22,8 +22,6 @@ sandbox rollout path is separate — it runs the agent *inside* the container
 ``harnesses.claude_code.convert`` into a typed ``Conversation`` instead.
 """
 
-from __future__ import annotations
-
 import dataclasses
 import json
 import re
@@ -211,7 +209,7 @@ def _git_config(key: str) -> str:
       timeout=5,
       check=False,
     )
-  except (OSError, subprocess.SubprocessError):
+  except OSError, subprocess.SubprocessError:
     return ""
   return result.stdout.strip()
 

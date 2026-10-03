@@ -19,8 +19,6 @@ workspace. See :mod:`~swe_lab.harnesses.claude_code.proxy` for why it stopped
 being a host process.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 import json

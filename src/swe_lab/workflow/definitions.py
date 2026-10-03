@@ -12,8 +12,6 @@ built-ins imports this module (the CLI does), exactly as a downstream user
 imports their own.
 """
 
-from __future__ import annotations
-
 import functools
 
 from swe_lab.conversation.observer import CONVERSATION_NAME

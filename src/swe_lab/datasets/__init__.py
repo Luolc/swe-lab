@@ -1,7 +1,5 @@
 """Dataset loading: dataset-agnostic loader plus per-dataset record types."""
 
-from __future__ import annotations
-
 from .loader import (
   Dataset,
   DatasetRecord,

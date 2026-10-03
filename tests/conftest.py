@@ -33,7 +33,7 @@ def _docker_usable() -> bool:
       timeout=15,
       check=False,
     )
-  except (OSError, subprocess.TimeoutExpired):
+  except OSError, subprocess.TimeoutExpired:
     return False
   return result.returncode == 0
 

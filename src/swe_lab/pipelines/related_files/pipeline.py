@@ -7,8 +7,6 @@ persisted under ``outputs/related_files/<dataset>/<instance_id>/`` (see
 aggregate is the deliverable; the candidates make it auditable.
 """
 
-from __future__ import annotations
-
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 

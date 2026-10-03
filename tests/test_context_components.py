@@ -1,7 +1,5 @@
 """Complete, bounded, and replaceable supervisor context components."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 import dataclasses
 from typing import Any, override

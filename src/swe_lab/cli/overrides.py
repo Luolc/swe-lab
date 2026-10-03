@@ -15,8 +15,6 @@ Nothing is ever assigned through a reference, so the definition a registry
 holds is never edited by a run that overrides it.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, fields, is_dataclass, replace
 from enum import Enum
@@ -234,8 +232,8 @@ def _rebuilt(obj: Any, path: tuple[str, ...], override: Override) -> Any:
 def _hints(cls: type) -> Mapping[str, Any]:
   """Return a class's *resolved* annotations.
 
-  Every module here uses postponed annotations, so ``Field.type`` is a string;
-  ``get_type_hints`` is what turns it back into the type coercion needs. A
+  ``Field.type`` is not reliably a type (it can be source text or a
+  ``ForwardRef``); ``get_type_hints`` is what yields the type coercion needs. A
   class whose annotations cannot be resolved at all yields nothing, and its
   fields report as not overridable rather than being coerced by guesswork.
 

@@ -7,8 +7,6 @@ the agent, which is **registered** here exactly as a downstream user would
 register theirs (``--rollout.harness=stub``).
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import replace
 import json

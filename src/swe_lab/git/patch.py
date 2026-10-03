@@ -21,8 +21,6 @@ error-prone; this module is the small, testable core of it. See ADR-0001
   a pass. True once a binary-only patch has its hunks stripped.
 """
 
-from __future__ import annotations
-
 import re
 import shlex
 

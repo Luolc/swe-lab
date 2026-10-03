@@ -15,8 +15,6 @@ retry decidable (ADR-0011), so the contract asks a harness for the outcome and
 derives ``completed`` from it.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from enum import StrEnum

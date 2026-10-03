@@ -208,8 +208,9 @@ changes what the entry *declares*, which is what an override should mean.
 
 The rules a reader of the implementation should not have to infer:
 
-**Annotations are resolved, not read.** Every module here uses
-`from __future__ import annotations`, so `Field.type` is a *string*. Coercion
+**Annotations are resolved, not read.** `Field.type` is not reliably a type:
+it is the source text in a module that postpones annotations, and a
+`ForwardRef` for a name that does not exist at run time. Coercion
 walks `typing.get_type_hints(type(obj))` instead (cached per class) and looks
 each field's real type up in it. A field whose annotation cannot be resolved —
 a forward reference to something not importable at run time — is reported as

@@ -17,8 +17,6 @@ Schema and mapping verified against live 0.147.0 runs (2026-08-08), not only
 the source.
 """
 
-from __future__ import annotations
-
 import json
 from typing import Any
 

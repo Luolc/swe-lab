@@ -28,8 +28,6 @@ engine, so the verdict is a ``SweBenchProVerdict`` and the run outcome a
 ``RunResult``.
 """
 
-from __future__ import annotations
-
 import collections
 from concurrent.futures import as_completed, ThreadPoolExecutor
 import contextlib

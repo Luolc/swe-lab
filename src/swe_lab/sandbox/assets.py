@@ -48,8 +48,6 @@ a sandbox knows what it runs on and a harness does not, so choosing the build
 (and whether to bundle it, and how it travels) belongs to the sandbox.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import override, TYPE_CHECKING

@@ -28,11 +28,10 @@ predates the base. SWE-bench Verified preserves those deliberately; we match it,
 which also keeps our numbers comparable with theirs.
 """
 
-from __future__ import annotations
-
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass
 import json
 import shlex
+import typing
 
 from .patch import isolated_git_env
 
@@ -249,14 +248,14 @@ def _emit_json() -> str:
   Returns:
     The ``printf`` command line.
   """
-  # `from __future__ import annotations` makes `field.type` the *source text*
-  # of the annotation, not the type object — so this compares strings. Getting
-  # that wrong silently drops the quotes around `base_sha` and emits invalid
-  # JSON, which is what `test_the_report_script_quotes_only_its_string_fields`
-  # is there to catch.
-  types = {field.name: str(field.type) for field in fields(GitHistoryReport)}
+  # `field.type` is not reliably a type object (a module that postpones
+  # annotations makes it the source text), so the types are resolved
+  # explicitly. Getting this wrong silently drops the quotes around `base_sha`
+  # and emits invalid JSON, which is what
+  # `test_the_report_script_quotes_only_its_string_fields` is there to catch.
+  types = typing.get_type_hints(GitHistoryReport)
   pairs = [
-    f'"{name}":"%s"' if types[name] == "str" else f'"{name}":%s'
+    f'"{name}":"%s"' if types[name] is str else f'"{name}":%s'
     for name, _ in _SHELL_VARS
   ]
   args = " ".join(f'"${var}"' for _, var in _SHELL_VARS)

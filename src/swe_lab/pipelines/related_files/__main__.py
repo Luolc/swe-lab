@@ -6,8 +6,6 @@ Runs N samples + an aggregate and stores every artifact under
 ``outputs/related_files/<dataset>/<instance_id>/`` (see ``storage``).
 """
 
-from __future__ import annotations
-
 import argparse
 from typing import get_args
 

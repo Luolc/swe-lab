@@ -6,8 +6,6 @@ re-measurable against runs that already happened. Reading three files off disk
 does that; re-running the agent would not.
 """
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 import json
 from typing import Any
@@ -34,7 +32,7 @@ def _read_json(path: epath.Path) -> dict[str, Any] | None:
     return None
   try:
     parsed = json.loads(path.read_text())
-  except (ValueError, UnicodeDecodeError):
+  except ValueError, UnicodeDecodeError:
     return None
   return parsed if isinstance(parsed, dict) else None
 

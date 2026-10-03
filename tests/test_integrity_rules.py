@@ -7,8 +7,6 @@ see ``test_the_rule_set_stays_clean_on_the_gold_corpus``, which runs whenever
 the dataset is available.
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any

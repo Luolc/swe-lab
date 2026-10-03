@@ -50,8 +50,6 @@ parameters that were not sent**, since an unset parameter is invisible unless
 its absence is written down.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Mapping
 import dataclasses
 import json

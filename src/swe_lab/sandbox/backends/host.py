@@ -13,8 +13,6 @@ an absolute-path read-only asset (e.g. the pinned agent binary, outside the
 workspace) is ``docker cp``'d into the container and made read-only there.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import json
@@ -536,7 +534,7 @@ class HostMetricsObserver(SandboxObserver):
         if line.startswith("oom_kill "):
           try:
             count = float(int(line.split()[1]))
-          except (IndexError, ValueError):
+          except IndexError, ValueError:
             _logger.warning("unparseable memory.events line %r", line)
     inspected = self._inspect_oom_killed()
     if inspected is None:

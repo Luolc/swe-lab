@@ -6,8 +6,6 @@ job. The root is discovered by walking up to the nearest ``pyproject.toml`` (or
 taken from ``PROJECT_ROOT`` when set by ``.envrc``).
 """
 
-from __future__ import annotations
-
 import os
 
 from etils import epath

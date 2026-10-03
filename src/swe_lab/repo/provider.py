@@ -13,8 +13,6 @@ once per task. Provisioning is idempotent: an existing checkout already at the
 right commit is returned untouched, so it is cheap to call on every run.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import subprocess

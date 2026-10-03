@@ -5,8 +5,6 @@ process on a per-run port. (The engine's rollout path runs both in the sandbox
 — see ``test_proxy.py``.)
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 import subprocess
 

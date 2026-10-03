@@ -8,8 +8,6 @@ atomically) is what a later process resumes against. A workflow calls this
 once per entry; a caller with a single task calls it directly.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, fields, replace
 from enum import StrEnum

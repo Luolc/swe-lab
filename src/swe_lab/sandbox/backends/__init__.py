@@ -11,8 +11,6 @@ wrapper (or an entry point), and ``--backend acme`` then works with no swe-lab
 change. Built-ins register ``host`` / ``ghjob`` at import.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any

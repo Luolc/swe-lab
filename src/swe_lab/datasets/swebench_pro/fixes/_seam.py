@@ -4,8 +4,6 @@ Kept apart from the registry so a fix module can import the building blocks
 without importing the package that imports it back.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 

@@ -5,8 +5,6 @@ share, so a name like ``run_script.sh`` is defined once rather than re-typed in
 both ``execution`` (which fetches it) and ``unit_test`` (which stages it).
 """
 
-from __future__ import annotations
-
 from swe_lab.sandbox.observers import BASE_REF_NAME as _BASE_REF_NAME
 from swe_lab.sandbox.observers import PATCH_NAME as _PATCH_NAME
 

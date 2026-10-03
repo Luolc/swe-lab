@@ -17,8 +17,6 @@ The engine-generic mechanics — the script text and the report parsing — live
 :mod:`swe_lab.git.history`; this is the observer that drives them.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 import json
 import logging

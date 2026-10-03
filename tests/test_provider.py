@@ -1,7 +1,5 @@
 """Tests for GitCheckoutProvider against a local (network-free) remote."""
 
-from __future__ import annotations
-
 from pathlib import Path
 import subprocess
 

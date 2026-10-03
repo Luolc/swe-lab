@@ -1,7 +1,5 @@
 """Tests for combining per-instance aggregates into one parquet."""
 
-from __future__ import annotations
-
 from datetime import datetime
 import hashlib
 import json

@@ -1,7 +1,5 @@
 """Tests for the host-side credential shims the CLI entry point runs."""
 
-from __future__ import annotations
-
 from collections.abc import Iterator
 import os
 

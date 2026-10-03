@@ -6,8 +6,6 @@ not a substitute: the raw proxy log and the uploaded record are different
 objects, and a header can be fine in one and unexamined in the other.
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any

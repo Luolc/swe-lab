@@ -23,8 +23,6 @@ flow does not use yet (``dockerhub_tag``, ``before_repo_set_cmd``), so future
 repo-provisioning / agent modes can rely on them without a schema change.
 """
 
-from __future__ import annotations
-
 import ast
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass

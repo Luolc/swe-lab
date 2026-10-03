@@ -7,7 +7,7 @@ behavior rules) and [`README.md`](README.md) (the map — roadmap / status).
 
 ## Stack
 
-- **Python 3.13** (`>=3.13,<3.14`), managed with **[uv](https://docs.astral.sh/uv/)**.
+- **Python 3.14** (`>=3.14,<3.15`), managed with **[uv](https://docs.astral.sh/uv/)**.
 - **[direnv](https://direnv.net/)** auto-activates the venv (`.envrc`).
 - Runtime deps are deliberately thin: `polars` (parquet), `huggingface-hub`
   (off-repo trace storage), `etils` (its `epath` filesystem-path API — see
@@ -325,7 +325,7 @@ the one prose copy of it (`AGENTS.md` links here rather than restating it):
   …) and the import sorter (`I`, configured in `[tool.ruff.lint.isort]`),
   `--fix`. Runs before the formatter.
 - **ruff-format** — the formatter: **line length 80, 2-space indent** (block
-  and continuation alike), double quotes, `py313`. Why Ruff, why basedpyright
+  and continuation alike), double quotes, `py314`. Why Ruff, why basedpyright
   and pydoclint stay, and when to re-evaluate ty:
   [ADR-0028](decisions/ADR-0028-ruff-replaces-pyink-isort-and-pylint.md).
 - **basedpyright** — type checker over `src` + `tests`.

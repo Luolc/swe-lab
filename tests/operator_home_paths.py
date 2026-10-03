@@ -25,8 +25,6 @@ directory: a guard keyed to whoever happens to run it is green on every other
 machine and in CI, which is indistinguishable from not existing.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterable, Sequence
 import pathlib
 import re
@@ -115,7 +113,7 @@ def offenders(paths: Iterable[pathlib.Path | str]) -> list[str]:
     path = pathlib.Path(entry)
     try:
       text = path.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, IsADirectoryError, FileNotFoundError):
+    except UnicodeDecodeError, IsADirectoryError, FileNotFoundError:
       continue
     for number, line in enumerate(text.splitlines(), start=1):
       found.extend(

@@ -7,8 +7,6 @@ artifact, byte-identical for every instance — and names the test that must lan
 with it.
 """
 
-from __future__ import annotations
-
 import hashlib
 import pathlib
 

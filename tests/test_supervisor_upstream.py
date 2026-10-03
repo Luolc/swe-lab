@@ -12,8 +12,6 @@ shipped default, which must give the *other* answer. An assertion green under
 both would say nothing about the choice being honoured.
 """
 
-from __future__ import annotations
-
 import dataclasses
 import io
 import json

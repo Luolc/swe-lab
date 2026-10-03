@@ -4,7 +4,7 @@ version = "0.3.7"
 description = "Tooling to enrich and audit SWE-Bench evaluation data (related-files annotation, and more)"
 readme = "README.md"
 authors = [{ name = "Liangchen Luo", email = "luolc.witty@gmail.com" }]
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.14,<3.15"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 keywords = [
@@ -23,7 +23,7 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Software Development :: Testing",
     "Typing :: Typed",
@@ -76,6 +76,10 @@ markers = [
 ]
 
 [tool.basedpyright]
+# Pinned rather than read off whichever interpreter basedpyright finds: a
+# pre-commit hook environment can be older than .venv, and 3.14 syntax
+# (PEP 758 except clauses) is an error under an older version.
+pythonVersion = "3.14"
 venvPath = "."
 venv = ".venv"
 include = ["src", "tests"]
@@ -104,7 +108,7 @@ reportUnusedCallResult = false
 [tool.ruff]
 line-length = 80
 indent-width = 2
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = [

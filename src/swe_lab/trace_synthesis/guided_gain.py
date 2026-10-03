@@ -38,8 +38,6 @@ named rather than dropped: "not graded" and "graded as failing" are different
 facts, and only one of them is a zero.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum

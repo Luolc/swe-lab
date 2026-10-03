@@ -19,8 +19,6 @@ harness still know exactly one name for each variable, and CI sets those names
 directly from the repository secrets.
 """
 
-from __future__ import annotations
-
 import os
 
 from swe_lab.credential_sources import forget_adoptions, record_adoption

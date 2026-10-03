@@ -1,7 +1,5 @@
 """Tests for the annotation schema: parsing and serialization."""
 
-from __future__ import annotations
-
 import json
 
 import pytest

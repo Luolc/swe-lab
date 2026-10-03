@@ -6,8 +6,6 @@ ADRs recorded it as a promise about a reporter that did not exist. These tests
 are what turn it into something that fails when it is broken.
 """
 
-from __future__ import annotations
-
 import pytest
 
 from swe_lab.reporting import Rate, rate_of

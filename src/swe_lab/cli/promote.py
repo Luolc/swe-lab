@@ -6,8 +6,6 @@ under the run key, plus a manifest shard — so the debug/formal split never has
 to be perfect at launch.
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Annotated

@@ -7,8 +7,6 @@ low-budget arm cost the same per boundary as a generous one, so a comparison
 between them reads the corrections rather than the calls.
 """
 
-from __future__ import annotations
-
 import dataclasses
 import hashlib
 from typing import Any

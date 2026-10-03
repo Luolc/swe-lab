@@ -6,8 +6,6 @@ tested. ``build_extraction_script`` runs against a **real** temporary git repo
 end to end, including an extract -> apply round-trip against a clean base.
 """
 
-from __future__ import annotations
-
 import os
 from pathlib import Path
 import subprocess

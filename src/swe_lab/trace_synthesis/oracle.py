@@ -34,8 +34,6 @@ never pooled with benchmark numbers — is the policy stamp's job (ADR-0010
 records is only their entry key.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import json

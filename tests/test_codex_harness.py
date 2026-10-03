@@ -6,8 +6,6 @@ converter is pinned against what the agent actually emits rather than against
 what its source suggests it should.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 import json
 from pathlib import Path

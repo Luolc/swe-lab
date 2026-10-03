@@ -1,7 +1,5 @@
 """Tests for the failure classifier."""
 
-from __future__ import annotations
-
 import pytest
 
 from swe_lab.harnesses.claude_code.errors import (

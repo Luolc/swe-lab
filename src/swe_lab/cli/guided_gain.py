@@ -1,7 +1,5 @@
 """The ``guided-gain`` subcommand: the 2×2 reading of a from-scratch sweep."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 import sys

@@ -9,8 +9,6 @@ happened when the general CLI landed: the workflows still passed
 So this reads the real workflow files and checks their real invocations.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 import re
 

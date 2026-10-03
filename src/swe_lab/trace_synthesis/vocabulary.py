@@ -13,8 +13,6 @@ boundaries whatever did. One carrier ships today (ADR-0026); the vocabulary
 does not encode that.
 """
 
-from __future__ import annotations
-
 #: How many actor events the supervisor was consulted about — one per row of
 #: the account, which is what makes ``boundaries == 0`` read as "never
 #: supervised" rather than "supervised and quiet".

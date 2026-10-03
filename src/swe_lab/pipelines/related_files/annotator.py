@@ -6,8 +6,6 @@ The shared workspace / proxy / validate / store machinery lives in
 ``agent_run``.
 """
 
-from __future__ import annotations
-
 from etils import epath
 
 from swe_lab.datasets.loader import Dataset, load_dataset

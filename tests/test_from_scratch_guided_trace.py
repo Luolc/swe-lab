@@ -12,8 +12,6 @@ bindings, satisfied by tasks with the real schemas, on real store records that
 the 2×2 reading is then taken from. No agent runs and no container starts.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field, replace
 import json
 from pathlib import Path

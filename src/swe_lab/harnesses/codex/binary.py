@@ -25,8 +25,6 @@ ancient glibc and distroless images alike; there is no bundle to build and no
 launcher to invoke it through (task-28 §1).
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable
 import hashlib
 import io

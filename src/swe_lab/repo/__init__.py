@@ -1,7 +1,5 @@
 """Pluggable repository provisioning."""
 
-from __future__ import annotations
-
 from .provider import (
   GitCheckoutProvider,
   GitError,

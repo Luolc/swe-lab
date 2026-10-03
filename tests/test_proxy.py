@@ -6,8 +6,6 @@ resolution: where the source is looked for, what counts as its version, and
 that a cached build is reused rather than rebuilt.
 """
 
-from __future__ import annotations
-
 import hashlib
 from pathlib import Path
 

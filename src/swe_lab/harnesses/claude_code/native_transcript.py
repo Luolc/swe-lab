@@ -32,8 +32,6 @@ the directory rather than a pattern — a copy that cannot be wrong about the
 layout does not need the layout to be settled.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 import json
 import logging

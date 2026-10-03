@@ -40,8 +40,6 @@ only rewrites names it actually finds, so on already-fixed data it is a no-op).
 # line-length is disabled for this file.
 # ruff: noqa: E501
 
-from __future__ import annotations
-
 # instance_id -> {truncated_name_in_parquet: full_name_the_parser_emits}.
 # Every value is its key plus exactly one dropped trailing character. Sourced
 # verbatim from

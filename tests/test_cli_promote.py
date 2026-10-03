@@ -1,7 +1,5 @@
 """Tests for the `promote` CLI: push a debug workspace into T1."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 

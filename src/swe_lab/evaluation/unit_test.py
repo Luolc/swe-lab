@@ -11,8 +11,6 @@ and reads its verdict back off the execution's own observers — so the same
 declaration runs against any instance, any number of times.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import json

@@ -25,8 +25,6 @@ in force until someone re-pins it deliberately and visibly.
 
 """
 
-from __future__ import annotations
-
 import dataclasses
 import hashlib
 import pathlib

@@ -27,8 +27,6 @@ Three properties are structural rather than advisory, and each has a test:
     intervention, or the log.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Mapping, Sequence
 import dataclasses
 import hashlib

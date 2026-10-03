@@ -21,8 +21,6 @@ collision), and neither reaches for a host path — both read through the sandbo
 so a remote sandbox works unchanged (ADR-0003).
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import override
 

@@ -1,7 +1,5 @@
 """The guidebook schema: stages, each carrying every required field."""
 
-from __future__ import annotations
-
 from swe_lab.trace_synthesis import guidebook as guidebook_schema
 from swe_lab.trace_synthesis.guidebook import STAGE_FIELDS, validate_guidebook
 

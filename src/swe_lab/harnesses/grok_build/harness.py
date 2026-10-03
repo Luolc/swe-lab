@@ -15,8 +15,6 @@ Like Codex there is no bundle and no launcher — the Linux build is statically
 linked musl (task-29 §1) — and unlike Codex there is exactly **one** binary.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 import logging

@@ -11,8 +11,6 @@ handling them is added alongside (its own, or a built-in that already knows the
 kind).
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from etils import epath

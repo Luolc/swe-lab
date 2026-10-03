@@ -30,8 +30,6 @@ Auth: set ``HF_TOKEN`` (e.g. in ``.envrc.local``) or run ``hf auth login``.
     python -m swe_lab.pipelines.related_files.traces <action> [--dataset ...]
 """
 
-from __future__ import annotations
-
 import argparse
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -155,7 +153,7 @@ def _git_head(root: epath.PathLike) -> str | None:
       timeout=10,
       check=False,
     )
-  except (OSError, subprocess.SubprocessError):
+  except OSError, subprocess.SubprocessError:
     return None
   return out.stdout.strip() if out.returncode == 0 else None
 

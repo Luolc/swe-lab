@@ -11,8 +11,6 @@ come from) plus a target path and ``executable`` / ``read_only`` flags. There is
 fixed absolute path, e.g. the pinned binary) — not a separate interface.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from .errors import SandboxError

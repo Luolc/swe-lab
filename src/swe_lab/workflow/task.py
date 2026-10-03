@@ -14,8 +14,6 @@ what lets a workflow definition be written statically, once, and invoked
 against any instance.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace

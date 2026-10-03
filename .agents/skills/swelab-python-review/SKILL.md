@@ -33,7 +33,7 @@ in this file. A supersede names the *user-level* id.
 - `SLP2` **Toolchain facts** (from the root `pyproject.toml` and
   `.pre-commit-config.yaml`; where they disagree, the config wins): ruff
   formats (`ruff-format`) at 80 columns, 2-space indent, double quotes,
-  `py313`; ruff `I` sorts imports per `[tool.ruff.lint.isort]`; ruff lints
+  `py314`; ruff `I` sorts imports per `[tool.ruff.lint.isort]`; ruff lints
   `B BLE C D D401 E F I ISC001 N PLW0129 W W505 RUF008 UP SIM`, mccabe
   max-complexity 10; pydoclint checks Google `Args:` against the signature with
   type checks off (basedpyright owns types); basedpyright runs its default mode
@@ -43,7 +43,7 @@ in this file. A supersede names the *user-level* id.
   and `reportUnusedCallResult`, and `experiments/` is excluded per hook from
   `ruff-check`, `ruff-format`, `basedpyright` and `pydoclint` (the
   credential, operator-home-path and stale-module-ref hooks still scan it);
-  Python is pinned to 3.13.
+  Python is pinned to 3.14.
 - `SLP3` **Blind spots: point at the config, don't keep a list.** The
   authoritative enabled set is `[tool.ruff.lint] select` in the root
   `pyproject.toml`. `S`, `DTZ`, `PTH`, `T20`, `G`, `PT` and `RUF012` are **not**
