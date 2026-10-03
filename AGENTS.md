@@ -137,7 +137,10 @@ pre-existing fact we neither introduced nor can remove at acceptable cost, and
 each entry is one immutable fingerprint — never a path, rule or regex. The full
 rule and the reasoning are in that file's header comment.
 
-`experiments/` is exempt from the hooks.
+`experiments/` is exempt only from the code-quality hooks (`ruff-check`,
+`ruff-format`, `basedpyright`, `pydoclint`); `gitleaks`,
+`no-operator-home-paths` and `no-stale-module-refs` still scan it — see
+[`docs/conventions.md`](docs/conventions.md).
 
 **An invariant needs a test, or downgrade the claim.** When a `spec.md`, an ADR,
 or a docstring asserts an *always / never / every path / exactly one*, the same
