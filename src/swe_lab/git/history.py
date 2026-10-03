@@ -248,10 +248,10 @@ def _emit_json() -> str:
   Returns:
     The ``printf`` command line.
   """
-  # `field.type` is whatever the annotation evaluated to — the source text
-  # under `from __future__ import annotations`, the type object without it —
-  # so the types are resolved explicitly. Getting this wrong silently drops the
-  # quotes around `base_sha` and emits invalid JSON, which is what
+  # `field.type` is not reliably a type object (a module that postpones
+  # annotations makes it the source text), so the types are resolved
+  # explicitly. Getting this wrong silently drops the quotes around `base_sha`
+  # and emits invalid JSON, which is what
   # `test_the_report_script_quotes_only_its_string_fields` is there to catch.
   types = typing.get_type_hints(GitHistoryReport)
   pairs = [

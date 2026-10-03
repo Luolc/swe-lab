@@ -271,9 +271,8 @@ def test_the_report_script_emits_exactly_the_dataclass_fields():
 
 
 def test_the_report_script_quotes_only_its_string_fields():
-  # `from __future__ import annotations` makes `field.type` the annotation's
-  # SOURCE TEXT, so a `is str` check silently fails and base_sha loses its
-  # quotes — emitting invalid JSON. It did, once.
+  # Whether a field is a string decides its JSON quoting; misread it and
+  # base_sha loses its quotes, emitting invalid JSON.
   printf = next(
     line
     for line in build_report_script(workdir="/app").splitlines()
