@@ -325,7 +325,9 @@ the one prose copy of it (`AGENTS.md` links here rather than restating it):
   …) and the import sorter (`I`, configured in `[tool.ruff.lint.isort]`),
   `--fix`. Runs before the formatter.
 - **ruff-format** — the formatter: **line length 80, 2-space indent** (block
-  and continuation alike), double quotes, `py313`.
+  and continuation alike), double quotes, `py313`. Why Ruff, why basedpyright
+  and pydoclint stay, and when to re-evaluate ty:
+  [ADR-0028](decisions/ADR-0028-ruff-replaces-pyink-isort-and-pylint.md).
 - **basedpyright** — type checker over `src` + `tests`.
 - **pydoclint** — docstring `Args:`/`Returns:`/`Raises:` must match the
   signature; docstring *types* are deliberately unchecked (see Style).
