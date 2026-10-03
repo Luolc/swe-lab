@@ -333,7 +333,7 @@ the one prose copy of it (`AGENTS.md` links here rather than restating it):
   signature; docstring *types* are deliberately unchecked (see Style).
 - **uv-lock** — regenerates `uv.lock` when `pyproject.toml` changes.
 - **no-stale-module-refs** (local pygrep) — fails if a deleted or renamed
-  module/symbol reappears under `src/` or `tests/`; add a token to it
+  module/symbol reappears under `src/`, `tests/` or `experiments/`; add a token to it
   whenever you remove one. `docs/` is exempt on purpose (point-in-time
   records are supposed to name retired code).
 
