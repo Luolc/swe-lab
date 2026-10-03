@@ -58,7 +58,7 @@ jobs:
           "${bindir}/gitleaks" git --redact --no-banner --verbose .
 
       - name: Install uv (with cache)
-        uses: astral-sh/setup-uv@v9.0.0
+        uses: astral-sh/setup-uv@v10.2.0
         with:
           enable-cache: true
 
