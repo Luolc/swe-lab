@@ -211,7 +211,7 @@ def _git_config(key: str) -> str:
       timeout=5,
       check=False,
     )
-  except (OSError, subprocess.SubprocessError):
+  except OSError, subprocess.SubprocessError:
     return ""
   return result.stdout.strip()
 

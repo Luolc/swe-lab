@@ -104,7 +104,7 @@ def end_process_group(
     return
   try:
     os.killpg(group, signal.SIGTERM)
-  except (ProcessLookupError, PermissionError):
+  except ProcessLookupError, PermissionError:
     _reap(process, grace_s)  # already gone, or not ours to signal
     return
   if not _await_exit(process, grace_s):

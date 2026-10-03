@@ -76,6 +76,10 @@ markers = [
 ]
 
 [tool.basedpyright]
+# Pinned rather than read off whichever interpreter basedpyright finds: a
+# pre-commit hook environment can be older than .venv, and 3.14 syntax
+# (PEP 758 except clauses) is an error under an older version.
+pythonVersion = "3.14"
 venvPath = "."
 venv = ".venv"
 include = ["src", "tests"]

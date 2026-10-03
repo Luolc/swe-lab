@@ -34,7 +34,7 @@ def _read_json(path: epath.Path) -> dict[str, Any] | None:
     return None
   try:
     parsed = json.loads(path.read_text())
-  except (ValueError, UnicodeDecodeError):
+  except ValueError, UnicodeDecodeError:
     return None
   return parsed if isinstance(parsed, dict) else None
 

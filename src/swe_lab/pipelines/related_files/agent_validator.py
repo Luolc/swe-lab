@@ -176,7 +176,7 @@ def main(argv: list[str] | None = None) -> int:
 def _snippet_count(output_path: Path) -> int:
   try:
     data = json.loads(output_path.read_text())
-  except (OSError, json.JSONDecodeError):
+  except OSError, json.JSONDecodeError:
     return 0
   if isinstance(data, Mapping):
     snippets = data.get("snippets", [])

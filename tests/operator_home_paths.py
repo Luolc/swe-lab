@@ -115,7 +115,7 @@ def offenders(paths: Iterable[pathlib.Path | str]) -> list[str]:
     path = pathlib.Path(entry)
     try:
       text = path.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, IsADirectoryError, FileNotFoundError):
+    except UnicodeDecodeError, IsADirectoryError, FileNotFoundError:
       continue
     for number, line in enumerate(text.splitlines(), start=1):
       found.extend(

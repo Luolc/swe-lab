@@ -536,7 +536,7 @@ class HostMetricsObserver(SandboxObserver):
         if line.startswith("oom_kill "):
           try:
             count = float(int(line.split()[1]))
-          except (IndexError, ValueError):
+          except IndexError, ValueError:
             _logger.warning("unparseable memory.events line %r", line)
     inspected = self._inspect_oom_killed()
     if inspected is None:

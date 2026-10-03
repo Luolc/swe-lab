@@ -51,7 +51,9 @@ repos:
       - id: no-operator-home-paths
         name: no operator home path in a committed file
         language: system
-        entry: python3 tests/operator_home_paths.py
+        # The project interpreter, not whatever `python3` is on PATH: the
+        # script is formatted for the Python pyproject.toml requires.
+        entry: uv run python tests/operator_home_paths.py
         # Binary files cannot hold a record anybody reads, and the scanner
         # skips what it cannot decode anyway; this keeps them off its argv.
         types: [text]
