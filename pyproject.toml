@@ -118,6 +118,7 @@ select = [
     "I",      # isort (options in [tool.ruff.lint.isort])
     "ISC001", # single-line-implicit-string-concatenation
     "N",      # pep8-naming
+    "PLW0129", # assert on a string literal: always passes, so it tests nothing
     "W",      # pycodestyle warnings
     "W505",   # doc-line-too-long (max-doc-length below)
     "RUF008", # mutable-dataclass-default

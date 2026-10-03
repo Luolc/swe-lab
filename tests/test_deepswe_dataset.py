@@ -56,7 +56,9 @@ def test_the_eval_script_moves_files_and_never_touches_the_tree(
   """
   spec = _instance(tmp_path).unit_test_spec(apply_patch=True)
   script = spec.eval_script
-  assert 'cp "$SANDBOX_WORKSPACE"/patch.diff /logs/artifacts/model.patch'
+  assert 'cp "$SANDBOX_WORKSPACE"/patch.diff /logs/artifacts/model.patch' in (
+    script
+  )
   assert "bash /tests/test.sh" in script
   assert "git" not in script  # no reset, no checkout, no apply — theirs
   assert "cp /logs/verifier/reward.json" in script
