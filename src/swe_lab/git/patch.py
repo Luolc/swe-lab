@@ -29,8 +29,8 @@ import shlex
 # --- Applying / grading side -------------------------------------------------
 
 _BINARY_MARKERS = (
-    re.compile(r"^Binary files .* differ$", re.MULTILINE),
-    re.compile(r"^GIT binary patch$", re.MULTILINE),
+  re.compile(r"^Binary files .* differ$", re.MULTILINE),
+  re.compile(r"^GIT binary patch$", re.MULTILINE),
 )
 _DIFF_SECTION_SPLIT = re.compile(r"(?=^diff --git )", re.MULTILINE)
 _DIFF_HEADER = re.compile(r"^diff --git ", re.MULTILINE)
@@ -81,12 +81,12 @@ def is_effectively_empty(patch: str) -> bool:
 # `diff.noprefix` / `diff.mnemonicPrefix` to false gives the same `a/ b/`
 # prefixes on any git.
 _ISOLATED_ENV = (
-    "GIT_CONFIG_GLOBAL=/dev/null",  # ignore the user's ~/.gitconfig
-    "GIT_CONFIG_SYSTEM=/dev/null",  # ignore /etc/gitconfig (system-wide)
-    "GIT_CONFIG_NOSYSTEM=1",  # belt-and-suspenders: no system config at all
-    "GIT_PAGER=cat",  # never open a pager (would hang a headless run)
-    "GIT_EXTERNAL_DIFF=",  # no external diff program — use git's own
-    "GIT_TERMINAL_PROMPT=0",  # never block asking for credentials
+  "GIT_CONFIG_GLOBAL=/dev/null",  # ignore the user's ~/.gitconfig
+  "GIT_CONFIG_SYSTEM=/dev/null",  # ignore /etc/gitconfig (system-wide)
+  "GIT_CONFIG_NOSYSTEM=1",  # belt-and-suspenders: no system config at all
+  "GIT_PAGER=cat",  # never open a pager (would hang a headless run)
+  "GIT_EXTERNAL_DIFF=",  # no external diff program — use git's own
+  "GIT_TERMINAL_PROMPT=0",  # never block asking for credentials
 )
 
 
@@ -116,41 +116,41 @@ def isolated_git_env(workdir: str) -> tuple[str, ...]:
     The assignments, ready to prefix a command or be exported.
   """
   return (
-      *_ISOLATED_ENV,
-      "GIT_CONFIG_COUNT=1",
-      "GIT_CONFIG_KEY_0=safe.directory",
-      f"GIT_CONFIG_VALUE_0={shlex.quote(workdir)}",
+    *_ISOLATED_ENV,
+    "GIT_CONFIG_COUNT=1",
+    "GIT_CONFIG_KEY_0=safe.directory",
+    f"GIT_CONFIG_VALUE_0={shlex.quote(workdir)}",
   )
 
 
 _ADD_CONFIG = (
-    "-c",
-    "core.quotepath=false",  # non-ASCII paths literal (UTF-8), not octal \NNN
-    "-c",
-    "core.autocrlf=false",  # never rewrite CRLF<->LF; stage bytes verbatim
+  "-c",
+  "core.quotepath=false",  # non-ASCII paths literal (UTF-8), not octal \NNN
+  "-c",
+  "core.autocrlf=false",  # never rewrite CRLF<->LF; stage bytes verbatim
 )
 _DIFF_CONFIG = (
-    "-c",
-    "core.quotepath=false",  # non-ASCII paths literal (UTF-8), not octal \NNN
-    "-c",
-    "core.autocrlf=false",  # never rewrite CRLF<->LF; diff bytes verbatim
-    "-c",
-    "color.ui=never",  # no ANSI color codes (would corrupt the patch)
-    "-c",
-    "diff.noprefix=false",  # keep the a/ b/ path prefixes (apply needs them)
-    "-c",
-    "diff.mnemonicPrefix=false",  # plain a/ b/, not mnemonic i/ w/ c/ o/
-    "-c",
-    "diff.external=",  # force git's built-in diff, no external tool
+  "-c",
+  "core.quotepath=false",  # non-ASCII paths literal (UTF-8), not octal \NNN
+  "-c",
+  "core.autocrlf=false",  # never rewrite CRLF<->LF; diff bytes verbatim
+  "-c",
+  "color.ui=never",  # no ANSI color codes (would corrupt the patch)
+  "-c",
+  "diff.noprefix=false",  # keep the a/ b/ path prefixes (apply needs them)
+  "-c",
+  "diff.mnemonicPrefix=false",  # plain a/ b/, not mnemonic i/ w/ c/ o/
+  "-c",
+  "diff.external=",  # force git's built-in diff, no external tool
 )
 # No ``--cached`` (we diff the worktree vs ``base_ref`` so ``git add -N``'s
 # intent-to-add new files show as full additions) and no ``--binary`` (binary
 # content is never serialized — the happy path is text-only; the runner strips
 # any residual ``Binary files ... differ`` header).
 _DIFF_FLAGS = (
-    "--no-color",  # no ANSI color (also enforced by color.ui=never)
-    "--no-textconv",  # diff the real bytes, not a textconv'd view
-    "--no-ext-diff",  # ignore any configured external diff helper
+  "--no-color",  # no ANSI color (also enforced by color.ui=never)
+  "--no-textconv",  # diff the real bytes, not a textconv'd view
+  "--no-ext-diff",  # ignore any configured external diff helper
 )
 
 
@@ -161,7 +161,7 @@ _DIFF_FLAGS = (
 # same image — and sha equality is exactly how the grading side proves it is
 # about to grade the tree the patch was taken against.
 _BASELINE_IDENTITY = (
-    "-c user.email=baseline@swe-lab.invalid -c user.name=swe-lab"
+  "-c user.email=baseline@swe-lab.invalid -c user.name=swe-lab"
 )
 _BASELINE_DATE = "1970-01-01T00:00:00+00:00"
 _BASELINE_MESSAGE = "swe-lab: pre-agent baseline"
@@ -189,7 +189,7 @@ def baseline_commit_lines(workdir: str) -> list[str]:
   wd = shlex.quote(workdir)
   env = " ".join(isolated_git_env(workdir))
   dates = (
-      f"GIT_AUTHOR_DATE={_BASELINE_DATE} GIT_COMMITTER_DATE={_BASELINE_DATE}"
+    f"GIT_AUTHOR_DATE={_BASELINE_DATE} GIT_COMMITTER_DATE={_BASELINE_DATE}"
   )
   # Isolated like every other engine git command — this set previously ran
   # bare, so an image ~/.gitconfig could skew the baseline while extraction
@@ -197,9 +197,9 @@ def baseline_commit_lines(workdir: str) -> list[str]:
   # an image whose repo is owned by another UID (#244). Neither enters the
   # commit object, so the sha stays a pure function of the tree.
   return [
-      f"{env} git -C {wd} {_BASELINE_IDENTITY} add -A -- :/",
-      f"{dates} {env} git -C {wd} {_BASELINE_IDENTITY} commit --allow-empty"
-      f" -q -m {shlex.quote(_BASELINE_MESSAGE)}",
+    f"{env} git -C {wd} {_BASELINE_IDENTITY} add -A -- :/",
+    f"{dates} {env} git -C {wd} {_BASELINE_IDENTITY} commit --allow-empty"
+    f" -q -m {shlex.quote(_BASELINE_MESSAGE)}",
   ]
 
 
@@ -217,14 +217,14 @@ def build_baseline_script(*, workdir: str, output_path: str) -> str:
   wd = shlex.quote(workdir)
   env = " ".join(isolated_git_env(workdir))
   return (
-      "\n".join(
-          [
-              "set -eu",
-              *baseline_commit_lines(workdir),
-              f"{env} git -C {wd} rev-parse HEAD > {out}",
-          ]
-      )
-      + "\n"
+    "\n".join(
+      [
+        "set -eu",
+        *baseline_commit_lines(workdir),
+        f"{env} git -C {wd} rev-parse HEAD > {out}",
+      ]
+    )
+    + "\n"
   )
 
 
@@ -259,33 +259,33 @@ def build_baseline_verify_script(*, workdir: str, base_ref_path: str) -> str:
   ref = shlex.quote(base_ref_path)
   env = " ".join(isolated_git_env(workdir))
   return (
-      "\n".join(
-          [
-              "set -eu",
-              *baseline_commit_lines(workdir),
-              f'baseline="$({env} git -C {wd} rev-parse HEAD)"',
-              f'expected="$(cat {ref})"',
-              'if [ "$baseline" != "$expected" ]; then'
-              ' echo "grading tree differs from the patch base:'
-              ' recomputed $baseline, patch taken against $expected" >&2;'
-              " exit 1; fi",
-              # -c autocrlf: the reset is a checkout, and the line-ending
-              # discipline (symmetric with extraction) must hold for it too.
-              f"{env} git -C {wd} -c core.autocrlf=false reset --hard HEAD",
-              f"{env} git -C {wd} clean -fd",
-          ]
-      )
-      + "\n"
+    "\n".join(
+      [
+        "set -eu",
+        *baseline_commit_lines(workdir),
+        f'baseline="$({env} git -C {wd} rev-parse HEAD)"',
+        f'expected="$(cat {ref})"',
+        'if [ "$baseline" != "$expected" ]; then'
+        ' echo "grading tree differs from the patch base:'
+        ' recomputed $baseline, patch taken against $expected" >&2;'
+        " exit 1; fi",
+        # -c autocrlf: the reset is a checkout, and the line-ending
+        # discipline (symmetric with extraction) must hold for it too.
+        f"{env} git -C {wd} -c core.autocrlf=false reset --hard HEAD",
+        f"{env} git -C {wd} clean -fd",
+      ]
+    )
+    + "\n"
   )
 
 
 def build_extraction_script(
-    *,
-    workdir: str,
-    base_ref: str,
-    output_path: str,
-    exclude_globs: tuple[str, ...] = (),
-    remove_nested_git: bool = True,
+  *,
+  workdir: str,
+  base_ref: str,
+  output_path: str,
+  exclude_globs: tuple[str, ...] = (),
+  remove_nested_git: bool = True,
 ) -> str:
   """Build the in-container bash that extracts the agent's patch.
 
@@ -323,7 +323,7 @@ def build_extraction_script(
   diff_cfg = " ".join(_DIFF_CONFIG)
   diff_flags = " ".join(_DIFF_FLAGS)
   excludes = "".join(
-      f" {shlex.quote(f':(exclude){glob}')}" for glob in exclude_globs
+    f" {shlex.quote(f':(exclude){glob}')}" for glob in exclude_globs
   )
 
   own_git = shlex.quote(workdir + "/.git")
@@ -333,8 +333,8 @@ def build_extraction_script(
     # would be staged as a single gitlink, silently swallowing the files inside
     # it and breaking apply. Remove them first.
     lines.append(
-        f"find {wd} -type d -name .git -not -path {own_git}"
-        " -prune -exec rm -rf {} + 2>/dev/null || true"
+      f"find {wd} -type d -name .git -not -path {own_git}"
+      " -prune -exec rm -rf {} + 2>/dev/null || true"
     )
   # Intent-to-add new files from the repo root (:/ ) so untracked files show in
   # the worktree diff as full additions, without staging binary content. Tracked

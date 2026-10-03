@@ -54,7 +54,7 @@ class Workspace:
 
 
 def prepare_workspace(
-    instance: SweBenchProInstance, provider: RepoProvider, *, variant: str = ""
+  instance: SweBenchProInstance, provider: RepoProvider, *, variant: str = ""
 ) -> Workspace:
   """Provision the checkout and write the hint materials into it."""
   checkout = provider.provision(instance, variant=variant)
@@ -71,7 +71,7 @@ def prepare_workspace(
 
   # Drop the standalone validator in so the agent can self-check its output.
   _ = epath.Path(agent_validator.__file__).copy(
-      workspace.validator_path, overwrite=True
+    workspace.validator_path, overwrite=True
   )
 
   # Start each run from a clean slate: drop any output from a previous run.
@@ -81,16 +81,16 @@ def prepare_workspace(
 
 def _write(path: epath.PathLike, content: str) -> None:
   _ = epath.Path(path).write_text(
-      content if content.endswith("\n") else content + "\n"
+    content if content.endswith("\n") else content + "\n"
   )
 
 
 def _git_log(checkout: epath.PathLike) -> str:
   result = subprocess.run(
-      ["git", "log", f"-n{_GIT_LOG_LIMIT}", "--stat", "--date=short"],
-      cwd=str(checkout),
-      capture_output=True,
-      text=True,
-      check=False,
+    ["git", "log", f"-n{_GIT_LOG_LIMIT}", "--stat", "--date=short"],
+    cwd=str(checkout),
+    capture_output=True,
+    text=True,
+    check=False,
   )
   return result.stdout if result.returncode == 0 else result.stderr

@@ -95,29 +95,29 @@ class ReverseProxy:
   def __enter__(self) -> ReverseProxy:
     self.output_path.parent.mkdir(parents=True, exist_ok=True)
     self._process = subprocess.Popen(
-        [
-            str(self.binary),
-            "--port",
-            str(self.port),
-            "--target",
-            self.target,
-            "--output",
-            str(self.output_path),
-        ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        # The proxy is the leader of its own process group, so `__exit__` can
-        # end everything it started rather than the one pid we hold.
-        start_new_session=True,
+      [
+        str(self.binary),
+        "--port",
+        str(self.port),
+        "--target",
+        self.target,
+        "--output",
+        str(self.output_path),
+      ],
+      stdout=subprocess.DEVNULL,
+      stderr=subprocess.DEVNULL,
+      # The proxy is the leader of its own process group, so `__exit__` can
+      # end everything it started rather than the one pid we hold.
+      start_new_session=True,
     )
     self._wait_until_listening()
     return self
 
   def __exit__(
-      self,
-      exc_type: type[BaseException] | None,
-      exc: BaseException | None,
-      tb: TracebackType | None,
+    self,
+    exc_type: type[BaseException] | None,
+    exc: BaseException | None,
+    tb: TracebackType | None,
   ) -> None:
     if self._process is None:
       return
@@ -129,8 +129,8 @@ class ReverseProxy:
     while time.monotonic() < deadline:
       if self._process is not None and self._process.poll() is not None:
         raise RuntimeError(
-            f"Proxy exited early (code {self._process.returncode}) on port"
-            f" {self.port}."
+          f"Proxy exited early (code {self._process.returncode}) on port"
+          f" {self.port}."
         )
       try:
         with socket.create_connection(("127.0.0.1", self.port), timeout=0.5):
@@ -138,6 +138,6 @@ class ReverseProxy:
       except OSError:
         time.sleep(0.1)
     raise TimeoutError(
-        f"Proxy did not start listening on port {self.port} within"
-        f" {self.startup_timeout_s}s."
+      f"Proxy did not start listening on port {self.port} within"
+      f" {self.startup_timeout_s}s."
     )

@@ -27,21 +27,21 @@ as ``workflow.definitions`` does:
 """
 
 from .history import (
-    build_purge_script,
-    build_report_script,
-    GitHistoryReport,
+  build_purge_script,
+  build_report_script,
+  GitHistoryReport,
 )
 from .patch import (
-    build_extraction_script,
-    is_effectively_empty,
-    strip_binary_hunks,
+  build_extraction_script,
+  is_effectively_empty,
+  strip_binary_hunks,
 )
 
 __all__ = [
-    "GitHistoryReport",
-    "build_extraction_script",
-    "build_purge_script",
-    "build_report_script",
-    "is_effectively_empty",
-    "strip_binary_hunks",
+  "GitHistoryReport",
+  "build_extraction_script",
+  "build_purge_script",
+  "build_report_script",
+  "is_effectively_empty",
+  "strip_binary_hunks",
 ]

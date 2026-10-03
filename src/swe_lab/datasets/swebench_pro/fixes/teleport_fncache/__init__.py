@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 from .._seam import (
-    RegisteredFix,
-    render,
-    SweBenchProUnitTestSpec,
-    with_setup,
+  RegisteredFix,
+  render,
+  SweBenchProUnitTestSpec,
+  with_setup,
 )
 
 _TELEPORT_FNCACHE_INSTANCE = (
-    "instance_gravitational__teleport-78b0d8c72637df1129f"
-    "b6ff84fc49ef4b5ab1288"
+  "instance_gravitational__teleport-78b0d8c72637df1129fb6ff84fc49ef4b5ab1288"
 )
 _TELEPORT_FNCACHE_TEST = "lib/cache/fncache_test.go"
 
@@ -50,7 +49,7 @@ fi
 
 
 def _fix_instance_teleport_78b0d8c7(
-    spec: SweBenchProUnitTestSpec,
+  spec: SweBenchProUnitTestSpec,
 ) -> SweBenchProUnitTestSpec:
   """Widen `TestFnCacheSanity`'s tolerance, as upstream did.
 
@@ -104,13 +103,13 @@ def _fix_instance_teleport_78b0d8c7(
     The spec with the tolerance widened after the golden checkout.
   """
   return with_setup(
-      spec,
-      mounts={},
-      setup=render(_TELEPORT_FNCACHE_SETUP, TEST=_TELEPORT_FNCACHE_TEST),
+    spec,
+    mounts={},
+    setup=render(_TELEPORT_FNCACHE_SETUP, TEST=_TELEPORT_FNCACHE_TEST),
   )
 
 
 TELEPORT_FNCACHE = RegisteredFix(
-    instances=(_TELEPORT_FNCACHE_INSTANCE,),
-    fix=_fix_instance_teleport_78b0d8c7,
+  instances=(_TELEPORT_FNCACHE_INSTANCE,),
+  fix=_fix_instance_teleport_78b0d8c7,
 )

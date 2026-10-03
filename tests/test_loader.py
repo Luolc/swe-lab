@@ -9,27 +9,27 @@ import pytest
 
 from swe_lab.datasets import loader as loader_module
 from swe_lab.datasets.loader import (
-    load_dataset,
-    load_parquet,
+  load_dataset,
+  load_parquet,
 )
 from swe_lab.datasets.swebench_pro import (
-    COLUMNS,
-    SweBenchProInstance,
+  COLUMNS,
+  SweBenchProInstance,
 )
 
 
 def _row(instance_id: str, language: str = "python") -> dict[str, str]:
   values = dict.fromkeys(COLUMNS, "")
   values.update(
-      repo="acme/widget",
-      instance_id=instance_id,
-      base_commit="0" * 40,
-      repo_language=language,
-      fail_to_pass="[]",
-      pass_to_pass="[]",
-      issue_specificity="[]",
-      issue_categories="[]",
-      selected_test_files_to_run="[]",
+    repo="acme/widget",
+    instance_id=instance_id,
+    base_commit="0" * 40,
+    repo_language=language,
+    fail_to_pass="[]",
+    pass_to_pass="[]",
+    issue_specificity="[]",
+    issue_categories="[]",
+    selected_test_files_to_run="[]",
   )
   return values
 
@@ -60,7 +60,7 @@ def test_load_parquet_preserves_order_and_lookup(tmp_path: Path) -> None:
 def test_filter(tmp_path: Path) -> None:
   rows = [_row("i0"), _row("i1"), _row("i2")]
   ds = load_parquet(
-      _write_parquet(tmp_path / "d.parquet", rows), SweBenchProInstance
+    _write_parquet(tmp_path / "d.parquet", rows), SweBenchProInstance
   )
 
   selected = ds.filter(lambda r: r.instance_id in {"i0", "i2"})
@@ -69,7 +69,7 @@ def test_filter(tmp_path: Path) -> None:
 
 def test_require_missing_raises(tmp_path: Path) -> None:
   ds = load_parquet(
-      _write_parquet(tmp_path / "d.parquet", [_row("i0")]), SweBenchProInstance
+    _write_parquet(tmp_path / "d.parquet", [_row("i0")]), SweBenchProInstance
   )
   with pytest.raises(KeyError):
     ds.require("nope")
@@ -83,7 +83,7 @@ def test_duplicate_instance_ids_raise(tmp_path: Path) -> None:
 
 
 def test_load_dataset_uses_layout(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   # Layout resolution (`datasets/<name>/data/*.parquet`) is a property of
   # every registered dataset, independent of whether that dataset also pins a
@@ -92,7 +92,7 @@ def test_load_dataset_uses_layout(
   # disables it rather than adopting the pinned name, or it would silently
   # stop covering layout resolution under an arbitrary filename.
   monkeypatch.setitem(
-      loader_module._DATASET_PREPARERS, "swebench_pro", lambda _: None
+    loader_module._DATASET_PREPARERS, "swebench_pro", lambda _: None
   )
   root = tmp_path / "datasets"
   _write_parquet(root / "swebench_pro" / "data" / "test.parquet", [_row("i0")])

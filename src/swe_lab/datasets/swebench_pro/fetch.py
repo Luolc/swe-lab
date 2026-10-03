@@ -49,30 +49,30 @@ def ensure_swebench_pro_parquet(data_dir: epath.PathLike) -> epath.Path:
   target = data_dir / PARQUET_FILENAME
   if not target.exists():
     others = (
-        sorted(p.name for p in data_dir.glob("*.parquet"))
-        if data_dir.is_dir()
-        else []
+      sorted(p.name for p in data_dir.glob("*.parquet"))
+      if data_dir.is_dir()
+      else []
     )
     if others:
       raise FileNotFoundError(
-          f"{target} not found, but {data_dir} has: {others}. The pin is"
-          f" keyed to the exact filename {PARQUET_FILENAME!r} — this is a"
-          " misnamed or stale file, not a broken dataset. Rename or"
-          " re-download per datasets/swebench_pro/README.md."
+        f"{target} not found, but {data_dir} has: {others}. The pin is"
+        f" keyed to the exact filename {PARQUET_FILENAME!r} — this is a"
+        " misnamed or stale file, not a broken dataset. Rename or"
+        " re-download per datasets/swebench_pro/README.md."
       )
     raise FileNotFoundError(
-        f"{target} not found. See datasets/swebench_pro/README.md for the"
-        " download step."
+      f"{target} not found. See datasets/swebench_pro/README.md for the"
+      " download step."
     )
   actual = hashlib.sha256(target.read_bytes()).hexdigest()
   if actual != PINNED_SWEBENCH_PRO_PARQUET_SHA256:
     raise ValueError(
-        f"{target} does not match the pinned sha256:\n"
-        f"  expected {PINNED_SWEBENCH_PRO_PARQUET_SHA256}\n"
-        f"  actual   {actual}\n"
-        "The downloaded copy is truncated, drifted from the published file,"
-        " or predates a deliberate pin bump — re-download per"
-        " datasets/swebench_pro/README.md and re-verify; do not use a file"
-        " that fails this check."
+      f"{target} does not match the pinned sha256:\n"
+      f"  expected {PINNED_SWEBENCH_PRO_PARQUET_SHA256}\n"
+      f"  actual   {actual}\n"
+      "The downloaded copy is truncated, drifted from the published file,"
+      " or predates a deliberate pin bump — re-download per"
+      " datasets/swebench_pro/README.md and re-verify; do not use a file"
+      " that fails this check."
     )
   return target

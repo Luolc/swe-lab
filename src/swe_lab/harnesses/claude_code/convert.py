@@ -42,14 +42,14 @@ import json
 from typing import Any
 
 from swe_lab.conversation import (
-    ContentBlock,
-    Conversation,
-    Message,
-    ReasoningBlock,
-    Role,
-    TextBlock,
-    ToolResultBlock,
-    ToolUseBlock,
+  ContentBlock,
+  Conversation,
+  Message,
+  ReasoningBlock,
+  Role,
+  TextBlock,
+  ToolResultBlock,
+  ToolUseBlock,
 )
 from swe_lab.harnesses.base import AgentOutcome
 
@@ -102,10 +102,10 @@ def event_to_message(event: Mapping[str, Any]) -> Message | None:
 # ``entrypoints/sdk/coreSchemas.ts`` enumerates exactly these four, and
 # ``SDKResultSuccessSchema`` the one ``success``.
 _ERROR_SUBTYPES: dict[str, AgentOutcome] = {
-    "error_max_turns": AgentOutcome.MAX_TURNS,
-    "error_max_budget_usd": AgentOutcome.MAX_BUDGET,
-    "error_max_structured_output_retries": AgentOutcome.MAX_OUTPUT_RETRIES,
-    "error_during_execution": AgentOutcome.EXECUTION_ERROR,
+  "error_max_turns": AgentOutcome.MAX_TURNS,
+  "error_max_budget_usd": AgentOutcome.MAX_BUDGET,
+  "error_max_structured_output_retries": AgentOutcome.MAX_OUTPUT_RETRIES,
+  "error_during_execution": AgentOutcome.EXECUTION_ERROR,
 }
 
 
@@ -190,9 +190,9 @@ def event_stream_outcome(raw: str) -> AgentOutcome:
     subtype = event.get("subtype")
     if subtype == "success":
       return (
-          AgentOutcome.FINISHED_WITH_API_ERROR
-          if event.get("is_error", False)
-          else AgentOutcome.FINISHED
+        AgentOutcome.FINISHED_WITH_API_ERROR
+        if event.get("is_error", False)
+        else AgentOutcome.FINISHED
       )
     return _ERROR_SUBTYPES.get(str(subtype), AgentOutcome.EXECUTION_ERROR)
   return AgentOutcome.TRUNCATED
@@ -324,20 +324,20 @@ def _one_block(item: object) -> ContentBlock | None:
     return TextBlock(text=str(item.get("text", "")))
   if kind == "thinking":
     return ReasoningBlock(
-        text=str(item.get("thinking", "")),
-        signature=_opt_str(item.get("signature")),
+      text=str(item.get("thinking", "")),
+      signature=_opt_str(item.get("signature")),
     )
   if kind == "tool_use":
     return ToolUseBlock(
-        id=str(item.get("id", "")),
-        name=str(item.get("name", "")),
-        input=_as_dict(item.get("input")),
+      id=str(item.get("id", "")),
+      name=str(item.get("name", "")),
+      input=_as_dict(item.get("input")),
     )
   if kind == "tool_result":
     return ToolResultBlock(
-        tool_use_id=str(item.get("tool_use_id", "")),
-        content=_flatten_result(item.get("content")),
-        is_error=bool(item.get("is_error", False)),
+      tool_use_id=str(item.get("tool_use_id", "")),
+      content=_flatten_result(item.get("content")),
+      is_error=bool(item.get("is_error", False)),
     )
   return None  # redacted_thinking / image / … — not modeled in v0
 
@@ -383,7 +383,7 @@ def user_event_line(text: str) -> str:
     A single JSON line, ending in a newline.
   """
   event = {
-      "type": "user",
-      "message": {"role": "user", "content": [{"type": "text", "text": text}]},
+    "type": "user",
+    "message": {"role": "user", "content": [{"type": "text", "text": text}]},
   }
   return json.dumps(event) + "\n"

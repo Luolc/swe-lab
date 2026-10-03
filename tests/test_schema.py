@@ -7,20 +7,20 @@ import json
 import pytest
 
 from swe_lab.pipelines.related_files.schema import (
-    Annotation,
-    parse_agent_output,
-    Snippet,
-    SnippetCategory,
+  Annotation,
+  parse_agent_output,
+  Snippet,
+  SnippetCategory,
 )
 
 
 def _snippet(**overrides: object) -> dict[str, object]:
   base: dict[str, object] = {
-      "file_path": "src/a.py",
-      "start_line": 1,
-      "end_line": 10,
-      "category": "referenced-function",
-      "description": "why",
+    "file_path": "src/a.py",
+    "start_line": 1,
+    "end_line": 10,
+    "category": "referenced-function",
+    "description": "why",
   }
   base.update(overrides)
   return base
@@ -55,9 +55,9 @@ def test_parse_agent_output_object_and_list_forms() -> None:
 
 def test_annotation_json_round_trip() -> None:
   ann = Annotation(
-      "inst-1",
-      (Snippet.from_dict(_snippet()),),
-      {"model": "sonnet"},
+    "inst-1",
+    (Snippet.from_dict(_snippet()),),
+    {"model": "sonnet"},
   )
   restored = Annotation.from_dict(json.loads(ann.to_json()))
   assert restored.instance_id == "inst-1"

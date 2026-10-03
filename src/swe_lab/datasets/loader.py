@@ -48,8 +48,8 @@ class DatasetRecord(Protocol):
 # Registry of known datasets: name -> record type. Add a dataset by writing its
 # record type (see ``swebench_pro``) and registering it here.
 _DATASET_RECORDS: dict[str, type[DatasetRecord]] = {
-    "deepswe": DeepSweInstance,
-    "swebench_pro": SweBenchProInstance,
+  "deepswe": DeepSweInstance,
+  "swebench_pro": SweBenchProInstance,
 }
 
 # Datasets that can materialize (and must verify) their own parquet before the
@@ -57,8 +57,8 @@ _DATASET_RECORDS: dict[str, type[DatasetRecord]] = {
 # a pinned dataset the verification IS the point (the pin is the trust
 # anchor; see ``deepswe.fetch``).
 _DATASET_PREPARERS: dict[str, Callable[[epath.Path], object]] = {
-    "deepswe": ensure_deepswe_parquet,
-    "swebench_pro": ensure_swebench_pro_parquet,
+  "deepswe": ensure_deepswe_parquet,
+  "swebench_pro": ensure_swebench_pro_parquet,
 }
 
 
@@ -66,7 +66,7 @@ class Dataset:
   """An ordered collection of records loaded from one parquet file."""
 
   def __init__(
-      self, name: str, path: epath.PathLike, records: tuple[DatasetRecord, ...]
+    self, name: str, path: epath.PathLike, records: tuple[DatasetRecord, ...]
   ) -> None:
     """Initialize the dataset and index its records by instance id.
 
@@ -82,11 +82,11 @@ class Dataset:
     self.path: epath.Path = epath.Path(path)
     self._records: tuple[DatasetRecord, ...] = records
     self._by_id: dict[str, int] = {
-        rec.instance_id: i for i, rec in enumerate(records)
+      rec.instance_id: i for i, rec in enumerate(records)
     }
     if len(self._by_id) != len(records):
       raise ValueError(
-          f"Dataset {name!r} contains duplicate instance_id values."
+        f"Dataset {name!r} contains duplicate instance_id values."
       )
 
   def __len__(self) -> int:
@@ -123,41 +123,41 @@ class Dataset:
     return index
 
   def filter(
-      self, predicate: Callable[[DatasetRecord], bool]
+    self, predicate: Callable[[DatasetRecord], bool]
   ) -> tuple[DatasetRecord, ...]:
     """Return records matching ``predicate``, preserving order."""
     return tuple(rec for rec in self._records if predicate(rec))
 
 
 def find_parquet(
-    name: str, *, root: epath.PathLike | None = None
+  name: str, *, root: epath.PathLike | None = None
 ) -> epath.Path:
   """Locate the single parquet file for a dataset under ``datasets/<name>``."""
   data_dir = epath.Path(root or datasets_root()) / name / "data"
   if not data_dir.is_dir():
     raise FileNotFoundError(
-        f"Dataset directory not found: {data_dir}. See datasets/README.md for"
-        " download instructions."
+      f"Dataset directory not found: {data_dir}. See datasets/README.md for"
+      " download instructions."
     )
   parquets = sorted(data_dir.glob("*.parquet"))
   if not parquets:
     raise FileNotFoundError(
-        f"No parquet files in {data_dir}. Download the dataset first (see"
-        " datasets/README.md)."
+      f"No parquet files in {data_dir}. Download the dataset first (see"
+      " datasets/README.md)."
     )
   if len(parquets) > 1:
     raise ValueError(
-        f"Expected exactly one parquet in {data_dir}, found {len(parquets)}:"
-        f" {[p.name for p in parquets]}."
+      f"Expected exactly one parquet in {data_dir}, found {len(parquets)}:"
+      f" {[p.name for p in parquets]}."
     )
   return parquets[0]
 
 
 def load_parquet(
-    path: epath.PathLike,
-    record_type: type[DatasetRecord],
-    *,
-    name: str | None = None,
+  path: epath.PathLike,
+  record_type: type[DatasetRecord],
+  *,
+  name: str | None = None,
 ) -> Dataset:
   """Load a :class:`Dataset` from a parquet file using ``record_type``."""
   frame = pl.read_parquet(str(path))
@@ -166,13 +166,13 @@ def load_parquet(
     raise ValueError(f"{path} is missing expected columns: {missing}")
 
   records = tuple(
-      record_type.from_raw(row) for row in frame.iter_rows(named=True)
+    record_type.from_raw(row) for row in frame.iter_rows(named=True)
   )
   return Dataset(name or epath.Path(path).stem, path, records)
 
 
 def load_dataset(
-    name: str = "swebench_pro", *, root: epath.PathLike | None = None
+  name: str = "swebench_pro", *, root: epath.PathLike | None = None
 ) -> Dataset:
   """Load a registered dataset by name from the ``datasets/<name>`` layout."""
   preparer = _DATASET_PREPARERS.get(name)

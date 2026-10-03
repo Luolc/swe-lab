@@ -20,26 +20,26 @@ from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.swebench_pro.unit_test import SweBenchProVerdict
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import (
-    ArtifactSchema,
-    Contribution,
-    ExecResult,
-    FilesystemStore,
-    SandboxError,
-    SandboxFs,
-    SandboxObserver,
-    SandboxSpec,
-    Store,
+  ArtifactSchema,
+  Contribution,
+  ExecResult,
+  FilesystemStore,
+  SandboxError,
+  SandboxFs,
+  SandboxObserver,
+  SandboxSpec,
+  Store,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.testing import FakeSandboxConfig
 from swe_lab.workflow import (
-    AttemptResult,
-    read_marker,
-    run_task,
-    Task,
-    TaskAddress,
-    TaskOutcome,
-    TerminalMarker,
+  AttemptResult,
+  read_marker,
+  run_task,
+  Task,
+  TaskAddress,
+  TaskOutcome,
+  TerminalMarker,
 )
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
@@ -65,12 +65,12 @@ class _Instance(TaskInstance[SweBenchProVerdict]):
 
   @override
   def unit_test_spec(
-      self,
-      *,
-      apply_patch: bool,
-      patch_name: str = PATCH_NAME,
-      checkout_golden_tests: bool = True,
-      patch_baseline: bool = False,
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
+    checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     raise NotImplementedError
 
@@ -109,7 +109,7 @@ class _ContributesAMetric(SandboxObserver):
   def before_destroy(self, sb: SandboxFs) -> Contribution | None:
     del sb
     return Contribution(
-        inline_artifacts={"out.txt": b"OUT"}, metrics={self.metric: 2.0}
+      inline_artifacts={"out.txt": b"OUT"}, metrics={self.metric: 2.0}
     )
 
 
@@ -122,18 +122,18 @@ class _MetricProducer(Task):
 
   @override
   def observers(
-      self, instance: TaskInstance[SweBenchProVerdict]
+    self, instance: TaskInstance[SweBenchProVerdict]
   ) -> tuple[SandboxObserver, ...]:
     del instance
     return (_ContributesAMetric(metric=self.metric),)
 
   @override
   def action(
-      self,
-      sb: SandboxFs,
-      instance: TaskInstance[SweBenchProVerdict],
-      *,
-      timeout: float,
+    self,
+    sb: SandboxFs,
+    instance: TaskInstance[SweBenchProVerdict],
+    *,
+    timeout: float,
   ) -> ExecResult:
     del instance
     return sb.run_script("main.sh", timeout=timeout)
@@ -155,18 +155,18 @@ class _FlakyProducer(Task):
 
   @override
   def observers(
-      self, instance: TaskInstance[SweBenchProVerdict]
+    self, instance: TaskInstance[SweBenchProVerdict]
   ) -> tuple[SandboxObserver, ...]:
     del instance
     return (_MaybeProduce(produce=self.executions >= self.produce_from),)
 
   @override
   def action(
-      self,
-      sb: SandboxFs,
-      instance: TaskInstance[SweBenchProVerdict],
-      *,
-      timeout: float,
+    self,
+    sb: SandboxFs,
+    instance: TaskInstance[SweBenchProVerdict],
+    *,
+    timeout: float,
   ) -> ExecResult:
     del instance
     self.executions += 1
@@ -175,8 +175,8 @@ class _FlakyProducer(Task):
   @override
   def should_retry(self, result: AttemptResult) -> bool:
     return (
-        super().should_retry(result)
-        or self.executions < self.retry_even_when_valid_until
+      super().should_retry(result)
+      or self.executions < self.retry_even_when_valid_until
     )
 
 
@@ -185,26 +185,26 @@ def _store(tmp_path: Path) -> Store:
 
 
 def _run(
-    tmp_path: Path,
-    task: Task,
-    *,
-    store: Store | None = None,
-    retries: int = 0,
-    up_errors: int = 0,
-    run_results: tuple[ExecResult, ...] = (),
+  tmp_path: Path,
+  task: Task,
+  *,
+  store: Store | None = None,
+  retries: int = 0,
+  up_errors: int = 0,
+  run_results: tuple[ExecResult, ...] = (),
 ):
   store = store if store is not None else _store(tmp_path)
   config = FakeSandboxConfig(up_errors=up_errors, run_results=run_results)
   outcome = run_task(
-      task,
-      _Instance(),
-      store=store,
-      address=ADDRESS,
-      sandbox=config,
-      output_dir=tmp_path / "out",
-      timeout=10.0,
-      retries=retries,
-      run_ts="ts-0",
+    task,
+    _Instance(),
+    store=store,
+    address=ADDRESS,
+    sandbox=config,
+    output_dir=tmp_path / "out",
+    timeout=10.0,
+    retries=retries,
+    run_ts="ts-0",
   )
   return outcome, store, config
 
@@ -217,7 +217,7 @@ def test_a_clean_run_persists_the_attempt_and_marks_succeeded(tmp_path: Path):
   # the attempt's artifact landed under the task-keyed prefix
   assert outcome.record is not None
   assert outcome.record.artifact_keys["out.txt"] == (
-      "sw/acme__widget-1/r0/probe/a0/out.txt"
+    "sw/acme__widget-1/r0/probe/a0/out.txt"
   )
   assert store.get_bytes("sw/acme__widget-1/r0/probe/a0/out.txt") == b"OUT"
   assert len(config.built) == 1
@@ -232,7 +232,7 @@ def test_a_clean_run_persists_the_attempt_and_marks_succeeded(tmp_path: Path):
 
 
 def test_a_metric_an_observer_contributes_reaches_the_persisted_record(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """The hop between "the run measured it" and "a reader can see it".
 
@@ -277,8 +277,8 @@ def test_an_invalid_attempt_retries_in_a_fresh_sandbox(tmp_path: Path):
   # every attempt persisted, the failing one included — it is the evidence
   shards = store.read_manifest("sw", "acme__widget-1", 0, task="probe")
   assert [(s.attempt, s.extra["outputs_valid"]) for s in shards] == [
-      (0, False),
-      (1, True),
+    (0, False),
+    (1, True),
   ]
 
 
@@ -350,21 +350,21 @@ def test_resume_skips_a_succeeded_task_entirely(tmp_path: Path):
   # a later process re-enters: no sandbox is built, the record is read back
   config = FakeSandboxConfig()
   resumed = run_task(
-      _FlakyProducer(),
-      _Instance(),
-      store=store,
-      address=ADDRESS,
-      sandbox=config,
-      output_dir=tmp_path / "out2",
-      timeout=10.0,
-      run_ts="ts-1",
+    _FlakyProducer(),
+    _Instance(),
+    store=store,
+    address=ADDRESS,
+    sandbox=config,
+    output_dir=tmp_path / "out2",
+    timeout=10.0,
+    run_ts="ts-1",
   )
   assert config.built == []  # resume never pays for a container
   assert resumed.resumed is True
   assert resumed.outcome is TaskOutcome.SUCCEEDED
   assert resumed.record is not None
   assert resumed.record.artifact_keys["out.txt"] == (
-      "sw/acme__widget-1/r0/probe/a0/out.txt"
+    "sw/acme__widget-1/r0/probe/a0/out.txt"
   )
   assert resumed.result is None  # only the store survives a process
 
@@ -376,15 +376,15 @@ def test_resume_never_reruns_a_terminally_failed_task(tmp_path: Path):
 
   config = FakeSandboxConfig()
   resumed = run_task(
-      _FlakyProducer(produce_from=99),
-      _Instance(),
-      store=store,
-      address=ADDRESS,
-      sandbox=config,
-      output_dir=tmp_path / "out2",
-      timeout=10.0,
-      retries=5,
-      run_ts="ts-1",
+    _FlakyProducer(produce_from=99),
+    _Instance(),
+    store=store,
+    address=ADDRESS,
+    sandbox=config,
+    output_dir=tmp_path / "out2",
+    timeout=10.0,
+    retries=5,
+    run_ts="ts-1",
   )
   assert config.built == []  # a terminal failure never burns budget again
   assert resumed.resumed is True
@@ -402,18 +402,18 @@ def test_dead_attempts_without_a_marker_are_overwritten(tmp_path: Path):
   import pathlib
 
   marker_path = pathlib.Path(
-      str(tmp_path / "store" / "sw/acme__widget-1/r0/probe/complete.json")
+    str(tmp_path / "store" / "sw/acme__widget-1/r0/probe/complete.json")
   )
   marker_path.unlink()
   fresh = run_task(
-      _FlakyProducer(),
-      _Instance(),
-      store=store,
-      address=ADDRESS,
-      sandbox=FakeSandboxConfig(),
-      output_dir=tmp_path / "out2",
-      timeout=10.0,
-      run_ts="ts-1",
+    _FlakyProducer(),
+    _Instance(),
+    store=store,
+    address=ADDRESS,
+    sandbox=FakeSandboxConfig(),
+    output_dir=tmp_path / "out2",
+    timeout=10.0,
+    run_ts="ts-1",
   )
   assert fresh.resumed is False  # ran again from scratch
   shards = store.read_manifest("sw", "acme__widget-1", 0, task="probe")
@@ -428,28 +428,28 @@ def test_a_shorter_rerun_does_not_leave_a_stale_record_behind(tmp_path: Path):
   # trusted says something else.
   store = _store(tmp_path)
   first = run_task(
-      _FlakyProducer(produce_from=1),  # fails a0, succeeds a1
-      _Instance(),
-      store=store,
-      address=ADDRESS,
-      sandbox=FakeSandboxConfig(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
-      retries=1,
-      run_ts="ts-0",
+    _FlakyProducer(produce_from=1),  # fails a0, succeeds a1
+    _Instance(),
+    store=store,
+    address=ADDRESS,
+    sandbox=FakeSandboxConfig(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
+    retries=1,
+    run_ts="ts-0",
   )
   assert first.attempts == 2
 
   rerun = run_task(
-      _FlakyProducer(),  # succeeds at a0 this time
-      _Instance(),
-      store=store,
-      address=ADDRESS,
-      sandbox=FakeSandboxConfig(),
-      output_dir=tmp_path / "out2",
-      timeout=10.0,
-      resume=False,
-      run_ts="ts-1",
+    _FlakyProducer(),  # succeeds at a0 this time
+    _Instance(),
+    store=store,
+    address=ADDRESS,
+    sandbox=FakeSandboxConfig(),
+    output_dir=tmp_path / "out2",
+    timeout=10.0,
+    resume=False,
+    run_ts="ts-1",
   )
   assert rerun.attempts == 1
   # the older a1 is still in the store — nothing deletes it
@@ -457,14 +457,14 @@ def test_a_shorter_rerun_does_not_leave_a_stale_record_behind(tmp_path: Path):
   assert [(s.attempt, s.run_ts) for s in shards] == [(0, "ts-1"), (1, "ts-0")]
 
   resumed = run_task(
-      _FlakyProducer(),
-      _Instance(),
-      store=store,
-      address=ADDRESS,
-      sandbox=FakeSandboxConfig(),
-      output_dir=tmp_path / "out3",
-      timeout=10.0,
-      run_ts="ts-2",
+    _FlakyProducer(),
+    _Instance(),
+    store=store,
+    address=ADDRESS,
+    sandbox=FakeSandboxConfig(),
+    output_dir=tmp_path / "out3",
+    timeout=10.0,
+    run_ts="ts-2",
   )
   assert resumed.resumed is True
   assert resumed.attempts == 1
@@ -485,21 +485,21 @@ def test_a_marker_whose_shard_is_gone_is_refused_not_believed(tmp_path: Path):
   first, _, _ = _run(tmp_path, _FlakyProducer(), store=store)
   assert first.outcome is TaskOutcome.SUCCEEDED
   shard = (
-      pathlib.Path(str(tmp_path / "store"))
-      / "sw/acme__widget-1/r0/probe/a0/run.json"
+    pathlib.Path(str(tmp_path / "store"))
+    / "sw/acme__widget-1/r0/probe/a0/run.json"
   )
   shard.unlink()
 
   with pytest.raises(SandboxError, match="no shard matches"):
     _ = run_task(
-        _FlakyProducer(),
-        _Instance(),
-        store=store,
-        address=ADDRESS,
-        sandbox=FakeSandboxConfig(),
-        output_dir=tmp_path / "out2",
-        timeout=10.0,
-        run_ts="ts-1",
+      _FlakyProducer(),
+      _Instance(),
+      store=store,
+      address=ADDRESS,
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out2",
+      timeout=10.0,
+      run_ts="ts-1",
     )
 
 
@@ -511,39 +511,39 @@ def test_a_shard_from_another_run_does_not_satisfy_the_marker(tmp_path: Path):
   first, _, _ = _run(tmp_path, _FlakyProducer(), store=store)
   assert first.outcome is TaskOutcome.SUCCEEDED
   store.put_bytes(
-      _marker_key(),
-      TerminalMarker(
-          outcome=TaskOutcome.SUCCEEDED, attempts=1, run_ts="ts-elsewhere"
-      )
-      .to_json()
-      .encode("utf-8"),
+    _marker_key(),
+    TerminalMarker(
+      outcome=TaskOutcome.SUCCEEDED, attempts=1, run_ts="ts-elsewhere"
+    )
+    .to_json()
+    .encode("utf-8"),
   )
 
   with pytest.raises(SandboxError, match="no shard matches"):
     _ = run_task(
-        _FlakyProducer(),
-        _Instance(),
-        store=store,
-        address=ADDRESS,
-        sandbox=FakeSandboxConfig(),
-        output_dir=tmp_path / "out2",
-        timeout=10.0,
-        run_ts="ts-1",
+      _FlakyProducer(),
+      _Instance(),
+      store=store,
+      address=ADDRESS,
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out2",
+      timeout=10.0,
+      run_ts="ts-1",
     )
 
 
 def test_a_negative_budget_is_refused(tmp_path: Path):
   with pytest.raises(ValueError, match="retries"):
     _ = run_task(
-        _FlakyProducer(),
-        _Instance(),
-        store=_store(tmp_path),
-        address=ADDRESS,
-        sandbox=FakeSandboxConfig(),
-        output_dir=tmp_path / "out",
-        timeout=10.0,
-        retries=-1,
-        run_ts="ts-0",
+      _FlakyProducer(),
+      _Instance(),
+      store=_store(tmp_path),
+      address=ADDRESS,
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out",
+      timeout=10.0,
+      retries=-1,
+      run_ts="ts-0",
     )
 
 

@@ -9,19 +9,19 @@ and each registering itself by name at import of its own package (see
 from .base import AgentOutcome, Harness
 from .observer import COMPLETE_METRIC, HarnessOutcomeObserver
 from .registry import (
-    build_harness,
-    HarnessFactory,
-    register_harness,
-    registered_harnesses,
+  build_harness,
+  HarnessFactory,
+  register_harness,
+  registered_harnesses,
 )
 
 __all__ = [
-    "COMPLETE_METRIC",
-    "AgentOutcome",
-    "Harness",
-    "HarnessFactory",
-    "HarnessOutcomeObserver",
-    "build_harness",
-    "register_harness",
-    "registered_harnesses",
+  "COMPLETE_METRIC",
+  "AgentOutcome",
+  "Harness",
+  "HarnessFactory",
+  "HarnessOutcomeObserver",
+  "build_harness",
+  "register_harness",
+  "registered_harnesses",
 ]

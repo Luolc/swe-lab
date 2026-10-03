@@ -8,15 +8,15 @@ from etils import epath
 import pytest
 
 from swe_lab.sandbox import (
-    build_sandbox,
-    DockerHostSandbox,
-    DockerHostSandboxConfig,
-    GhjobSandboxConfig,
-    sandbox_config_type,
-    sandbox_factory,
-    SandboxConfig,
-    SandboxError,
-    SandboxSpec,
+  build_sandbox,
+  DockerHostSandbox,
+  DockerHostSandboxConfig,
+  GhjobSandboxConfig,
+  sandbox_config_type,
+  sandbox_factory,
+  SandboxConfig,
+  SandboxError,
+  SandboxSpec,
 )
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
@@ -24,7 +24,7 @@ SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
 
 def test_flat_settings_become_the_backends_own_config(tmp_path: Path):
   sandbox = build_sandbox(
-      "host", SPEC, workspace=tmp_path, network=False, pull=False
+    "host", SPEC, workspace=tmp_path, network=False, pull=False
   )
   assert isinstance(sandbox, DockerHostSandbox)
 
@@ -57,7 +57,7 @@ def test_the_config_type_is_the_override_seam():
 
 def test_the_object_path_carries_a_ready_config(tmp_path: Path):
   config = DockerHostSandboxConfig(
-      workspace=epath.Path(tmp_path), network=False, pull=False
+    workspace=epath.Path(tmp_path), network=False, pull=False
   )
   sandbox = sandbox_factory("host")(SPEC, config)
   assert isinstance(sandbox, DockerHostSandbox)

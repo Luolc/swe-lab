@@ -74,31 +74,31 @@ LINUX_X64 = "x86_64-unknown-linux-musl"
 # refused rather than fetched unverified. Dropping the old rows would turn a
 # verified downgrade into an error.
 ARCHIVE_SHA256: dict[tuple[str, str, str], str] = {
-    # 0.149.0 — measured 2026-08-22. Portability re-verified the same day:
-    # `codex --version` reports 0.149.0 on `alpine:3.19` (musl),
-    # `gcr.io/distroless/static-debian12` (no libc at all, which is what
-    # proves the link is static) and `debian:10` (glibc 2.28).
-    (
-        "codex",
-        "0.149.0",
-        "x86_64-unknown-linux-musl",
-    ): "7368b2055ed02157fea2695bb9f5af3ee7b0e40c5a3bebc81dfc596704244cfd",
-    (
-        "codex-code-mode-host",
-        "0.149.0",
-        "x86_64-unknown-linux-musl",
-    ): "3600a45ac2b09fe3c995f4f49860131fea388b46c409c82a0266fc4d0342a04c",
-    # 0.147.0 — measured 2026-08-08, the previous pin.
-    (
-        "codex",
-        "0.147.0",
-        "x86_64-unknown-linux-musl",
-    ): "0246e2e773834e07f0fb5249ed6ebad12e4591e608f8c7bb97dd6a9690544c36",
-    (
-        "codex-code-mode-host",
-        "0.147.0",
-        "x86_64-unknown-linux-musl",
-    ): "0146adfaac8363ec9fcdb5895f7624db5b2e8617a283887938b7fb97a1dd4356",
+  # 0.149.0 — measured 2026-08-22. Portability re-verified the same day:
+  # `codex --version` reports 0.149.0 on `alpine:3.19` (musl),
+  # `gcr.io/distroless/static-debian12` (no libc at all, which is what
+  # proves the link is static) and `debian:10` (glibc 2.28).
+  (
+    "codex",
+    "0.149.0",
+    "x86_64-unknown-linux-musl",
+  ): "7368b2055ed02157fea2695bb9f5af3ee7b0e40c5a3bebc81dfc596704244cfd",
+  (
+    "codex-code-mode-host",
+    "0.149.0",
+    "x86_64-unknown-linux-musl",
+  ): "3600a45ac2b09fe3c995f4f49860131fea388b46c409c82a0266fc4d0342a04c",
+  # 0.147.0 — measured 2026-08-08, the previous pin.
+  (
+    "codex",
+    "0.147.0",
+    "x86_64-unknown-linux-musl",
+  ): "0246e2e773834e07f0fb5249ed6ebad12e4591e608f8c7bb97dd6a9690544c36",
+  (
+    "codex-code-mode-host",
+    "0.147.0",
+    "x86_64-unknown-linux-musl",
+  ): "0146adfaac8363ec9fcdb5895f7624db5b2e8617a283887938b7fb97a1dd4356",
 }
 
 _DOWNLOAD_TIMEOUT_S = 600.0
@@ -119,10 +119,10 @@ def release_tag(version: str = PINNED_CODEX_VERSION) -> str:
 
 
 def archive_url(
-    stem: str,
-    *,
-    version: str = PINNED_CODEX_VERSION,
-    platform: str = LINUX_X64,
+  stem: str,
+  *,
+  version: str = PINNED_CODEX_VERSION,
+  platform: str = LINUX_X64,
 ) -> str:
   """Return the download URL of one binary's release archive.
 
@@ -163,18 +163,18 @@ def archive_checksum(stem: str, version: str, platform: str) -> str:
   checksum = ARCHIVE_SHA256.get((stem, version, platform))
   if checksum is None:
     raise ValueError(
-        f"no pinned sha256 for {stem} {version}/{platform}; add one to"
-        " ARCHIVE_SHA256 after verifying the download (upstream's"
-        " codex-package_SHA256SUMS does not cover these assets)"
+      f"no pinned sha256 for {stem} {version}/{platform}; add one to"
+      " ARCHIVE_SHA256 after verifying the download (upstream's"
+      " codex-package_SHA256SUMS does not cover these assets)"
     )
   return checksum
 
 
 def binary_cache_dir(
-    *,
-    version: str = PINNED_CODEX_VERSION,
-    platform: str = LINUX_X64,
-    repo_root: epath.PathLike | None = None,
+  *,
+  version: str = PINNED_CODEX_VERSION,
+  platform: str = LINUX_X64,
+  repo_root: epath.PathLike | None = None,
 ) -> epath.Path:
   """Return the on-disk cache **directory** holding this version's binaries.
 
@@ -197,12 +197,12 @@ def binary_cache_dir(
 
 
 def ensure_codex_binaries(
-    *,
-    version: str = PINNED_CODEX_VERSION,
-    platform: str = LINUX_X64,
-    dest: epath.PathLike | None = None,
-    repo_root: epath.PathLike | None = None,
-    refresh: bool = False,
+  *,
+  version: str = PINNED_CODEX_VERSION,
+  platform: str = LINUX_X64,
+  dest: epath.PathLike | None = None,
+  repo_root: epath.PathLike | None = None,
+  refresh: bool = False,
 ) -> epath.Path:
   """Ensure the pinned Codex binaries are in ``dest``, checksum-verified.
 
@@ -232,11 +232,11 @@ def ensure_codex_binaries(
       or if an archive does not contain the expected binary.
   """
   target_dir = (
-      epath.Path(dest)
-      if dest is not None
-      else binary_cache_dir(
-          version=version, platform=platform, repo_root=repo_root
-      )
+    epath.Path(dest)
+    if dest is not None
+    else binary_cache_dir(
+      version=version, platform=platform, repo_root=repo_root
+    )
   )
   target_dir.mkdir(parents=True, exist_ok=True)
   for stem in BINARY_STEMS:
@@ -248,8 +248,8 @@ def ensure_codex_binaries(
     actual = hashlib.sha256(data).hexdigest()
     if actual != expected:
       raise ValueError(
-          f"checksum mismatch for {stem} {version}/{platform}: "
-          f"expected {expected}, got {actual}"
+        f"checksum mismatch for {stem} {version}/{platform}: "
+        f"expected {expected}, got {actual}"
       )
     _ = target.write_bytes(_extract(data, member=f"{stem}-{platform}"))
     os.chmod(target, 0o755)
@@ -276,8 +276,8 @@ def _extract(archive: bytes, *, member: str) -> bytes:
       info = tar.getmember(member)
     except KeyError as error:
       raise ValueError(
-          f"{member!r} not found in the codex archive; entries:"
-          f" {tar.getnames()[:10]}"
+        f"{member!r} not found in the codex archive; entries:"
+        f" {tar.getnames()[:10]}"
       ) from error
     if not info.isfile():
       raise ValueError(f"{member!r} in the codex archive is not a regular file")
@@ -295,7 +295,7 @@ def _get(url: str, *, timeout: float = _DOWNLOAD_TIMEOUT_S) -> bytes:
 
 
 def asset_materializer(
-    stem: str, version: str = PINNED_CODEX_VERSION
+  stem: str, version: str = PINNED_CODEX_VERSION
 ) -> Callable[[epath.Path | None], epath.Path]:
   """Return a materializer for one of the two binaries.
 
@@ -318,7 +318,7 @@ def asset_materializer(
 
   def materialize(dest: epath.Path | None) -> epath.Path:
     directory = ensure_codex_binaries(
-        version=version, dest=dest.parent if dest else None
+      version=version, dest=dest.parent if dest else None
     )
     return directory / stem
 

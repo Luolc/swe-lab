@@ -4,19 +4,13 @@
     ],
     "[python]": {
         "editor.formatOnSave": true,
-        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.tabSize": 2,
         "editor.codeActionsOnSave": {
             "source.organizeImports": "explicit",
             "source.fixAll": "explicit"
         }
     },
-    "black-formatter.path": [
-        "pyink"
-    ],
-    "isort.path": [
-        "isort"
-    ],
     "cursorpyright.analysis.typeCheckingMode": "strict",
     "pythonIndent.trimLinesWithOnlyWhitespace": true,
 }

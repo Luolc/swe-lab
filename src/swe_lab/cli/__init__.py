@@ -30,14 +30,14 @@ def root() -> None:
 
 
 _ = app.command(
-    "run",
-    context_settings={
-        # Overrides are options this command cannot declare ahead of time —
-        # they name fields of whatever workflow was asked for. Click hands
-        # them over as extra args, and `swe_lab.cli.overrides` parses them.
-        "ignore_unknown_options": True,
-        "allow_extra_args": True,
-    },
+  "run",
+  context_settings={
+    # Overrides are options this command cannot declare ahead of time —
+    # they name fields of whatever workflow was asked for. Click hands
+    # them over as extra args, and `swe_lab.cli.overrides` parses them.
+    "ignore_unknown_options": True,
+    "allow_extra_args": True,
+  },
 )(run_cmd)
 _ = app.command("promote")(promote_cmd)
 _ = app.command("guided-gain")(guided_gain_cmd)

@@ -15,37 +15,37 @@ from typing import final, override
 from etils import epath
 
 from swe_lab.conversation import (
-    Conversation,
-    ConversationObserver,
-    Message,
-    Role,
-    TextBlock,
+  Conversation,
+  ConversationObserver,
+  Message,
+  Role,
+  TextBlock,
 )
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
 from swe_lab.harnesses import (
-    AgentOutcome,
-    COMPLETE_METRIC,
-    Harness,
-    HarnessOutcomeObserver,
+  AgentOutcome,
+  COMPLETE_METRIC,
+  Harness,
+  HarnessOutcomeObserver,
 )
 from swe_lab.rollout import (
-    CodingAgentTask,
-    conversation_of,
-    outcome_of,
+  CodingAgentTask,
+  conversation_of,
+  outcome_of,
 )
 from swe_lab.sandbox import (
-    Contribution,
-    ExecResult,
-    GitHubJobSandbox,
-    Inline,
-    Mount,
-    Mounts,
-    RunStatus,
-    SandboxFs,
-    SandboxManager,
-    SandboxObserver,
-    SandboxSpec,
+  Contribution,
+  ExecResult,
+  GitHubJobSandbox,
+  Inline,
+  Mount,
+  Mounts,
+  RunStatus,
+  SandboxFs,
+  SandboxManager,
+  SandboxObserver,
+  SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
 
@@ -73,12 +73,12 @@ class _Instance(TaskInstance[Verdict]):
 
   @override
   def unit_test_spec(
-      self,
-      *,
-      apply_patch: bool,
-      patch_name: str = PATCH_NAME,
-      checkout_golden_tests: bool = True,
-      patch_baseline: bool = False,
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
+    checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
   ) -> UnitTestSpec[Verdict]:
     raise NotImplementedError("this instance is only solved, never graded")
 
@@ -97,8 +97,8 @@ class StubHarness(Harness):
     # pair are reusable building blocks, and choosing them is this stub's
     # decision, not an inherited default.
     return (
-        ConversationObserver(producer=self),
-        HarnessOutcomeObserver(harness=self),
+      ConversationObserver(producer=self),
+      HarnessOutcomeObserver(harness=self),
     )
 
   @override
@@ -111,12 +111,12 @@ class StubHarness(Harness):
 
   @override
   def run(
-      self,
-      sb: SandboxFs,
-      *,
-      prompt: str,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    sb: SandboxFs,
+    *,
+    prompt: str,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     # A foreign harness decides for itself where the prompt lands (ADR-0007
     # §8) and how injected env reaches its agent; this one writes the prompt
@@ -133,7 +133,7 @@ class StubHarness(Harness):
     raw = sb.read(_TRACE_NAME) if sb.exists(_TRACE_NAME) else b""
     text = raw.decode().strip()
     return Conversation(
-        messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text=text)])]
+      messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text=text)])]
     )
 
   @override
@@ -152,10 +152,10 @@ def test_stub_harness_composes_over_the_engine(tmp_path: Path):
   outcome = HarnessOutcomeObserver(harness=harness)
   workspace = tmp_path / "run"
   manager = SandboxManager(
-      sandbox=GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
-      output_dir=epath.Path(workspace),
-      observers=[observer, outcome],
-      mounts=harness.mounts(_SPEC.workdir),
+    sandbox=GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
+    output_dir=epath.Path(workspace),
+    observers=[observer, outcome],
+    mounts=harness.mounts(_SPEC.workdir),
   )
   with manager.session() as sb:
     harness.run(sb, prompt="ignored", timeout=10.0)
@@ -165,13 +165,13 @@ def test_stub_harness_composes_over_the_engine(tmp_path: Path):
   assert (workspace / _TRACE_NAME).read_text() == "hello\n"
   # the shared conversation observer converted + registered the trace artifact
   assert observer.conversation == Conversation(
-      messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text="hello")])]
+    messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text="hello")])]
   )
   assert (workspace / "conversation.json").is_file()
   # the two observers split the names: the conversion is the conversation
   # observer's, the raw byproduct + completion the outcome observer's
   assert manager.result.artifacts["conversation.json"] == (
-      workspace / "conversation.json"
+    workspace / "conversation.json"
   )
   # …and the byproduct lands under its artifact name, not the filename it had
   # in the sandbox (`stub.trace`), which is only where it was fetched from.
@@ -196,16 +196,16 @@ def test_the_task_takes_a_foreign_harness_and_proxy(tmp_path: Path):
 
   workspace = tmp_path / "run"
   task = CodingAgentTask(
-      harness=StubHarness(),
-      proxy_factory=stub_proxy,
-      purge_git_history=False,
-      patch_baseline=False,
+    harness=StubHarness(),
+    proxy_factory=stub_proxy,
+    purge_git_history=False,
+    patch_baseline=False,
   )
   result = task.execute(
-      GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
-      _Instance(),
-      output_dir=workspace,
-      timeout=10.0,
+    GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
+    _Instance(),
+    output_dir=workspace,
+    timeout=10.0,
   )
 
   assert result.run.status is RunStatus.SUCCESS
@@ -214,10 +214,10 @@ def test_the_task_takes_a_foreign_harness_and_proxy(tmp_path: Path):
   # recorder, which is what makes it registrable in a static definition.
   second = tmp_path / "run2"
   again = task.execute(
-      GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(second)),
-      _Instance(),
-      output_dir=second,
-      timeout=10.0,
+    GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(second)),
+    _Instance(),
+    output_dir=second,
+    timeout=10.0,
   )
   assert again.run.status is RunStatus.SUCCESS
   assert entered == ["open", "closed", "open", "closed"]
@@ -229,7 +229,7 @@ def test_the_task_takes_a_foreign_harness_and_proxy(tmp_path: Path):
   assert outcome is not None and outcome.complete is True
   trace = conversation_of(result)
   assert trace is not None and trace.conversation == Conversation(
-      messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text="hello")])]
+    messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text="hello")])]
   )
 
 
@@ -239,7 +239,6 @@ def test_the_task_takes_extra_observers_and_env(tmp_path: Path):
   seen: list[str] = []
 
   class _Probe(SandboxObserver):
-
     @override
     def before_destroy(self, sb: SandboxFs) -> Contribution | None:
       seen.append("probe")
@@ -253,27 +252,27 @@ def test_the_task_takes_extra_observers_and_env(tmp_path: Path):
 
     @override
     def run_script(
-        self,
-        name: str,
-        *,
-        timeout: float,
-        env: Mapping[str, str] | None = None,
+      self,
+      name: str,
+      *,
+      timeout: float,
+      env: Mapping[str, str] | None = None,
     ) -> ExecResult:
       envs.append(env)
       return super().run_script(name, timeout=timeout, env=env)
 
   workspace = tmp_path / "run"
   result = CodingAgentTask(
-      harness=StubHarness(),
-      env={"MY_FLAG": "1"},
-      purge_git_history=False,
-      patch_baseline=False,
+    harness=StubHarness(),
+    env={"MY_FLAG": "1"},
+    purge_git_history=False,
+    patch_baseline=False,
   ).execute(
-      _Recording(spec=_SPEC, workspace=epath.Path(workspace)),
-      _Instance(),
-      output_dir=workspace,
-      timeout=10.0,
-      extra_observers=[_Probe()],
+    _Recording(spec=_SPEC, workspace=epath.Path(workspace)),
+    _Instance(),
+    output_dir=workspace,
+    timeout=10.0,
+    extra_observers=[_Probe()],
   )
   assert seen == ["probe"]
   # its contribution reached the result
@@ -287,27 +286,26 @@ def test_a_timed_out_agent_is_reported_as_timeout(tmp_path: Path):
   # composition knows better. A killed agent is a budget signal, and must not
   # look like a run that simply produced no trace.
   class _TimingOut(StubHarness):
-
     @override
     def run(
-        self,
-        sb: SandboxFs,
-        *,
-        prompt: str,
-        timeout: float,
-        env: Mapping[str, str] | None = None,
+      self,
+      sb: SandboxFs,
+      *,
+      prompt: str,
+      timeout: float,
+      env: Mapping[str, str] | None = None,
     ) -> ExecResult:
       _ = super().run(sb, prompt=prompt, timeout=timeout, env=env)
       return ExecResult(124, "", "killed after 10s", timed_out=True)
 
   workspace = tmp_path / "run"
   result = CodingAgentTask(
-      harness=_TimingOut(), purge_git_history=False, patch_baseline=False
+    harness=_TimingOut(), purge_git_history=False, patch_baseline=False
   ).execute(
-      GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
-      _Instance(),
-      output_dir=workspace,
-      timeout=10.0,
+    GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
+    _Instance(),
+    output_dir=workspace,
+    timeout=10.0,
   )
   assert result.run.status is RunStatus.TIMEOUT
   assert result.run.metrics["stub.timed_out"] == 1.0
@@ -316,7 +314,7 @@ def test_a_timed_out_agent_is_reported_as_timeout(tmp_path: Path):
   # what the exec itself said is kept — the only clue when the agent's own
   # redirected logs never got written
   assert result.run.artifacts["stub.exec_stderr.log"].read_text() == (
-      "killed after 10s"
+    "killed after 10s"
   )
 
 
@@ -325,11 +323,9 @@ def test_backend_observers_are_composed_first(tmp_path: Path):
   # composition prepends them. A sandbox subclass overriding observers() sees
   # its metrics in the run result with no composition change.
   class _MeteredSandbox(GitHubJobSandbox):
-
     @override
     def observers(self) -> tuple[SandboxObserver, ...]:
       class _Meter(SandboxObserver):
-
         @override
         def before_destroy(self, sb: SandboxFs) -> Contribution | None:
           del sb
@@ -339,12 +335,12 @@ def test_backend_observers_are_composed_first(tmp_path: Path):
 
   workspace = tmp_path / "run"
   result = CodingAgentTask(
-      harness=StubHarness(), purge_git_history=False, patch_baseline=False
+    harness=StubHarness(), purge_git_history=False, patch_baseline=False
   ).execute(
-      _MeteredSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
-      _Instance(),
-      output_dir=workspace,
-      timeout=10.0,
+    _MeteredSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
+    _Instance(),
+    output_dir=workspace,
+    timeout=10.0,
   )
   assert result.run.status is RunStatus.SUCCESS
   assert result.run.metrics["sandbox.fake_metric"] == 42.0
@@ -354,19 +350,18 @@ def test_a_harness_without_the_generic_pair_still_runs(tmp_path: Path):
   # observers() is the harness's own decision — a harness returning none
   # composes fine; the outcome simply carries no completion or conversation.
   class _Unobserved(StubHarness):
-
     @override
     def observers(self) -> tuple[SandboxObserver, ...]:
       return ()
 
   workspace = tmp_path / "run"
   result = CodingAgentTask(
-      harness=_Unobserved(), purge_git_history=False, patch_baseline=False
+    harness=_Unobserved(), purge_git_history=False, patch_baseline=False
   ).execute(
-      GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
-      _Instance(),
-      output_dir=workspace,
-      timeout=10.0,
+    GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
+    _Instance(),
+    output_dir=workspace,
+    timeout=10.0,
   )
   assert result.run.status is RunStatus.SUCCESS
   assert outcome_of(result) is None  # no completion signal was composed
@@ -377,11 +372,9 @@ def test_a_harness_composes_its_own_extra_observer(tmp_path: Path):
   # The factory is the point: an agent with a second signal channel adds its
   # collector itself, and no composition changes.
   class _Extra(StubHarness):
-
     @override
     def observers(self) -> tuple[SandboxObserver, ...]:
       class _Signal(SandboxObserver):
-
         @override
         def before_destroy(self, sb: SandboxFs) -> Contribution | None:
           del sb
@@ -391,12 +384,12 @@ def test_a_harness_composes_its_own_extra_observer(tmp_path: Path):
 
   workspace = tmp_path / "run"
   result = CodingAgentTask(
-      harness=_Extra(), purge_git_history=False, patch_baseline=False
+    harness=_Extra(), purge_git_history=False, patch_baseline=False
   ).execute(
-      GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
-      _Instance(),
-      output_dir=workspace,
-      timeout=10.0,
+    GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
+    _Instance(),
+    output_dir=workspace,
+    timeout=10.0,
   )
   assert result.run.status is RunStatus.SUCCESS
   assert result.run.metrics["stub.extra_signal"] == 7.0

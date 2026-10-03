@@ -15,12 +15,12 @@ from typing import override
 from etils import epath
 
 from swe_lab.harnesses.claude_code.native_transcript import (
-    CONFIG_DIR,
-    NativeTranscriptObserver,
-    PROJECTS_SUBDIR,
-    REPORT_ARTIFACT,
-    TRANSCRIPT_ARTIFACT,
-    TRANSCRIPT_FILENAME,
+  CONFIG_DIR,
+  NativeTranscriptObserver,
+  PROJECTS_SUBDIR,
+  REPORT_ARTIFACT,
+  TRANSCRIPT_ARTIFACT,
+  TRANSCRIPT_FILENAME,
 )
 from swe_lab.sandbox import Contribution, ExecResult, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
@@ -39,7 +39,7 @@ def sandbox(tmp_path: Path, *results: ExecResult) -> FakeSandbox:
     The fake sandbox.
   """
   return FakeSandbox(
-      spec=SPEC, workspace=epath.Path(tmp_path), run_results=list(results)
+    spec=SPEC, workspace=epath.Path(tmp_path), run_results=list(results)
   )
 
 
@@ -57,12 +57,12 @@ def report_of(contribution: Contribution | None) -> dict[str, object]:
 
 
 def test_the_agents_own_record_is_archived_while_the_sandbox_is_still_live(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """The happy path, and the shape a reader gets."""
   observer = NativeTranscriptObserver()
   sb = sandbox(
-      tmp_path, ExecResult(0, "projects/\nprojects/-app/s.jsonl\n", "")
+    tmp_path, ExecResult(0, "projects/\nprojects/-app/s.jsonl\n", "")
   )
   # The command really does produce this; the fake does not run tar.
   sb.write(TRANSCRIPT_FILENAME, b"\x1f\x8b archive")
@@ -96,7 +96,7 @@ def test_the_whole_subtree_is_taken_rather_than_a_pattern(tmp_path: Path):
 
 
 def test_a_record_that_was_not_there_is_reported_not_silently_absent(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """An absent artifact beside an absent explanation is the failure family.
 
@@ -116,7 +116,7 @@ def test_a_record_that_was_not_there_is_reported_not_silently_absent(
 
 
 def test_a_command_that_reports_success_without_a_file_is_not_believed(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """Attack: exit 0 and no archive.
 
@@ -135,7 +135,7 @@ def test_a_command_that_reports_success_without_a_file_is_not_believed(
 
 
 def test_a_sandbox_that_cannot_answer_exists_still_leaves_a_report(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """The validation is inside the `try`, with the command it validates.
 
@@ -166,9 +166,9 @@ def test_a_sandbox_that_cannot_answer_exists_still_leaves_a_report(
       raise RuntimeError("workspace is unreachable")
 
   sb = CannotAnswer(
-      spec=SPEC,
-      workspace=epath.Path(tmp_path),
-      run_results=[ExecResult(0, "projects/\n", "")],
+    spec=SPEC,
+    workspace=epath.Path(tmp_path),
+    run_results=[ExecResult(0, "projects/\n", "")],
   )
 
   contribution = NativeTranscriptObserver().before_destroy(sb)
@@ -198,8 +198,8 @@ def test_collecting_the_record_never_fails_the_run(tmp_path: Path):
 def test_the_report_is_contributed_on_every_path(tmp_path: Path):
   """Whatever happened, the run carries an account of the attempt."""
   cases = (
-      sandbox(tmp_path / "ok", ExecResult(0, "", "")),
-      sandbox(tmp_path / "missing", ExecResult(2, "", "no such directory")),
+    sandbox(tmp_path / "ok", ExecResult(0, "", "")),
+    sandbox(tmp_path / "missing", ExecResult(2, "", "no such directory")),
   )
   for sb in cases:
     sb.workspace.mkdir(parents=True, exist_ok=True)

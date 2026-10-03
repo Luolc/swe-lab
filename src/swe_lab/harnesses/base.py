@@ -24,11 +24,11 @@ from typing import final
 
 from swe_lab.conversation import ConversationProducer
 from swe_lab.sandbox import (
-    AgentAsset,
-    ExecResult,
-    Mounts,
-    SandboxFs,
-    SandboxObserver,
+  AgentAsset,
+  ExecResult,
+  Mounts,
+  SandboxFs,
+  SandboxObserver,
 )
 
 
@@ -100,12 +100,12 @@ class AgentOutcome(StrEnum):
 # as a frozenset beside the enum rather than inline in the property so the
 # policy reads as one table.
 _RETRYABLE_OUTCOMES: frozenset[AgentOutcome] = frozenset(
-    {
-        AgentOutcome.NO_OUTPUT,
-        AgentOutcome.TRUNCATED,
-        AgentOutcome.FINISHED_WITH_API_ERROR,
-        AgentOutcome.EXECUTION_ERROR,
-    }
+  {
+    AgentOutcome.NO_OUTPUT,
+    AgentOutcome.TRUNCATED,
+    AgentOutcome.FINISHED_WITH_API_ERROR,
+    AgentOutcome.EXECUTION_ERROR,
+  }
 )
 
 
@@ -164,12 +164,12 @@ class Harness(ConversationProducer, ABC):
 
   @abstractmethod
   def run(
-      self,
-      sb: SandboxFs,
-      *,
-      prompt: str,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    sb: SandboxFs,
+    *,
+    prompt: str,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     """Run the main action (the agent) against ``prompt`` in the live sandbox.
 

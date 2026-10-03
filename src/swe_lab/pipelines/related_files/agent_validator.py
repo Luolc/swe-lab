@@ -28,13 +28,13 @@ DEFAULT_OUTPUT = ".annotation_output.json"
 # Keep in sync with schema.SnippetCategory (a unit test enforces this).
 # Hardcoded so the script stays standalone, with no import of our package.
 CATEGORIES: frozenset[str] = frozenset(
-    {
-        "referenced-function",
-        "context-file",
-        "useful-unit-test",
-        "interface-contract",
-        "similar-pattern",
-    }
+  {
+    "referenced-function",
+    "context-file",
+    "useful-unit-test",
+    "interface-contract",
+    "similar-pattern",
+  }
 )
 
 _REQUIRED_KEYS = ("file_path", "start_line", "end_line", "category")
@@ -68,7 +68,7 @@ def _to_int(value: object) -> int:
 
 
 def validate_snippet_dict(
-    raw: Mapping[str, object], repo_root: Path
+  raw: Mapping[str, object], repo_root: Path
 ) -> list[str]:
   """Return agent-readable problems with one snippet dict (empty if valid)."""
   problems: list[str] = []
@@ -111,7 +111,7 @@ def validate_output(output_path: Path, repo_root: Path) -> list[SnippetProblem]:
   """
   if not output_path.is_file():
     return [
-        SnippetProblem(-1, str(output_path), ["output file does not exist"])
+      SnippetProblem(-1, str(output_path), ["output file does not exist"])
     ]
   try:
     data = json.loads(output_path.read_text())
@@ -124,7 +124,7 @@ def validate_output(output_path: Path, repo_root: Path) -> list[SnippetProblem]:
     snippets = data
   else:
     return [
-        SnippetProblem(-1, str(output_path), ["must be a JSON object or list"])
+      SnippetProblem(-1, str(output_path), ["must be a JSON object or list"])
     ]
 
   if not isinstance(snippets, Sequence):
@@ -138,7 +138,7 @@ def validate_output(output_path: Path, repo_root: Path) -> list[SnippetProblem]:
     messages = validate_snippet_dict(snippet, repo_root)
     if messages:
       problems.append(
-          SnippetProblem(i, str(snippet.get("file_path", "?")), messages)
+        SnippetProblem(i, str(snippet.get("file_path", "?")), messages)
       )
   return problems
 
@@ -150,9 +150,9 @@ def format_report(problems: list[SnippetProblem], snippet_count: int) -> str:
   lines = [f"FAILED: {len(problems)} snippet(s) have problems.", ""]
   for problem in problems:
     where = (
-        problem.file_path
-        if problem.index < 0
-        else f"snippet[{problem.index}] ({problem.file_path})"
+      problem.file_path
+      if problem.index < 0
+      else f"snippet[{problem.index}] ({problem.file_path})"
     )
     lines.append(f"- {where}:")
     lines.extend(f"    - {msg}" for msg in problem.messages)

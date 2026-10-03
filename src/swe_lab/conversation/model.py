@@ -81,8 +81,8 @@ class ToolResultBlock(BaseModel):
 
 
 type ContentBlock = Annotated[
-    TextBlock | ReasoningBlock | ToolUseBlock | ToolResultBlock,
-    Field(discriminator="type"),
+  TextBlock | ReasoningBlock | ToolUseBlock | ToolResultBlock,
+  Field(discriminator="type"),
 ]
 """One typed piece of message content, discriminated by its ``type`` tag."""
 

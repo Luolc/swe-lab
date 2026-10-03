@@ -62,27 +62,27 @@ REDACTED_MARKERS = frozenset({REDACTED, LEGACY_REDACTED})
 # The canonical set. Every redactor and every checker in this repo reads it
 # from here, so there is nothing for it to drift against.
 SENSITIVE_HEADERS = frozenset(
-    {
-        # request — credentials
-        "authorization",
-        "x-api-key",
-        "cookie",
-        "proxy-authorization",
-        # response — operator identity
-        "anthropic-organization-id",
-        "anthropic-workspace-id",
-        # The counterpart of the request's `cookie` above. Recording what the
-        # server sets while masking what the client sends protects nothing:
-        # this is the value that later becomes that cookie. Observed on the
-        # real OpenRouter path as a Cloudflare `__cf_bm`; the Anthropic path
-        # sends no cookie at all.
-        "set-cookie",
-        # Identity despite the prefix: it names the account a limit is
-        # claimed against. Deliberately kept out of any "Ratelimit-* is
-        # telemetry" shortcut — that shortcut is how it was missed the
-        # first time.
-        "anthropic-ratelimit-unified-representative-claim",
-    }
+  {
+    # request — credentials
+    "authorization",
+    "x-api-key",
+    "cookie",
+    "proxy-authorization",
+    # response — operator identity
+    "anthropic-organization-id",
+    "anthropic-workspace-id",
+    # The counterpart of the request's `cookie` above. Recording what the
+    # server sets while masking what the client sends protects nothing:
+    # this is the value that later becomes that cookie. Observed on the
+    # real OpenRouter path as a Cloudflare `__cf_bm`; the Anthropic path
+    # sends no cookie at all.
+    "set-cookie",
+    # Identity despite the prefix: it names the account a limit is
+    # claimed against. Deliberately kept out of any "Ratelimit-* is
+    # telemetry" shortcut — that shortcut is how it was missed the
+    # first time.
+    "anthropic-ratelimit-unified-representative-claim",
+  }
 )
 
 # ── Classification ───────────────────────────────────────────────────────
@@ -108,79 +108,79 @@ Upstream = Literal["anthropic", "openrouter"]
 # Protocol, transport, CDN and client-SDK headers — carry no account identity
 # and no credential, whoever is serving.
 _KEPT_ANY_UPSTREAM = frozenset(
-    {
-        # request — protocol and client SDK telemetry
-        "accept",
-        "anthropic-beta",
-        "anthropic-dangerous-direct-browser-access",
-        "anthropic-version",
-        "connection",
-        "content-length",
-        "content-type",
-        "user-agent",
-        "x-app",
-        # Run identifiers, deliberately kept: they are how a run is reconciled
-        # against its trace, and masking them breaks that silently.
-        "x-claude-code-agent-id",
-        "x-claude-code-session-id",
-        "x-stainless-arch",
-        "x-stainless-lang",
-        "x-stainless-os",
-        "x-stainless-package-version",
-        "x-stainless-retry-count",
-        "x-stainless-runtime",
-        "x-stainless-runtime-version",
-        "x-stainless-timeout",
-        # response — transport, caching and CDN
-        "cache-control",
-        "cf-cache-status",
-        "cf-ray",
-        "content-security-policy",
-        "date",
-        "request-id",
-        "server",
-        "strict-transport-security",
-        "traceresponse",
-        "vary",
-        "x-robots-tag",
-    }
+  {
+    # request — protocol and client SDK telemetry
+    "accept",
+    "anthropic-beta",
+    "anthropic-dangerous-direct-browser-access",
+    "anthropic-version",
+    "connection",
+    "content-length",
+    "content-type",
+    "user-agent",
+    "x-app",
+    # Run identifiers, deliberately kept: they are how a run is reconciled
+    # against its trace, and masking them breaks that silently.
+    "x-claude-code-agent-id",
+    "x-claude-code-session-id",
+    "x-stainless-arch",
+    "x-stainless-lang",
+    "x-stainless-os",
+    "x-stainless-package-version",
+    "x-stainless-retry-count",
+    "x-stainless-runtime",
+    "x-stainless-runtime-version",
+    "x-stainless-timeout",
+    # response — transport, caching and CDN
+    "cache-control",
+    "cf-cache-status",
+    "cf-ray",
+    "content-security-policy",
+    "date",
+    "request-id",
+    "server",
+    "strict-transport-security",
+    "traceresponse",
+    "vary",
+    "x-robots-tag",
+  }
 )
 
 # Upstream-specific vocabulary. Splitting these out is what makes a change of
 # upstream re-open the classification instead of inheriting the old answer.
 _KEPT_BY_UPSTREAM: dict[str, frozenset[str]] = {
-    # Rate-limit telemetry: quantities and timestamps, not identity. The one
-    # member of this family that *is* identity is in SENSITIVE_HEADERS above,
-    # which is why the family is spelled out rather than matched.
-    "anthropic": frozenset(
-        {
-            "anthropic-ratelimit-unified-5h-reset",
-            "anthropic-ratelimit-unified-5h-status",
-            "anthropic-ratelimit-unified-5h-utilization",
-            "anthropic-ratelimit-unified-7d-reset",
-            "anthropic-ratelimit-unified-7d-status",
-            "anthropic-ratelimit-unified-7d-utilization",
-            "anthropic-ratelimit-unified-fallback-percentage",
-            # Account *state*, not an account *identifier*: a status word
-            # and a reason string. Kept deliberately — widening the mask
-            # costs telemetry and buys nothing here.
-            "anthropic-ratelimit-unified-overage-disabled-reason",
-            "anthropic-ratelimit-unified-overage-status",
-            "anthropic-ratelimit-unified-reset",
-            "anthropic-ratelimit-unified-status",
-        }
-    ),
-    "openrouter": frozenset(
-        {
-            "access-control-allow-origin",
-            "access-control-expose-headers",
-            "permissions-policy",
-            "referrer-policy",
-            "server-timing",
-            "x-content-type-options",
-            "x-generation-id",
-        }
-    ),
+  # Rate-limit telemetry: quantities and timestamps, not identity. The one
+  # member of this family that *is* identity is in SENSITIVE_HEADERS above,
+  # which is why the family is spelled out rather than matched.
+  "anthropic": frozenset(
+    {
+      "anthropic-ratelimit-unified-5h-reset",
+      "anthropic-ratelimit-unified-5h-status",
+      "anthropic-ratelimit-unified-5h-utilization",
+      "anthropic-ratelimit-unified-7d-reset",
+      "anthropic-ratelimit-unified-7d-status",
+      "anthropic-ratelimit-unified-7d-utilization",
+      "anthropic-ratelimit-unified-fallback-percentage",
+      # Account *state*, not an account *identifier*: a status word
+      # and a reason string. Kept deliberately — widening the mask
+      # costs telemetry and buys nothing here.
+      "anthropic-ratelimit-unified-overage-disabled-reason",
+      "anthropic-ratelimit-unified-overage-status",
+      "anthropic-ratelimit-unified-reset",
+      "anthropic-ratelimit-unified-status",
+    }
+  ),
+  "openrouter": frozenset(
+    {
+      "access-control-allow-origin",
+      "access-control-expose-headers",
+      "permissions-policy",
+      "referrer-policy",
+      "server-timing",
+      "x-content-type-options",
+      "x-generation-id",
+    }
+  ),
 }
 
 
@@ -243,13 +243,13 @@ def unredacted_fields(proxy_log: str) -> list[str]:
   for index, record in enumerate(_records(proxy_log), start=1):
     for side in ("request", "response"):
       findings += [
-          f"record {index} {side} {name}"
-          for name, value in _headers(record, side).items()
-          if name.lower() in SENSITIVE_HEADERS and value not in REDACTED_MARKERS
+        f"record {index} {side} {name}"
+        for name, value in _headers(record, side).items()
+        if name.lower() in SENSITIVE_HEADERS and value not in REDACTED_MARKERS
       ]
     if _body_identity(record) not in (None, *REDACTED_MARKERS):
       findings.append(
-          f"record {index} request body.{'.'.join(BODY_IDENTITY_PATH)}"
+        f"record {index} request body.{'.'.join(BODY_IDENTITY_PATH)}"
       )
   return findings
 
@@ -287,9 +287,9 @@ def _headers(record: dict[str, object], side: str) -> dict[str, str]:
   if not isinstance(headers, dict):
     return {}
   return {
-      str(name): value
-      for name, value in headers.items()
-      if isinstance(value, str)
+    str(name): value
+    for name, value in headers.items()
+    if isinstance(value, str)
   }
 
 
@@ -325,11 +325,11 @@ def unclassified_fields(proxy_log: str, *, upstream: Upstream) -> list[str]:
   """
   known = kept_headers(upstream) | SENSITIVE_HEADERS
   return [
-      f"record {index} {side} {name}"
-      for index, record in enumerate(_records(proxy_log), start=1)
-      for side in ("request", "response")
-      for name in _headers(record, side)
-      if name.lower() not in known
+    f"record {index} {side} {name}"
+    for index, record in enumerate(_records(proxy_log), start=1)
+    for side in ("request", "response")
+    for name in _headers(record, side)
+    if name.lower() not in known
   ]
 
 
@@ -354,5 +354,5 @@ def publication_blockers(proxy_log: str, *, upstream: Upstream) -> list[str]:
     anything actually stopped a publish.
   """
   return unredacted_fields(proxy_log) + unclassified_fields(
-      proxy_log, upstream=upstream
+    proxy_log, upstream=upstream
   )

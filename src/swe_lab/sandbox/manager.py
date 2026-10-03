@@ -96,7 +96,7 @@ class SandboxManager:
       # --- setup: any failure here propagates (no body without a sandbox).
       try:
         merged = merge_mounts(
-            dict(self.mounts), *(o.mounts() for o in self.observers)
+          dict(self.mounts), *(o.mounts() for o in self.observers)
         )
         for observer in self.observers:
           observer.before_create(sb)
@@ -124,24 +124,24 @@ class SandboxManager:
         # exits cleanly and the caller reads result.status.
     finally:
       artifacts, metrics, teardown_error = self._teardown(
-          sb, live, contributions
+        sb, live, contributions
       )
       if teardown_error is not None and primary is None:
         status = RunStatus.RUN_ERROR
         primary = teardown_error
       self._result = RunResult(
-          label=self.label,
-          status=status,
-          artifacts=artifacts,
-          metrics=metrics,
-          error=primary,
+        label=self.label,
+        status=status,
+        artifacts=artifacts,
+        metrics=metrics,
+        error=primary,
       )
 
   def _teardown(
-      self,
-      sb: Sandbox,
-      live: bool,
-      contributions: list[Contribution],
+    self,
+    sb: Sandbox,
+    live: bool,
+    contributions: list[Contribution],
   ) -> tuple[dict[str, epath.Path], dict[str, float], Exception | None]:
     """Run post-processing hooks, collect artifacts out, tear the sandbox down.
 
@@ -194,7 +194,7 @@ class SandboxManager:
     return artifacts, metrics, first_error
 
   def _collect(
-      self, sb: Sandbox, merged: Contribution
+    self, sb: Sandbox, merged: Contribution
   ) -> dict[str, epath.Path]:
     """Land every registered artifact in the host output dir.
 
@@ -235,7 +235,7 @@ class SandboxManager:
       sb.fetch(filename, dest)
       if not dest.exists():
         _logger.warning(
-            "artifact %r (%s) was not collected; omitting it", name, filename
+          "artifact %r (%s) was not collected; omitting it", name, filename
         )
         continue
       collected[name] = dest

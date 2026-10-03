@@ -18,30 +18,30 @@ from .schema import SnippetCategory
 from .workspace import ANNOTATION_OUTPUT, CONTEXT_DIR, VALIDATOR_SCRIPT
 
 _CATEGORY_HELP = {
-    SnippetCategory.REFERENCED_FUNCTION: (
-        "a function/class/block the solution must call, use, or build on"
-    ),
-    SnippetCategory.CONTEXT_FILE: (
-        "surrounding code needed to understand how the pieces fit, even if not"
-        " directly called"
-    ),
-    SnippetCategory.USEFUL_UNIT_TEST: (
-        "an existing test that reveals the expected behavior or contract"
-    ),
-    SnippetCategory.INTERFACE_CONTRACT: (
-        "the required interface/signature/API the fix must conform to"
-    ),
-    SnippetCategory.SIMILAR_PATTERN: (
-        "analogous code elsewhere to mirror when writing the fix"
-    ),
+  SnippetCategory.REFERENCED_FUNCTION: (
+    "a function/class/block the solution must call, use, or build on"
+  ),
+  SnippetCategory.CONTEXT_FILE: (
+    "surrounding code needed to understand how the pieces fit, even if not"
+    " directly called"
+  ),
+  SnippetCategory.USEFUL_UNIT_TEST: (
+    "an existing test that reveals the expected behavior or contract"
+  ),
+  SnippetCategory.INTERFACE_CONTRACT: (
+    "the required interface/signature/API the fix must conform to"
+  ),
+  SnippetCategory.SIMILAR_PATTERN: (
+    "analogous code elsewhere to mirror when writing the fix"
+  ),
 }
 
 
 def build_annotation_prompt(instance: SweBenchProInstance) -> str:
   """Return the full annotation instruction text for one instance."""
   categories = "\n".join(
-      f"  - `{cat.value}` — {help_text}"
-      for cat, help_text in _CATEGORY_HELP.items()
+    f"  - `{cat.value}` — {help_text}"
+    for cat, help_text in _CATEGORY_HELP.items()
   )
   return f"""\
 You are building ground-truth annotations for a SWE-Bench task. Your job is NOT

@@ -40,45 +40,45 @@ class MissingOutputError(AnnotationError):
 
 # Quota/credit exhaustion — fatal, wait for the window to refresh.
 _USAGE_LIMIT_MARKERS: tuple[str, ...] = (
-    "usage limit",
-    "limit reached",
-    "credit balance",
-    "out of credit",
-    "insufficient credit",
-    "quota",
-    "resets at",
-    "reset at",
-    "upgrade to",
+  "usage limit",
+  "limit reached",
+  "credit balance",
+  "out of credit",
+  "insufficient credit",
+  "quota",
+  "resets at",
+  "reset at",
+  "upgrade to",
 )
 
 # Transient — safe to retry after a short backoff.
 _RETRYABLE_MARKERS: tuple[str, ...] = (
-    "rate limit",
-    "rate_limit",
-    "429",
-    "overloaded",
-    "overload",
-    "529",
-    "timeout",
-    "timed out",
-    "temporarily",
-    "connection",
-    "network",
-    "reset by peer",
-    "econnreset",
-    "502",
-    "503",
-    "504",
-    "bad gateway",
-    "gateway timeout",
-    "service unavailable",
-    # A 401 mid-session is transient here: OAuth subscription tokens can expire
-    # or race a refresh during a long run. A truly bad credential fails on the
-    # first turn, not after minutes of work; a fresh invocation gets a fresh
-    # token. Retries are bounded, so a persistent 401 still stops after a few.
-    "401",
-    "invalid authentication credentials",
-    "authentication_error",
+  "rate limit",
+  "rate_limit",
+  "429",
+  "overloaded",
+  "overload",
+  "529",
+  "timeout",
+  "timed out",
+  "temporarily",
+  "connection",
+  "network",
+  "reset by peer",
+  "econnreset",
+  "502",
+  "503",
+  "504",
+  "bad gateway",
+  "gateway timeout",
+  "service unavailable",
+  # A 401 mid-session is transient here: OAuth subscription tokens can expire
+  # or race a refresh during a long run. A truly bad credential fails on the
+  # first turn, not after minutes of work; a fresh invocation gets a fresh
+  # token. Retries are bounded, so a persistent 401 still stops after a few.
+  "401",
+  "invalid authentication credentials",
+  "authentication_error",
 )
 
 
@@ -104,13 +104,11 @@ def classify_error_text(text: str) -> type[AnnotationError]:
 
 
 def cli_failure(
-    *, stderr: str = "", result_text: str = "", api_error_status: object = None
+  *, stderr: str = "", result_text: str = "", api_error_status: object = None
 ) -> AnnotationError:
   """Build the appropriate error from a failed CLI invocation's signals."""
   text = " ".join(
-      part
-      for part in (stderr, result_text, str(api_error_status or ""))
-      if part
+    part for part in (stderr, result_text, str(api_error_status or "")) if part
   )
   cls = classify_error_text(text)
   message = (result_text or stderr or text or "unknown failure").strip()

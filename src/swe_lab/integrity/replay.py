@@ -15,11 +15,11 @@ from typing import Any
 from etils import epath
 
 from .rules import (
-    check_controls,
-    check_patch,
-    check_trace,
-    merge,
-    VerifierFindings,
+  check_controls,
+  check_patch,
+  check_trace,
+  merge,
+  VerifierFindings,
 )
 
 # The artifact names a persisted rollout leaves behind.
@@ -40,10 +40,10 @@ def _read_json(path: epath.Path) -> dict[str, Any] | None:
 
 
 def replay_run(
-    run_dir: epath.PathLike,
-    *,
-    required_tests: Sequence[str] = (),
-    workdir: str = "/",
+  run_dir: epath.PathLike,
+  *,
+  required_tests: Sequence[str] = (),
+  workdir: str = "/",
 ) -> VerifierFindings:
   """Apply every rule to one persisted run directory.
 
@@ -65,7 +65,7 @@ def replay_run(
   conversation = _read_json(root / CONVERSATION_NAME) or {}
   messages = conversation.get("messages") or []
   return merge(
-      check_patch(patch, required_tests),
-      check_trace(messages, workdir=workdir),
-      check_controls(_read_json(root / INTEGRITY_NAME)),
+    check_patch(patch, required_tests),
+    check_trace(messages, workdir=workdir),
+    check_controls(_read_json(root / INTEGRITY_NAME)),
   )

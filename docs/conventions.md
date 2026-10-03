@@ -321,12 +321,11 @@ the one prose copy of it (`AGENTS.md` links here rather than restating it):
   genuinely nobody's (upstream dataset text, a redaction fixture) is listed in
   `NON_OPERATOR_HOMES` by value with its reason — never by file, which would
   also exempt the next real leak to land there.
-- **pyink** — the formatter (Google's black fork): **line length 80, 2-space
-  indent, majority quotes**, `py313`. Not ruff-format (ruff's formatter is
-  disabled for `.py` in `pyproject.toml`).
-- **ruff** — the linter (bugbear, comprehensions, pyupgrade, simplify, …),
-  `--fix`.
-- **isort** — black profile, line length 80.
+- **ruff-check** — the linter (bugbear, comprehensions, pyupgrade, simplify,
+  …) and the import sorter (`I`, configured in `[tool.ruff.lint.isort]`),
+  `--fix`. Runs before the formatter.
+- **ruff-format** — the formatter: **line length 80, 2-space indent** (block
+  and continuation alike), double quotes, `py313`.
 - **basedpyright** — type checker over `src` + `tests`.
 - **pydoclint** — docstring `Args:`/`Returns:`/`Raises:` must match the
   signature; docstring *types* are deliberately unchecked (see Style).
@@ -358,9 +357,9 @@ with the following repo-wide choices and deviations (full plan + rationale:
   suffices (§3.8.3); prose held to **80 cols** (W505). `@property` docstrings
   are noun phrases. Types live in annotations only — never repeated in
   docstrings (pydoclint runs with type checks off; basedpyright owns types).
-- **Deviations from the public guide:** 2-space indentation (Google-internal
-  style, via pyink); §2.2 *import-modules-not-symbols* is **waived entirely**
-  (symbol imports are fine).
+- **Deviations from the public guide:** 2-space indentation (a repo choice;
+  the public guide says 4); §2.2 *import-modules-not-symbols* is **waived
+  entirely** (symbol imports are fine).
 - **TODO format (§3.12) is deliberately not adopted**: the guide's
   issue-link-based form presumes an issue tracker and this repo doesn't use
   GitHub issues (short-term: won't). Revisit if issues are ever adopted.

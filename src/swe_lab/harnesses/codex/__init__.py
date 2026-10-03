@@ -17,10 +17,10 @@ from .provider import CodexProvider
 register_harness("codex", CodexHarness)
 
 __all__ = [
-    "CodexAuthObserver",
-    "CodexHarness",
-    "CodexProvider",
-    "ensure_codex_binaries",
-    "event_stream_outcome",
-    "event_stream_to_conversation",
+  "CodexAuthObserver",
+  "CodexHarness",
+  "CodexProvider",
+  "ensure_codex_binaries",
+  "event_stream_outcome",
+  "event_stream_to_conversation",
 ]

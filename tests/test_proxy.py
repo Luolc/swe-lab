@@ -14,26 +14,26 @@ from pathlib import Path
 import pytest
 
 from swe_lab.harnesses.claude_code.proxy import (
-    ensure_proxy_binary,
-    HOST_BUILD,
-    proxy_binary_path,
-    PROXY_SOURCE_ENV,
-    proxy_source_path,
-    proxy_source_version,
-    SANDBOX_PLATFORM,
+  ensure_proxy_binary,
+  HOST_BUILD,
+  proxy_binary_path,
+  PROXY_SOURCE_ENV,
+  proxy_source_path,
+  proxy_source_version,
+  SANDBOX_PLATFORM,
 )
 
 
 def _host_binary_path(tmp_path: Path) -> Path:
   """Where `pipelines.related_files.host_proxy` caches its build."""
   return Path(
-      str(
-          proxy_binary_path(
-              proxy_source_version(tmp_path),
-              repo_root=tmp_path,
-              build=HOST_BUILD,
-          )
+    str(
+      proxy_binary_path(
+        proxy_source_version(tmp_path),
+        repo_root=tmp_path,
+        build=HOST_BUILD,
       )
+    )
   )
 
 
@@ -45,13 +45,13 @@ def _source(tmp_path: Path, body: str) -> Path:
 
 
 def test_proxy_source_defaults_to_sibling_checkout(
-    monkeypatch: pytest.MonkeyPatch,
+  monkeypatch: pytest.MonkeyPatch,
 ) -> None:
   # cc-reverse-proxy is a standalone project, not a submodule: default is a
   # sibling of the repo, so ../cc-reverse-proxy/reverse_proxy.go.
   monkeypatch.delenv(PROXY_SOURCE_ENV, raising=False)
   assert proxy_source_path(Path("/x/y/swe-lab")) == Path(
-      "/x/y/cc-reverse-proxy/reverse_proxy.go"
+    "/x/y/cc-reverse-proxy/reverse_proxy.go"
   )
 
 
@@ -59,25 +59,25 @@ def test_proxy_source_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
   monkeypatch.setenv(PROXY_SOURCE_ENV, "/opt/rp/reverse_proxy.go")
   # the override wins and the repo root is irrelevant
   assert proxy_source_path(Path("/anywhere")) == Path(
-      "/opt/rp/reverse_proxy.go"
+    "/opt/rp/reverse_proxy.go"
   )
 
 
 def test_the_version_is_the_source_digest(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   # There is no release string to pin — a single unversioned Go file — so the
   # content hash stands in for one.
   source = _source(tmp_path, "package main\n")
   monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
   assert (
-      proxy_source_version(tmp_path)
-      == hashlib.sha256(b"package main\n").hexdigest()
+    proxy_source_version(tmp_path)
+    == hashlib.sha256(b"package main\n").hexdigest()
   )
 
 
 def test_a_missing_source_says_how_to_supply_it(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   monkeypatch.setenv(PROXY_SOURCE_ENV, str(tmp_path / "nope.go"))
   with pytest.raises(FileNotFoundError, match=PROXY_SOURCE_ENV):
@@ -85,7 +85,7 @@ def test_a_missing_source_says_how_to_supply_it(
 
 
 def test_editing_the_source_invalidates_the_cached_build(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   # The guard the old fixed cache path did not have: a binary built from an
   # earlier source must not be silently reused as if it were the current one.
@@ -101,7 +101,7 @@ def test_editing_the_source_invalidates_the_cached_build(
 
 
 def test_a_cached_build_is_reused_without_invoking_go(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   source = _source(tmp_path, "package main\n")
   monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
@@ -113,7 +113,7 @@ def test_a_cached_build_is_reused_without_invoking_go(
 
 
 def test_a_dest_gets_its_own_executable_copy(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   # The other half of the materializer contract: `dest=None` caches, a path
   # installs exactly there (what a sandbox that *is* the filesystem wants).
@@ -130,7 +130,7 @@ def test_a_dest_gets_its_own_executable_copy(
 
 
 def test_an_existing_host_binary_does_not_wedge_the_first_proxied_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   """A host-native build already in the cache is neither blocking nor disturbed.
 
@@ -157,7 +157,7 @@ def test_an_existing_host_binary_does_not_wedge_the_first_proxied_run(
 
 
 def test_the_sandbox_cache_never_collides_with_the_host_proxy_binary(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   """The two proxy artifacts must not share a path.
 
@@ -174,7 +174,7 @@ def test_the_sandbox_cache_never_collides_with_the_host_proxy_binary(
   monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
   host = _host_binary_path(tmp_path)
   sandbox = Path(
-      str(proxy_binary_path(proxy_source_version(tmp_path), repo_root=tmp_path))
+    str(proxy_binary_path(proxy_source_version(tmp_path), repo_root=tmp_path))
   )
 
   assert sandbox != host
@@ -183,7 +183,7 @@ def test_the_sandbox_cache_never_collides_with_the_host_proxy_binary(
 
 
 def test_building_the_sandbox_binary_leaves_the_host_binary_alone(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   """A first proxied run must not disturb a host-native build sitting there.
 

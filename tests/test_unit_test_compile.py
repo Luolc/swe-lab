@@ -10,42 +10,42 @@ test_swebench_pro.py.
 import json
 
 from swe_lab.datasets.swebench_pro.constants import (
-    BASE_REF_NAME,
-    PARSER_NAME,
-    PATCH_NAME,
-    RUN_SCRIPT_NAME,
-    WORKDIR,
+  BASE_REF_NAME,
+  PARSER_NAME,
+  PATCH_NAME,
+  RUN_SCRIPT_NAME,
+  WORKDIR,
 )
 from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
 from swe_lab.datasets.swebench_pro.unit_test import (
-    _build_eval_script,
-    compile_unit_test,
-    REQUIRED_TESTS_NAME,
+  _build_eval_script,
+  compile_unit_test,
+  REQUIRED_TESTS_NAME,
 )
 from swe_lab.git.patch import (
-    baseline_commit_lines,
-    build_baseline_script,
-    build_baseline_verify_script,
+  baseline_commit_lines,
+  build_baseline_script,
+  build_baseline_verify_script,
 )
 from swe_lab.sandbox import Inline, Mount
 
 _BASE = {
-    "repo": "acme/widget",
-    "instance_id": "acme__widget-1",
-    "base_commit": "abc123",
-    "patch": "PATCH",
-    "test_patch": "",
-    "problem_statement": "p",
-    "requirements": "",
-    "interface": "",
-    "repo_language": "python",
-    "fail_to_pass": "['test_a']",
-    "pass_to_pass": "['test_b']",
-    "issue_specificity": "[]",
-    "issue_categories": "[]",
-    "before_repo_set_cmd": "git reset --hard X\ngit checkout Y -- test/foo.py",
-    "selected_test_files_to_run": "['test/foo.py']",
-    "dockerhub_tag": "widget-tag",
+  "repo": "acme/widget",
+  "instance_id": "acme__widget-1",
+  "base_commit": "abc123",
+  "patch": "PATCH",
+  "test_patch": "",
+  "problem_statement": "p",
+  "requirements": "",
+  "interface": "",
+  "repo_language": "python",
+  "fail_to_pass": "['test_a']",
+  "pass_to_pass": "['test_b']",
+  "issue_specificity": "[]",
+  "issue_categories": "[]",
+  "before_repo_set_cmd": "git reset --hard X\ngit checkout Y -- test/foo.py",
+  "selected_test_files_to_run": "['test/foo.py']",
+  "dockerhub_tag": "widget-tag",
 }
 
 
@@ -59,44 +59,44 @@ def _instance(**overrides: str) -> SweBenchProInstance:
 
 
 def _script(
-    inst: SweBenchProInstance,
-    *,
-    apply_patch: bool,
-    checkout_golden_tests: bool,
-    patch_baseline: bool = False,
+  inst: SweBenchProInstance,
+  *,
+  apply_patch: bool,
+  checkout_golden_tests: bool,
+  patch_baseline: bool = False,
 ) -> str:
   # Feed the builder the instance's fields, the way SweBenchProInstance does.
   return _build_eval_script(
-      base_commit=inst.base_commit,
-      selected_test_files_to_run=inst.selected_test_files_to_run,
-      golden_test_checkout_cmd=inst.golden_test_checkout_cmd,
-      apply_patch=apply_patch,
-      patch_name=PATCH_NAME,
-      checkout_golden_tests=checkout_golden_tests,
-      patch_baseline=patch_baseline,
+    base_commit=inst.base_commit,
+    selected_test_files_to_run=inst.selected_test_files_to_run,
+    golden_test_checkout_cmd=inst.golden_test_checkout_cmd,
+    apply_patch=apply_patch,
+    patch_name=PATCH_NAME,
+    checkout_golden_tests=checkout_golden_tests,
+    patch_baseline=patch_baseline,
   )
 
 
 def _compile(
-    inst: SweBenchProInstance,
-    *,
-    apply_patch: bool,
-    patch_name: str = PATCH_NAME,
-    run_script: bytes = b"echo run",
-    parser: bytes = b"print('parse')",
-    checkout_golden_tests: bool = True,
+  inst: SweBenchProInstance,
+  *,
+  apply_patch: bool,
+  patch_name: str = PATCH_NAME,
+  run_script: bytes = b"echo run",
+  parser: bytes = b"print('parse')",
+  checkout_golden_tests: bool = True,
 ):
   return compile_unit_test(
-      apply_patch=apply_patch,
-      patch_name=patch_name,
-      checkout_golden_tests=checkout_golden_tests,
-      base_commit=inst.base_commit,
-      selected_test_files_to_run=inst.selected_test_files_to_run,
-      golden_test_checkout_cmd=inst.golden_test_checkout_cmd,
-      fail_to_pass=inst.fail_to_pass,
-      pass_to_pass=inst.pass_to_pass,
-      run_script=run_script,
-      parser=parser,
+    apply_patch=apply_patch,
+    patch_name=patch_name,
+    checkout_golden_tests=checkout_golden_tests,
+    base_commit=inst.base_commit,
+    selected_test_files_to_run=inst.selected_test_files_to_run,
+    golden_test_checkout_cmd=inst.golden_test_checkout_cmd,
+    fail_to_pass=inst.fail_to_pass,
+    pass_to_pass=inst.pass_to_pass,
+    run_script=run_script,
+    parser=parser,
   )
 
 
@@ -125,19 +125,19 @@ def test_script_pins_line_endings_before_any_git_command():
   # reset/checkout/apply, so they also govern the dataset-authored
   # golden-checkout line we do not write.
   pins = [
-      "git config core.autocrlf false",
-      "git config core.eol lf",
+    "git config core.autocrlf false",
+    "git config core.eol lf",
   ]
   lines = _script(
-      _instance(), apply_patch=True, checkout_golden_tests=True
+    _instance(), apply_patch=True, checkout_golden_tests=True
   ).splitlines()
   cd_at = lines.index(f"cd {WORKDIR}")
   # inside the repo (so repo-local), immediately after the cd
   assert lines[cd_at + 1 : cd_at + 3] == pins
   governed = [
-      i
-      for i, line in enumerate(lines)
-      if line.startswith("git ") and line not in pins
+    i
+    for i, line in enumerate(lines)
+    if line.startswith("git ") and line not in pins
   ]
   assert governed  # not vacuous: there are git commands to govern
   assert all(i > cd_at + 2 for i in governed)
@@ -149,14 +149,14 @@ def test_script_fails_fast_on_setup_but_not_on_the_test_run():
   # The test run itself is exempt — a failing suite is a result, and the parser
   # still has to turn it into output.json.
   lines = _script(
-      _instance(), apply_patch=True, checkout_golden_tests=True
+    _instance(), apply_patch=True, checkout_golden_tests=True
   ).splitlines()
   apply_at = next(
-      i for i, line in enumerate(lines) if line.startswith("git apply")
+    i for i, line in enumerate(lines) if line.startswith("git apply")
   )
   run_at = next(i for i, line in enumerate(lines) if line.startswith("bash "))
   parse_at = next(
-      i for i, line in enumerate(lines) if line.startswith("python ")
+    i for i, line in enumerate(lines) if line.startswith("python ")
   )
 
   assert lines[0] == "set -e"  # armed before anything runs
@@ -169,25 +169,25 @@ def test_script_flag_combinations():
   no_patch = _script(_instance(), apply_patch=False, checkout_golden_tests=True)
   assert "git apply" not in no_patch  # base-commit self-check
   no_golden = _script(
-      _instance(), apply_patch=True, checkout_golden_tests=False
+    _instance(), apply_patch=True, checkout_golden_tests=False
   )
   assert "git checkout Y -- test/foo.py" not in no_golden
 
 
 def test_script_empty_before_cmd_has_no_restore_line():
   script = _script(
-      _instance(before_repo_set_cmd=""),
-      apply_patch=True,
-      checkout_golden_tests=True,
+    _instance(before_repo_set_cmd=""),
+    apply_patch=True,
+    checkout_golden_tests=True,
   )
   assert "git checkout Y" not in script
 
 
 def test_script_quotes_selected_tests():
   script = _script(
-      _instance(selected_test_files_to_run="['a$b', 'c[d]']"),
-      apply_patch=True,
-      checkout_golden_tests=True,
+    _instance(selected_test_files_to_run="['a$b', 'c[d]']"),
+    apply_patch=True,
+    checkout_golden_tests=True,
   )
   assert "'a$b,c[d]'" in script  # single-quoted, no shell expansion
 
@@ -197,7 +197,7 @@ def test_script_quotes_selected_tests():
 
 def test_compile_mounts_the_harness_and_the_expectation():
   unit = _compile(
-      _instance(), apply_patch=True, run_script=b"echo run", parser=b"parse"
+    _instance(), apply_patch=True, run_script=b"echo run", parser=b"parse"
   )
   # mounts carry the harness bytes + the compiled expectation, and nothing else
   assert _content(unit.mounts[RUN_SCRIPT_NAME]) == b"echo run"
@@ -232,7 +232,7 @@ def test_script_resolves_home_in_three_tiers():
   # rather than an exit code — `getent | cut` succeeds with empty output when
   # the UID has no passwd entry, and an empty HOME is worse than an unset one.
   lines = _script(
-      _instance(), apply_patch=True, checkout_golden_tests=True
+    _instance(), apply_patch=True, checkout_golden_tests=True
   ).splitlines()
   tiers = [i for i, line in enumerate(lines) if line.startswith('[ -n "${HOME')]
   assert len(tiers) == 2  # the image's own HOME is tier 1: nothing to do
@@ -256,12 +256,12 @@ def test_untracked_files_are_cleaned_before_the_patch_is_reapplied():
   # Reproduced in a container before this was written; the dataset's own
   # before_repo_set_cmd cleans here for the same reason.
   lines = _script(
-      _instance(), apply_patch=True, checkout_golden_tests=True
+    _instance(), apply_patch=True, checkout_golden_tests=True
   ).splitlines()
   reset = next(i for i, line in enumerate(lines) if "reset --hard" in line)
   clean = lines.index("git clean -fd")
   apply_ = next(
-      i for i, line in enumerate(lines) if line.startswith("git apply")
+    i for i, line in enumerate(lines) if line.startswith("git apply")
   )
   assert reset < clean < apply_
 
@@ -271,7 +271,7 @@ def test_a_previous_attempts_outputs_are_removed_before_anything_else():
   # last attempt's output.json — that reports a stale verdict as its own, which
   # is how a broken retry looked like a working one.
   lines = _script(
-      _instance(), apply_patch=True, checkout_golden_tests=True
+    _instance(), apply_patch=True, checkout_golden_tests=True
   ).splitlines()
   removal = next(i for i, line in enumerate(lines) if line.startswith("rm -f "))
   for name in ("output.json", "stdout.log", "stderr.log"):
@@ -295,10 +295,10 @@ def test_baseline_grading_drops_the_reset_and_owns_nothing_else():
   reset trio is gone; apply and the golden checkout stay.
   """
   script = _script(
-      _instance(),
-      apply_patch=True,
-      checkout_golden_tests=True,
-      patch_baseline=True,
+    _instance(),
+    apply_patch=True,
+    checkout_golden_tests=True,
+    patch_baseline=True,
   )
   # The reset to base_commit is GONE — it would wipe exactly the image
   # mutations the baseline captured.
@@ -316,10 +316,10 @@ def test_the_verify_script_shares_its_commit_lines_with_the_rollout_side():
   # drifted by one character would make every baseline run fail its verify —
   # so both builders draw from the one source, asserted verbatim.
   rollout_script = build_baseline_script(
-      workdir=WORKDIR, output_path="patch.base_ref.txt"
+    workdir=WORKDIR, output_path="patch.base_ref.txt"
   )
   verify_script = build_baseline_verify_script(
-      workdir=WORKDIR, base_ref_path="patch.base_ref.txt"
+    workdir=WORKDIR, base_ref_path="patch.base_ref.txt"
   )
   for line in baseline_commit_lines(WORKDIR):
     assert line in rollout_script
@@ -327,20 +327,20 @@ def test_the_verify_script_shares_its_commit_lines_with_the_rollout_side():
   # The verify half: compare first, reset only after, both shas in the error.
   assert "grading tree differs from the patch base" in verify_script
   assert verify_script.index("grading tree differs") < verify_script.index(
-      "reset --hard HEAD"
+    "reset --hard HEAD"
   )
 
 
 def test_default_grading_script_is_untouched_by_the_new_parameter():
   # Byte-identical with the flag off — the amendment's compatibility promise.
   with_default = _script(
-      _instance(), apply_patch=True, checkout_golden_tests=True
+    _instance(), apply_patch=True, checkout_golden_tests=True
   )
   explicit_off = _script(
-      _instance(),
-      apply_patch=True,
-      checkout_golden_tests=True,
-      patch_baseline=False,
+    _instance(),
+    apply_patch=True,
+    checkout_golden_tests=True,
+    patch_baseline=False,
   )
   assert with_default == explicit_off
   assert "git reset --hard abc123" in with_default

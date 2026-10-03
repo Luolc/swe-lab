@@ -9,11 +9,11 @@ import json
 from typing import override, TYPE_CHECKING
 
 from swe_lab.conversation import (
-    Message,
-    Role,
-    TextBlock,
-    ToolResultBlock,
-    ToolUseBlock,
+  Message,
+  Role,
+  TextBlock,
+  ToolResultBlock,
+  ToolUseBlock,
 )
 from swe_lab.trace_synthesis.guidebook import extract_guidebook_rubric
 
@@ -62,7 +62,7 @@ class EvidenceSelector(ABC):
 
   @abstractmethod
   def select(
-      self, records: Sequence[Message], *, limit: int
+    self, records: Sequence[Message], *, limit: int
   ) -> tuple[Message, ...]:
     """Select a bounded recent view.
 
@@ -81,7 +81,7 @@ class CompleteAssistantTurnSelector(EvidenceSelector):
 
   @override
   def select(
-      self, records: Sequence[Message], *, limit: int
+    self, records: Sequence[Message], *, limit: int
   ) -> tuple[Message, ...]:
     """Select the newest complete assistant-turn groups.
 
@@ -99,9 +99,9 @@ class CompleteAssistantTurnSelector(EvidenceSelector):
     if not records or limit == 0:
       return tuple(records)
     assistant_starts = [
-        index
-        for index, record in enumerate(records)
-        if record.role == Role.ASSISTANT
+      index
+      for index, record in enumerate(records)
+      if record.role == Role.ASSISTANT
     ]
     if not assistant_starts:
       return tuple(records[-limit:])
@@ -144,13 +144,11 @@ def _assistant_turns(records: Sequence[Message]) -> tuple[_AssistantTurn, ...]:
         turns.append(_AssistantTurn(assistant, tuple(results)))
       assistant = record
       results = [
-          block
-          for block in record.content
-          if isinstance(block, ToolResultBlock)
+        block for block in record.content if isinstance(block, ToolResultBlock)
       ]
       continue
     results.extend(
-        block for block in record.content if isinstance(block, ToolResultBlock)
+      block for block in record.content if isinstance(block, ToolResultBlock)
     )
   if assistant is not None or results:
     turns.append(_AssistantTurn(assistant, tuple(results)))
@@ -188,42 +186,41 @@ class PairedToolEvidenceRenderer(EvidenceRenderer):
       lines = [f"## Assistant turn {index}"]
       assistant = turn.assistant
       tool_uses = (
-          [
-              block
-              for block in assistant.content
-              if isinstance(block, ToolUseBlock)
-          ]
-          if assistant is not None
-          else []
+        [
+          block
+          for block in assistant.content
+          if isinstance(block, ToolUseBlock)
+        ]
+        if assistant is not None
+        else []
       )
       if self.include_visible_text and assistant is not None:
         visible_text = "\n".join(
-            block.text
-            for block in assistant.content
-            if isinstance(block, TextBlock)
+          block.text
+          for block in assistant.content
+          if isinstance(block, TextBlock)
         )
         if visible_text:
           lines.append(
-              "Visible text: "
-              + _clip(visible_text, self.max_visible_text_chars)
+            "Visible text: " + _clip(visible_text, self.max_visible_text_chars)
           )
 
       matched_result_indexes: set[int] = set()
       for tool_use in tool_uses:
         serialized_input = json.dumps(
-            tool_use.input,
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
+          tool_use.input,
+          ensure_ascii=False,
+          sort_keys=True,
+          separators=(",", ":"),
         )
         lines.append(
-            f"Tool call {tool_use.id}: {tool_use.name} "
-            f"{_clip(serialized_input, self.max_tool_input_chars)}"
+          f"Tool call {tool_use.id}: {tool_use.name} "
+          f"{_clip(serialized_input, self.max_tool_input_chars)}"
         )
         matches = [
-            (result_index, result)
-            for result_index, result in enumerate(turn.results)
-            if result.tool_use_id == tool_use.id
+          (result_index, result)
+          for result_index, result in enumerate(turn.results)
+          if result.tool_use_id == tool_use.id
         ]
         if not matches:
           lines.append(f"Tool result {tool_use.id}: missing")
@@ -231,8 +228,8 @@ class PairedToolEvidenceRenderer(EvidenceRenderer):
           matched_result_indexes.add(result_index)
           status = "error" if result.is_error else "success"
           lines.append(
-              f"Tool result {result.tool_use_id}: {status} "
-              f"{_clip(result.content, self.max_tool_result_chars)}"
+            f"Tool result {result.tool_use_id}: {status} "
+            f"{_clip(result.content, self.max_tool_result_chars)}"
           )
 
       for result_index, result in enumerate(turn.results):
@@ -240,8 +237,8 @@ class PairedToolEvidenceRenderer(EvidenceRenderer):
           continue
         status = "error" if result.is_error else "success"
         lines.append(
-            f"Tool result {result.tool_use_id} (unmatched): {status} "
-            f"{_clip(result.content, self.max_tool_result_chars)}"
+          f"Tool result {result.tool_use_id} (unmatched): {status} "
+          f"{_clip(result.content, self.max_tool_result_chars)}"
         )
       sections.append("\n".join(lines))
     return "\n\n".join(sections)
@@ -278,7 +275,7 @@ class SupervisorPromptBuilder(PromptBuilder):
   """
 
   renderer: EvidenceRenderer = dataclasses.field(
-      default_factory=PairedToolEvidenceRenderer
+    default_factory=PairedToolEvidenceRenderer
   )
   running_state_instructions: str | None = RUNNING_STATE_INSTRUCTIONS
   include_said: bool = False
@@ -297,7 +294,7 @@ class SupervisorPromptBuilder(PromptBuilder):
     said = ""
     if self.include_said:
       spoken = (
-          "\n".join(one.text for one in observation.said) or "(nothing yet)"
+        "\n".join(one.text for one in observation.said) or "(nothing yet)"
       )
       said = f"\n# Prior supervisor interventions\n\n{spoken}\n"
     done = self.renderer.render(observation.evidence)
@@ -308,13 +305,13 @@ class SupervisorPromptBuilder(PromptBuilder):
       content = rubric if rubric is not None else observation.guidebook
       guidebook = f"# {heading}\n\n{content}\n\n"
     prompt = (
-        f"# Criterion\n\n{criterion.text}\n\n"
-        f"{guidebook}"
-        f"# The task the engineer was given\n\n{observation.task}\n\n"
-        "# Running state before this segment\n\n"
-        f"{observation.running_state}\n\n"
-        f"# Latest completed segment\n\n{done}\n"
-        f"{said}"
+      f"# Criterion\n\n{criterion.text}\n\n"
+      f"{guidebook}"
+      f"# The task the engineer was given\n\n{observation.task}\n\n"
+      "# Running state before this segment\n\n"
+      f"{observation.running_state}\n\n"
+      f"# Latest completed segment\n\n{done}\n"
+      f"{said}"
     )
     if self.running_state_instructions is not None:
       prompt += f"\n# Decision\n\n{self.running_state_instructions}\n"
@@ -322,22 +319,22 @@ class SupervisorPromptBuilder(PromptBuilder):
     verdict = getattr(observation, "verdict", None)
     if verdict is not None:
       structured_verdict: dict[str, object] = {
-          "off_track": verdict.off_track,
-          "reason": verdict.reason,
-          "running_state": verdict.running_state,
+        "off_track": verdict.off_track,
+        "reason": verdict.reason,
+        "running_state": verdict.running_state,
       }
       if verdict.deviation_started_steps_ago is not None:
         structured_verdict["deviation_started_steps_ago"] = (
-            verdict.deviation_started_steps_ago
+          verdict.deviation_started_steps_ago
         )
       prompt += (
-          "\n# Judge verdict\n\n"
-          + json.dumps(
-              structured_verdict,
-              ensure_ascii=False,
-              sort_keys=True,
-              separators=(",", ":"),
-          )
-          + "\n"
+        "\n# Judge verdict\n\n"
+        + json.dumps(
+          structured_verdict,
+          ensure_ascii=False,
+          sort_keys=True,
+          separators=(",", ":"),
+        )
+        + "\n"
       )
     return prompt

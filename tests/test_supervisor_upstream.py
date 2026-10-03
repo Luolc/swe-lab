@@ -32,18 +32,18 @@ from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import ANTHROPIC_API
 from swe_lab.rollout import CodingAgentTask
 from swe_lab.trace_synthesis.judge import (
-    ANTHROPIC_BASE_URL_ENV,
-    DEFAULT_API_KEY_ENV,
-    messages_transport,
-    ModelJudge,
+  ANTHROPIC_BASE_URL_ENV,
+  DEFAULT_API_KEY_ENV,
+  messages_transport,
+  ModelJudge,
 )
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
 from swe_lab.trace_synthesis.supervisor import SpeakWhenOffTrack
 from swe_lab.workflow.definitions import (
-    FROM_SCRATCH_GUIDED_TRACE,
-    GUIDED_ROLLOUT_KEY,
-    SUPERVISOR_BASE_URL,
-    SUPERVISOR_MODEL,
+  FROM_SCRATCH_GUIDED_TRACE,
+  GUIDED_ROLLOUT_KEY,
+  SUPERVISOR_BASE_URL,
+  SUPERVISOR_MODEL,
 )
 
 from .policies import SilentPolicy
@@ -67,11 +67,11 @@ def _supervision(*overrides: str) -> SegmentedSupervision:
     The plan the run would use.
   """
   (entry,) = (
-      one
-      for one in apply_overrides(
-          FROM_SCRATCH_GUIDED_TRACE, parse_overrides(list(overrides))
-      )
-      if one.key == GUIDED_ROLLOUT_KEY
+    one
+    for one in apply_overrides(
+      FROM_SCRATCH_GUIDED_TRACE, parse_overrides(list(overrides))
+    )
+    if one.key == GUIDED_ROLLOUT_KEY
   )
   assert isinstance(entry.task, CodingAgentTask)
   harness = entry.task.harness
@@ -90,7 +90,7 @@ def _judge_of(supervision: SegmentedSupervision) -> ModelJudge:
     The judge.
   """
   policy = supervision.policy_factory(
-      supervision.cooldown, supervision.base_url, supervision.api_key_env
+    supervision.cooldown, supervision.base_url, supervision.api_key_env
   )
   assert isinstance(policy, SpeakWhenOffTrack)
   judge = policy.judge
@@ -111,7 +111,7 @@ def _built() -> SegmentedSupervision:
     The plan.
   """
   return SegmentedSupervision(
-      policy_factory=lambda cooldown, url, variable: SilentPolicy()
+    policy_factory=lambda cooldown, url, variable: SilentPolicy()
   )
 
 
@@ -123,9 +123,7 @@ def test_an_arbitrary_third_party_base_url_reaches_the_supervisor() -> None:
   a URL that appears nowhere in this codebase.
   """
   judge = _judge_of(
-      _supervision(
-          f"--guided_rollout.harness.segmented.base_url={_THIRD_PARTY}"
-      )
+    _supervision(f"--guided_rollout.harness.segmented.base_url={_THIRD_PARTY}")
   )
 
   assert _upstream_of(judge)[0] == _THIRD_PARTY
@@ -210,17 +208,17 @@ def _captured(when: str, sink: pathlib.Path) -> str:
     # to a file of its own and shows it on failure, so a child that dies during
     # import is diagnosable without this holding a second pipe open.
     _ = subprocess.run(
-        [sys.executable, "-c", _TIMING_PROBE, when, _THIRD_PARTY],
-        stdout=out,
-        check=True,
-        timeout=_PROBE_TIMEOUT_SECONDS,
-        env=environment,
+      [sys.executable, "-c", _TIMING_PROBE, when, _THIRD_PARTY],
+      stdout=out,
+      check=True,
+      timeout=_PROBE_TIMEOUT_SECONDS,
+      env=environment,
     )
   return sink.read_text().strip()
 
 
 def test_the_shipped_default_is_captured_when_the_definitions_import(
-    tmp_path: pathlib.Path,
+  tmp_path: pathlib.Path,
 ) -> None:
   """The timing is a contract, so both sides of it are pinned.
 
@@ -247,16 +245,16 @@ def test_the_key_variable_is_the_callers_choice_too() -> None:
   one with its own endpoint; its control arm is the default above.
   """
   judge = _judge_of(
-      _supervision(
-          f"--guided_rollout.harness.segmented.api_key_env={_KEY_VARIABLE}"
-      )
+    _supervision(
+      f"--guided_rollout.harness.segmented.api_key_env={_KEY_VARIABLE}"
+    )
   )
 
   assert _upstream_of(judge)[1] == _KEY_VARIABLE
 
 
 def test_the_default_base_url_follows_the_environment(
-    monkeypatch: pytest.MonkeyPatch,
+  monkeypatch: pytest.MonkeyPatch,
 ) -> None:
   """``ANTHROPIC_BASE_URL`` points the supervisor, as it points the agent.
 
@@ -270,7 +268,7 @@ def test_the_default_base_url_follows_the_environment(
 
 
 def test_the_fallback_is_the_anthropic_root_when_nothing_says(
-    monkeypatch: pytest.MonkeyPatch,
+  monkeypatch: pytest.MonkeyPatch,
 ) -> None:
   """The control arm for the environment: unset means the shipped default."""
   monkeypatch.delenv(ANTHROPIC_BASE_URL_ENV, raising=False)
@@ -298,17 +296,17 @@ def test_an_unheard_of_upstream_is_not_refused() -> None:
   removed. Neither string is one this repo has ever seen.
   """
   supervision = dataclasses.replace(
-      _built(), base_url=_THIRD_PARTY, api_key_env=_KEY_VARIABLE
+    _built(), base_url=_THIRD_PARTY, api_key_env=_KEY_VARIABLE
   )
 
   assert (supervision.base_url, supervision.api_key_env) == (
-      _THIRD_PARTY,
-      _KEY_VARIABLE,
+    _THIRD_PARTY,
+    _KEY_VARIABLE,
   )
 
 
 def test_the_pinned_model_is_the_same_name_wherever_the_run_is_pointed() -> (
-    None
+  None
 ):
   """Repointing the endpoint is a change of endpoint and nothing else.
 
@@ -320,9 +318,7 @@ def test_the_pinned_model_is_the_same_name_wherever_the_run_is_pointed() -> (
   reintroduced a translation.
   """
   elsewhere = _judge_of(
-      _supervision(
-          f"--guided_rollout.harness.segmented.base_url={_THIRD_PARTY}"
-      )
+    _supervision(f"--guided_rollout.harness.segmented.base_url={_THIRD_PARTY}")
   )
   default = _judge_of(_supervision())
 
@@ -331,7 +327,7 @@ def test_the_pinned_model_is_the_same_name_wherever_the_run_is_pointed() -> (
 
 
 def test_the_transport_asks_the_named_upstream_with_the_named_variable() -> (
-    None
+  None
 ):
   """The two strings are what the request is actually built from.
 
@@ -348,13 +344,13 @@ def test_the_transport_asks_the_named_upstream_with_the_named_variable() -> (
     return io.BytesIO(json.dumps({"content": []}).encode())
 
   with (
-      mock.patch.dict(os.environ, {_KEY_VARIABLE: _KEY_VALUE}),
-      mock.patch.object(urllib.request, "urlopen", fake_urlopen),
+    mock.patch.dict(os.environ, {_KEY_VARIABLE: _KEY_VALUE}),
+    mock.patch.object(urllib.request, "urlopen", fake_urlopen),
   ):
     _ = messages_transport(
-        {"model": "m", "messages": []},
-        base_url=_THIRD_PARTY,
-        api_key_env=_KEY_VARIABLE,
+      {"model": "m", "messages": []},
+      base_url=_THIRD_PARTY,
+      api_key_env=_KEY_VARIABLE,
     )
 
   sent = {name.lower(): value for name, value in captured["headers"].items()}
@@ -370,13 +366,13 @@ def test_an_unset_key_variable_reads_as_a_missing_credential() -> None:
   instance, and the refusal names the variable so the reader can fill it.
   """
   with (
-      mock.patch.dict(os.environ, {_KEY_VARIABLE: ""}),
-      pytest.raises(RuntimeError, match="missing credential") as caught,
+    mock.patch.dict(os.environ, {_KEY_VARIABLE: ""}),
+    pytest.raises(RuntimeError, match="missing credential") as caught,
   ):
     _ = messages_transport(
-        {"model": "m", "messages": []},
-        base_url=_THIRD_PARTY,
-        api_key_env=_KEY_VARIABLE,
+      {"model": "m", "messages": []},
+      base_url=_THIRD_PARTY,
+      api_key_env=_KEY_VARIABLE,
     )
 
   assert _KEY_VARIABLE in str(caught.value)

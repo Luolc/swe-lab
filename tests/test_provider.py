@@ -9,25 +9,25 @@ from etils import epath
 import pytest
 
 from swe_lab.datasets.swebench_pro import (
-    COLUMNS,
-    SweBenchProInstance,
+  COLUMNS,
+  SweBenchProInstance,
 )
 from swe_lab.repo.provider import GitCheckoutProvider
 
 
 def _git(*args: str, cwd: epath.PathLike) -> str:
   env_flags = [
-      "-c",
-      "user.email=test@example.com",
-      "-c",
-      "user.name=Test",
+    "-c",
+    "user.email=test@example.com",
+    "-c",
+    "user.name=Test",
   ]
   result = subprocess.run(
-      ["git", *env_flags, *args],
-      cwd=str(cwd),
-      capture_output=True,
-      text=True,
-      check=True,
+    ["git", *env_flags, *args],
+    cwd=str(cwd),
+    capture_output=True,
+    text=True,
+    check=True,
   )
   return result.stdout.strip()
 
@@ -35,15 +35,15 @@ def _git(*args: str, cwd: epath.PathLike) -> str:
 def _instance(base_commit: str) -> SweBenchProInstance:
   raw = dict.fromkeys(COLUMNS, "")
   raw.update(
-      repo="acme/widget",
-      instance_id="instance_acme__widget-1",
-      base_commit=base_commit,
-      repo_language="python",
-      fail_to_pass="[]",
-      pass_to_pass="[]",
-      issue_specificity="[]",
-      issue_categories="[]",
-      selected_test_files_to_run="[]",
+    repo="acme/widget",
+    instance_id="instance_acme__widget-1",
+    base_commit=base_commit,
+    repo_language="python",
+    fail_to_pass="[]",
+    pass_to_pass="[]",
+    issue_specificity="[]",
+    issue_categories="[]",
+    selected_test_files_to_run="[]",
   )
   return SweBenchProInstance.from_raw(raw)
 
@@ -70,11 +70,11 @@ def remote(tmp_path: Path) -> tuple[Path, str, str]:
 
 
 def test_provision_checks_out_base_commit(
-    tmp_path: Path, remote: tuple[Path, str, str]
+  tmp_path: Path, remote: tuple[Path, str, str]
 ) -> None:
   remote_base, c1, _ = remote
   provider = GitCheckoutProvider(
-      cache_dir=epath.Path(tmp_path / "cache"), remote_base=str(remote_base)
+    cache_dir=epath.Path(tmp_path / "cache"), remote_base=str(remote_base)
   )
 
   checkout = provider.provision(_instance(c1))
@@ -86,11 +86,11 @@ def test_provision_checks_out_base_commit(
 
 
 def test_provision_is_idempotent(
-    tmp_path: Path, remote: tuple[Path, str, str]
+  tmp_path: Path, remote: tuple[Path, str, str]
 ) -> None:
   remote_base, c1, _ = remote
   provider = GitCheckoutProvider(
-      cache_dir=epath.Path(tmp_path / "cache"), remote_base=str(remote_base)
+    cache_dir=epath.Path(tmp_path / "cache"), remote_base=str(remote_base)
   )
 
   first = provider.provision(_instance(c1))
@@ -100,11 +100,11 @@ def test_provision_is_idempotent(
 
 
 def test_provision_reuses_dir_when_commit_changes(
-    tmp_path: Path, remote: tuple[Path, str, str]
+  tmp_path: Path, remote: tuple[Path, str, str]
 ) -> None:
   remote_base, c1, c2 = remote
   provider = GitCheckoutProvider(
-      cache_dir=epath.Path(tmp_path / "cache"), remote_base=str(remote_base)
+    cache_dir=epath.Path(tmp_path / "cache"), remote_base=str(remote_base)
   )
 
   provider.provision(_instance(c1))
@@ -115,13 +115,13 @@ def test_provision_reuses_dir_when_commit_changes(
 
 
 def test_variant_gives_isolated_checkouts(
-    tmp_path: Path, remote: tuple[Path, str, str]
+  tmp_path: Path, remote: tuple[Path, str, str]
 ) -> None:
   # Two variants of the same instance must be separate worktrees (so concurrent
   # runs don't share a working directory), both at the commit.
   remote_base, c1, _ = remote
   provider = GitCheckoutProvider(
-      cache_dir=epath.Path(tmp_path / "cache"), remote_base=str(remote_base)
+    cache_dir=epath.Path(tmp_path / "cache"), remote_base=str(remote_base)
   )
 
   default = provider.provision(_instance(c1))

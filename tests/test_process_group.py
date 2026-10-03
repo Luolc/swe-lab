@@ -65,10 +65,10 @@ def _wait_gone(pid: int, timeout: float = 5.0) -> bool:
 def tree() -> Iterator[subprocess.Popen[str]]:
   """Start a shell in its own group, holding a backgrounded grandchild."""
   process = subprocess.Popen(
-      ["/bin/bash", "-c", _SPAWNS_A_GRANDCHILD],
-      stdout=subprocess.PIPE,
-      text=True,
-      start_new_session=True,
+    ["/bin/bash", "-c", _SPAWNS_A_GRANDCHILD],
+    stdout=subprocess.PIPE,
+    text=True,
+    start_new_session=True,
   )
   yield process
   # Teardown deliberately does **not** call the code under test: several of
@@ -113,7 +113,7 @@ def test_terminating_only_the_child_is_what_leaked(tree: subprocess.Popen[str]):
 
 
 def test_nothing_is_reaped_before_the_last_group_signal(
-    tree: subprocess.Popen[str], monkeypatch: pytest.MonkeyPatch
+  tree: subprocess.Popen[str], monkeypatch: pytest.MonkeyPatch
 ):
   """The pid must stay reserved while the group is still being signalled.
 
@@ -140,7 +140,7 @@ def test_nothing_is_reaped_before_the_last_group_signal(
 
   assert order[-1] == "reap", order
   assert order.index("reap") > max(
-      index for index, call in enumerate(order) if call.startswith("killpg")
+    index for index, call in enumerate(order) if call.startswith("killpg")
   ), order
 
 
@@ -163,7 +163,7 @@ def test_reaping_is_what_releases_the_group_number():
 
 
 def test_a_leader_reaped_by_someone_else_before_entry_is_never_signalled(
-    tree: subprocess.Popen[str], monkeypatch: pytest.MonkeyPatch
+  tree: subprocess.Popen[str], monkeypatch: pytest.MonkeyPatch
 ):
   """The pre-flight's *external* half: a live `Popen`, no child to wait on.
 
@@ -191,7 +191,7 @@ def test_a_leader_reaped_by_someone_else_before_entry_is_never_signalled(
 
 
 def test_a_leader_reaped_elsewhere_stops_the_group_signal(
-    tree: subprocess.Popen[str], monkeypatch: pytest.MonkeyPatch
+  tree: subprocess.Popen[str], monkeypatch: pytest.MonkeyPatch
 ):
   """Ownership unknown is not permission, whenever it becomes unknown.
 
@@ -225,7 +225,7 @@ def test_a_leader_reaped_elsewhere_stops_the_group_signal(
 
 
 def test_a_leader_reaped_before_entry_is_never_signalled(
-    monkeypatch: pytest.MonkeyPatch,
+  monkeypatch: pytest.MonkeyPatch,
 ):
   """The check has to precede the *first* signal, not only the last.
 

@@ -35,10 +35,10 @@ from .mounts import Mount, Mounts
 from .observer import SandboxObserver
 from .observers.diff_extract import BASE_REF_NAME, BASELINE_SCRIPT_NAME
 from .observers.git_history_purge import (
-    PURGE_SCRIPT_NAME as GIT_PURGE_SCRIPT_NAME,
+  PURGE_SCRIPT_NAME as GIT_PURGE_SCRIPT_NAME,
 )
 from .observers.git_history_purge import (
-    REPORT_SCRIPT_NAME as GIT_REPORT_SCRIPT_NAME,
+  REPORT_SCRIPT_NAME as GIT_REPORT_SCRIPT_NAME,
 )
 from .persist import AttemptRecord
 from .result import Contribution
@@ -63,19 +63,19 @@ def _maybe_raise(error: Exception | None) -> None:
 # one that is missing — instead of yielding JSON the real parser then rejects at
 # runtime. Vary it with `dataclasses.replace` to model a repo that still leaks.
 CLEAN_GIT_REPORT = json.dumps(
-    GitHistoryReport(
-        base_sha="basesha",
-        refs=0,
-        tags=0,
-        heads=0,
-        remote_refs=0,
-        remotes=0,
-        reflog=0,
-        future_commits=0,
-        base_reachable=True,
-        solution_reachable=False,
-        solution_is_future=None,
-    ).to_dict()
+  GitHistoryReport(
+    base_sha="basesha",
+    refs=0,
+    tags=0,
+    heads=0,
+    remote_refs=0,
+    remotes=0,
+    reflog=0,
+    future_commits=0,
+    base_reachable=True,
+    solution_reachable=False,
+    solution_is_future=None,
+  ).to_dict()
 )
 
 
@@ -88,7 +88,7 @@ _FAKE_BASELINE_SHA = "0" * 39 + "1"
 # Both halves of the baseline: the rollout side commits it, the grading side
 # recomputes and verifies it. Neither is the task's own action.
 _BASELINE_SCRIPTS = frozenset(
-    {BASELINE_SCRIPT_NAME, BASELINE_VERIFY_SCRIPT_NAME}
+  {BASELINE_SCRIPT_NAME, BASELINE_VERIFY_SCRIPT_NAME}
 )
 
 
@@ -203,20 +203,18 @@ class FakeSandbox(Sandbox):
 
   def _dest(self, target: str) -> epath.Path:
     return (
-        epath.Path(target)
-        if target.startswith("/")
-        else self.workspace / target
+      epath.Path(target) if target.startswith("/") else self.workspace / target
     )
 
   # --- exec ----------------------------------------------------------------
 
   @override
   def run_script(
-      self,
-      name: str,
-      *,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    name: str,
+    *,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     """Record the script name + env and return the next scripted result.
 
@@ -249,11 +247,11 @@ class FakeSandbox(Sandbox):
 
   @override
   def run_command(
-      self,
-      command: str,
-      *,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    command: str,
+    *,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     """Record the command and return the next scripted result."""
     del timeout, env
@@ -266,7 +264,7 @@ class FakeSandbox(Sandbox):
     index = min(self._execs, len(self.run_results) - 1)
     self._execs += 1
     return (
-        self.run_results[index] if self.run_results else ExecResult(0, "", "")
+      self.run_results[index] if self.run_results else ExecResult(0, "", "")
     )
 
 
@@ -325,7 +323,7 @@ class RecordingObserver(SandboxObserver):
 
   @override
   def on_error(
-      self, sb: SandboxFs, error: BaseException
+    self, sb: SandboxFs, error: BaseException
   ) -> Contribution | None:
     """Record the hook and return the scripted error contribution."""
     self._hit("on_error")
@@ -368,21 +366,20 @@ def build_fake_sandbox(spec: SandboxSpec, config: SandboxConfig) -> Sandbox:
   """
   if not isinstance(config, FakeSandboxConfig):
     raise SandboxError(
-        "backend 'fake' consumes FakeSandboxConfig, got"
-        f" {type(config).__name__}"
+      f"backend 'fake' consumes FakeSandboxConfig, got {type(config).__name__}"
     )
   if config.workspace is None:
     raise SandboxError("backend 'fake' needs a workspace directory")
   sandbox = FakeSandbox(
-      spec=spec,
-      workspace=config.workspace,
-      config=config,
-      run_results=list(config.run_results),
-      up_error=(
-          SandboxError("infra down")
-          if len(config.built) < config.up_errors
-          else None
-      ),
+    spec=spec,
+    workspace=config.workspace,
+    config=config,
+    run_results=list(config.run_results),
+    up_error=(
+      SandboxError("infra down")
+      if len(config.built) < config.up_errors
+      else None
+    ),
   )
   config.built.append(sandbox)
   return sandbox
@@ -440,22 +437,22 @@ class FakeStore(Store):
   @override
   def read_manifests(self, sweep_id: str) -> list[AttemptRecord]:
     return sorted(
-        (m for m in self.manifests if m.sweep_id == sweep_id),
-        key=lambda record: record.sort_key,
+      (m for m in self.manifests if m.sweep_id == sweep_id),
+      key=lambda record: record.sort_key,
     )
 
   @override
   def read_manifest(
-      self,
-      sweep_id: str,
-      instance_id: str,
-      rollout_id: int,
-      task: str | None = None,
+    self,
+    sweep_id: str,
+    instance_id: str,
+    rollout_id: int,
+    task: str | None = None,
   ) -> list[AttemptRecord]:
     return [
-        m
-        for m in self.read_manifests(sweep_id)
-        if m.instance_id == instance_id
-        and m.rollout_id == rollout_id
-        and (task is None or m.task == task)
+      m
+      for m in self.read_manifests(sweep_id)
+      if m.instance_id == instance_id
+      and m.rollout_id == rollout_id
+      and (task is None or m.task == task)
     ]

@@ -26,39 +26,39 @@ from typing import override
 from swe_lab.conversation import Conversation, ConversationObserver
 from swe_lab.harnesses.base import AgentOutcome, Harness
 from swe_lab.harnesses.common import (
-    AgentInfoObserver,
-    env_exports,
-    home_fallback_lines,
-    read_text,
-    status_tail,
+  AgentInfoObserver,
+  env_exports,
+  home_fallback_lines,
+  read_text,
+  status_tail,
 )
 from swe_lab.harnesses.observer import HarnessOutcomeObserver
 from swe_lab.sandbox import (
-    AgentAsset,
-    ExecResult,
-    Inline,
-    Mount,
-    Mounts,
-    SandboxFs,
-    SandboxObserver,
+  AgentAsset,
+  ExecResult,
+  Inline,
+  Mount,
+  Mounts,
+  SandboxFs,
+  SandboxObserver,
 )
 
 from .binary import PINNED_GROK_BUILD_VERSION
 from .constants import (
-    AGENT_ENV_NAME,
-    AGENT_EXIT_CODE_NAME,
-    AGENT_HOME,
-    AGENT_SCRIPT_NAME,
-    AGENT_STDERR_NAME,
-    BINARY_AT,
-    DEFAULT_EFFORT,
-    DEFAULT_MAX_TURNS,
-    DEFAULT_MODEL,
-    Effort,
-    EVENT_STREAM_NAME,
-    grok_config_dir,
-    INFO_ARTIFACT,
-    PROMPT_FILENAME,
+  AGENT_ENV_NAME,
+  AGENT_EXIT_CODE_NAME,
+  AGENT_HOME,
+  AGENT_SCRIPT_NAME,
+  AGENT_STDERR_NAME,
+  BINARY_AT,
+  DEFAULT_EFFORT,
+  DEFAULT_MAX_TURNS,
+  DEFAULT_MODEL,
+  Effort,
+  EVENT_STREAM_NAME,
+  grok_config_dir,
+  INFO_ARTIFACT,
+  PROMPT_FILENAME,
 )
 from .convert import event_stream_outcome, event_stream_to_conversation
 
@@ -71,10 +71,10 @@ _INFO_TIMEOUT_S = 60.0
 # switch (task-29 §6). The AGENTS.md door has NO switch — it is handled by
 # detection, not prevention (see GrokBuildHarness.bare).
 _BARE_FLAGS = (
-    "--no-plan",
-    "--no-subagents",
-    "--no-memory",
-    "--disable-web-search",
+  "--no-plan",
+  "--no-subagents",
+  "--no-memory",
+  "--disable-web-search",
 )
 
 
@@ -145,11 +145,11 @@ class GrokBuildHarness(Harness):
     ``native_outputs``, which is where everything grok-specific lives.
     """
     return (
-        # First: record which build the sandbox actually got, before anything
-        # can go wrong with the run it describes.
-        AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT),
-        ConversationObserver(producer=self),
-        HarnessOutcomeObserver(harness=self),
+      # First: record which build the sandbox actually got, before anything
+      # can go wrong with the run it describes.
+      AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT),
+      ConversationObserver(producer=self),
+      HarnessOutcomeObserver(harness=self),
     )
 
   @override
@@ -162,11 +162,11 @@ class GrokBuildHarness(Harness):
 
     version = self.version
     return (
-        AgentAsset(
-            path=BINARY_AT,
-            version=version,
-            fetch=lambda dest: ensure_grok_binary(version=version, dest=dest),
-        ),
+      AgentAsset(
+        path=BINARY_AT,
+        version=version,
+        fetch=lambda dest: ensure_grok_binary(version=version, dest=dest),
+      ),
     )
 
   @override
@@ -187,20 +187,20 @@ class GrokBuildHarness(Harness):
       The two staged files.
     """
     return {
-        AGENT_SCRIPT_NAME: Mount(
-            Inline(self._invocation_script(workdir).encode()), executable=True
-        ),
-        AGENT_ENV_NAME: Mount(Inline(b"")),
+      AGENT_SCRIPT_NAME: Mount(
+        Inline(self._invocation_script(workdir).encode()), executable=True
+      ),
+      AGENT_ENV_NAME: Mount(Inline(b"")),
     }
 
   @override
   def run(
-      self,
-      sb: SandboxFs,
-      *,
-      prompt: str,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    sb: SandboxFs,
+    *,
+    prompt: str,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     """Land the prompt, fill in the env file, then run the staged script.
 
@@ -234,9 +234,9 @@ class GrokBuildHarness(Harness):
     consumer reads the artifact name and knows how to parse it.
     """
     return {
-        "event_stream.jsonl": EVENT_STREAM_NAME,
-        "stderr.log": AGENT_STDERR_NAME,
-        "exit_code.txt": AGENT_EXIT_CODE_NAME,
+      "event_stream.jsonl": EVENT_STREAM_NAME,
+      "stderr.log": AGENT_STDERR_NAME,
+      "exit_code.txt": AGENT_EXIT_CODE_NAME,
     }
 
   @override
@@ -287,26 +287,26 @@ class GrokBuildHarness(Harness):
     stderr = f'"$SANDBOX_WORKSPACE"/{AGENT_STDERR_NAME}'
     event_stream = f'"$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}'
     lines = [
-        "set -u",
-        # The image's HOME wins (warm toolchain caches live under it, #240).
-        # GROK_HOME pins the config dir grok would otherwise derive from HOME
-        # ($HOME/.grok) — same split as the other two harnesses: warm caches
-        # from the image, clean config from us. The staged OAuth login lands
-        # in this pinned dir.
-        *home_fallback_lines(),
-        f"export GROK_HOME={grok_dir}",
-        f"mkdir -p {grok_dir}",
-        # Caller-injected env (empty unless ``run(env=...)`` filled it in).
-        # Sourced after the defaults above so a caller can override them.
-        f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}',
+      "set -u",
+      # The image's HOME wins (warm toolchain caches live under it, #240).
+      # GROK_HOME pins the config dir grok would otherwise derive from HOME
+      # ($HOME/.grok) — same split as the other two harnesses: warm caches
+      # from the image, clean config from us. The staged OAuth login lands
+      # in this pinned dir.
+      *home_fallback_lines(),
+      f"export GROK_HOME={grok_dir}",
+      f"mkdir -p {grok_dir}",
+      # Caller-injected env (empty unless ``run(env=...)`` filled it in).
+      # Sourced after the defaults above so a caller can override them.
+      f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}',
     ]
     flags = [
-        f"--prompt-file {prompt}",
-        "--output-format streaming-messages-json",
-        "--permission-mode bypassPermissions",
-        "--no-leader",
-        f"--cwd {shlex.quote(workdir)}",
-        f"--max-turns {int(self.max_turns)}",
+      f"--prompt-file {prompt}",
+      "--output-format streaming-messages-json",
+      "--permission-mode bypassPermissions",
+      "--no-leader",
+      f"--cwd {shlex.quote(workdir)}",
+      f"--max-turns {int(self.max_turns)}",
     ]
     if self.model is not None:
       flags.append(f"--model {shlex.quote(self.model)}")
@@ -320,7 +320,7 @@ class GrokBuildHarness(Harness):
 
     exit_file = f'"$SANDBOX_WORKSPACE"/{AGENT_EXIT_CODE_NAME}'
     lines += [
-        (f"{binary} {' '.join(flags)} > {event_stream} 2> {stderr}"),
-        *status_tail(exit_file),
+      (f"{binary} {' '.join(flags)} > {event_stream} 2> {stderr}"),
+      *status_tail(exit_file),
     ]
     return "\n".join(lines) + "\n"

@@ -15,10 +15,10 @@ from etils import epath
 
 from swe_lab.paths import cache_root
 from swe_lab.sandbox import (
-    AttemptRecord,
-    build_store,
-    RUNS_NAMESPACE,
-    Store,
+  AttemptRecord,
+  build_store,
+  RUNS_NAMESPACE,
+  Store,
 )
 
 _STORE_SUBDIR = "store"
@@ -30,7 +30,7 @@ def run_ts() -> str:
 
 
 def run_store(
-    root: epath.PathLike, *, persist_to_t1: bool, scratch: epath.Path
+  root: epath.PathLike, *, persist_to_t1: bool, scratch: epath.Path
 ) -> Store:
   """Return the store a command's run persists through.
 
@@ -61,22 +61,22 @@ def local_store(root: epath.PathLike) -> Store:
   shared cloud bucket (task 13) still keeps runs apart from future siblings.
   """
   return build_store(
-      "filesystem", root=cache_root(root) / _STORE_SUBDIR / RUNS_NAMESPACE
+    "filesystem", root=cache_root(root) / _STORE_SUBDIR / RUNS_NAMESPACE
   )
 
 
 def new_record(
-    *,
-    sweep: str,
-    instance_id: str,
-    task: str,
-    status: str,
-    backend: str,
-    rollout_id: int = 0,
-    attempt: int = 0,
-    model: str = "",
-    metrics: Mapping[str, float] | None = None,
-    extra: Mapping[str, object] | None = None,
+  *,
+  sweep: str,
+  instance_id: str,
+  task: str,
+  status: str,
+  backend: str,
+  rollout_id: int = 0,
+  attempt: int = 0,
+  model: str = "",
+  metrics: Mapping[str, float] | None = None,
+  extra: Mapping[str, object] | None = None,
 ) -> AttemptRecord:
   """Build a ``formal``-tier record with a freshly injected launch timestamp.
 
@@ -85,16 +85,16 @@ def new_record(
   ``task`` is required — every record names its task (ADR-0007 §6).
   """
   return AttemptRecord(
-      sweep_id=sweep,
-      instance_id=instance_id,
-      task=task,
-      rollout_id=rollout_id,
-      attempt=attempt,
-      run_ts=run_ts(),
-      status=status,
-      tier="formal",
-      backend=backend,
-      model=model,
-      metrics=dict(metrics or {}),
-      extra=dict(extra or {}),
+    sweep_id=sweep,
+    instance_id=instance_id,
+    task=task,
+    rollout_id=rollout_id,
+    attempt=attempt,
+    run_ts=run_ts(),
+    status=status,
+    tier="formal",
+    backend=backend,
+    model=model,
+    metrics=dict(metrics or {}),
+    extra=dict(extra or {}),
   )

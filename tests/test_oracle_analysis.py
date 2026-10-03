@@ -23,9 +23,9 @@ from swe_lab.conversation import Conversation, Message, Role, TextBlock
 from swe_lab.conversation.observer import CONVERSATION_NAME
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.swebench_pro.unit_test import (
-    REQUIRED_TESTS_NAME,
-    SweBenchProGrader,
-    SweBenchProVerdict,
+  REQUIRED_TESTS_NAME,
+  SweBenchProGrader,
+  SweBenchProVerdict,
 )
 from swe_lab.evaluation.unit_test import ENTRYSCRIPT_NAME
 from swe_lab.evaluation.verdict import UnitTestSpec
@@ -35,55 +35,55 @@ from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import AGENT_SCRIPT_NAME
 from swe_lab.rollout import CodingAgentTask, PROMPT_NAME
 from swe_lab.sandbox import (
-    ArtifactSchema,
-    ExecResult,
-    Inline,
-    merge_output_schemas,
-    Mount,
-    Mounts,
-    RunResult,
-    RunStatus,
-    SandboxSpec,
+  ArtifactSchema,
+  ExecResult,
+  Inline,
+  merge_output_schemas,
+  Mount,
+  Mounts,
+  RunResult,
+  RunStatus,
+  SandboxSpec,
 )
 from swe_lab.sandbox.observers import (
-    BASE_REF_NAME,
-    DiffExtractObserver,
-    GitHistoryPurgeObserver,
-    PATCH_NAME,
-    ResultVerifyObserver,
+  BASE_REF_NAME,
+  DiffExtractObserver,
+  GitHistoryPurgeObserver,
+  PATCH_NAME,
+  ResultVerifyObserver,
 )
 from swe_lab.sandbox.observers.git_history_purge import PURGE_SCRIPT_NAME
 from swe_lab.sandbox.testing import FakeSandbox
 from swe_lab.trace_synthesis.guidebook import (
-    GUIDEBOOK_NAME,
-    RUBRIC_FIELDS,
-    STAGE_FIELDS,
+  GUIDEBOOK_NAME,
+  RUBRIC_FIELDS,
+  STAGE_FIELDS,
 )
 from swe_lab.trace_synthesis.oracle import (
-    ATTEMPT_VERDICT_NAME,
-    GOLD_PATCH_NAME,
-    guidebook_of,
-    GuidebookObserver,
-    OracleAnalysisTask,
-    PRESENT_METRIC,
-    STAGES_METRIC,
-    VALID_METRIC,
+  ATTEMPT_VERDICT_NAME,
+  GOLD_PATCH_NAME,
+  guidebook_of,
+  GuidebookObserver,
+  OracleAnalysisTask,
+  PRESENT_METRIC,
+  STAGES_METRIC,
+  VALID_METRIC,
 )
 from swe_lab.workflow import (
-    AttemptResult,
-    registered_workflows,
-    workflow_definition,
-    WorkflowEntry,
+  AttemptResult,
+  registered_workflows,
+  workflow_definition,
+  WorkflowEntry,
 )
 import swe_lab.workflow.definitions as definitions
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
 
 CONVERSATION = Conversation(
-    messages=[
-        Message(role=Role.USER, content=[TextBlock(text="SOLVE THIS")]),
-        Message(role=Role.ASSISTANT, content=[TextBlock(text="I tried.")]),
-    ]
+  messages=[
+    Message(role=Role.USER, content=[TextBlock(text="SOLVE THIS")]),
+    Message(role=Role.ASSISTANT, content=[TextBlock(text="I tried.")]),
+  ]
 )
 
 # The pre-agent baseline the attempt's patch was diffed against — distinct
@@ -127,28 +127,26 @@ class _Underlying(TaskInstance[SweBenchProVerdict]):
 
   @override
   def unit_test_spec(
-      self,
-      *,
-      apply_patch: bool,
-      patch_name: str = PATCH_NAME,
-      checkout_golden_tests: bool = True,
-      patch_baseline: bool = False,
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
+    checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     return UnitTestSpec(
-        eval_script=(
-            f"git apply {patch_name}\n"
-            f"patch-baseline={patch_baseline}\n"
-            "run-tests\n"
+      eval_script=(
+        f"git apply {patch_name}\npatch-baseline={patch_baseline}\nrun-tests\n"
+      ),
+      mounts={
+        "run_script.sh": Mount(Inline(b"echo run")),
+        REQUIRED_TESTS_NAME: Mount(
+          Inline(json.dumps(list(self.required_tests())).encode())
         ),
-        mounts={
-            "run_script.sh": Mount(Inline(b"echo run")),
-            REQUIRED_TESTS_NAME: Mount(
-                Inline(json.dumps(list(self.required_tests())).encode())
-            ),
-        },
-        grader=SweBenchProGrader(),
-        patch_name=patch_name,
-        native_outputs={"output.json": "output.json"},
+      },
+      grader=SweBenchProGrader(),
+      patch_name=patch_name,
+      native_outputs={"output.json": "output.json"},
     )
 
   @override
@@ -174,11 +172,11 @@ class _LocalFakeSandbox(FakeSandbox):
 
   @override
   def run_script(
-      self,
-      name: str,
-      *,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    name: str,
+    *,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     if name == BASELINE_VERIFY_SCRIPT_NAME:
       self.calls.append(("run_script", name))
@@ -193,7 +191,7 @@ class _LocalFakeSandbox(FakeSandbox):
 
 
 def _attempt_inputs(
-    *, verdict: object | None = None, base_ref: str = RECORDED_REF
+  *, verdict: object | None = None, base_ref: str = RECORDED_REF
 ) -> dict[str, Mount]:
   """Stage the four files a phase-A pair leaves, as the chain's edges would.
 
@@ -208,38 +206,38 @@ def _attempt_inputs(
     The inputs, by store name.
   """
   facts = (
-      {"resolved": False, "summary": {"missing": ["t::b"]}}
-      if verdict is None
-      else verdict
+    {"resolved": False, "summary": {"missing": ["t::b"]}}
+    if verdict is None
+    else verdict
   )
   return {
-      CONVERSATION_NAME: Mount(
-          Inline(CONVERSATION.model_dump_json().encode()), read_only=True
-      ),
-      PATCH_NAME: Mount(Inline(FAILED_PATCH.encode()), read_only=True),
-      BASE_REF_NAME: Mount(Inline(f"{base_ref}\n".encode()), read_only=True),
-      ATTEMPT_VERDICT_NAME: Mount(
-          Inline(json.dumps(facts).encode()), read_only=True
-      ),
+    CONVERSATION_NAME: Mount(
+      Inline(CONVERSATION.model_dump_json().encode()), read_only=True
+    ),
+    PATCH_NAME: Mount(Inline(FAILED_PATCH.encode()), read_only=True),
+    BASE_REF_NAME: Mount(Inline(f"{base_ref}\n".encode()), read_only=True),
+    ATTEMPT_VERDICT_NAME: Mount(
+      Inline(json.dumps(facts).encode()), read_only=True
+    ),
   }
 
 
 def _guidebook(
-    *,
-    without: str = "",
-    include_rubric: bool = True,
-    rubric_without: str = "",
+  *,
+  without: str = "",
+  include_rubric: bool = True,
+  rubric_without: str = "",
 ) -> str:
   fields = "\n\n".join(
-      f"**{name}.** …" for name in STAGE_FIELDS if name != without
+    f"**{name}.** …" for name in STAGE_FIELDS if name != without
   )
   rubric_fields = "\n\n".join(
-      f"**{name}.** …" for name in RUBRIC_FIELDS if name != rubric_without
+    f"**{name}.** …" for name in RUBRIC_FIELDS if name != rubric_without
   )
   rubric = (
-      f"## Supervisor rubric\n\n{rubric_fields}\n\n---\n\n"
-      if include_rubric
-      else ""
+    f"## Supervisor rubric\n\n{rubric_fields}\n\n---\n\n"
+    if include_rubric
+    else ""
   )
   return f"# Guidebook — x\n\n{rubric}## Stage 1 — read\n\n{fields}\n"
 
@@ -250,20 +248,20 @@ def _task() -> OracleAnalysisTask:
 
 def _sandbox(tmp_path: Path, *, baseline_sha: str = RECORDED_REF):
   return _LocalFakeSandbox(
-      spec=SPEC,
-      workspace=epath.Path(tmp_path / "ws"),
-      baseline_sha=baseline_sha,
-      current_ref=SPEC.base_commit,
+    spec=SPEC,
+    workspace=epath.Path(tmp_path / "ws"),
+    baseline_sha=baseline_sha,
+    current_ref=SPEC.base_commit,
   )
 
 
 def _execute(
-    tmp_path: Path,
-    *,
-    guidebook: str | None = None,
-    verdict: object | None = None,
-    instance: _Underlying | None = None,
-    task: OracleAnalysisTask | None = None,
+  tmp_path: Path,
+  *,
+  guidebook: str | None = None,
+  verdict: object | None = None,
+  instance: _Underlying | None = None,
+  task: OracleAnalysisTask | None = None,
 ) -> tuple[AttemptResult, _LocalFakeSandbox, Path]:
   workspace = tmp_path / "ws"
   if guidebook is not None:
@@ -272,11 +270,11 @@ def _execute(
     (workspace / GUIDEBOOK_NAME).write_text(guidebook)
   sandbox = _sandbox(tmp_path)
   result = (task or _task()).execute(
-      sandbox,
-      instance or _Underlying(),
-      output_dir=tmp_path / "out",
-      timeout=60.0,
-      extra_mounts=_attempt_inputs(verdict=verdict),
+    sandbox,
+    instance or _Underlying(),
+    output_dir=tmp_path / "out",
+    timeout=60.0,
+    extra_mounts=_attempt_inputs(verdict=verdict),
   )
   return result, sandbox, workspace
 
@@ -292,21 +290,21 @@ def test_the_oracle_has_no_purge_extractor_or_result_verifier():
   observers = _task().observers(_Underlying())
   kinds = {type(o) for o in observers}
   assert not kinds & {
-      GitHistoryPurgeObserver,
-      DiffExtractObserver,
-      ResultVerifyObserver,
+    GitHistoryPurgeObserver,
+    DiffExtractObserver,
+    ResultVerifyObserver,
   }
   assert GuidebookObserver in kinds
 
 
 def test_the_guidebook_is_the_declared_required_output():
   schema = merge_output_schemas(
-      *(o.output_schema() for o in _task().observers(_Underlying()))
+    *(o.output_schema() for o in _task().observers(_Underlying()))
   )
   guidebook = next(s for s in schema if s.name == GUIDEBOOK_NAME)
   assert guidebook == ArtifactSchema(
-      GUIDEBOOK_NAME,
-      description="the Oracle's staged guidebook for a blind actor",
+    GUIDEBOOK_NAME,
+    description="the Oracle's staged guidebook for a blind actor",
   )
   assert guidebook.required is True
 
@@ -315,20 +313,20 @@ def test_the_guidebook_is_the_declared_required_output():
 
 
 def test_execute_stages_the_attempt_the_reference_and_the_grading_procedure(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   result, sandbox, workspace = _execute(tmp_path)
 
   assert result.run.status is RunStatus.SUCCESS
   # the attempt, staged read-only under the names its producers gave it
   assert (
-      Conversation.model_validate_json(
-          (workspace / CONVERSATION_NAME).read_bytes()
-      )
-      == CONVERSATION
+    Conversation.model_validate_json(
+      (workspace / CONVERSATION_NAME).read_bytes()
+    )
+    == CONVERSATION
   )
   assert json.loads((workspace / ATTEMPT_VERDICT_NAME).read_text())[
-      "summary"
+    "summary"
   ] == {"missing": ["t::b"]}
   assert (workspace / PATCH_NAME).read_text() == FAILED_PATCH
   # the privileged extras: the reference, and the grading procedure compiled
@@ -340,12 +338,12 @@ def test_execute_stages_the_attempt_the_reference_and_the_grading_procedure(
   assert "patch-baseline=True" in entryscript
   assert (workspace / "run_script.sh").read_text() == "echo run"
   assert {
-      CONVERSATION_NAME,
-      ATTEMPT_VERDICT_NAME,
-      PATCH_NAME,
-      BASE_REF_NAME,
-      GOLD_PATCH_NAME,
-      ENTRYSCRIPT_NAME,
+    CONVERSATION_NAME,
+    ATTEMPT_VERDICT_NAME,
+    PATCH_NAME,
+    BASE_REF_NAME,
+    GOLD_PATCH_NAME,
+    ENTRYSCRIPT_NAME,
   } <= set(sandbox.mount_targets)
   # the brief is the declared input, built in-session, not a mount
   brief = (workspace / PROMPT_NAME).read_text()
@@ -357,7 +355,7 @@ def test_execute_stages_the_attempt_the_reference_and_the_grading_procedure(
 
 
 def test_the_attempt_verifies_and_restores_its_recorded_tree(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   assert SPEC.base_commit != RECORDED_REF
 
@@ -369,16 +367,16 @@ def test_the_attempt_verifies_and_restores_its_recorded_tree(
 
 
 def test_an_attempt_with_the_wrong_tree_stops_before_the_oracle(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   sandbox = _sandbox(tmp_path, baseline_sha="c" * 40)
 
   result = _task().execute(
-      sandbox,
-      _Underlying(),
-      output_dir=tmp_path / "out",
-      timeout=60.0,
-      extra_mounts=_attempt_inputs(),
+    sandbox,
+    _Underlying(),
+    output_dir=tmp_path / "out",
+    timeout=60.0,
+    extra_mounts=_attempt_inputs(),
   )
 
   assert result.run.status is RunStatus.SETUP_ERROR
@@ -387,24 +385,24 @@ def test_an_attempt_with_the_wrong_tree_stops_before_the_oracle(
 
 
 def test_the_brief_carries_the_task_statement_whole_and_names_the_files(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   _, _, workspace = _execute(tmp_path)
   brief = (workspace / PROMPT_NAME).read_text()
 
   # verbatim and whole — an excerpt could not support an absence claim
   assert (
-      "<<<TASK_STATEMENT\n" + _Underlying().prompt() + "\nTASK_STATEMENT>>>"
-      in brief
+    "<<<TASK_STATEMENT\n" + _Underlying().prompt() + "\nTASK_STATEMENT>>>"
+    in brief
   )
   for name in (
-      CONVERSATION_NAME,
-      ATTEMPT_VERDICT_NAME,
-      PATCH_NAME,
-      BASE_REF_NAME,
-      GOLD_PATCH_NAME,
-      ENTRYSCRIPT_NAME,
-      GUIDEBOOK_NAME,
+    CONVERSATION_NAME,
+    ATTEMPT_VERDICT_NAME,
+    PATCH_NAME,
+    BASE_REF_NAME,
+    GOLD_PATCH_NAME,
+    ENTRYSCRIPT_NAME,
+    GUIDEBOOK_NAME,
   ):
     assert f"`{name}`" in brief
   assert SPEC.base_commit in brief
@@ -419,7 +417,7 @@ def test_the_brief_carries_the_task_statement_whole_and_names_the_files(
 
 @pytest.mark.parametrize("resolved", [False, True])
 def test_the_brief_offers_no_stage_label_the_schema_does_not_measure(
-    tmp_path: Path, resolved: bool
+  tmp_path: Path, resolved: bool
 ) -> None:
   """The brief names the five measured labels and no alternatives to them.
 
@@ -430,7 +428,7 @@ def test_the_brief_offers_no_stage_label_the_schema_does_not_measure(
   (#453). Both verdict branches share one template, and this pins that.
   """
   _, _, workspace = _execute(
-      tmp_path, verdict={"resolved": resolved, "summary": {"missing": []}}
+    tmp_path, verdict={"resolved": resolved, "summary": {"missing": []}}
   )
   brief = (workspace / PROMPT_NAME).read_text()
 
@@ -461,7 +459,7 @@ def test_a_failed_attempt_gets_the_brief_that_diagnoses_it(tmp_path: Path):
 
 
 def test_a_passed_attempt_gets_the_brief_that_finds_the_guesswork(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """A run that passed is analysed, not narrated as a failure.
 
@@ -471,7 +469,7 @@ def test_a_passed_attempt_gets_the_brief_that_finds_the_guesswork(
   and asks for the steps that were guessed rather than derived.
   """
   _, _, workspace = _execute(
-      tmp_path, verdict={"resolved": True, "summary": {"missing": []}}
+    tmp_path, verdict={"resolved": True, "summary": {"missing": []}}
   )
   brief = (workspace / PROMPT_NAME).read_text()
 
@@ -489,14 +487,14 @@ def test_a_passed_attempt_gets_the_brief_that_finds_the_guesswork(
 
 
 def test_an_unreadable_verdict_stops_the_run_instead_of_guessing(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # Which brief to write is a claim about what happened. With no `resolved`
   # to read, both briefs would state something nobody established — so the
   # attempt fails in the workspace, before the agent is launched, and says
   # what it could not read.
   result, sandbox, _ = _execute(
-      tmp_path, verdict={"summary": {"missing": ["t::b"]}}
+    tmp_path, verdict={"summary": {"missing": ["t::b"]}}
   )
 
   assert result.run.status is not RunStatus.SUCCESS
@@ -505,19 +503,19 @@ def test_an_unreadable_verdict_stops_the_run_instead_of_guessing(
 
 # The two default briefs, by digest of the complete model request.
 _FAILED_BRIEF_SHA = (
-    "7bbfc8488acc222a9ed58ac1a4e9f21c42913a9c3f4a1fcaa2e7d62728a69b4a"
+  "7bbfc8488acc222a9ed58ac1a4e9f21c42913a9c3f4a1fcaa2e7d62728a69b4a"
 )
 _PASSED_BRIEF_SHA = (
-    "4e00f0315974369a04a1fdca6bf2e20a6a848145c59df777b58fe49fdf4981d1"
+  "4e00f0315974369a04a1fdca6bf2e20a6a848145c59df777b58fe49fdf4981d1"
 )
 
 
 @pytest.mark.parametrize(
-    ("resolved", "digest"),
-    [(False, _FAILED_BRIEF_SHA), (True, _PASSED_BRIEF_SHA)],
+  ("resolved", "digest"),
+  [(False, _FAILED_BRIEF_SHA), (True, _PASSED_BRIEF_SHA)],
 )
 def test_default_oracle_instructions_are_pinned(
-    tmp_path: Path, resolved: bool, digest: str
+  tmp_path: Path, resolved: bool, digest: str
 ) -> None:
   """Pin the complete rubric-aware request rather than only its builder.
 
@@ -525,22 +523,22 @@ def test_default_oracle_instructions_are_pinned(
   the branch nobody has run yet is the one nothing else would catch.
   """
   _, _, workspace = _execute(
-      tmp_path, verdict={"resolved": resolved, "summary": {"missing": []}}
+    tmp_path, verdict={"resolved": resolved, "summary": {"missing": []}}
   )
 
   assert (
-      hashlib.sha256((workspace / "prompt.txt").read_bytes()).hexdigest()
-      == digest
+    hashlib.sha256((workspace / "prompt.txt").read_bytes()).hexdigest()
+    == digest
   )
 
 
 def test_oracle_override_instructions_reach_only_its_model_request(
-    tmp_path: Path,
+  tmp_path: Path,
 ) -> None:
   """The task-level override replaces the Oracle request byte for byte."""
   instructions = "ORACLE-OVERRIDE-sentinel\nKeep this exact trailing line.\n"
   task = _shipped_oracle(
-      [f"--oracle_analysis.instructions={instructions}"]
+    [f"--oracle_analysis.instructions={instructions}"]
   ).task
   assert isinstance(task, OracleAnalysisTask)
 
@@ -560,13 +558,13 @@ def test_the_brief_states_the_two_hard_won_rules(tmp_path: Path):
   brief = (workspace / PROMPT_NAME).read_text()
   assert "**Quote the task statement whole, never in excerpt.**" in brief
   assert (
-      "**The verification stage says what a green suite cannot tell you.**"
-      in brief
+    "**The verification stage says what a green suite cannot tell you.**"
+    in brief
   )
 
 
 def test_the_oracle_brief_requires_a_rubric_alongside_the_tutorial(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """A compact representation must not replace the detailed one."""
   _, _, workspace = _execute(tmp_path)
@@ -581,7 +579,7 @@ def test_the_oracle_brief_requires_a_rubric_alongside_the_tutorial(
 
 
 def test_a_dataset_without_a_fix_commit_or_a_reference_is_briefed_honestly(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   @dataclasses.dataclass(frozen=True)
   class _NoReference(_Underlying):
@@ -607,7 +605,7 @@ def test_a_dataset_without_a_fix_commit_or_a_reference_is_briefed_honestly(
 
 
 def test_a_written_guidebook_is_collected_and_the_attempt_is_valid(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   result, _, _ = _execute(tmp_path, guidebook=_guidebook())
 
@@ -644,7 +642,7 @@ def test_oracle_output_without_a_rubric_is_measured_and_kept(tmp_path: Path):
 
   assert result.run.metrics[VALID_METRIC] == 0.0
   assert _task().record_extra(result)["guidebook_problems"] == [
-      "missing the '## Supervisor rubric' section"
+    "missing the '## Supervisor rubric' section"
   ]
   # …and the schema result changes nothing about the attempt itself.
   assert _task().outputs_valid(result) is True
@@ -654,7 +652,7 @@ def test_the_complete_tutorial_is_collected_beside_the_rubric(tmp_path: Path):
   """A valid rubric cannot make replaced or clipped tutorial text acceptable."""
   tutorial_sentinel = "TUTORIAL-SENTINEL-keep-the-detailed-derivation"
   complete = _guidebook().replace(
-      "**Actions.** …", f"**Actions.** {tutorial_sentinel}"
+    "**Actions.** …", f"**Actions.** {tutorial_sentinel}"
   )
 
   result, _, _ = _execute(tmp_path, guidebook=complete)
@@ -667,26 +665,26 @@ def test_the_complete_tutorial_is_collected_beside_the_rubric(tmp_path: Path):
 
 
 def test_a_guidebook_missing_a_justification_is_measured_and_kept(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # The schema's one load-bearing field. The artifact is collected, the
   # measurement says what it lacks, and the guidebook goes downstream: a
   # re-roll buys another sample of the same writer at the price of a paid
   # run, which is what ADR-0027 refuses to spend.
   result, _, _ = _execute(
-      tmp_path, guidebook=_guidebook(without="Justification")
+    tmp_path, guidebook=_guidebook(without="Justification")
   )
 
   assert GUIDEBOOK_NAME in result.run.artifacts
   assert result.run.metrics[VALID_METRIC] == 0.0
   assert _task().record_extra(result)["guidebook_problems"] == [
-      "stage 1: missing the 'Justification' field"
+    "stage 1: missing the 'Justification' field"
   ]
   assert _task().outputs_valid(result) is True
 
 
 def _attempt(
-    *, outcome: AgentOutcome, guidebook: GuidebookObserver
+  *, outcome: AgentOutcome, guidebook: GuidebookObserver
 ) -> AttemptResult:
   """Assemble one finished attempt from the two observers that judge it.
 
@@ -700,15 +698,15 @@ def _attempt(
   observer = HarnessOutcomeObserver(harness=ClaudeCodeHarness())
   observer.outcome = outcome
   return AttemptResult(
-      run=RunResult(
-          label="x",
-          status=RunStatus.SUCCESS,
-          artifacts={GUIDEBOOK_NAME: epath.Path("/tmp/guidebook.md")},
-          metrics={},
-      ),
-      exec_result=None,
-      output_schema=(ArtifactSchema(GUIDEBOOK_NAME),),
-      observers=(observer, guidebook),
+    run=RunResult(
+      label="x",
+      status=RunStatus.SUCCESS,
+      artifacts={GUIDEBOOK_NAME: epath.Path("/tmp/guidebook.md")},
+      metrics={},
+    ),
+    exec_result=None,
+    output_schema=(ArtifactSchema(GUIDEBOOK_NAME),),
+    observers=(observer, guidebook),
   )
 
 
@@ -720,8 +718,8 @@ def test_a_schema_result_never_buys_another_paid_attempt():
   guidebook is imperfect" from "the run broke" rather than agreeing on both.
   """
   invalid = GuidebookObserver(
-      guidebook=_guidebook(without="Justification"),
-      problems=("stage 1: missing the 'Justification' field",),
+    guidebook=_guidebook(without="Justification"),
+    problems=("stage 1: missing the 'Justification' field",),
   )
   result = _attempt(outcome=AgentOutcome.FINISHED, guidebook=invalid)
 
@@ -747,10 +745,10 @@ def test_the_shipped_oracle_entries_carry_no_retry_budget():
   existing.
   """
   budgets = {
-      (name, entry.key): entry.retries
-      for name in registered_workflows()
-      for entry in workflow_definition(name)
-      if isinstance(entry.task, OracleAnalysisTask)
+    (name, entry.key): entry.retries
+    for name in registered_workflows()
+    for entry in workflow_definition(name)
+    if isinstance(entry.task, OracleAnalysisTask)
   }
 
   # The positive half: the set is not empty, so an enumeration that found
@@ -771,8 +769,8 @@ def test_a_caller_who_pays_for_a_retry_gets_this_policy():
   assert entry.retries == 1
   assert isinstance(entry.task, OracleAnalysisTask)
   crashed = _attempt(
-      outcome=AgentOutcome.EXECUTION_ERROR,
-      guidebook=GuidebookObserver(guidebook=_guidebook()),
+    outcome=AgentOutcome.EXECUTION_ERROR,
+    guidebook=GuidebookObserver(guidebook=_guidebook()),
   )
   assert entry.task.should_retry(crashed) is True
 
@@ -782,8 +780,8 @@ def test_an_ending_that_happened_to_the_agent_is_retried():
   # the test above: an invalid guidebook, so the only thing that differs is
   # how the run ended.
   invalid = GuidebookObserver(
-      guidebook=_guidebook(without="Justification"),
-      problems=("stage 1: missing the 'Justification' field",),
+    guidebook=_guidebook(without="Justification"),
+    problems=("stage 1: missing the 'Justification' field",),
   )
   result = _attempt(outcome=AgentOutcome.EXECUTION_ERROR, guidebook=invalid)
 
@@ -797,12 +795,12 @@ def test_an_ending_that_happened_to_the_agent_is_retried():
 def _shipped_oracle(overrides: list[str]) -> WorkflowEntry:
   """Return the chain's Oracle entry after an operator's per-run overrides."""
   return next(
-      entry
-      for entry in apply_overrides(
-          workflow_definition("from_scratch_guided_trace"),
-          parse_overrides(overrides),
-      )
-      if entry.key == definitions.ORACLE_ANALYSIS_KEY
+    entry
+    for entry in apply_overrides(
+      workflow_definition("from_scratch_guided_trace"),
+      parse_overrides(overrides),
+    )
+    if entry.key == definitions.ORACLE_ANALYSIS_KEY
   )
 
 

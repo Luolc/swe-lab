@@ -106,7 +106,7 @@ INFO_ARTIFACT = "codex.info"
 DEFAULT_MODEL: str | None = "gpt-5.6-sol"
 
 type Effort = Literal[
-    "none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"
+  "none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"
 ]
 """Reasoning effort, as Codex's own ``ReasoningEffort`` enumerates it.
 

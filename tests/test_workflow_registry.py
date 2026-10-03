@@ -21,36 +21,36 @@ from swe_lab.datasets.swebench_pro.unit_test import SweBenchProVerdict
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.rollout import PROMPT_NAME
 from swe_lab.sandbox import (
-    ArtifactSchema,
-    Contribution,
-    ExecResult,
-    FilesystemStore,
-    SandboxConfig,
-    SandboxFs,
-    SandboxObserver,
-    SandboxSpec,
+  ArtifactSchema,
+  Contribution,
+  ExecResult,
+  FilesystemStore,
+  SandboxConfig,
+  SandboxFs,
+  SandboxObserver,
+  SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.observers.diff_extract import BASE_REF_NAME
 from swe_lab.sandbox.testing import FakeSandboxConfig
 from swe_lab.trace_synthesis.context_components import SupervisorPromptBuilder
 from swe_lab.trace_synthesis.criterion import (
-    CRITERION_SHA256,
+  CRITERION_SHA256,
 )
 from swe_lab.trace_synthesis.judge import ModelJudge, ModelWriter
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
 from swe_lab.trace_synthesis.supervisor import (
-    SpeakWhenOffTrack,
+  SpeakWhenOffTrack,
 )
 from swe_lab.workflow import (
-    register_workflow,
-    registered_workflows,
-    Task,
-    Workflow,
-    workflow_definition,
-    WorkflowDef,
-    WorkflowEntry,
-    WorkflowError,
+  register_workflow,
+  registered_workflows,
+  Task,
+  Workflow,
+  workflow_definition,
+  WorkflowDef,
+  WorkflowEntry,
+  WorkflowError,
 )
 import swe_lab.workflow.definitions as definitions
 
@@ -90,12 +90,12 @@ class _Instance(TaskInstance[SweBenchProVerdict]):
 
   @override
   def unit_test_spec(
-      self,
-      *,
-      apply_patch: bool,
-      patch_name: str = PATCH_NAME,
-      checkout_golden_tests: bool = True,
-      patch_baseline: bool = False,
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
+    checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     raise NotImplementedError
 
@@ -124,14 +124,14 @@ class _Producer(Task):
 
   @override
   def observers(
-      self, instance: TaskInstance[Any]
+    self, instance: TaskInstance[Any]
   ) -> tuple[SandboxObserver, ...]:
     del instance
     return (_Emit(name="thing.txt"),)
 
   @override
   def action(
-      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+    self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
   ) -> ExecResult:
     del instance
     return sb.run_script("main.sh", timeout=timeout)
@@ -150,7 +150,7 @@ class _Consumer(Task):
 
   @override
   def action(
-      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+    self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
   ) -> ExecResult:
     del instance
     self.seen.append(sb.read("thing.txt"))
@@ -161,7 +161,7 @@ def test_the_built_ins_register_at_import():
   # `definitions` is imported for its registrations, and names them too.
   assert definitions.ROLLOUT_KEY == "rollout"
   assert {"rollout", "unit_test", "rollout_and_unit_test"} <= set(
-      registered_workflows()
+    registered_workflows()
   )
 
 
@@ -181,8 +181,8 @@ def test_the_shipped_chain_grades_what_the_agent_produced():
   # travels the same edge — the grader verifies the tree it resets to against
   # that sha rather than trusting `base_commit`.
   assert [s.name for s in evaluation.task.input_schema()] == [
-      PATCH_NAME,
-      BASE_REF_NAME,
+    PATCH_NAME,
+    BASE_REF_NAME,
   ]
   # …and the grading entry supplies nothing itself, which is what lets the
   # SAME entry be the standalone `unit_test` workflow (patch from the caller)
@@ -218,18 +218,18 @@ def test_a_malformed_definition_is_refused_at_registration():
   # The point of validating here: a registry full of workflows is checked when
   # the module registering them is imported, not on first use.
   duplicate: WorkflowDef = (
-      WorkflowEntry("same", _Producer(), timeout=10.0),
-      WorkflowEntry("same", _Consumer(), timeout=10.0),
+    WorkflowEntry("same", _Producer(), timeout=10.0),
+    WorkflowEntry("same", _Consumer(), timeout=10.0),
   )
   with pytest.raises(WorkflowError, match="duplicate entry keys"):
     register_workflow("broken", duplicate)
   assert "broken" not in registered_workflows()
 
   dead_binding: WorkflowDef = (
-      WorkflowEntry("producer", _Producer(), timeout=10.0),
-      WorkflowEntry(
-          "consumer", _Consumer(), timeout=10.0, inputs=("producer/other.txt",)
-      ),
+    WorkflowEntry("producer", _Producer(), timeout=10.0),
+    WorkflowEntry(
+      "consumer", _Consumer(), timeout=10.0, inputs=("producer/other.txt",)
+    ),
   )
   with pytest.raises(WorkflowError, match="does not declare"):
     register_workflow("also_broken", dead_binding)
@@ -240,24 +240,24 @@ def test_a_registered_definition_runs_by_name(tmp_path: Path):
   # edge resolved from the store like any other chain.
   consumer = _Consumer()
   register_workflow(
-      "test_chain",
-      (
-          WorkflowEntry("producer", _Producer(), timeout=10.0),
-          WorkflowEntry("consumer", consumer, timeout=10.0),
-      ),
+    "test_chain",
+    (
+      WorkflowEntry("producer", _Producer(), timeout=10.0),
+      WorkflowEntry("consumer", consumer, timeout=10.0),
+    ),
   )
   # Built the way the CLI builds it: look the definition up by name, then
   # construct. Nothing between them here; an invocation would apply overrides.
   workflow = Workflow(
-      store=FilesystemStore(epath.Path(tmp_path / "store")),
-      sweep_id="sw",
-      rollout_id=0,
-      entries=workflow_definition("test_chain"),
+    store=FilesystemStore(epath.Path(tmp_path / "store")),
+    sweep_id="sw",
+    rollout_id=0,
+    entries=workflow_definition("test_chain"),
   )
   outcome = _on(workflow, FakeSandboxConfig()).execute(
-      _Instance(),
-      output_dir=tmp_path / "out",
-      run_ts="ts-0",
+    _Instance(),
+    output_dir=tmp_path / "out",
+    run_ts="ts-0",
   )
   assert outcome.succeeded is True
   assert consumer.seen == [b"THING"]
@@ -267,22 +267,22 @@ def test_a_definition_is_reusable_across_instances(tmp_path: Path):
   # The property the whole late-binding change exists for: one declaration,
   # any number of instances, no shared state between runs.
   register_workflow(
-      "test_reuse", (WorkflowEntry("producer", _Producer(), timeout=10.0),)
+    "test_reuse", (WorkflowEntry("producer", _Producer(), timeout=10.0),)
   )
   store = FilesystemStore(epath.Path(tmp_path / "store"))
   for index, instance_id in enumerate(["one", "two"]):
     outcome = _on(
-        Workflow(
-            store=store,
-            sweep_id="sw",
-            rollout_id=0,
-            entries=workflow_definition("test_reuse"),
-        ),
-        FakeSandboxConfig(),
+      Workflow(
+        store=store,
+        sweep_id="sw",
+        rollout_id=0,
+        entries=workflow_definition("test_reuse"),
+      ),
+      FakeSandboxConfig(),
     ).execute(
-        _Instance(instance_id=instance_id),
-        output_dir=tmp_path / f"out{index}",
-        run_ts="ts-0",
+      _Instance(instance_id=instance_id),
+      output_dir=tmp_path / f"out{index}",
+      run_ts="ts-0",
     )
     assert outcome.succeeded is True
     assert outcome.record_key == f"sw/{instance_id}/r0/workflow.json"
@@ -332,13 +332,13 @@ def test_every_supervised_route_a_command_can_name_is_registered():
   from swe_lab.rollout import CodingAgentTask
 
   supervised_routes = {
-      "from_scratch_guided_trace": definitions.GUIDED_ROLLOUT_KEY,
+    "from_scratch_guided_trace": definitions.GUIDED_ROLLOUT_KEY,
   }
   assert set(supervised_routes) <= set(registered_workflows())
 
   for name, rollout_key in supervised_routes.items():
     entry = next(
-        one for one in workflow_definition(name) if one.key == rollout_key
+      one for one in workflow_definition(name) if one.key == rollout_key
     )
     assert isinstance(entry.task, CodingAgentTask), name
     assert isinstance(entry.task.harness, ClaudeCodeHarness), name
@@ -349,7 +349,7 @@ def test_every_supervised_route_a_command_can_name_is_registered():
     # the plan's own upstream strings, because a name that resolves to a plan
     # whose factory raises is a route no command can finish either.
     policy = supervision.policy_factory(
-        supervision.cooldown, supervision.base_url, supervision.api_key_env
+      supervision.cooldown, supervision.base_url, supervision.api_key_env
     )
     assert isinstance(policy, SpeakWhenOffTrack), name
     # The criterion gate is on the path a command actually takes: building the
@@ -358,9 +358,9 @@ def test_every_supervised_route_a_command_can_name_is_registered():
     assert policy.criterion.digest == CRITERION_SHA256, name
 
   plain = next(
-      one
-      for one in workflow_definition("rollout_and_unit_test")
-      if one.key == definitions.ROLLOUT_KEY
+    one
+    for one in workflow_definition("rollout_and_unit_test")
+    if one.key == definitions.ROLLOUT_KEY
   )
   assert isinstance(plain.task, CodingAgentTask)
   assert isinstance(plain.task.harness, ClaudeCodeHarness)
@@ -372,7 +372,7 @@ def test_every_supervised_route_a_command_can_name_is_registered():
 
 
 def _builders_of(
-    policy: SpeakWhenOffTrack,
+  policy: SpeakWhenOffTrack,
 ) -> tuple[SupervisorPromptBuilder, SupervisorPromptBuilder]:
   """Return the judge's and the writer's default prompt builders.
 
@@ -401,9 +401,9 @@ def _shipped_segmented_supervision() -> SegmentedSupervision:
   from swe_lab.rollout import CodingAgentTask
 
   (entry,) = (
-      one
-      for one in definitions.FROM_SCRATCH_GUIDED_TRACE
-      if one.key == definitions.GUIDED_ROLLOUT_KEY
+    one
+    for one in definitions.FROM_SCRATCH_GUIDED_TRACE
+    if one.key == definitions.GUIDED_ROLLOUT_KEY
   )
   assert isinstance(entry.task, CodingAgentTask)
   assert isinstance(entry.task.harness, ClaudeCodeHarness)
@@ -413,7 +413,7 @@ def _shipped_segmented_supervision() -> SegmentedSupervision:
 
 
 def test_the_shipped_segmented_factory_reads_the_named_said_visibility(
-    monkeypatch: pytest.MonkeyPatch,
+  monkeypatch: pytest.MonkeyPatch,
 ) -> None:
   """The segmented definition passes the constant, not a literal of its own.
 
@@ -426,7 +426,7 @@ def test_the_shipped_segmented_factory_reads_the_named_said_visibility(
   segmented = _shipped_segmented_supervision()
 
   policy = segmented.policy_factory(
-      segmented.cooldown, segmented.base_url, segmented.api_key_env
+    segmented.cooldown, segmented.base_url, segmented.api_key_env
   )
 
   assert isinstance(policy, SpeakWhenOffTrack)
@@ -450,7 +450,7 @@ class _NoEnvironmentRead:
 
 
 def test_nothing_in_building_a_supervision_policy_reads_the_environment(
-    monkeypatch: pytest.MonkeyPatch,
+  monkeypatch: pytest.MonkeyPatch,
 ) -> None:
   """The mode comes from the definition; building a policy consults no variable.
 
@@ -470,7 +470,7 @@ def test_nothing_in_building_a_supervision_policy_reads_the_environment(
     patched.setattr(os, "environ", _NoEnvironmentRead())
     segmented = _shipped_segmented_supervision()
     shipped = segmented.policy_factory(
-        segmented.cooldown, segmented.base_url, segmented.api_key_env
+      segmented.cooldown, segmented.base_url, segmented.api_key_env
     )
     assert isinstance(shipped, SpeakWhenOffTrack)
     assert shipped.said_visibility == definitions.SUPERVISOR_SAID_VISIBILITY

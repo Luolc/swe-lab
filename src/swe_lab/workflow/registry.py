@@ -14,9 +14,9 @@ concrete tasks and a concrete agent, and the engine must not depend on either.
 from __future__ import annotations
 
 from .workflow import (
-    validate_declaration,
-    WorkflowEntry,
-    WorkflowError,
+  validate_declaration,
+  WorkflowEntry,
+  WorkflowError,
 )
 
 type WorkflowDef = tuple[WorkflowEntry, ...]
@@ -63,5 +63,5 @@ def workflow_definition(name: str) -> WorkflowDef:
     return _REGISTRY[name]
   except KeyError:
     raise WorkflowError(
-        f"unknown workflow {name!r}; registered: {registered_workflows()}"
+      f"unknown workflow {name!r}; registered: {registered_workflows()}"
     ) from None

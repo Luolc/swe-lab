@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 from .._seam import (
-    RegisteredFix,
-    render,
-    SweBenchProUnitTestSpec,
-    with_setup,
+  RegisteredFix,
+  render,
+  SweBenchProUnitTestSpec,
+  with_setup,
 )
 
 _BUILD_SERVER_INSTANCE = (
-    "instance_tutao__tutanota-de49d486feef842101506adf040a0f00ded59519"
-    "-v10a26bfb45a064b93f4fc044a0254925037b88f1"
+  "instance_tutao__tutanota-de49d486feef842101506adf040a0f00ded59519"
+  "-v10a26bfb45a064b93f4fc044a0254925037b88f1"
 )
 # The *built* client is what runs; patching the TypeScript source beside it
 # would do nothing.
@@ -56,7 +56,7 @@ fi
 
 
 def _fix_instance_tutanota_de49d486(
-    spec: SweBenchProUnitTestSpec,
+  spec: SweBenchProUnitTestSpec,
 ) -> SweBenchProUnitTestSpec:
   """Stop the build client from turning a failed connection into a success.
 
@@ -129,18 +129,18 @@ def _fix_instance_tutanota_de49d486(
     The spec with the build client repaired before the test run.
   """
   return with_setup(
-      spec,
-      mounts={},
-      setup=render(
-          _BUILD_SERVER_SETUP,
-          CLIENT=_CLIENT,
-          ATTEMPTS=_ATTEMPTS,
-          CONNECT_ERROR=_CONNECT_ERROR,
-      ),
+    spec,
+    mounts={},
+    setup=render(
+      _BUILD_SERVER_SETUP,
+      CLIENT=_CLIENT,
+      ATTEMPTS=_ATTEMPTS,
+      CONNECT_ERROR=_CONNECT_ERROR,
+    ),
   )
 
 
 TUTANOTA_BUILD_SERVER = RegisteredFix(
-    instances=(_BUILD_SERVER_INSTANCE,),
-    fix=_fix_instance_tutanota_de49d486,
+  instances=(_BUILD_SERVER_INSTANCE,),
+  fix=_fix_instance_tutanota_de49d486,
 )

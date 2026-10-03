@@ -89,10 +89,10 @@ class Verdict(ABC):
       ``resolved``, ``score``, the dataset's ``metrics`` and its ``summary``.
     """
     return {
-        "resolved": self.resolved,
-        "score": self.score,
-        "metrics": self.metrics(),
-        "summary": self.summary(),
+      "resolved": self.resolved,
+      "score": self.score,
+      "metrics": self.metrics(),
+      "summary": self.summary(),
     }
 
 

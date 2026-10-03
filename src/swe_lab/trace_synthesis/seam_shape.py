@@ -176,11 +176,11 @@ def read_seam(raw: str) -> SeamReading:
       continuations += sum(text == RESUME_CONTINUATION_TEXT for text in texts)
 
   return SeamReading(
-      records=records,
-      main_loop_requests=len(bodies),
-      assistant_messages=assistants,
-      synthetic_assistants=synthetic,
-      resume_continuations=continuations,
+    records=records,
+    main_loop_requests=len(bodies),
+    assistant_messages=assistants,
+    synthetic_assistants=synthetic,
+    resume_continuations=continuations,
   )
 
 
@@ -206,9 +206,9 @@ def seam_is_clean(reading: SeamReading) -> bool:
     whole job is to notice a silent reversion, "cannot say" must not pass.
   """
   return (
-      reading.records > 0
-      and reading.main_loop_requests > 0
-      and reading.assistant_messages > 0
-      and reading.synthetic_assistants == 0
-      and reading.resume_continuations == 0
+    reading.records > 0
+    and reading.main_loop_requests > 0
+    and reading.assistant_messages > 0
+    and reading.synthetic_assistants == 0
+    and reading.resume_continuations == 0
   )

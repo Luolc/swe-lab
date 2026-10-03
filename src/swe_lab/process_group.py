@@ -66,7 +66,7 @@ _POLL_INTERVAL_S = 0.05
 
 
 def end_process_group(
-    process: subprocess.Popen[Any], *, grace_s: float = TERMINATE_GRACE_S
+  process: subprocess.Popen[Any], *, grace_s: float = TERMINATE_GRACE_S
 ) -> None:
   """End ``process``'s entire process group; never raises.
 
@@ -97,9 +97,9 @@ def end_process_group(
     # naming that tree before we touched it, and `SIGTERM` is then the unsafe
     # act.
     _logger.warning(
-        "process %d is no longer held; not signalling group %d",
-        process.pid,
-        group,
+      "process %d is no longer held; not signalling group %d",
+      process.pid,
+      group,
     )
     return
   try:
@@ -112,9 +112,9 @@ def end_process_group(
     # reservation and cannot say what `group` names now. Ownership unknown is
     # not permission: report it and signal nothing further.
     _logger.warning(
-        "process %d was reaped elsewhere; not signalling group %d again",
-        process.pid,
-        group,
+      "process %d was reaped elsewhere; not signalling group %d again",
+      process.pid,
+      group,
     )
     return
   with contextlib.suppress(ProcessLookupError, PermissionError):
@@ -184,7 +184,7 @@ def _await_exit(process: subprocess.Popen[Any], timeout_s: float) -> bool:
   while time.monotonic() < deadline:
     try:
       exited = os.waitid(
-          os.P_PID, process.pid, os.WEXITED | os.WNOWAIT | os.WNOHANG
+        os.P_PID, process.pid, os.WEXITED | os.WNOWAIT | os.WNOHANG
       )
     except ChildProcessError:
       return False  # reaped elsewhere: the identity is no longer ours to use

@@ -17,9 +17,9 @@ from .harness import GrokBuildHarness
 register_harness("grok_build", GrokBuildHarness)
 
 __all__ = [
-    "GrokBuildAuthObserver",
-    "GrokBuildHarness",
-    "ensure_grok_binary",
-    "event_stream_outcome",
-    "event_stream_to_conversation",
+  "GrokBuildAuthObserver",
+  "GrokBuildHarness",
+  "ensure_grok_binary",
+  "event_stream_outcome",
+  "event_stream_to_conversation",
 ]

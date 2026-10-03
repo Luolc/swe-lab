@@ -11,8 +11,8 @@ from typing import override
 import pytest
 
 from swe_lab.datasets.swebench_pro.unit_test import (
-    OutputState,
-    SweBenchProVerdict,
+  OutputState,
+  SweBenchProVerdict,
 )
 from swe_lab.evaluation.verdict import Verdict
 
@@ -39,9 +39,9 @@ class _Minimal(Verdict):
 
 def _verdict(*, resolved: bool) -> SweBenchProVerdict:
   return SweBenchProVerdict(
-      passed=frozenset({"a"}),
-      missing=frozenset() if resolved else frozenset({"b"}),
-      output_state=OutputState.OK,
+    passed=frozenset({"a"}),
+    missing=frozenset() if resolved else frozenset({"b"}),
+    output_state=OutputState.OK,
   )
 
 

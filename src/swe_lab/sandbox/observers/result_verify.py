@@ -28,11 +28,11 @@ import logging
 from typing import Any, override
 
 from swe_lab.integrity.rules import (
-    check_controls,
-    check_patch,
-    check_trace,
-    merge,
-    VerifierFindings,
+  check_controls,
+  check_patch,
+  check_trace,
+  merge,
+  VerifierFindings,
 )
 from swe_lab.sandbox.observer import ArtifactSchema, SandboxObserver
 from swe_lab.sandbox.result import Contribution
@@ -74,11 +74,11 @@ class ResultVerifyObserver(SandboxObserver):
   def output_schema(self) -> tuple[ArtifactSchema, ...]:
     """Declare the findings record — advisory, like the run it describes."""
     return (
-        ArtifactSchema(
-            VERIFIER_ARTIFACT,
-            required=False,
-            description="integrity rule findings for this run (not a verdict)",
-        ),
+      ArtifactSchema(
+        VERIFIER_ARTIFACT,
+        required=False,
+        description="integrity rule findings for this run (not a verdict)",
+      ),
     )
 
   @override
@@ -99,12 +99,12 @@ class ResultVerifyObserver(SandboxObserver):
       _logger.exception("result verifier failed; recording it as a finding")
       self.findings = VerifierFindings(error=repr(exc))
     return Contribution(
-        inline_artifacts={
-            VERIFIER_ARTIFACT: json.dumps(
-                self.findings.to_dict(), indent=2
-            ).encode("utf-8")
-        },
-        metrics=self.findings.metrics(),
+      inline_artifacts={
+        VERIFIER_ARTIFACT: json.dumps(self.findings.to_dict(), indent=2).encode(
+          "utf-8"
+        )
+      },
+      metrics=self.findings.metrics(),
     )
 
   def _run_rules(self) -> VerifierFindings:
@@ -123,13 +123,13 @@ class ResultVerifyObserver(SandboxObserver):
     before = getattr(self.integrity_source, "before", None)
     if after is not None and before is not None:
       integrity = {
-          "purged": getattr(self.integrity_source, "purge", True),
-          "before": before.to_dict(),
-          "after": after.to_dict(),
-          "violations": list(after.violations()),
+        "purged": getattr(self.integrity_source, "purge", True),
+        "before": before.to_dict(),
+        "after": after.to_dict(),
+        "violations": list(after.violations()),
       }
     return merge(
-        check_patch(patch, self.required_tests),
-        check_trace(messages, workdir=self.workdir),
-        check_controls(integrity),
+      check_patch(patch, self.required_tests),
+      check_trace(messages, workdir=self.workdir),
+      check_controls(integrity),
     )

@@ -14,36 +14,36 @@ from swe_lab.datasets.deepswe.unit_test import DeepSweVerdict
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
 from swe_lab.datasets.swebench_pro.unit_test import (
-    OutputState,
-    SweBenchProVerdict,
+  OutputState,
+  SweBenchProVerdict,
 )
 from swe_lab.datasets.verify import (
-    _base_json,
-    BASE_UNEXPECTED_PASS,
-    classify,
-    ERROR,
-    GOLDEN_FAIL,
-    OK,
+  _base_json,
+  BASE_UNEXPECTED_PASS,
+  classify,
+  ERROR,
+  GOLDEN_FAIL,
+  OK,
 )
 from swe_lab.sandbox import RunResult, RunStatus
 
 _BASE = {
-    "repo": "acme/widget",
-    "instance_id": "acme__widget-1",
-    "base_commit": "abc123",
-    "patch": "PATCH",
-    "test_patch": "",
-    "problem_statement": "p",
-    "requirements": "",
-    "interface": "",
-    "repo_language": "python",
-    "fail_to_pass": "['t1']",
-    "pass_to_pass": "['t2']",
-    "issue_specificity": "[]",
-    "issue_categories": "[]",
-    "before_repo_set_cmd": "",
-    "selected_test_files_to_run": "['test/foo.py']",
-    "dockerhub_tag": "widget-tag",
+  "repo": "acme/widget",
+  "instance_id": "acme__widget-1",
+  "base_commit": "abc123",
+  "patch": "PATCH",
+  "test_patch": "",
+  "problem_statement": "p",
+  "requirements": "",
+  "interface": "",
+  "repo_language": "python",
+  "fail_to_pass": "['t1']",
+  "pass_to_pass": "['t2']",
+  "issue_specificity": "[]",
+  "issue_categories": "[]",
+  "before_repo_set_cmd": "",
+  "selected_test_files_to_run": "['test/foo.py']",
+  "dockerhub_tag": "widget-tag",
 }
 
 
@@ -56,11 +56,11 @@ def _result(status: RunStatus = RunStatus.SUCCESS) -> RunResult:
 
 
 def _run(
-    passed: tuple[str, ...] = (),
-    *,
-    required: tuple[str, ...] = ("t1", "t2"),
-    output_state: OutputState = OutputState.OK,
-    status: RunStatus = RunStatus.SUCCESS,
+  passed: tuple[str, ...] = (),
+  *,
+  required: tuple[str, ...] = ("t1", "t2"),
+  output_state: OutputState = OutputState.OK,
+  status: RunStatus = RunStatus.SUCCESS,
 ) -> tuple[RunResult, SweBenchProVerdict | None]:
   """Build a ``(RunResult, verdict)`` pair for one graded run.
 
@@ -74,9 +74,9 @@ def _run(
     The run pair ``classify`` consumes.
   """
   verdict = SweBenchProVerdict(
-      passed=frozenset(passed),
-      missing=frozenset(required) - frozenset(passed),
-      output_state=output_state,
+    passed=frozenset(passed),
+    missing=frozenset(required) - frozenset(passed),
+    output_state=output_state,
   )
   return _result(status), verdict
 
@@ -148,26 +148,26 @@ def test_base_json_diagnostics() -> None:
 
 
 def _dsw_run(
-    *,
-    reward: int,
-    f2p_passed: int = 0,
-    status: RunStatus = RunStatus.SUCCESS,
+  *,
+  reward: int,
+  f2p_passed: int = 0,
+  status: RunStatus = RunStatus.SUCCESS,
 ) -> tuple[RunResult, DeepSweVerdict | None]:
   verdict = DeepSweVerdict(
-      reward=reward,
-      f2p_total=5,
-      f2p_passed=f2p_passed,
-      p2p_total=2,
-      p2p_passed=2,
-      partial=0.0,
+    reward=reward,
+    f2p_total=5,
+    f2p_passed=f2p_passed,
+    p2p_total=2,
+    p2p_passed=2,
+    partial=0.0,
   )
   return _result(status), verdict
 
 
 def _dsw_instance(tmp_path: Path) -> TaskInstance[DeepSweVerdict]:
   from swe_lab.datasets.deepswe.build_parquet import (
-      build_row,
-      parse_provenance,
+    build_row,
+    parse_provenance,
   )
   from swe_lab.datasets.deepswe.record import DeepSweInstance
 

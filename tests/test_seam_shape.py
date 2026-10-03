@@ -22,8 +22,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from swe_lab.trace_synthesis.seam_shape import (
-    read_seam,
-    seam_is_clean,
+  read_seam,
+  seam_is_clean,
 )
 
 _DATA = Path(__file__).resolve().parent / "data"
@@ -69,8 +69,8 @@ def test_the_premises_are_part_of_the_chain():
   # A main-loop call the instrument can read, holding no assistant message: it
   # has nothing to look at, so its zero is not a finding.
   no_actor = read_seam(
-      '{"request": {"body": {"tools": [{"name": "Bash"}], "messages":'
-      ' [{"role": "user", "content": [{"type": "text", "text": "go"}]}]}}}\n'
+    '{"request": {"body": {"tools": [{"name": "Bash"}], "messages":'
+    ' [{"role": "user", "content": [{"type": "text", "text": "go"}]}]}}}\n'
   )
   assert no_actor.main_loop_requests == 1
   assert no_actor.assistant_messages == 0

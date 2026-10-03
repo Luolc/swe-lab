@@ -44,20 +44,20 @@ import typer
 
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.evaluation.unit_test import (
-    gold_patch,
-    UnitTestTask,
-    verdict_of,
+  gold_patch,
+  UnitTestTask,
+  verdict_of,
 )
 from swe_lab.evaluation.verdict import Verdict
 from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.sandbox import (
-    AttemptRecord,
-    build_sandbox,
-    build_store,
-    RunResult,
-    RUNS_NAMESPACE,
-    RunStatus,
-    Store,
+  AttemptRecord,
+  build_sandbox,
+  build_store,
+  RunResult,
+  RUNS_NAMESPACE,
+  RunStatus,
+  Store,
 )
 
 from .deepswe.unit_test import DeepSweVerdict
@@ -154,9 +154,9 @@ def classify(instance: TaskInstance[Any], base: _Run, golden: _Run) -> str:
   """
   for run_result, verdict in (base, golden):
     if (
-        run_result.status is not RunStatus.SUCCESS
-        or verdict is None
-        or not _graded_ok(verdict)
+      run_result.status is not RunStatus.SUCCESS
+      or verdict is None
+      or not _graded_ok(verdict)
     ):
       return ERROR
   _, base_verdict = base
@@ -173,8 +173,8 @@ def classify(instance: TaskInstance[Any], base: _Run, golden: _Run) -> str:
 def _run_json(run: _Run) -> dict[str, object]:
   run_result, verdict = run
   data: dict[str, object] = {
-      "status": run_result.status.value,
-      "resolved": bool(verdict and verdict.resolved),
+    "status": run_result.status.value,
+    "resolved": bool(verdict and verdict.resolved),
   }
   if isinstance(verdict, SweBenchProVerdict):
     # Kept byte-compatible with the fields every earlier sweep report used.
@@ -201,22 +201,22 @@ def _base_json(instance: TaskInstance[Any], base: _Run) -> dict[str, object]:
     # tests should. A non-empty ``pass_to_pass_missing`` means the harness is
     # shaky.
     data["fail_to_pass_passed"] = sorted(
-        frozenset(instance.fail_to_pass) & passed
+      frozenset(instance.fail_to_pass) & passed
     )
     data["pass_to_pass_missing"] = sorted(
-        frozenset(instance.pass_to_pass) - passed
+      frozenset(instance.pass_to_pass) - passed
     )
   return data
 
 
 def _graded_run(
-    instance: TaskInstance[Any],
-    *,
-    task: UnitTestTask[Any],
-    workspace: epath.PathLike,
-    timeout: float,
-    no_network: bool,
-    retries: int,
+  instance: TaskInstance[Any],
+  *,
+  task: UnitTestTask[Any],
+  workspace: epath.PathLike,
+  timeout: float,
+  no_network: bool,
+  retries: int,
 ) -> _Run:
   """Run one graded run (base or golden), each attempt in a fresh container.
 
@@ -246,14 +246,14 @@ def _graded_run(
     # The sandbox refuses a non-empty workspace; start each attempt clean.
     epath.Path(workspace).rmtree(missing_ok=True)
     sandbox = build_sandbox(
-        "host",
-        instance.sandbox_spec(),
-        workspace=workspace,
-        network=not no_network,
-        pull=True,
+      "host",
+      instance.sandbox_spec(),
+      workspace=workspace,
+      network=not no_network,
+      pull=True,
     )
     result = task.execute(
-        sandbox, instance, output_dir=workspace, timeout=timeout
+      sandbox, instance, output_dir=workspace, timeout=timeout
     )
     # This instance's grader is the dataset's own, so its verdict is ours.
     verdict = verdict_of(result)
@@ -274,22 +274,22 @@ def _prune_image(image_ref: str) -> None:
   """
   with contextlib.suppress(Exception):
     _ = subprocess.run(
-        ["docker", "image", "rm", "-f", image_ref],
-        check=False,
-        capture_output=True,
+      ["docker", "image", "rm", "-f", image_ref],
+      check=False,
+      capture_output=True,
     )
 
 
 def verify_instance(
-    instance: TaskInstance[Any],
-    *,
-    store: Store,
-    sweep: str,
-    ws_root: epath.PathLike,
-    timeout: float,
-    no_network: bool,
-    prune_images: bool,
-    retries: int = 1,
+  instance: TaskInstance[Any],
+  *,
+  store: Store,
+  sweep: str,
+  ws_root: epath.PathLike,
+  timeout: float,
+  no_network: bool,
+  prune_images: bool,
+  retries: int = 1,
 ) -> dict[str, object]:
   """Run base + golden for one instance, classify, and persist a T1 shard.
 
@@ -319,29 +319,29 @@ def verify_instance(
   result["image_ref"] = image_ref
   try:
     base = _graded_run(
-        instance,
-        # No patch at all, so nothing is graded against a baseline: this
-        # checks the image's own tree at `base_commit` (ADR-0014).
-        task=UnitTestTask(apply_patch=False, patch_baseline=False),
-        workspace=epath.Path(ws_root) / iid / "base",
-        timeout=timeout,
-        no_network=no_network,
-        # The base run is *supposed* to fail; retrying it would only pay twice
-        # for the same answer.
-        retries=0,
+      instance,
+      # No patch at all, so nothing is graded against a baseline: this
+      # checks the image's own tree at `base_commit` (ADR-0014).
+      task=UnitTestTask(apply_patch=False, patch_baseline=False),
+      workspace=epath.Path(ws_root) / iid / "base",
+      timeout=timeout,
+      no_network=no_network,
+      # The base run is *supposed* to fail; retrying it would only pay twice
+      # for the same answer.
+      retries=0,
     )
     golden = _graded_run(
-        instance,
-        # The reference solution is the task's own input, built from the
-        # instance — the standalone shape, no caller bytes involved.
-        # The gold patch's base is `base_commit` by construction.
-        task=UnitTestTask(inputs_builder=gold_patch, patch_baseline=False),
-        workspace=epath.Path(ws_root) / iid / "golden",
-        timeout=timeout,
-        # The golden patch is supposed to pass, so a failure here is either a
-        # real corpus defect or a flake — exactly the case retry is for.
-        retries=retries,
-        no_network=no_network,
+      instance,
+      # The reference solution is the task's own input, built from the
+      # instance — the standalone shape, no caller bytes involved.
+      # The gold patch's base is `base_commit` by construction.
+      task=UnitTestTask(inputs_builder=gold_patch, patch_baseline=False),
+      workspace=epath.Path(ws_root) / iid / "golden",
+      timeout=timeout,
+      # The golden patch is supposed to pass, so a failure here is either a
+      # real corpus defect or a flake — exactly the case retry is for.
+      retries=retries,
+      no_network=no_network,
     )
     result["verdict"] = classify(instance, base, golden)
     result["base"] = _base_json(instance, base)
@@ -357,21 +357,21 @@ def verify_instance(
   # detail (and any error) lives in `extra`. The key is deterministic, so a
   # re-verify overwrites in place and a sweep holds one shard per instance.
   store.append_manifest(
-      AttemptRecord(
-          sweep_id=sweep,
-          instance_id=iid,
-          task="verify",
-          rollout_id=_ROLLOUT_ID,
-          run_ts=datetime.now(UTC).isoformat(),
-          status=str(result["verdict"]),
-          tier="formal",
-          backend="host",
-          extra={
-              key: value
-              for key, value in result.items()
-              if key not in ("instance_id", "verdict")
-          },
-      )
+    AttemptRecord(
+      sweep_id=sweep,
+      instance_id=iid,
+      task="verify",
+      rollout_id=_ROLLOUT_ID,
+      run_ts=datetime.now(UTC).isoformat(),
+      status=str(result["verdict"]),
+      tier="formal",
+      backend="host",
+      extra={
+        key: value
+        for key, value in result.items()
+        if key not in ("instance_id", "verdict")
+      },
+    )
   )
   return result
 
@@ -408,16 +408,16 @@ def _parse_shard(value: str) -> tuple[int, int]:
 
 
 def run(
-    *,
-    dataset: str,
-    sweep: str,
-    shard: tuple[int, int],
-    jobs: int,
-    limit: int,
-    timeout: float,
-    no_network: bool,
-    prune_images: bool,
-    refresh: bool,
+  *,
+  dataset: str,
+  sweep: str,
+  shard: tuple[int, int],
+  jobs: int,
+  limit: int,
+  timeout: float,
+  no_network: bool,
+  prune_images: bool,
+  refresh: bool,
 ) -> int:
   """Verify this shard's instances, appending one T1 shard per instance.
 
@@ -440,9 +440,9 @@ def run(
   ws_root = cache_root(root) / _WS_SUBDIR
 
   records = [
-      rec
-      for rec in load_dataset(dataset).records
-      if isinstance(rec, TaskInstance)
+    rec
+    for rec in load_dataset(dataset).records
+    if isinstance(rec, TaskInstance)
   ]
   shard_i, shard_n = shard
   todo = records[shard_i::shard_n]
@@ -455,20 +455,20 @@ def run(
   if limit:
     todo = todo[:limit]  # smoke/debug: cap instances this shard runs
   print(
-      f"shard {shard_i}/{shard_n}: {len(todo)} instances to verify"
-      f" ({len(records)} total, jobs={jobs})",
-      flush=True,
+    f"shard {shard_i}/{shard_n}: {len(todo)} instances to verify"
+    f" ({len(records)} total, jobs={jobs})",
+    flush=True,
   )
 
   def _task(rec: TaskInstance[Any]) -> dict[str, object]:
     return verify_instance(
-        rec,
-        store=store,
-        sweep=sweep,
-        ws_root=ws_root,
-        timeout=timeout,
-        no_network=no_network,
-        prune_images=prune_images,
+      rec,
+      store=store,
+      sweep=sweep,
+      ws_root=ws_root,
+      timeout=timeout,
+      no_network=no_network,
+      prune_images=prune_images,
     )
 
   counts: collections.Counter[str] = collections.Counter()
@@ -479,8 +479,8 @@ def run(
       verdict = str(result["verdict"])
       counts[verdict] += 1
       print(
-          f"[{done}/{len(todo)}] {result['instance_id']}: {verdict}",
-          flush=True,
+        f"[{done}/{len(todo)}] {result['instance_id']}: {verdict}",
+        flush=True,
       )
   print(f"shard {shard_i}/{shard_n} done: {dict(counts)}", flush=True)
   return 0
@@ -501,35 +501,35 @@ def aggregate(*, dataset: str, sweep: str) -> int:
   report_dir = _store_root(root) / sweep
   records = store.read_manifests(sweep)
   counts: collections.Counter[str] = collections.Counter(
-      r.status for r in records
+    r.status for r in records
   )
   non_ok = sorted(
-      (r for r in records if r.status != OK),
-      key=lambda r: (r.status, r.instance_id),
+    (r for r in records if r.status != OK),
+    key=lambda r: (r.status, r.instance_id),
   )
   total = len(load_dataset(dataset))
   # Span of the underlying runs, from the per-instance stamps. ISO-8601 UTC
   # strings sort lexicographically, so min/max give the earliest/latest finish.
   finished = sorted(
-      str(r.extra["finished_at"]) for r in records if r.extra.get("finished_at")
+    str(r.extra["finished_at"]) for r in records if r.extra.get("finished_at")
   )
   summary: dict[str, object] = {
-      "dataset": dataset,
-      "sweep": sweep,
-      "generated_at": datetime.now(UTC).isoformat(),
-      "first_verified_at": finished[0] if finished else None,
-      "last_verified_at": finished[-1] if finished else None,
-      "total": total,
-      "verified": len(records),
-      "counts": {v: counts.get(v, 0) for v in _VERDICTS},
-      "non_ok": [
-          {
-              "instance_id": r.instance_id,
-              "verdict": r.status,
-              "error": r.extra.get("error"),
-          }
-          for r in non_ok
-      ],
+    "dataset": dataset,
+    "sweep": sweep,
+    "generated_at": datetime.now(UTC).isoformat(),
+    "first_verified_at": finished[0] if finished else None,
+    "last_verified_at": finished[-1] if finished else None,
+    "total": total,
+    "verified": len(records),
+    "counts": {v: counts.get(v, 0) for v in _VERDICTS},
+    "non_ok": [
+      {
+        "instance_id": r.instance_id,
+        "verdict": r.status,
+        "error": r.extra.get("error"),
+      }
+      for r in non_ok
+    ],
   }
   _write_json(report_dir / "summary.json", summary)
   report = _render_report(summary)
@@ -554,67 +554,67 @@ def _render_report(summary: dict[str, object]) -> str:
   counts = summary["counts"]
   assert isinstance(counts, dict)
   lines = [
-      f"# Golden patch validation — {summary['dataset']}",
-      "",
-      f"Verified {summary['verified']} / {summary['total']} instances.",
-      f"Generated at {summary['generated_at']} (runs"
-      f" {summary['first_verified_at']} → {summary['last_verified_at']}).",
-      "",
-      "| verdict | count |",
-      "| --- | --- |",
+    f"# Golden patch validation — {summary['dataset']}",
+    "",
+    f"Verified {summary['verified']} / {summary['total']} instances.",
+    f"Generated at {summary['generated_at']} (runs"
+    f" {summary['first_verified_at']} → {summary['last_verified_at']}).",
+    "",
+    "| verdict | count |",
+    "| --- | --- |",
   ]
   lines += [f"| {v} | {counts.get(v, 0)} |" for v in _VERDICTS]
   non_ok = summary["non_ok"]
   assert isinstance(non_ok, list)
   if non_ok:
     lines += [
-        "",
-        "## Non-OK instances",
-        "",
-        "| instance | verdict |",
-        "| --- | --- |",
+      "",
+      "## Non-OK instances",
+      "",
+      "| instance | verdict |",
+      "| --- | --- |",
     ]
     lines += [f"| {r['instance_id']} | {r['verdict']} |" for r in non_ok]
   return "\n".join(lines) + "\n"
 
 
 def verify_cmd(
-    dataset: Annotated[
-        str, typer.Option(help="Dataset to verify.")
-    ] = "swebench_pro",
-    sweep: Annotated[
-        str,
-        typer.Option(help="Sweep id results are keyed under in the T1 store."),
-    ] = _DEFAULT_SWEEP,
-    aggregate_: Annotated[
-        bool,
-        typer.Option(
-            "--aggregate",
-            help="Merge shard results into summary.json + report.md, exit.",
-        ),
-    ] = False,
-    shard: Annotated[
-        str, typer.Option(help="Stride shard i/N (default 0/1 = all).")
-    ] = "0/1",
-    jobs: Annotated[int, typer.Option(help="Worker threads.")] = 1,
-    limit: Annotated[
-        int,
-        typer.Option(help="Cap instances after sharding (0 = no cap)."),
-    ] = 0,
-    timeout: Annotated[
-        float, typer.Option(help="Seconds before each graded run is killed.")
-    ] = 1800.0,
-    no_network: Annotated[
-        bool, typer.Option(help="Run the containers offline.")
-    ] = False,
-    prune_images: Annotated[
-        bool,
-        typer.Option(help="docker rmi each image after its instance."),
-    ] = False,
-    refresh: Annotated[
-        bool,
-        typer.Option(help="Re-verify instances even if a result exists."),
-    ] = False,
+  dataset: Annotated[
+    str, typer.Option(help="Dataset to verify.")
+  ] = "swebench_pro",
+  sweep: Annotated[
+    str,
+    typer.Option(help="Sweep id results are keyed under in the T1 store."),
+  ] = _DEFAULT_SWEEP,
+  aggregate_: Annotated[
+    bool,
+    typer.Option(
+      "--aggregate",
+      help="Merge shard results into summary.json + report.md, exit.",
+    ),
+  ] = False,
+  shard: Annotated[
+    str, typer.Option(help="Stride shard i/N (default 0/1 = all).")
+  ] = "0/1",
+  jobs: Annotated[int, typer.Option(help="Worker threads.")] = 1,
+  limit: Annotated[
+    int,
+    typer.Option(help="Cap instances after sharding (0 = no cap)."),
+  ] = 0,
+  timeout: Annotated[
+    float, typer.Option(help="Seconds before each graded run is killed.")
+  ] = 1800.0,
+  no_network: Annotated[
+    bool, typer.Option(help="Run the containers offline.")
+  ] = False,
+  prune_images: Annotated[
+    bool,
+    typer.Option(help="docker rmi each image after its instance."),
+  ] = False,
+  refresh: Annotated[
+    bool,
+    typer.Option(help="Re-verify instances even if a result exists."),
+  ] = False,
 ) -> None:
   """Verify a dataset's golden patches, one shard at a time.
 
@@ -624,19 +624,19 @@ def verify_cmd(
   """
   parsed_shard = _parse_shard(shard)
   code = (
-      aggregate(dataset=dataset, sweep=sweep)
-      if aggregate_
-      else run(
-          dataset=dataset,
-          sweep=sweep,
-          shard=parsed_shard,
-          jobs=jobs,
-          limit=limit,
-          timeout=timeout,
-          no_network=no_network,
-          prune_images=prune_images,
-          refresh=refresh,
-      )
+    aggregate(dataset=dataset, sweep=sweep)
+    if aggregate_
+    else run(
+      dataset=dataset,
+      sweep=sweep,
+      shard=parsed_shard,
+      jobs=jobs,
+      limit=limit,
+      timeout=timeout,
+      no_network=no_network,
+      prune_images=prune_images,
+      refresh=refresh,
+    )
   )
   raise typer.Exit(code)
 

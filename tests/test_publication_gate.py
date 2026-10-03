@@ -16,37 +16,37 @@ import pytest
 
 from swe_lab.harnesses.claude_code.redaction import REDACTED
 from swe_lab.pipelines.related_files.exchange import (
-    exchange_publication_blockers,
-    OperatorIdentity,
+  exchange_publication_blockers,
+  OperatorIdentity,
 )
 from swe_lab.pipelines.related_files.traces import (
-    refuse_unpublishable_traces,
-    UnpublishableTraceError,
+  refuse_unpublishable_traces,
+  UnpublishableTraceError,
 )
 
 _IDENTITY = OperatorIdentity(
-    home="/Users/realperson", name="Real Person", email="real@example.com"
+  home="/Users/realperson", name="Real Person", email="real@example.com"
 )
 
 
 def _record(**overrides: Any) -> dict[str, Any]:
   """Build a normalized exchange record that is safe to publish."""
   record: dict[str, Any] = {
-      "source": "proxy",
-      "complete": True,
-      "model": "claude-sonnet-4-5",
-      "messages": [{"role": "user", "content": "fix the failing test"}],
-      "extra_info": {
-          "request_headers": {
-              "Authorization": REDACTED,
-              "X-Claude-Code-Session-Id": "session-kept",
-          },
-          "response_headers": {
-              "Anthropic-Organization-Id": REDACTED,
-              "Request-Id": "req_kept",
-          },
-          "metadata": {"user_id": REDACTED},
+    "source": "proxy",
+    "complete": True,
+    "model": "claude-sonnet-4-5",
+    "messages": [{"role": "user", "content": "fix the failing test"}],
+    "extra_info": {
+      "request_headers": {
+        "Authorization": REDACTED,
+        "X-Claude-Code-Session-Id": "session-kept",
       },
+      "response_headers": {
+        "Anthropic-Organization-Id": REDACTED,
+        "Request-Id": "req_kept",
+      },
+      "metadata": {"user_id": REDACTED},
+    },
   }
   record.update(overrides)
   return record
@@ -60,7 +60,7 @@ def test_an_unmasked_credential_blocks() -> None:
   record = _record()
   record["extra_info"]["request_headers"]["Authorization"] = "Bearer real"
   assert exchange_publication_blockers(record, identity=_IDENTITY) == [
-      "request_headers Authorization"
+    "request_headers Authorization"
   ]
 
 
@@ -70,7 +70,7 @@ def test_an_unclassified_header_blocks() -> None:
   record = _record()
   record["extra_info"]["response_headers"]["X-Brand-New"] = "whatever"
   assert exchange_publication_blockers(record, identity=_IDENTITY) == [
-      "response_headers X-Brand-New (unclassified)"
+    "response_headers X-Brand-New (unclassified)"
   ]
 
 
@@ -79,7 +79,7 @@ def test_operator_identity_in_a_message_body_blocks() -> None:
   # carries the operator's home path — Claude Code puts it in tool output.
   record = _record()
   record["messages"] = [
-      {"role": "user", "content": "ls /Users/realperson/dev/swe-lab"}
+    {"role": "user", "content": "ls /Users/realperson/dev/swe-lab"}
   ]
   findings = exchange_publication_blockers(record, identity=_IDENTITY)
   assert findings == ["messages operator home path"]
@@ -91,8 +91,8 @@ def test_operator_name_and_email_in_any_field_block() -> None:
   record = _record()
   record["extra_info"]["result"] = "committed as Real Person <real@example.com>"
   assert sorted(exchange_publication_blockers(record, identity=_IDENTITY)) == [
-      "extra_info operator email",
-      "extra_info operator git name",
+    "extra_info operator email",
+    "extra_info operator git name",
   ]
 
 
@@ -119,7 +119,7 @@ def test_a_clean_tree_passes_the_gate(tmp_path: Path) -> None:
 
 
 def test_push_traces_refuses_before_touching_the_api(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   """The wiring, pinned: a bad trace must stop the push, not just report.
 
@@ -132,15 +132,14 @@ def test_push_traces_refuses_before_touching_the_api(
   base = tmp_path / "outputs" / "related_files" / "swebench_pro"
   base.mkdir(parents=True)
   bad = _record()
-  bad["extra_info"]["response_headers"][
-      "Anthropic-Organization-Id"
-  ] = "org_real"
+  bad["extra_info"]["response_headers"]["Anthropic-Organization-Id"] = (
+    "org_real"
+  )
   (base / "c1.last_exchange.json").write_text(json.dumps(bad))
 
   reached: list[str] = []
 
   class _FakeApi:
-
     def create_repo(self, *_args: object, **_kwargs: object) -> None:
       reached.append("create_repo")
 
@@ -149,20 +148,20 @@ def test_push_traces_refuses_before_touching_the_api(
 
   monkeypatch.setattr(traces, "HfApi", _FakeApi)
   monkeypatch.setattr(
-      OperatorIdentity,
-      "of_this_machine",
-      classmethod(lambda cls: _IDENTITY),
+    OperatorIdentity,
+    "of_this_machine",
+    classmethod(lambda cls: _IDENTITY),
   )
 
   with pytest.raises(UnpublishableTraceError):
     _ = traces.push_traces(repo_root=tmp_path)
-  assert (
-      reached == []
-  ), "the push reached the API despite an unpublishable trace"
+  assert reached == [], (
+    "the push reached the API despite an unpublishable trace"
+  )
 
 
 def test_the_gate_runs_before_the_manifest_check_too(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
   """The ordinary push path — a manifest exists — must refuse just as early.
 
@@ -177,15 +176,14 @@ def test_the_gate_runs_before_the_manifest_check_too(
   base = tmp_path / "outputs" / "related_files" / "swebench_pro"
   base.mkdir(parents=True)
   bad = _record()
-  bad["extra_info"]["response_headers"][
-      "Anthropic-Organization-Id"
-  ] = "org_real"
+  bad["extra_info"]["response_headers"]["Anthropic-Organization-Id"] = (
+    "org_real"
+  )
   (base / "c1.last_exchange.json").write_text(json.dumps(bad))
 
   reached: list[str] = []
 
   class _FakeApi:
-
     def repo_info(self, *_args: object, **_kwargs: object) -> None:
       reached.append("repo_info")
 
@@ -197,7 +195,7 @@ def test_the_gate_runs_before_the_manifest_check_too(
 
   monkeypatch.setattr(traces, "HfApi", _FakeApi)
   monkeypatch.setattr(
-      OperatorIdentity, "of_this_machine", classmethod(lambda cls: _IDENTITY)
+    OperatorIdentity, "of_this_machine", classmethod(lambda cls: _IDENTITY)
   )
 
   def _manifest(*_args: object, **_kwargs: object) -> dict[str, str]:

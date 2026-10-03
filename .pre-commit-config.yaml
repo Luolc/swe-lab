@@ -55,21 +55,15 @@ repos:
         # Binary files cannot hold a record anybody reads, and the scanner
         # skips what it cannot decode anyway; this keeps them off its argv.
         types: [text]
+  # Lint (import sorting included, via `I`) before format: a lint fix can
+  # leave code the formatter then settles, never the other way round.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.7
+    rev: v0.16.10
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: ["--fix"]
         exclude: ^experiments/
-  - repo: https://github.com/google/pyink
-    rev: 25.12.0
-    hooks:
-      - id: pyink
-        exclude: ^experiments/
-  - repo: https://github.com/PyCQA/isort
-    rev: 8.0.1
-    hooks:
-      - id: isort
+      - id: ruff-format
         exclude: ^experiments/
   - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
     rev: 1.39.0

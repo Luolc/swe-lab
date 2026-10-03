@@ -8,20 +8,20 @@ from etils import epath
 
 from swe_lab.conversation import Conversation
 from swe_lab.harnesses import (
-    AgentOutcome,
-    COMPLETE_METRIC,
-    Harness,
-    HarnessOutcomeObserver,
+  AgentOutcome,
+  COMPLETE_METRIC,
+  Harness,
+  HarnessOutcomeObserver,
 )
 from swe_lab.sandbox import (
-    Contribution,
-    ExecResult,
-    Mounts,
-    NAME_SEPARATOR,
-    qualified_name,
-    SandboxFs,
-    SandboxObserver,
-    SandboxSpec,
+  Contribution,
+  ExecResult,
+  Mounts,
+  NAME_SEPARATOR,
+  qualified_name,
+  SandboxFs,
+  SandboxObserver,
+  SandboxSpec,
 )
 from swe_lab.sandbox.result import merge_contributions
 from swe_lab.sandbox.testing import FakeSandbox
@@ -53,12 +53,12 @@ class _StubHarness(Harness):
 
   @override
   def run(
-      self,
-      sb: SandboxFs,
-      *,
-      prompt: str,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    sb: SandboxFs,
+    *,
+    prompt: str,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     del prompt, timeout, env
     return sb.run_script("noop", timeout=0.0)
@@ -80,8 +80,8 @@ class _StubHarness(Harness):
 
 def _sandbox(workspace: Path) -> FakeSandbox:
   return FakeSandbox(
-      spec=SandboxSpec("acme__widget-1", "img:tag", "/app", "abc"),
-      workspace=epath.Path(workspace),
+    spec=SandboxSpec("acme__widget-1", "img:tag", "/app", "abc"),
+    workspace=epath.Path(workspace),
   )
 
 
@@ -99,8 +99,8 @@ def test_registers_every_byproduct_that_landed(tmp_path: Path):
   # namespaced by the harness: the roles themselves are generic, so unqualified
   # they would collide between harnesses and lose their provenance
   assert contribution.artifacts == {
-      "stub.event_stream.jsonl": EVENT_STREAM,
-      "stub.stderr.log": STDERR,
+    "stub.event_stream.jsonl": EVENT_STREAM,
+    "stub.stderr.log": STDERR,
   }
   assert observer.collected == contribution.artifacts
 
@@ -118,7 +118,7 @@ def test_absent_byproducts_are_skipped_best_effort(tmp_path: Path):
 
 def test_completion_is_kept_and_exported_as_a_metric(tmp_path: Path):
   observer = HarnessOutcomeObserver(
-      harness=_StubHarness(outcome=AgentOutcome.FINISHED)
+    harness=_StubHarness(outcome=AgentOutcome.FINISHED)
   )
   contribution = observer.before_destroy(_sandbox(tmp_path))
   assert observer.complete is True  # readable by the composition
@@ -128,7 +128,7 @@ def test_completion_is_kept_and_exported_as_a_metric(tmp_path: Path):
 
 def test_incomplete_run_is_recorded_not_dropped(tmp_path: Path):
   observer = HarnessOutcomeObserver(
-      harness=_StubHarness(outcome=AgentOutcome.EXECUTION_ERROR)
+    harness=_StubHarness(outcome=AgentOutcome.EXECUTION_ERROR)
   )
   contribution = observer.before_destroy(_sandbox(tmp_path))
   assert observer.complete is False
@@ -143,7 +143,6 @@ def test_two_harnesses_sharing_a_role_do_not_collide(tmp_path: Path):
   # refuse the merge; qualified by harness they coexist.
   @final
   class _Other(_StubHarness):
-
     @property
     @override
     def name(self) -> str:
@@ -158,10 +157,10 @@ def test_two_harnesses_sharing_a_role_do_not_collide(tmp_path: Path):
   # merge just the artifact halves: the completion *metric* stays unqualified on
   # purpose (one run has one agent), so it is not what this asserts.
   merged = merge_contributions(
-      [
-          Contribution(artifacts=first.collected),
-          Contribution(artifacts=second.collected),
-      ]
+    [
+      Contribution(artifacts=first.collected),
+      Contribution(artifacts=second.collected),
+    ]
   )  # would raise if the names collided
   assert "stub.stderr.log" in merged.artifacts
   assert "other_agent.stderr.log" in merged.artifacts

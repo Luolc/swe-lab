@@ -77,17 +77,17 @@ class ProxyBuild:
 # imports nothing outside the standard library, so ``CGO_ENABLED=0`` costs
 # nothing and buys a static binary that runs in an image with any libc.
 SANDBOX_BUILD = ProxyBuild(
-    namespace="cc-reverse-proxy-sandbox",
-    platform=SANDBOX_PLATFORM,
-    go_env={"GOOS": "linux", "GOARCH": "amd64", "CGO_ENABLED": "0"},
+  namespace="cc-reverse-proxy-sandbox",
+  platform=SANDBOX_PLATFORM,
+  go_env={"GOOS": "linux", "GOARCH": "amd64", "CGO_ENABLED": "0"},
 )
 
 # W1's annotation pipeline runs its agent as a host subprocess, so its proxy is
 # a host process and its binary must be native to whatever built it.
 HOST_BUILD = ProxyBuild(
-    namespace="cc-reverse-proxy-host",
-    platform="host-native",
-    go_env={},
+  namespace="cc-reverse-proxy-host",
+  platform="host-native",
+  go_env={},
 )
 
 
@@ -130,35 +130,35 @@ def proxy_source_version(repo_root: epath.PathLike | None = None) -> str:
   source = proxy_source_path(repo_root)
   if not source.is_file():
     raise FileNotFoundError(
-        f"cc-reverse-proxy source not found at {source}. Clone the standalone"
-        f" project beside this repo, or set {PROXY_SOURCE_ENV} to its"
-        " reverse_proxy.go path."
+      f"cc-reverse-proxy source not found at {source}. Clone the standalone"
+      f" project beside this repo, or set {PROXY_SOURCE_ENV} to its"
+      " reverse_proxy.go path."
     )
   return hashlib.sha256(source.read_bytes()).hexdigest()
 
 
 def proxy_binary_path(
-    version: str,
-    *,
-    repo_root: epath.PathLike | None = None,
-    build: ProxyBuild = SANDBOX_BUILD,
+  version: str,
+  *,
+  repo_root: epath.PathLike | None = None,
+  build: ProxyBuild = SANDBOX_BUILD,
 ) -> epath.Path:
   """Return the host cache path of ``build``'s proxy binary for ``version``."""
   return (
-      cache_root(repo_root or find_repo_root())
-      / _BIN_SUBDIR
-      / build.namespace
-      / version
-      / build.platform
-      / _BINARY_NAME
+    cache_root(repo_root or find_repo_root())
+    / _BIN_SUBDIR
+    / build.namespace
+    / version
+    / build.platform
+    / _BINARY_NAME
   )
 
 
 def ensure_proxy_binary(
-    *,
-    dest: epath.PathLike | None = None,
-    repo_root: epath.PathLike | None = None,
-    build: ProxyBuild = SANDBOX_BUILD,
+  *,
+  dest: epath.PathLike | None = None,
+  repo_root: epath.PathLike | None = None,
+  build: ProxyBuild = SANDBOX_BUILD,
 ) -> epath.Path:
   """Ensure ``build``'s proxy binary exists, and return where it landed.
 
@@ -197,7 +197,7 @@ def ensure_proxy_binary(
 
 
 def _build(
-    source: epath.Path, binary: epath.Path, go_env: Mapping[str, str]
+  source: epath.Path, binary: epath.Path, go_env: Mapping[str, str]
 ) -> None:
   """Compile ``source`` to ``binary`` under ``go_env``, atomically.
 
@@ -209,20 +209,20 @@ def _build(
   staged = binary.parent / f"{binary.name}.{os.getpid()}.tmp"
   try:
     result = subprocess.run(
-        [
-            "go",
-            "build",
-            "-ldflags=-s -w",
-            "-trimpath",
-            "-o",
-            str(staged),
-            str(source),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=_BUILD_TIMEOUT_S,
-        env=os.environ | dict(go_env),
+      [
+        "go",
+        "build",
+        "-ldflags=-s -w",
+        "-trimpath",
+        "-o",
+        str(staged),
+        str(source),
+      ],
+      capture_output=True,
+      text=True,
+      check=False,
+      timeout=_BUILD_TIMEOUT_S,
+      env=os.environ | dict(go_env),
     )
     if result.returncode != 0:
       raise RuntimeError(f"failed to build {source}:\n{result.stderr.strip()}")
@@ -230,12 +230,12 @@ def _build(
     os.replace(staged, binary)
   except FileNotFoundError as exc:
     raise RuntimeError(
-        "the Go toolchain is required to build cc-reverse-proxy for"
-        " proxy capture, and `go` was not found on PATH"
+      "the Go toolchain is required to build cc-reverse-proxy for"
+      " proxy capture, and `go` was not found on PATH"
     ) from exc
   except subprocess.TimeoutExpired as exc:
     raise RuntimeError(
-        f"building {source} timed out after {_BUILD_TIMEOUT_S}s"
+      f"building {source} timed out after {_BUILD_TIMEOUT_S}s"
     ) from exc
   finally:
     epath.Path(staged).unlink(missing_ok=True)

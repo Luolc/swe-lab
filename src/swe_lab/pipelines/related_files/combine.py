@@ -30,18 +30,18 @@ import polars as pl
 
 from .schema import Annotation
 from .storage import (
-    combined_parquet_path,
-    DEFAULT_DATASET,
-    iter_aggregate_paths,
-    load_aggregate,
+  combined_parquet_path,
+  DEFAULT_DATASET,
+  iter_aggregate_paths,
+  load_aggregate,
 )
 
 # Combined-table schema — one row per instance. ``relevant_snippets`` is a JSON
 # string encoding the ordered list of snippet dicts (``file_path``,
 # ``start_line``, ``end_line``, ``category``, ``description``).
 SCHEMA: dict[str, pl.DataType] = {
-    "instance_id": pl.String(),
-    "relevant_snippets": pl.String(),
+  "instance_id": pl.String(),
+  "relevant_snippets": pl.String(),
 }
 COLUMNS = tuple(SCHEMA)
 
@@ -52,14 +52,14 @@ METADATA_NAME = "metadata.json"
 def _snippets_json(annotation: Annotation) -> str:
   """Encode an instance's ordered snippets as a JSON string of dicts."""
   snippets = [
-      {
-          "file_path": snippet.file_path,
-          "start_line": snippet.start_line,
-          "end_line": snippet.end_line,
-          "category": snippet.category.value,
-          "description": snippet.description,
-      }
-      for snippet in annotation.snippets
+    {
+      "file_path": snippet.file_path,
+      "start_line": snippet.start_line,
+      "end_line": snippet.end_line,
+      "category": snippet.category.value,
+      "description": snippet.description,
+    }
+    for snippet in annotation.snippets
   ]
   return json.dumps(snippets, ensure_ascii=False)
 
@@ -67,23 +67,23 @@ def _snippets_json(annotation: Annotation) -> str:
 def _rows(annotations: Iterable[Annotation]) -> list[dict[str, object]]:
   """Turn annotations into one row per instance, ready for a DataFrame."""
   return [
-      {
-          "instance_id": annotation.instance_id,
-          "relevant_snippets": _snippets_json(annotation),
-      }
-      for annotation in annotations
+    {
+      "instance_id": annotation.instance_id,
+      "relevant_snippets": _snippets_json(annotation),
+    }
+    for annotation in annotations
   ]
 
 
 def build_dataframe(
-    dataset: str = DEFAULT_DATASET,
-    *,
-    repo_root: epath.PathLike | None = None,
+  dataset: str = DEFAULT_DATASET,
+  *,
+  repo_root: epath.PathLike | None = None,
 ) -> pl.DataFrame:
   """Build the combined per-instance table for a dataset from its aggregates."""
   annotations = [
-      load_aggregate(path)
-      for path in iter_aggregate_paths(dataset, repo_root=repo_root)
+    load_aggregate(path)
+    for path in iter_aggregate_paths(dataset, repo_root=repo_root)
   ]
   return pl.DataFrame(_rows(annotations), schema=SCHEMA)
 
@@ -99,23 +99,23 @@ def _sha256(path: epath.PathLike) -> str:
 
 
 def build_metadata(
-    parquet_path: epath.PathLike, frame: pl.DataFrame
+  parquet_path: epath.PathLike, frame: pl.DataFrame
 ) -> dict[str, object]:
   """Describe one parquet build: counts, timestamp, and checksum."""
   return {
-      "parquet": epath.Path(parquet_path).name,
-      "num_rows": frame.height,
-      "num_snippets": _total_snippets(frame),
-      "generated_at": datetime.now(UTC).isoformat(),
-      "sha256": _sha256(parquet_path),
+    "parquet": epath.Path(parquet_path).name,
+    "num_rows": frame.height,
+    "num_snippets": _total_snippets(frame),
+    "generated_at": datetime.now(UTC).isoformat(),
+    "sha256": _sha256(parquet_path),
   }
 
 
 def combine(
-    dataset: str = DEFAULT_DATASET,
-    *,
-    repo_root: epath.PathLike | None = None,
-    output: epath.PathLike | None = None,
+  dataset: str = DEFAULT_DATASET,
+  *,
+  repo_root: epath.PathLike | None = None,
+  output: epath.PathLike | None = None,
 ) -> tuple[epath.Path, epath.Path, pl.DataFrame]:
   """Write the combined parquet and its ``metadata.json`` sidecar.
 
@@ -123,7 +123,7 @@ def combine(
   """
   frame = build_dataframe(dataset, repo_root=repo_root)
   out = epath.Path(
-      output or combined_parquet_path(dataset, repo_root=repo_root)
+    output or combined_parquet_path(dataset, repo_root=repo_root)
   )
   out.parent.mkdir(parents=True, exist_ok=True)
   frame.write_parquet(str(out))
@@ -131,7 +131,7 @@ def combine(
   metadata_path = out.with_name(METADATA_NAME)
   metadata = build_metadata(out, frame)
   _ = metadata_path.write_text(
-      json.dumps(metadata, indent=2, ensure_ascii=False) + "\n"
+    json.dumps(metadata, indent=2, ensure_ascii=False) + "\n"
   )
   return out, metadata_path, frame
 
@@ -139,20 +139,20 @@ def combine(
 def main() -> int:
   """Run the combine CLI and print a summary of the build."""
   parser = argparse.ArgumentParser(
-      prog="python -m swe_lab.pipelines.related_files.combine",
-      description=(
-          "Combine per-instance aggregate annotations into one parquet."
-      ),
+    prog="python -m swe_lab.pipelines.related_files.combine",
+    description=(
+      "Combine per-instance aggregate annotations into one parquet."
+    ),
   )
   _ = parser.add_argument(
-      "--dataset", default=DEFAULT_DATASET, help="Dataset name."
+    "--dataset", default=DEFAULT_DATASET, help="Dataset name."
   )
   _ = parser.add_argument(
-      "--output",
-      type=epath.Path,
-      default=None,
-      help="Parquet output path (default: outputs/related_files/<dataset>/"
-      "annotations.parquet).",
+    "--output",
+    type=epath.Path,
+    default=None,
+    help="Parquet output path (default: outputs/related_files/<dataset>/"
+    "annotations.parquet).",
   )
   args = parser.parse_args()
 

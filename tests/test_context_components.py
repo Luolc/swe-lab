@@ -7,27 +7,27 @@ import dataclasses
 from typing import Any, override
 
 from swe_lab.conversation import (
-    ContentBlock,
-    Message,
-    ReasoningBlock,
-    Role,
-    TextBlock,
-    ToolResultBlock,
-    ToolUseBlock,
+  ContentBlock,
+  Message,
+  ReasoningBlock,
+  Role,
+  TextBlock,
+  ToolResultBlock,
+  ToolUseBlock,
 )
 from swe_lab.trace_synthesis.context_components import (
-    CompleteAssistantTurnSelector,
-    EvidenceRenderer,
-    EvidenceSelector,
-    PairedToolEvidenceRenderer,
-    PromptBuilder,
+  CompleteAssistantTurnSelector,
+  EvidenceRenderer,
+  EvidenceSelector,
+  PairedToolEvidenceRenderer,
+  PromptBuilder,
 )
 from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
 from swe_lab.trace_synthesis.judge import supervising_policy
 from swe_lab.trace_synthesis.supervisor import (
-    Observation,
-    SpeakWhenOffTrack,
-    Verdict,
+  Observation,
+  SpeakWhenOffTrack,
+  Verdict,
 )
 
 
@@ -37,27 +37,25 @@ def assistant_call(call_id: str, *, text: str = "") -> Message:
   if text:
     content.append(TextBlock(text=text))
   content.append(
-      ToolUseBlock(id=call_id, name="Read", input={"path": f"{call_id}.py"})
+    ToolUseBlock(id=call_id, name="Read", input={"path": f"{call_id}.py"})
   )
   return Message(role=Role.ASSISTANT, content=content)
 
 
 def tool_result(
-    call_id: str, content: str, *, is_error: bool = False
+  call_id: str, content: str, *, is_error: bool = False
 ) -> Message:
   """Build one result record for an assistant tool call."""
   return Message(
-      role=Role.USER,
-      content=[
-          ToolResultBlock(
-              tool_use_id=call_id, content=content, is_error=is_error
-          )
-      ],
+    role=Role.USER,
+    content=[
+      ToolResultBlock(tool_use_id=call_id, content=content, is_error=is_error)
+    ],
   )
 
 
 def test_a_raw_record_boundary_never_splits_a_tool_call_from_its_result() -> (
-    None
+  None
 ):
   """The window counts whole turns even when its edge bisects a raw pair.
 
@@ -67,10 +65,10 @@ def test_a_raw_record_boundary_never_splits_a_tool_call_from_its_result() -> (
   ordinary list slicing.
   """
   records = (
-      assistant_call("call-old"),
-      tool_result("call-old", "old result"),
-      assistant_call("call-new"),
-      tool_result("call-new", "new result"),
+    assistant_call("call-old"),
+    tool_result("call-old", "old result"),
+    assistant_call("call-new"),
+    tool_result("call-new", "new result"),
   )
 
   selected = CompleteAssistantTurnSelector().select(records, limit=1)
@@ -86,16 +84,14 @@ def test_tool_evidence_is_rendered_while_reasoning_is_omitted() -> None:
   this test even though it also omits the reasoning sentinel.
   """
   records = (
-      Message(
-          role=Role.ASSISTANT,
-          content=[
-              ReasoningBlock(text="PRIVATE-REASONING-SENTINEL"),
-              ToolUseBlock(
-                  id="call-1", name="Read", input={"path": "models.py"}
-              ),
-          ],
-      ),
-      tool_result("call-1", "class Edition:\n  pass"),
+    Message(
+      role=Role.ASSISTANT,
+      content=[
+        ReasoningBlock(text="PRIVATE-REASONING-SENTINEL"),
+        ToolUseBlock(id="call-1", name="Read", input={"path": "models.py"}),
+      ],
+    ),
+    tool_result("call-1", "class Edition:\n  pass"),
   )
 
   rendered = PairedToolEvidenceRenderer().render(records)
@@ -115,10 +111,10 @@ def test_a_genuinely_missing_result_is_marked() -> None:
 def test_error_status_and_content_are_both_rendered() -> None:
   """A failed tool is evidence, not an output string with lost status."""
   rendered = PairedToolEvidenceRenderer().render(
-      (
-          assistant_call("call-1"),
-          tool_result("call-1", "permission denied", is_error=True),
-      )
+    (
+      assistant_call("call-1"),
+      tool_result("call-1", "permission denied", is_error=True),
+    )
   )
 
   assert "Tool result call-1: error permission denied" in rendered
@@ -129,10 +125,10 @@ def test_truncation_is_visible_and_short_values_are_unmarked() -> None:
   renderer = PairedToolEvidenceRenderer(max_tool_result_chars=5)
 
   short = renderer.render(
-      (assistant_call("call-1"), tool_result("call-1", "short"))
+    (assistant_call("call-1"), tool_result("call-1", "short"))
   )
   long = renderer.render(
-      (assistant_call("call-1"), tool_result("call-1", "longer result"))
+    (assistant_call("call-1"), tool_result("call-1", "longer result"))
   )
 
   assert "not shown" not in short
@@ -143,15 +139,13 @@ def test_truncation_is_visible_and_short_values_are_unmarked() -> None:
 def test_oversized_structured_input_has_its_own_visible_marker() -> None:
   """Tool input clipping is independent of result-output clipping."""
   records = (
-      Message(
-          role=Role.ASSISTANT,
-          content=[
-              ToolUseBlock(
-                  id="call-1", name="Read", input={"path": "a-long-path.py"}
-              )
-          ],
-      ),
-      tool_result("call-1", "short"),
+    Message(
+      role=Role.ASSISTANT,
+      content=[
+        ToolUseBlock(id="call-1", name="Read", input={"path": "a-long-path.py"})
+      ],
+    ),
+    tool_result("call-1", "short"),
   )
 
   rendered = PairedToolEvidenceRenderer(max_tool_input_chars=10).render(records)
@@ -164,13 +158,13 @@ def test_oversized_structured_input_has_its_own_visible_marker() -> None:
 def test_visible_text_can_be_bounded_or_disabled_without_hiding_tools() -> None:
   """The prose control is independent of the positive tool evidence."""
   records = (
-      assistant_call("call-1", text="explain this call"),
-      tool_result("call-1", "result"),
+    assistant_call("call-1", text="explain this call"),
+    tool_result("call-1", "result"),
   )
 
   bounded = PairedToolEvidenceRenderer(max_visible_text_chars=7).render(records)
   disabled = PairedToolEvidenceRenderer(include_visible_text=False).render(
-      records
+    records
   )
 
   assert "Visible text: explain […10 more characters not shown]" in bounded
@@ -182,18 +176,18 @@ def test_visible_text_can_be_bounded_or_disabled_without_hiding_tools() -> None:
 def test_prompt_clipping_does_not_change_the_complete_raw_values() -> None:
   """Prompt bounds do not become destructive bounds on durable evidence."""
   tool_use = ToolUseBlock(
-      id="call-1", name="Read", input={"path": "complete-input.py"}
+    id="call-1", name="Read", input={"path": "complete-input.py"}
   )
   result = ToolResultBlock(
-      tool_use_id="call-1", content="complete result content"
+    tool_use_id="call-1", content="complete result content"
   )
   records = (
-      Message(role=Role.ASSISTANT, content=[tool_use]),
-      Message(role=Role.USER, content=[result]),
+    Message(role=Role.ASSISTANT, content=[tool_use]),
+    Message(role=Role.USER, content=[result]),
   )
 
   rendered = PairedToolEvidenceRenderer(
-      max_tool_input_chars=4, max_tool_result_chars=4
+    max_tool_input_chars=4, max_tool_result_chars=4
   ).render(records)
 
   assert "not shown" in rendered
@@ -207,7 +201,7 @@ class FirstRecordSelector(EvidenceSelector):
 
   @override
   def select(
-      self, records: Sequence[Message], *, limit: int
+    self, records: Sequence[Message], *, limit: int
   ) -> tuple[Message, ...]:
     """Return the oldest record regardless of the configured limit."""
     del limit
@@ -231,16 +225,16 @@ def test_a_policy_can_replace_only_the_selector() -> None:
   """The standard policy state machine consumes an injected selector."""
   judge = RecordingJudge()
   records = (
-      Message(role=Role.ASSISTANT, content=[TextBlock(text="oldest")]),
-      Message(role=Role.ASSISTANT, content=[TextBlock(text="newest")]),
+    Message(role=Role.ASSISTANT, content=[TextBlock(text="oldest")]),
+    Message(role=Role.ASSISTANT, content=[TextBlock(text="newest")]),
   )
   policy = SpeakWhenOffTrack(
-      judge=judge,
-      writer=lambda observation, criterion: "unused",
-      criterion=load_criterion(),
-      budget=0,
-      window=1,
-      selector=FirstRecordSelector(),
+    judge=judge,
+    writer=lambda observation, criterion: "unused",
+    criterion=load_criterion(),
+    budget=0,
+    window=1,
+    selector=FirstRecordSelector(),
   )
 
   policy.consider(Observation(task="task", evidence=records, cursor=2, said=()))
@@ -277,38 +271,38 @@ def test_the_standard_policy_can_replace_only_the_prompt_builder() -> None:
   def transport(payload: Mapping[str, Any]) -> dict[str, Any]:
     payloads.append(dict(payload))
     return {
-        "content": [
-            {
-                "type": "tool_use",
-                "name": "submit_supervision_verdict",
-                "input": {
-                    "off_track": False,
-                    "reason": "fine",
-                    "running_state": "Current checkpoint: inspect",
-                },
-            }
-        ]
+      "content": [
+        {
+          "type": "tool_use",
+          "name": "submit_supervision_verdict",
+          "input": {
+            "off_track": False,
+            "reason": "fine",
+            "running_state": "Current checkpoint: inspect",
+          },
+        }
+      ]
     }
 
   policy = supervising_policy(
-      model="m",
-      transport=transport,
-      budget=0,
-      prompt_builder=SentinelPromptBuilder(),
+    model="m",
+    transport=transport,
+    budget=0,
+    prompt_builder=SentinelPromptBuilder(),
   )
 
   result = policy.consider(
-      Observation(
-          task="task",
-          evidence=(
-              Message(
-                  role=Role.ASSISTANT,
-                  content=[TextBlock(text="EVIDENCE-SENTINEL-9f31")],
-              ),
-          ),
-          cursor=1,
-          said=(),
+    Observation(
+      task="task",
+      evidence=(
+        Message(
+          role=Role.ASSISTANT,
+          content=[TextBlock(text="EVIDENCE-SENTINEL-9f31")],
+        ),
       ),
+      cursor=1,
+      said=(),
+    ),
   )
 
   assert result is None
@@ -322,35 +316,35 @@ def test_the_standard_policy_can_replace_only_the_renderer() -> None:
   def transport(payload: Mapping[str, Any]) -> dict[str, Any]:
     payloads.append(dict(payload))
     return {
-        "content": [
-            {
-                "type": "tool_use",
-                "name": "submit_supervision_verdict",
-                "input": {
-                    "off_track": False,
-                    "reason": "fine",
-                    "running_state": "Current checkpoint: inspect",
-                },
-            }
-        ]
+      "content": [
+        {
+          "type": "tool_use",
+          "name": "submit_supervision_verdict",
+          "input": {
+            "off_track": False,
+            "reason": "fine",
+            "running_state": "Current checkpoint: inspect",
+          },
+        }
+      ]
     }
 
   policy = supervising_policy(
-      model="m", transport=transport, budget=0, renderer=SentinelRenderer()
+    model="m", transport=transport, budget=0, renderer=SentinelRenderer()
   )
 
   policy.consider(
-      Observation(
-          task="task",
-          evidence=(
-              Message(
-                  role=Role.ASSISTANT,
-                  content=[TextBlock(text="EVIDENCE-SENTINEL-9f31")],
-              ),
-          ),
-          cursor=1,
-          said=(),
-      )
+    Observation(
+      task="task",
+      evidence=(
+        Message(
+          role=Role.ASSISTANT,
+          content=[TextBlock(text="EVIDENCE-SENTINEL-9f31")],
+        ),
+      ),
+      cursor=1,
+      said=(),
+    )
   )
 
   assert "CUSTOM-RENDERER" in payloads[0]["messages"][0]["content"]

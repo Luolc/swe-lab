@@ -18,31 +18,31 @@ import pytest
 
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.swebench_pro.unit_test import (
-    REQUIRED_TESTS_NAME,
-    SweBenchProGrader,
-    SweBenchProVerdict,
+  REQUIRED_TESTS_NAME,
+  SweBenchProGrader,
+  SweBenchProVerdict,
 )
 from swe_lab.evaluation.unit_test import (
-    ENTRYSCRIPT_NAME,
-    UnitTestParseObserver,
-    UnitTestTask,
+  ENTRYSCRIPT_NAME,
+  UnitTestParseObserver,
+  UnitTestTask,
 )
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.git.patch import BASELINE_VERIFY_SCRIPT_NAME
 from swe_lab.sandbox import (
-    ArtifactSchema,
-    Contribution,
-    ExecResult,
-    Inline,
-    LocalFile,
-    merge_output_schemas,
-    Mount,
-    Mounts,
-    RunStatus,
-    SandboxError,
-    SandboxFs,
-    SandboxObserver,
-    SandboxSpec,
+  ArtifactSchema,
+  Contribution,
+  ExecResult,
+  Inline,
+  LocalFile,
+  merge_output_schemas,
+  Mount,
+  Mounts,
+  RunStatus,
+  SandboxError,
+  SandboxFs,
+  SandboxObserver,
+  SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.observers.diff_extract import BASE_REF_NAME
@@ -54,9 +54,9 @@ SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
 
 def _fake(tmp_path: Path, **kwargs: object) -> FakeSandbox:
   return FakeSandbox(
-      spec=SPEC,
-      workspace=epath.Path(tmp_path / "ws"),
-      **kwargs,  # pyright: ignore[reportArgumentType]
+    spec=SPEC,
+    workspace=epath.Path(tmp_path / "ws"),
+    **kwargs,  # pyright: ignore[reportArgumentType]
   )
 
 
@@ -86,12 +86,12 @@ class _BareInstance(TaskInstance[SweBenchProVerdict]):
 
   @override
   def unit_test_spec(
-      self,
-      *,
-      apply_patch: bool,
-      patch_name: str = PATCH_NAME,
-      checkout_golden_tests: bool = True,
-      patch_baseline: bool = False,
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
+    checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     raise NotImplementedError("this instance compiles no eval")
 
@@ -115,7 +115,7 @@ class _ScriptTask(Task):
 
   @override
   def action(
-      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+    self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
   ) -> ExecResult:
     del instance
     return sb.run_script("main.sh", timeout=timeout)
@@ -154,7 +154,7 @@ def test_merge_output_schemas_keeps_declaration_order():
 def test_merge_output_schemas_refuses_a_duplicate_name():
   with pytest.raises(SandboxError, match="patch.diff"):
     merge_output_schemas(
-        (ArtifactSchema("patch.diff"),), (ArtifactSchema("patch.diff"),)
+      (ArtifactSchema("patch.diff"),), (ArtifactSchema("patch.diff"),)
     )
 
 
@@ -162,51 +162,50 @@ def test_merge_output_schemas_refuses_a_duplicate_name():
 
 
 def test_execute_composes_backend_task_and_extra_observers_in_order(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   events: list[str] = []
 
   class _MeteredFake(FakeSandbox):
-
     @override
     def observers(self) -> tuple[SandboxObserver, ...]:
       return (RecordingObserver(name="backend", events=events),)
 
   sandbox = _MeteredFake(spec=SPEC, workspace=epath.Path(tmp_path / "ws"))
   task = _ScriptTask(
-      task_observers=(RecordingObserver(name="task", events=events),),
+    task_observers=(RecordingObserver(name="task", events=events),),
   )
   result = task.execute(
-      sandbox,
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
-      extra_observers=(RecordingObserver(name="extra", events=events),),
+    sandbox,
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
+    extra_observers=(RecordingObserver(name="extra", events=events),),
   )
   assert result.run.status is RunStatus.SUCCESS
   # ADR-0007 §3: backend first (it measures the whole run), the task's own
   # next, the caller's extras last (they see the run post-processed).
   assert events == [
-      "backend.mounts",
-      "task.mounts",
-      "extra.mounts",
-      "backend.before_create",
-      "task.before_create",
-      "extra.before_create",
-      "backend.after_create",
-      "task.after_create",
-      "extra.after_create",
-      "backend.before_destroy",
-      "task.before_destroy",
-      "extra.before_destroy",
-      "backend.after_destroy",
-      "task.after_destroy",
-      "extra.after_destroy",
+    "backend.mounts",
+    "task.mounts",
+    "extra.mounts",
+    "backend.before_create",
+    "task.before_create",
+    "extra.before_create",
+    "backend.after_create",
+    "task.after_create",
+    "extra.after_create",
+    "backend.before_destroy",
+    "task.before_destroy",
+    "extra.before_destroy",
+    "backend.after_destroy",
+    "task.after_destroy",
+    "extra.after_destroy",
   ]
 
 
 def test_a_required_output_whose_fetch_never_landed_fails_the_attempt(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # The collect step records only what actually landed, so a required artifact
   # a best-effort `fetch` failed to produce is simply absent from `artifacts`,
@@ -215,26 +214,25 @@ def test_a_required_output_whose_fetch_never_landed_fails_the_attempt(
   # to) made this same check *pass* a run whose required artifact was never
   # there — a false success, before persist crashed on the phantom path.
   class _SilentFetch(FakeSandbox):
-
     @override
     def fetch(self, name: str, dest: epath.PathLike) -> None:
       if name != "thing.json":
         super().fetch(name, dest)
 
   task = _ScriptTask(
-      task_observers=(
-          _DeclaringObserver(schema=(ArtifactSchema("thing.json"),)),
-          RecordingObserver(
-              name="producer",
-              contribution=Contribution(artifacts={"thing.json": "thing.json"}),
-          ),
+    task_observers=(
+      _DeclaringObserver(schema=(ArtifactSchema("thing.json"),)),
+      RecordingObserver(
+        name="producer",
+        contribution=Contribution(artifacts={"thing.json": "thing.json"}),
       ),
+    ),
   )
   result = task.execute(
-      _SilentFetch(spec=SPEC, workspace=epath.Path(tmp_path / "ws")),
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
+    _SilentFetch(spec=SPEC, workspace=epath.Path(tmp_path / "ws")),
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
   )
   # The run itself was fine — nothing raised, nothing timed out ...
   assert result.run.status is RunStatus.SUCCESS
@@ -246,20 +244,20 @@ def test_a_required_output_whose_fetch_never_landed_fails_the_attempt(
 
 
 def test_execute_derives_the_schema_from_every_composed_observer(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   declared = ArtifactSchema("thing.json", description="the thing")
   task = _ScriptTask(
-      task_observers=(_DeclaringObserver(schema=(declared,)),),
+    task_observers=(_DeclaringObserver(schema=(declared,)),),
   )
   result = task.execute(
-      _fake(tmp_path),
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
-      extra_observers=(
-          _DeclaringObserver(schema=(ArtifactSchema("extra.log"),)),
-      ),
+    _fake(tmp_path),
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
+    extra_observers=(
+      _DeclaringObserver(schema=(ArtifactSchema("extra.log"),)),
+    ),
   )
   assert result.output_schema == (declared, ArtifactSchema("extra.log"))
 
@@ -273,7 +271,7 @@ def test_execute_refuses_a_duplicate_output_name_at_assembly(tmp_path: Path):
   task = _ScriptTask(task_observers=(clashing, clashing))
   with pytest.raises(SandboxError, match="patch.diff"):
     task.execute(
-        sandbox, _BareInstance(), output_dir=tmp_path / "out", timeout=10.0
+      sandbox, _BareInstance(), output_dir=tmp_path / "out", timeout=10.0
     )
   assert sandbox.calls == []  # never went up
 
@@ -283,11 +281,11 @@ def test_execute_refuses_a_duplicate_mount_target_at_assembly(tmp_path: Path):
   task = _ScriptTask(task_mounts={"input.json": Mount(Inline(b"{}"))})
   with pytest.raises(SandboxError, match="input.json"):
     task.execute(
-        sandbox,
-        _BareInstance(),
-        output_dir=tmp_path / "out",
-        timeout=10.0,
-        extra_mounts={"input.json": Mount(Inline(b"{}"))},
+      sandbox,
+      _BareInstance(),
+      output_dir=tmp_path / "out",
+      timeout=10.0,
+      extra_mounts={"input.json": Mount(Inline(b"{}"))},
     )
   assert sandbox.calls == []
 
@@ -296,17 +294,17 @@ def test_execute_stages_instance_task_and_extra_mounts(tmp_path: Path):
   sandbox = _fake(tmp_path)
   task = _ScriptTask(task_mounts={"task.txt": Mount(Inline(b"T"))})
   result = task.execute(
-      sandbox,
-      _BareInstance(extra_mounts={"instance.txt": Mount(Inline(b"I"))}),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
-      extra_mounts={"edge.txt": Mount(Inline(b"E"), read_only=True)},
+    sandbox,
+    _BareInstance(extra_mounts={"instance.txt": Mount(Inline(b"I"))}),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
+    extra_mounts={"edge.txt": Mount(Inline(b"E"), read_only=True)},
   )
   assert result.run.status is RunStatus.SUCCESS
   for name, content in [
-      ("instance.txt", "I"),
-      ("task.txt", "T"),
-      ("edge.txt", "E"),
+    ("instance.txt", "I"),
+    ("task.txt", "T"),
+    ("edge.txt", "E"),
   ]:
     assert (sandbox.workspace / name).read_text() == content
 
@@ -317,10 +315,10 @@ def test_execute_stages_instance_task_and_extra_mounts(tmp_path: Path):
 def test_execute_records_a_setup_failure_instead_of_raising(tmp_path: Path):
   task = _ScriptTask()
   result = task.execute(
-      _fake(tmp_path, up_error=SandboxError("no docker")),
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
+    _fake(tmp_path, up_error=SandboxError("no docker")),
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
   )
   assert result.run.status is RunStatus.SETUP_ERROR
   assert isinstance(result.run.error, SandboxError)
@@ -331,26 +329,26 @@ def test_execute_promotes_a_timed_out_action(tmp_path: Path):
   killed = ExecResult(124, "", "", timed_out=True)
   task = _ScriptTask()
   result = task.execute(
-      _fake(tmp_path, run_results=[killed]),
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
+    _fake(tmp_path, run_results=[killed]),
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
   )
   assert result.run.status is RunStatus.TIMEOUT
   assert result.exec_result == killed
 
 
 def test_execute_hands_the_outcome_to_observers_carrying_the_fields(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   carrier = _CarrierObserver()
   bystander = RecordingObserver()  # no such fields; must be left alone
   task = _ScriptTask(task_observers=(carrier, bystander))
   result = task.execute(
-      _fake(tmp_path, run_results=[ExecResult(3, "out", "err")]),
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
+    _fake(tmp_path, run_results=[ExecResult(3, "out", "err")]),
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
   )
   assert carrier.exec_result == ExecResult(3, "out", "err")
   assert carrier.wall_seconds is not None and carrier.wall_seconds >= 0.0
@@ -358,7 +356,7 @@ def test_execute_hands_the_outcome_to_observers_carrying_the_fields(
 
 
 def test_the_handoff_never_clobbers_the_actions_own_accounting(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # An eval's retry loop hands its parser the wall time it *means* (script
   # cost, excluding grading); the generic handoff must not overwrite it.
@@ -367,17 +365,16 @@ def test_the_handoff_never_clobbers_the_actions_own_accounting(
   @final
   @dataclass
   class _SelfAccountingTask(Task):
-
     @override
     def observers(
-        self, instance: TaskInstance[Any]
+      self, instance: TaskInstance[Any]
     ) -> Sequence[SandboxObserver]:
       del instance
       return (carrier,)
 
     @override
     def action(
-        self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
     ) -> ExecResult:
       del instance
       result = sb.run_script("main.sh", timeout=timeout)
@@ -387,10 +384,10 @@ def test_the_handoff_never_clobbers_the_actions_own_accounting(
 
   task = _SelfAccountingTask()
   task.execute(
-      _fake(tmp_path),
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
+    _fake(tmp_path),
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
   )
   assert carrier.wall_seconds == 123.0
 
@@ -418,7 +415,7 @@ class _InputTask(Task):
 
   @override
   def action(
-      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+    self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
   ) -> ExecResult:
     del instance
     self.seen.append(sb.read(self.input_name))
@@ -426,7 +423,7 @@ class _InputTask(Task):
 
 
 def test_the_inputs_builder_fills_a_declared_input_from_the_live_session(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # The standalone mode: no edge, no caller bytes — the task builds its own
   # input, and it runs INSIDE the session, so it can compose from the
@@ -435,14 +432,14 @@ def test_the_inputs_builder_fills_a_declared_input_from_the_live_session(
     return {"note.txt": sb.read("seed.txt") + instance.prompt().encode()}
 
   task = _InputTask(
-      inputs_builder=build,
-      task_mounts={"seed.txt": Mount(Inline(b"SEED:"))},
+    inputs_builder=build,
+    task_mounts={"seed.txt": Mount(Inline(b"SEED:"))},
   )
   result = task.execute(
-      _fake(tmp_path),
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
+    _fake(tmp_path),
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
   )
   assert result.run.status is RunStatus.SUCCESS
   assert task.seen == [b"SEED:SOLVE THIS"]
@@ -457,10 +454,10 @@ def test_the_inputs_builder_may_only_fill_declared_inputs(tmp_path: Path):
 
   task = _InputTask(inputs_builder=build)
   result = task.execute(
-      _fake(tmp_path),
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
+    _fake(tmp_path),
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
   )
   assert result.run.status is RunStatus.RUN_ERROR
   assert "sneaky.txt" in str(result.run.error)
@@ -468,7 +465,7 @@ def test_the_inputs_builder_may_only_fill_declared_inputs(tmp_path: Path):
 
 
 def test_the_inputs_builder_never_silently_overwrites_a_staged_input(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # A chain that supplies the input by edge must set inputs_builder=None;
   # the collision is loud on purpose, rather than one source quietly losing.
@@ -478,11 +475,11 @@ def test_the_inputs_builder_never_silently_overwrites_a_staged_input(
 
   task = _InputTask(inputs_builder=build)
   result = task.execute(
-      _fake(tmp_path),
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
-      extra_mounts={"note.txt": Mount(Inline(b"FROM THE EDGE"))},
+    _fake(tmp_path),
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
+    extra_mounts={"note.txt": Mount(Inline(b"FROM THE EDGE"))},
   )
   assert result.run.status is RunStatus.RUN_ERROR
   assert "note.txt" in str(result.run.error)
@@ -490,7 +487,7 @@ def test_the_inputs_builder_never_silently_overwrites_a_staged_input(
 
 
 def test_a_required_input_the_builder_left_out_fails_the_attempt(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # Requiredness is verified before the action either way; with a builder
   # present that verdict can only be reached in-session, so it is recorded
@@ -501,10 +498,10 @@ def test_a_required_input_the_builder_left_out_fails_the_attempt(
 
   task = _InputTask(inputs_builder=build)
   result = task.execute(
-      _fake(tmp_path),
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
+    _fake(tmp_path),
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
   )
   assert result.run.status is RunStatus.RUN_ERROR
   assert "note.txt" in str(result.run.error)
@@ -517,7 +514,7 @@ def test_a_required_input_the_builder_left_out_fails_the_attempt(
 def _verdict(result: AttemptResult) -> SweBenchProVerdict | None:
   """Read the graded verdict back off the run's own observers."""
   parse = next(
-      o for o in result.observers if isinstance(o, UnitTestParseObserver)
+    o for o in result.observers if isinstance(o, UnitTestParseObserver)
   )
   verdict = parse.verdict
   assert verdict is None or isinstance(verdict, SweBenchProVerdict)
@@ -550,23 +547,23 @@ class _EvalInstance(TaskInstance[SweBenchProVerdict]):
 
   @override
   def unit_test_spec(
-      self,
-      *,
-      apply_patch: bool,
-      patch_name: str = PATCH_NAME,
-      checkout_golden_tests: bool = True,
-      patch_baseline: bool = False,
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
+    checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     del apply_patch, checkout_golden_tests
     output = json.dumps({"tests": [{"name": "a", "status": "PASSED"}]})
     return UnitTestSpec(
-        eval_script="echo eval\n",
-        mounts={
-            REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
-            "output.json": Mount(Inline(output.encode())),
-        },
-        grader=SweBenchProGrader(),
-        patch_name=patch_name,
+      eval_script="echo eval\n",
+      mounts={
+        REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
+        "output.json": Mount(Inline(output.encode())),
+      },
+      grader=SweBenchProGrader(),
+      patch_name=patch_name,
     )
 
 
@@ -578,8 +575,8 @@ def test_the_patch_input_is_fixed_by_configuration():
   # Two names by default: a patch is only interpretable with the base it was
   # taken against, so they are declared — and travel — together (ADR-0014).
   assert [schema.name for schema in task.input_schema()] == [
-      PATCH_NAME,
-      BASE_REF_NAME,
+    PATCH_NAME,
+    BASE_REF_NAME,
   ]
   assert PATCH_NAME not in task.mounts(instance)
   # …but the eval script was still compiled to apply the patch, so whatever
@@ -588,7 +585,7 @@ def test_the_patch_input_is_fixed_by_configuration():
 
 
 def test_a_callers_literal_patch_arrives_through_the_same_channel(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # A standalone caller (the gold self-check, a CLI) feeds the bytes it
   # already has through extra_mounts — the exact channel a workflow edge
@@ -596,14 +593,14 @@ def test_a_callers_literal_patch_arrives_through_the_same_channel(
   sandbox = _fake(tmp_path)
   task = UnitTestTask()
   result = task.execute(
-      sandbox,
-      _EvalInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
-      extra_mounts={
-          PATCH_NAME: Mount(Inline(b"CANDIDATE")),
-          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
-      },
+    sandbox,
+    _EvalInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
+    extra_mounts={
+      PATCH_NAME: Mount(Inline(b"CANDIDATE")),
+      BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+    },
   )
   assert result.run.status is RunStatus.SUCCESS
   assert (sandbox.workspace / PATCH_NAME).read_text() == "CANDIDATE"
@@ -618,16 +615,16 @@ def test_a_workflow_edge_mounts_the_upstream_patch(tmp_path: Path):
   sandbox = _fake(tmp_path)
   task = UnitTestTask()
   result = task.execute(
-      sandbox,
-      _EvalInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
-      # what a workflow edge does: resolve input_schema() names against the
-      # store and mount them read-only
-      extra_mounts={
-          PATCH_NAME: Mount(LocalFile(epath.Path(upstream)), read_only=True),
-          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
-      },
+    sandbox,
+    _EvalInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
+    # what a workflow edge does: resolve input_schema() names against the
+    # store and mount them read-only
+    extra_mounts={
+      PATCH_NAME: Mount(LocalFile(epath.Path(upstream)), read_only=True),
+      BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+    },
   )
   assert result.run.status is RunStatus.SUCCESS
   assert (sandbox.workspace / PATCH_NAME).read_text() == "FROM UPSTREAM"
@@ -642,7 +639,7 @@ def test_a_missing_required_input_fails_at_assembly(tmp_path: Path):
   task = UnitTestTask()
   with pytest.raises(SandboxError, match=PATCH_NAME):
     task.execute(
-        sandbox, _EvalInstance(), output_dir=tmp_path / "out", timeout=10.0
+      sandbox, _EvalInstance(), output_dir=tmp_path / "out", timeout=10.0
     )
   assert sandbox.calls == []  # never went up
 
@@ -656,10 +653,10 @@ def test_grading_the_base_commit_declares_no_input():
 def test_the_task_output_schema_names_the_methods_outputs(tmp_path: Path):
   task = UnitTestTask(apply_patch=False)
   result = task.execute(
-      _fake(tmp_path),
-      _EvalInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
+    _fake(tmp_path),
+    _EvalInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
   )
   assert "unit_test.entryscript.sh" in [s.name for s in result.output_schema]
 
@@ -668,7 +665,7 @@ def test_the_task_output_schema_names_the_methods_outputs(tmp_path: Path):
 
 
 def test_coding_agent_task_defaults_the_prompt_to_the_instance(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # The wrapper path always passes the prompt; a workflow constructs the task
   # from the instance alone, and the instance's own prompt must reach the
@@ -699,12 +696,12 @@ def test_coding_agent_task_defaults_the_prompt_to_the_instance(
 
     @override
     def run(
-        self,
-        sb: SandboxFs,
-        *,
-        prompt: str,
-        timeout: float,
-        env: Mapping[str, str] | None = None,
+      self,
+      sb: SandboxFs,
+      *,
+      prompt: str,
+      timeout: float,
+      env: Mapping[str, str] | None = None,
     ) -> ExecResult:
       prompts.append(prompt)
       return sb.run_script("probe.sh", timeout=timeout, env=env)
@@ -724,10 +721,10 @@ def test_coding_agent_task_defaults_the_prompt_to_the_instance(
   sandbox = _fake(tmp_path)
   task = CodingAgentTask(harness=_PromptProbeHarness())
   result = task.execute(
-      sandbox,
-      _BareInstance(extra_mounts={"instance.txt": Mount(Inline(b"I"))}),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
+    sandbox,
+    _BareInstance(extra_mounts={"instance.txt": Mount(Inline(b"I"))}),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
   )
   assert result.run.status is RunStatus.SUCCESS
   assert prompts == ["SOLVE THIS"]  # the instance's own prompt
@@ -740,22 +737,22 @@ def test_coding_agent_task_defaults_the_prompt_to_the_instance(
 
 
 def _graded_eval_run(
-    tmp_path: Path, *, passing: bool
+  tmp_path: Path, *, passing: bool
 ) -> tuple[UnitTestTask[SweBenchProVerdict], AttemptResult]:
   """Run an eval task whose staged output grades pass/fail."""
   instance: TaskInstance[SweBenchProVerdict] = (
-      _EvalInstance() if passing else _FailingEvalInstance()
+    _EvalInstance() if passing else _FailingEvalInstance()
   )
   task: UnitTestTask[SweBenchProVerdict] = UnitTestTask()
   result = task.execute(
-      _fake(tmp_path),
-      instance,
-      output_dir=tmp_path / "out",
-      timeout=10.0,
-      extra_mounts={
-          PATCH_NAME: Mount(Inline(b"P")),
-          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
-      },
+    _fake(tmp_path),
+    instance,
+    output_dir=tmp_path / "out",
+    timeout=10.0,
+    extra_mounts={
+      PATCH_NAME: Mount(Inline(b"P")),
+      BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+    },
   )
   return task, result
 
@@ -781,22 +778,22 @@ class _FailingEvalInstance(TaskInstance[SweBenchProVerdict]):
 
   @override
   def unit_test_spec(
-      self,
-      *,
-      apply_patch: bool,
-      patch_name: str = PATCH_NAME,
-      checkout_golden_tests: bool = True,
-      patch_baseline: bool = False,
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
+    checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     del apply_patch, checkout_golden_tests
     return UnitTestSpec(
-        eval_script="echo eval\n",
-        mounts={
-            REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
-            "output.json": Mount(Inline(json.dumps({"tests": []}).encode())),
-        },
-        grader=SweBenchProGrader(),
-        patch_name=patch_name,
+      eval_script="echo eval\n",
+      mounts={
+        REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
+        "output.json": Mount(Inline(json.dumps({"tests": []}).encode())),
+      },
+      grader=SweBenchProGrader(),
+      patch_name=patch_name,
     )
 
 
@@ -820,19 +817,19 @@ def test_an_eval_that_never_graded_is_invalid(tmp_path: Path):
   # a failure (and a retryable one), not an answer.
   task = UnitTestTask()
   sandbox = FakeSandbox(
-      spec=SPEC,
-      workspace=epath.Path(tmp_path / "ws"),
-      up_error=SandboxError("no docker"),
+    spec=SPEC,
+    workspace=epath.Path(tmp_path / "ws"),
+    up_error=SandboxError("no docker"),
   )
   result = task.execute(
-      sandbox,
-      _EvalInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
-      extra_mounts={
-          PATCH_NAME: Mount(Inline(b"P")),
-          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
-      },
+    sandbox,
+    _EvalInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
+    extra_mounts={
+      PATCH_NAME: Mount(Inline(b"P")),
+      BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+    },
   )
   assert task.outputs_valid(result) is False
   assert task.should_retry(result) is True
@@ -844,10 +841,10 @@ def test_an_eval_that_never_graded_is_invalid(tmp_path: Path):
 def _timed_out(tmp_path: Path, task: Task) -> AttemptResult:
   """Execute ``task`` against a sandbox whose action is killed on timeout."""
   return task.execute(
-      _fake(tmp_path, run_results=[ExecResult(124, "", "", timed_out=True)]),
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
+    _fake(tmp_path, run_results=[ExecResult(124, "", "", timed_out=True)]),
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
   )
 
 
@@ -874,10 +871,9 @@ def test_the_timeout_veto_cannot_be_reinstated_by_a_task(tmp_path: Path):
   @final
   @dataclass
   class _AlwaysWants(Task):
-
     @override
     def action(
-        self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
     ) -> ExecResult:
       del instance
       return sb.run_script("main.sh", timeout=timeout)
@@ -898,13 +894,13 @@ def test_a_non_timeout_attempt_is_left_to_the_task(tmp_path: Path):
   # The gate adds nothing where the veto does not apply: an ordinary failed
   # attempt is exactly what the task said it was.
   task = _ScriptTask(
-      task_observers=(_DeclaringObserver(schema=(ArtifactSchema("gone"),)),)
+    task_observers=(_DeclaringObserver(schema=(ArtifactSchema("gone"),)),)
   )
   result = task.execute(
-      _fake(tmp_path),
-      _BareInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
+    _fake(tmp_path),
+    _BareInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
   )
   assert result.run.status is RunStatus.SUCCESS
   assert retry_permitted(task, result) is task.should_retry(result) is True
@@ -916,14 +912,14 @@ def test_a_timed_out_eval_is_not_retried_by_default(tmp_path: Path):
   # pays the full timeout again to reach the same place.
   task: UnitTestTask[SweBenchProVerdict] = UnitTestTask()
   result = task.execute(
-      _fake(tmp_path, run_results=[ExecResult(124, "", "", timed_out=True)]),
-      _EvalInstance(),
-      output_dir=tmp_path / "out",
-      timeout=10.0,
-      extra_mounts={
-          PATCH_NAME: Mount(Inline(b"P")),
-          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
-      },
+    _fake(tmp_path, run_results=[ExecResult(124, "", "", timed_out=True)]),
+    _EvalInstance(),
+    output_dir=tmp_path / "out",
+    timeout=10.0,
+    extra_mounts={
+      PATCH_NAME: Mount(Inline(b"P")),
+      BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+    },
   )
   assert result.run.status is RunStatus.TIMEOUT
   assert retry_permitted(task, result) is False

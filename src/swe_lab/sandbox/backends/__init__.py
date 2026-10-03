@@ -25,25 +25,25 @@ from ..sandbox import Sandbox
 from ..spec import SandboxSpec
 from .ghjob import GitHubJobSandbox
 from .host import (
-    DockerHostSandbox,
-    HostMetricsObserver,
+  DockerHostSandbox,
+  HostMetricsObserver,
 )
 
 __all__ = [
-    "DockerHostSandbox",
-    "DockerHostSandboxConfig",
-    "GhjobSandboxConfig",
-    "GitHubJobSandbox",
-    "HostMetricsObserver",
-    "SandboxConfig",
-    "SandboxFactory",
-    "backend_of",
-    "build_sandbox",
-    "build_sandbox_config",
-    "register_sandbox",
-    "registered_backends",
-    "sandbox_config_type",
-    "sandbox_factory",
+  "DockerHostSandbox",
+  "DockerHostSandboxConfig",
+  "GhjobSandboxConfig",
+  "GitHubJobSandbox",
+  "HostMetricsObserver",
+  "SandboxConfig",
+  "SandboxFactory",
+  "backend_of",
+  "build_sandbox",
+  "build_sandbox_config",
+  "register_sandbox",
+  "registered_backends",
+  "sandbox_config_type",
+  "sandbox_factory",
 ]
 
 
@@ -122,10 +122,10 @@ _REGISTRY: dict[str, tuple[SandboxFactory, type[SandboxConfig]]] = {}
 
 
 def register_sandbox(
-    name: str,
-    factory: SandboxFactory,
-    *,
-    config_type: type[SandboxConfig] = SandboxConfig,
+  name: str,
+  factory: SandboxFactory,
+  *,
+  config_type: type[SandboxConfig] = SandboxConfig,
 ) -> None:
   """Register a sandbox factory (and its config type) under a backend name.
 
@@ -149,7 +149,7 @@ def _lookup(name: str) -> tuple[SandboxFactory, type[SandboxConfig]]:
     return _REGISTRY[name]
   except KeyError:
     raise SandboxError(
-        f"unknown backend {name!r}; registered: {registered_backends()}"
+      f"unknown backend {name!r}; registered: {registered_backends()}"
     ) from None
 
 
@@ -223,8 +223,8 @@ def backend_of(config: SandboxConfig) -> str:
     if isinstance(config, config_type) and config_type is not SandboxConfig:
       return name
   raise SandboxError(
-      f"no registered backend consumes {declared.__name__};"
-      f" registered: {registered_backends()}"
+    f"no registered backend consumes {declared.__name__};"
+    f" registered: {registered_backends()}"
   )
 
 
@@ -258,19 +258,19 @@ def build_sandbox(name: str, spec: SandboxSpec, **settings: Any) -> Sandbox:
     config = config_type(**settings)
   except TypeError as error:
     raise SandboxError(
-        f"backend {name!r} ({config_type.__name__}) rejects these settings:"
-        f" {error}"
+      f"backend {name!r} ({config_type.__name__}) rejects these settings:"
+      f" {error}"
     ) from error
   return factory(spec, config)
 
 
 def _local_workspace(
-    config: DockerHostSandboxConfig | GhjobSandboxConfig, name: str
+  config: DockerHostSandboxConfig | GhjobSandboxConfig, name: str
 ) -> epath.Path:
   """Return the required host workspace, or fail if a local backend has none."""
   if config.workspace is None:
     raise SandboxError(
-        f"backend {name!r} runs locally and needs a workspace directory"
+      f"backend {name!r} runs locally and needs a workspace directory"
     )
   return config.workspace
 
@@ -278,36 +278,36 @@ def _local_workspace(
 def _build_host(spec: SandboxSpec, config: SandboxConfig) -> Sandbox:
   if not isinstance(config, DockerHostSandboxConfig):
     raise SandboxError(
-        f"backend 'host' consumes DockerHostSandboxConfig, got"
-        f" {type(config).__name__}"
+      f"backend 'host' consumes DockerHostSandboxConfig, got"
+      f" {type(config).__name__}"
     )
   return DockerHostSandbox(
-      spec=spec,
-      workspace=_local_workspace(config, "host"),
-      network=config.network,
-      pull=config.pull,
-      shell=config.shell,
-      env=dict(config.env),
-      pass_env=config.pass_env,
+    spec=spec,
+    workspace=_local_workspace(config, "host"),
+    network=config.network,
+    pull=config.pull,
+    shell=config.shell,
+    env=dict(config.env),
+    pass_env=config.pass_env,
   )
 
 
 def _build_ghjob(spec: SandboxSpec, config: SandboxConfig) -> Sandbox:
   if not isinstance(config, GhjobSandboxConfig):
     raise SandboxError(
-        f"backend 'ghjob' consumes GhjobSandboxConfig, got"
-        f" {type(config).__name__}"
+      f"backend 'ghjob' consumes GhjobSandboxConfig, got"
+      f" {type(config).__name__}"
     )
   if not config.network:
     # The job container is already live; its network cannot be cut. Refuse
     # loudly — a run that DECLARED offline semantics must not get online.
     raise SandboxError("backend 'ghjob' cannot honor network=False")
   return GitHubJobSandbox(
-      spec=spec,
-      workspace=_local_workspace(config, "ghjob"),
-      shell=config.shell,
-      env=dict(config.env),
-      pass_env=config.pass_env,
+    spec=spec,
+    workspace=_local_workspace(config, "ghjob"),
+    shell=config.shell,
+    env=dict(config.env),
+    pass_env=config.pass_env,
   )
 
 

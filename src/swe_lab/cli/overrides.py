@@ -35,16 +35,16 @@ from swe_lab.workflow import WorkflowEntry
 # Entry fields an override may not *set*, and why — each message is the whole
 # explanation a caller gets.
 _FIXED_FIELDS: Mapping[str, str] = {
-    "key": (
-        "an entry's key is its identity — the store segment its records live"
-        " under, what resume matches, and what later entries' bindings name."
-        " Changing it mid-resolution would re-home a run's records and make"
-        " every other override order-dependent"
-    ),
-    "task": (
-        "a task is not a value an argument can spell; override its fields"
-        " instead (or swap its harness by name)"
-    ),
+  "key": (
+    "an entry's key is its identity — the store segment its records live"
+    " under, what resume matches, and what later entries' bindings name."
+    " Changing it mid-resolution would re-home a run's records and make"
+    " every other override order-dependent"
+  ),
+  "task": (
+    "a task is not a value an argument can spell; override its fields"
+    " instead (or swap its harness by name)"
+  ),
 }
 
 # Field types resolved from a registry when the value is a bare name rather
@@ -52,8 +52,8 @@ _FIXED_FIELDS: Mapping[str, str] = {
 # `--rollout.sandbox=ghjob`. Both swap the whole object for that name's
 # default; `--rollout.sandbox.network=false` then walks into it.
 _REGISTRIES: Mapping[type, typing.Callable[[str], object]] = {
-    Harness: build_harness,
-    SandboxConfig: build_sandbox_config,
+  Harness: build_harness,
+  SandboxConfig: build_sandbox_config,
 }
 
 
@@ -99,15 +99,15 @@ def parse_overrides(args: Sequence[str]) -> list[Override]:
   for arg in args:
     if not arg.startswith("--") or "=" not in arg:
       raise OverrideError(
-          f"unrecognized argument {arg!r}; overrides are spelled"
-          " --<entry>.<field-path>=<value>"
+        f"unrecognized argument {arg!r}; overrides are spelled"
+        " --<entry>.<field-path>=<value>"
       )
     target, _, value = arg[2:].partition("=")
     entry, _, rest = target.partition(".")
     if not entry or not rest:
       raise OverrideError(
-          f"{arg!r}: an override names an entry and a field path, as in"
-          " --rollout.harness.model=opus"
+        f"{arg!r}: an override names an entry and a field path, as in"
+        " --rollout.harness.model=opus"
       )
     path = tuple(rest.split("."))
     if any(not segment for segment in path):
@@ -116,7 +116,7 @@ def parse_overrides(args: Sequence[str]) -> list[Override]:
       # Two values for one field is a mistake in either direction; keeping the
       # last would hide it, like every other duplicate in this codebase.
       raise OverrideError(
-          f"{arg!r} overrides the same field as {seen[(entry, path)]!r}"
+        f"{arg!r} overrides the same field as {seen[(entry, path)]!r}"
       )
     seen[(entry, path)] = arg
     parsed.append(Override(entry=entry, path=path, value=value, spelling=arg))
@@ -124,7 +124,7 @@ def parse_overrides(args: Sequence[str]) -> list[Override]:
 
 
 def apply_overrides(
-    entries: Sequence[WorkflowEntry], overrides: Sequence[Override]
+  entries: Sequence[WorkflowEntry], overrides: Sequence[Override]
 ) -> tuple[WorkflowEntry, ...]:
   """Return the entries with every override applied.
 
@@ -149,8 +149,8 @@ def apply_overrides(
   for override in overrides:
     if override.entry not in by_key:
       raise OverrideError(
-          f"{override.spelling}: no entry {override.entry!r} in this workflow"
-          f" (entries: {', '.join(by_key)})"
+        f"{override.spelling}: no entry {override.entry!r} in this workflow"
+        f" (entries: {', '.join(by_key)})"
       )
   for override in sorted(overrides, key=lambda o: len(o.path)):
     by_key[override.entry] = _override_entry(by_key[override.entry], override)
@@ -185,9 +185,9 @@ def _override_entry(entry: WorkflowEntry, override: Override) -> WorkflowEntry:
   if any(field.name == head for field in fields(entry.task)):
     return replace(entry, task=_rebuilt(entry.task, override.path, override))
   raise OverrideError(
-      f"{override.spelling}: {head!r} is not a field of"
-      f" {type(entry.task).__name__} ({_field_names(entry.task)}) or of"
-      f" {type(entry).__name__} ({_field_names(entry)})"
+    f"{override.spelling}: {head!r} is not a field of"
+    f" {type(entry.task).__name__} ({_field_names(entry.task)}) or of"
+    f" {type(entry).__name__} ({_field_names(entry)})"
   )
 
 
@@ -210,22 +210,22 @@ def _rebuilt(obj: Any, path: tuple[str, ...], override: Override) -> Any:
   by_name = {field.name: field for field in fields(obj)}
   if head not in by_name:
     raise OverrideError(
-        f"{override.spelling}: {head!r} is not a field of"
-        f" {type(obj).__name__} ({_field_names(obj)})"
+      f"{override.spelling}: {head!r} is not a field of"
+      f" {type(obj).__name__} ({_field_names(obj)})"
     )
   annotation = _hints(type(obj)).get(head)
   if annotation is None:
     raise OverrideError(
-        f"{override.spelling}: {type(obj).__name__}.{head} has an annotation"
-        " that cannot be resolved, so it is not overridable"
+      f"{override.spelling}: {type(obj).__name__}.{head} has an annotation"
+      " that cannot be resolved, so it is not overridable"
     )
   if not rest:
     return replace(obj, **{head: _coerce(annotation, override)})
   current = getattr(obj, head)
   if not is_dataclass(current):
     raise OverrideError(
-        f"{override.spelling}: {type(obj).__name__}.{head} is a"
-        f" {type(current).__name__}, which has no fields to walk into"
+      f"{override.spelling}: {type(obj).__name__}.{head} is a"
+      f" {type(current).__name__}, which has no fields to walk into"
     )
   return replace(obj, **{head: _rebuilt(current, rest, override)})
 
@@ -254,7 +254,7 @@ def _hints(cls: type) -> Mapping[str, Any]:
 def _field_names(obj: Any) -> str:
   """Return an object's overridable field names, for an error message."""
   return ", ".join(
-      field.name for field in fields(obj) if field.name not in _FIXED_FIELDS
+    field.name for field in fields(obj) if field.name not in _FIXED_FIELDS
   )
 
 
@@ -298,8 +298,8 @@ def _coerce(annotation: Any, override: Override) -> Any:
     if len(inner) == 1:
       return _coerce(inner[0], override)
     raise OverrideError(
-        f"{override.spelling}: {annotation} has several concrete types, so it"
-        " is not overridable"
+      f"{override.spelling}: {annotation} has several concrete types, so it"
+      " is not overridable"
     )
   if origin in (tuple, list, Sequence):
     return tuple(part for part in raw.split(",") if part)
@@ -308,8 +308,7 @@ def _coerce(annotation: Any, override: Override) -> Any:
   if isinstance(annotation, type):
     return _coerce_scalar(annotation, override)
   raise OverrideError(
-      f"{override.spelling}: {annotation} is not a type this can build from"
-      " text"
+    f"{override.spelling}: {annotation} is not a type this can build from text"
   )
 
 
@@ -341,7 +340,7 @@ def _coerce_scalar(annotation: type, override: Override) -> Any:
     except ValueError:
       values = ", ".join(str(member.value) for member in annotation)
       raise OverrideError(
-          f"{override.spelling}: expected one of {values}"
+        f"{override.spelling}: expected one of {values}"
       ) from None
   return _coerce_plain(annotation, override)
 
@@ -374,18 +373,18 @@ def _coerce_plain(annotation: type, override: Override) -> Any:
       value = annotation(raw)
     except ValueError:
       raise OverrideError(
-          f"{override.spelling}: {raw!r} is not {annotation.__name__}"
+        f"{override.spelling}: {raw!r} is not {annotation.__name__}"
       ) from None
     if isinstance(value, float) and not math.isfinite(value):
       raise OverrideError(
-          f"{override.spelling}: {raw!r} is not a finite number"
+        f"{override.spelling}: {raw!r} is not a finite number"
       )
     return value
   if issubclass(annotation, epath.Path) or annotation is epath.Path:
     return epath.Path(raw)
   raise OverrideError(
-      f"{override.spelling}: {annotation.__name__} is not a type this can"
-      " build from text"
+    f"{override.spelling}: {annotation.__name__} is not a type this can"
+    " build from text"
   )
 
 
@@ -405,7 +404,6 @@ def _pair(part: str, override: Override) -> tuple[str, str]:
   key, sep, value = part.partition("=")
   if not sep or not key:
     raise OverrideError(
-        f"{override.spelling}: {part!r} is not k=v (a mapping is spelled"
-        " k=v,k=v)"
+      f"{override.spelling}: {part!r} is not k=v (a mapping is spelled k=v,k=v)"
     )
   return key, value

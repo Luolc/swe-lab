@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 from .._seam import (
-    RegisteredFix,
-    render,
-    SweBenchProUnitTestSpec,
-    with_setup,
+  RegisteredFix,
+  render,
+  SweBenchProUnitTestSpec,
+  with_setup,
 )
 
 _JOIN_RULE_INSTANCE = (
-    "instance_element-hq__element-web-9a31cd0fa849da810b4"
-    "fac6c6c015145e850b282-vnan"
+  "instance_element-hq__element-web-9a31cd0fa849da810b4"
+  "fac6c6c015145e850b282-vnan"
 )
 _JOIN_RULE_TEST = "test/components/views/settings/JoinRuleSettings-test.tsx"
 
@@ -54,7 +54,7 @@ fi
 
 
 def _fix_instance_element_web_9a31cd0f(
-    spec: SweBenchProUnitTestSpec,
+  spec: SweBenchProUnitTestSpec,
 ) -> SweBenchProUnitTestSpec:
   """Port upstream's deflake of the `JoinRuleSettings` upgrade test.
 
@@ -118,9 +118,9 @@ def _fix_instance_element_web_9a31cd0f(
     The spec with the deflake spliced in after the golden checkout.
   """
   return with_setup(
-      spec,
-      mounts={},
-      setup=render(_JOIN_RULE_SETUP, TEST=_JOIN_RULE_TEST),
+    spec,
+    mounts={},
+    setup=render(_JOIN_RULE_SETUP, TEST=_JOIN_RULE_TEST),
   )
 
 
@@ -128,5 +128,5 @@ def _fix_instance_element_web_9a31cd0f(
 
 
 ELEMENT_WEB_JOINRULE = RegisteredFix(
-    instances=(_JOIN_RULE_INSTANCE,), fix=_fix_instance_element_web_9a31cd0f
+  instances=(_JOIN_RULE_INSTANCE,), fix=_fix_instance_element_web_9a31cd0f
 )

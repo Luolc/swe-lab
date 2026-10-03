@@ -8,35 +8,35 @@ from etils import epath
 import pytest
 
 from swe_lab.sandbox import (
-    AttemptRecord,
-    build_store,
-    FilesystemStore,
-    registered_stores,
-    SandboxError,
-    Store,
+  AttemptRecord,
+  build_store,
+  FilesystemStore,
+  registered_stores,
+  SandboxError,
+  Store,
 )
 from swe_lab.sandbox.testing import FakeStore
 
 
 def _record(
-    sweep: str = "sw",
-    instance: str = "inst",
-    ts: str = "ts",
-    *,
-    task: str = "rollout",
-    rollout_id: int = 0,
-    attempt: int = 0,
+  sweep: str = "sw",
+  instance: str = "inst",
+  ts: str = "ts",
+  *,
+  task: str = "rollout",
+  rollout_id: int = 0,
+  attempt: int = 0,
 ) -> AttemptRecord:
   return AttemptRecord(
-      sweep_id=sweep,
-      instance_id=instance,
-      task=task,
-      rollout_id=rollout_id,
-      attempt=attempt,
-      run_ts=ts,
-      status="SUCCESS",
-      tier="formal",
-      backend="host",
+    sweep_id=sweep,
+    instance_id=instance,
+    task=task,
+    rollout_id=rollout_id,
+    attempt=attempt,
+    run_ts=ts,
+    status="SUCCESS",
+    tier="formal",
+    backend="host",
   )
 
 
@@ -132,9 +132,9 @@ def test_read_manifest_narrows_to_one_task(tmp_path: Path):
   # None keeps the aggregation shape: every task of the rollout
   every = store.read_manifest("sw", "inst", 0)
   assert [(r.task, r.attempt) for r in every] == [
-      ("eval", 0),
-      ("eval", 1),
-      ("rollout", 0),
+    ("eval", 0),
+    ("eval", 1),
+    ("rollout", 0),
   ]
 
 
@@ -160,7 +160,7 @@ def test_put_bytes_get_bytes_roundtrip(tmp_path: Path):
 
 
 def test_delete_removes_one_object_and_a_missing_key_is_not_an_error(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # The one caller retires a previous invocation's workflow record before a
   # run lands anything, without knowing whether one is there: idempotent, and

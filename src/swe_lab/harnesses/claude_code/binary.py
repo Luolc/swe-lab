@@ -53,20 +53,20 @@ _CACHE_NAMESPACE = "claude-code"
 
 
 def binary_cache_path(
-    *,
-    version: str = PINNED_CLAUDE_CODE_VERSION,
-    platform: str = LINUX_X64,
-    repo_root: epath.PathLike | None = None,
+  *,
+  version: str = PINNED_CLAUDE_CODE_VERSION,
+  platform: str = LINUX_X64,
+  repo_root: epath.PathLike | None = None,
 ) -> epath.Path:
   """Return the on-disk cache path of the ``version``/``platform`` binary."""
   root = repo_root or find_repo_root()
   return (
-      cache_root(root)
-      / _BIN_SUBDIR
-      / _CACHE_NAMESPACE
-      / version
-      / platform
-      / "claude"
+    cache_root(root)
+    / _BIN_SUBDIR
+    / _CACHE_NAMESPACE
+    / version
+    / platform
+    / "claude"
   )
 
 
@@ -80,24 +80,24 @@ def manifest_checksum(version: str, platform: str) -> str:
   raw = _get(f"{DOWNLOAD_BASE_URL}/{version}/manifest.json")
   manifest = json.loads(raw)
   platforms = (
-      manifest.get("platforms", {}) if isinstance(manifest, dict) else {}
+    manifest.get("platforms", {}) if isinstance(manifest, dict) else {}
   )
   entry = platforms.get(platform, {}) if isinstance(platforms, dict) else {}
   checksum = entry.get("checksum") if isinstance(entry, dict) else None
   if not isinstance(checksum, str) or not checksum:
     raise ValueError(
-        f"no checksum for platform {platform!r} in the {version} manifest"
+      f"no checksum for platform {platform!r} in the {version} manifest"
     )
   return checksum
 
 
 def ensure_claude_binary(
-    *,
-    version: str = PINNED_CLAUDE_CODE_VERSION,
-    platform: str = LINUX_X64,
-    dest: epath.PathLike | None = None,
-    repo_root: epath.PathLike | None = None,
-    refresh: bool = False,
+  *,
+  version: str = PINNED_CLAUDE_CODE_VERSION,
+  platform: str = LINUX_X64,
+  dest: epath.PathLike | None = None,
+  repo_root: epath.PathLike | None = None,
+  refresh: bool = False,
 ) -> epath.Path:
   """Ensure the pinned native binary is at ``dest``, checksum-verified.
 
@@ -124,11 +124,11 @@ def ensure_claude_binary(
       (a corrupt or tampered download is never silently used).
   """
   target = (
-      epath.Path(dest)
-      if dest is not None
-      else binary_cache_path(
-          version=version, platform=platform, repo_root=repo_root
-      )
+    epath.Path(dest)
+    if dest is not None
+    else binary_cache_path(
+      version=version, platform=platform, repo_root=repo_root
+    )
   )
   expected = manifest_checksum(version, platform)
   if not refresh and target.is_file() and _sha256(target) == expected:
@@ -136,14 +136,14 @@ def ensure_claude_binary(
 
   target.parent.mkdir(parents=True, exist_ok=True)
   data = _get(
-      f"{DOWNLOAD_BASE_URL}/{version}/{platform}/claude",
-      timeout=_DOWNLOAD_TIMEOUT_S,
+    f"{DOWNLOAD_BASE_URL}/{version}/{platform}/claude",
+    timeout=_DOWNLOAD_TIMEOUT_S,
   )
   actual = hashlib.sha256(data).hexdigest()
   if actual != expected:
     raise ValueError(
-        f"checksum mismatch for claude {version}/{platform}: "
-        f"expected {expected}, got {actual}"
+      f"checksum mismatch for claude {version}/{platform}: "
+      f"expected {expected}, got {actual}"
     )
   _ = target.write_bytes(data)
   os.chmod(target, 0o755)

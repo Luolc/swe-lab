@@ -46,22 +46,22 @@ from .unit_test import compile_unit_test, SweBenchProVerdict
 # The exact column set of the SWE-Bench Pro parquet, in file order. Used to
 # validate that a raw row matches what this record type expects.
 COLUMNS: tuple[str, ...] = (
-    "repo",
-    "instance_id",
-    "base_commit",
-    "patch",
-    "test_patch",
-    "problem_statement",
-    "requirements",
-    "interface",
-    "repo_language",
-    "fail_to_pass",
-    "pass_to_pass",
-    "issue_specificity",
-    "issue_categories",
-    "before_repo_set_cmd",
-    "selected_test_files_to_run",
-    "dockerhub_tag",
+  "repo",
+  "instance_id",
+  "base_commit",
+  "patch",
+  "test_patch",
+  "problem_statement",
+  "requirements",
+  "interface",
+  "repo_language",
+  "fail_to_pass",
+  "pass_to_pass",
+  "issue_specificity",
+  "issue_categories",
+  "before_repo_set_cmd",
+  "selected_test_files_to_run",
+  "dockerhub_tag",
 )
 
 
@@ -146,28 +146,26 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
       raise ValueError(f"Row is missing expected columns: {missing}")
 
     return cls(
-        repo=raw["repo"],
-        instance_id=raw["instance_id"],
-        base_commit=raw["base_commit"],
-        patch=raw["patch"],
-        test_patch=raw["test_patch"],
-        problem_statement=_unwrap_text(raw["problem_statement"]),
-        requirements=_unwrap_text(raw["requirements"]),
-        interface=_unwrap_text(raw["interface"]),
-        repo_language=raw["repo_language"],
-        # `fail_to_pass` is corrected in memory for the three instances whose
-        # upstream names are truncated (see ``patches.py``); a no-op otherwise.
-        fail_to_pass=patch_fail_to_pass(
-            raw["instance_id"], _parse_list(raw["fail_to_pass"])
-        ),
-        pass_to_pass=_parse_list(raw["pass_to_pass"]),
-        issue_specificity=_parse_list(raw["issue_specificity"]),
-        issue_categories=_parse_list(raw["issue_categories"]),
-        before_repo_set_cmd=raw["before_repo_set_cmd"],
-        selected_test_files_to_run=_parse_list(
-            raw["selected_test_files_to_run"]
-        ),
-        dockerhub_tag=raw["dockerhub_tag"],
+      repo=raw["repo"],
+      instance_id=raw["instance_id"],
+      base_commit=raw["base_commit"],
+      patch=raw["patch"],
+      test_patch=raw["test_patch"],
+      problem_statement=_unwrap_text(raw["problem_statement"]),
+      requirements=_unwrap_text(raw["requirements"]),
+      interface=_unwrap_text(raw["interface"]),
+      repo_language=raw["repo_language"],
+      # `fail_to_pass` is corrected in memory for the three instances whose
+      # upstream names are truncated (see ``patches.py``); a no-op otherwise.
+      fail_to_pass=patch_fail_to_pass(
+        raw["instance_id"], _parse_list(raw["fail_to_pass"])
+      ),
+      pass_to_pass=_parse_list(raw["pass_to_pass"]),
+      issue_specificity=_parse_list(raw["issue_specificity"]),
+      issue_categories=_parse_list(raw["issue_categories"]),
+      before_repo_set_cmd=raw["before_repo_set_cmd"],
+      selected_test_files_to_run=_parse_list(raw["selected_test_files_to_run"]),
+      dockerhub_tag=raw["dockerhub_tag"],
     )
 
   @property
@@ -225,18 +223,18 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     match = _FIX_SHA_RE.search(self.instance_id)
     if match is None:
       raise ValueError(
-          f"no fix commit in instance id {self.instance_id!r}: SWE-Bench Pro"
-          " names instances `instance_<Org>__<Repo>-<fix_sha>[-v<env_sha>]`,"
-          " so this is an upstream format change. The git-history purge"
-          " asserts this commit is unreachable; fix the derivation rather"
-          " than letting the assertion quietly stop checking anything."
+        f"no fix commit in instance id {self.instance_id!r}: SWE-Bench Pro"
+        " names instances `instance_<Org>__<Repo>-<fix_sha>[-v<env_sha>]`,"
+        " so this is an upstream format change. The git-history purge"
+        " asserts this commit is unreachable; fix the derivation rather"
+        " than letting the assertion quietly stop checking anything."
       )
     sha = match.group(1)
     if sha == self.base_commit:
       raise ValueError(
-          f"instance {self.instance_id!r} yields a fix sha equal to its"
-          " base_commit; the id must be carrying something other than the fix"
-          " commit now, so the derivation is wrong"
+        f"instance {self.instance_id!r} yields a fix sha equal to its"
+        " base_commit; the id must be carrying something other than the fix"
+        " commit now, so the derivation is wrong"
       )
     return sha
 
@@ -263,10 +261,10 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     module.
     """
     return SandboxSpec(
-        instance_id=self.instance_id,
-        image_ref=f"{IMAGE_REPO}:{self.dockerhub_tag}",
-        workdir=WORKDIR,
-        base_commit=self.base_commit,
+      instance_id=self.instance_id,
+      image_ref=f"{IMAGE_REPO}:{self.dockerhub_tag}",
+      workdir=WORKDIR,
+      base_commit=self.base_commit,
     )
 
   @override
@@ -278,9 +276,9 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     same task text the benchmark's own harness builds.
     """
     return (
-        f"{self.problem_statement}\n\n"
-        f"Requirements:\n{self.requirements}\n\n"
-        f"New interfaces introduced:\n{self.interface}"
+      f"{self.problem_statement}\n\n"
+      f"Requirements:\n{self.requirements}\n\n"
+      f"New interfaces introduced:\n{self.interface}"
     )
 
   @override
@@ -290,12 +288,12 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
 
   @override
   def unit_test_spec(
-      self,
-      *,
-      apply_patch: bool,
-      patch_name: str = PATCH_NAME,
-      checkout_golden_tests: bool = True,
-      patch_baseline: bool = False,
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
+    checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     """Compile this instance's unit-test evaluation spec.
 
@@ -308,17 +306,17 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     grading and the golden self-check from disagreeing about which fixes ran.
     """
     spec = compile_unit_test(
-        apply_patch=apply_patch,
-        patch_name=patch_name,
-        checkout_golden_tests=checkout_golden_tests,
-        patch_baseline=patch_baseline,
-        base_commit=self.base_commit,
-        selected_test_files_to_run=self.selected_test_files_to_run,
-        golden_test_checkout_cmd=self.golden_test_checkout_cmd,
-        fail_to_pass=self.fail_to_pass,
-        pass_to_pass=self.pass_to_pass,
-        run_script=self.run_script,
-        parser=self.parser,
+      apply_patch=apply_patch,
+      patch_name=patch_name,
+      checkout_golden_tests=checkout_golden_tests,
+      patch_baseline=patch_baseline,
+      base_commit=self.base_commit,
+      selected_test_files_to_run=self.selected_test_files_to_run,
+      golden_test_checkout_cmd=self.golden_test_checkout_cmd,
+      fail_to_pass=self.fail_to_pass,
+      pass_to_pass=self.pass_to_pass,
+      run_script=self.run_script,
+      parser=self.parser,
     )
     return apply_instance_fix(self.instance_id, spec)
 

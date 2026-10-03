@@ -18,16 +18,16 @@ import functools
 
 from swe_lab.conversation.observer import CONVERSATION_NAME
 from swe_lab.evaluation.unit_test import (
-    ARTIFACT_NAMESPACE,
-    gold_patch,
-    UnitTestTask,
-    VERDICT_NAME,
+  ARTIFACT_NAMESPACE,
+  gold_patch,
+  UnitTestTask,
+  VERDICT_NAME,
 )
 from swe_lab.git.audit import GitIntegrityAuditTask
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
-    DEFAULT_MODEL,
-    OAUTH_TOKEN_ENV,
+  DEFAULT_MODEL,
+  OAUTH_TOKEN_ENV,
 )
 
 # Imported for its registration alone. A harness registers itself at import of
@@ -40,16 +40,16 @@ import swe_lab.harnesses.codex as _codex
 import swe_lab.harnesses.grok_build as _grok
 from swe_lab.rollout import CodingAgentTask
 from swe_lab.sandbox import (
-    ArtifactSchema,
-    DockerHostSandboxConfig,
-    qualified_name,
+  ArtifactSchema,
+  DockerHostSandboxConfig,
+  qualified_name,
 )
 from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
 from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
 from swe_lab.trace_synthesis.judge import (
-    default_supervisor_base_url,
-    messages_transport,
-    supervising_policy,
+  default_supervisor_base_url,
+  messages_transport,
+  supervising_policy,
 )
 from swe_lab.trace_synthesis.oracle import OracleAnalysisTask
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
@@ -111,26 +111,24 @@ def _rollout_entry(key: str = ROLLOUT_KEY) -> WorkflowEntry:
     The rollout entry.
   """
   return WorkflowEntry(
-      key,
-      CodingAgentTask(
-          # bare=False explicitly: bare mode reads neither OAuth nor the
-          # keychain (verified on 2.1.220 — a bare run with a valid
-          # CLAUDE_CODE_OAUTH_TOKEN still fails "Not logged in"), and this
-          # definition authenticates by that token. A composition using
-          # ANTHROPIC_API_KEY should leave the default alone.
-          harness=ClaudeCodeHarness(model=DEFAULT_MODEL, bare=False)
-      ),
-      timeout=_AGENT_TIMEOUT_S,
-      # The agent needs the network, and its credential travels by name so
-      # the value never reaches a command line.
-      sandbox=DockerHostSandboxConfig(
-          network=True, pass_env=(OAUTH_TOKEN_ENV,)
-      ),
+    key,
+    CodingAgentTask(
+      # bare=False explicitly: bare mode reads neither OAuth nor the
+      # keychain (verified on 2.1.220 — a bare run with a valid
+      # CLAUDE_CODE_OAUTH_TOKEN still fails "Not logged in"), and this
+      # definition authenticates by that token. A composition using
+      # ANTHROPIC_API_KEY should leave the default alone.
+      harness=ClaudeCodeHarness(model=DEFAULT_MODEL, bare=False)
+    ),
+    timeout=_AGENT_TIMEOUT_S,
+    # The agent needs the network, and its credential travels by name so
+    # the value never reaches a command line.
+    sandbox=DockerHostSandboxConfig(network=True, pass_env=(OAUTH_TOKEN_ENV,)),
   )
 
 
 def _unit_test_entry(
-    key: str = UNIT_TEST_KEY, *, inputs: tuple[str, ...] = ()
+  key: str = UNIT_TEST_KEY, *, inputs: tuple[str, ...] = ()
 ) -> WorkflowEntry:
   """Build the grading entry under ``key``, optionally bound to a producer.
 
@@ -143,24 +141,24 @@ def _unit_test_entry(
     The grading entry.
   """
   return WorkflowEntry(
-      key,
-      # The task supplies **no** input of its own (`inputs_builder=None`),
-      # which is what lets this one entry serve both modes: run alone, its
-      # patch is the caller's (`execute(inputs=…)`); spliced into a chain,
-      # the same entry takes the agent's by edge.
-      #
-      # Grading the *gold* patch is therefore a different definition, not a
-      # flag on this one: it needs `inputs_builder=gold_patch`, and a task
-      # that builds its own patch cannot also be handed one — the collision
-      # is refused on purpose. It lands with the command that invokes it.
-      UnitTestTask(),
-      timeout=_UNIT_TEST_TIMEOUT_S,
-      # Online, like every other entry: real suites fetch things, and a
-      # backend that cannot cut the network (the GH job is already running
-      # when we get it) could not honor an offline declaration anyway.
-      sandbox=DockerHostSandboxConfig(network=True),
-      retries=_UNIT_TEST_RETRIES,
-      inputs=inputs,
+    key,
+    # The task supplies **no** input of its own (`inputs_builder=None`),
+    # which is what lets this one entry serve both modes: run alone, its
+    # patch is the caller's (`execute(inputs=…)`); spliced into a chain,
+    # the same entry takes the agent's by edge.
+    #
+    # Grading the *gold* patch is therefore a different definition, not a
+    # flag on this one: it needs `inputs_builder=gold_patch`, and a task
+    # that builds its own patch cannot also be handed one — the collision
+    # is refused on purpose. It lands with the command that invokes it.
+    UnitTestTask(),
+    timeout=_UNIT_TEST_TIMEOUT_S,
+    # Online, like every other entry: real suites fetch things, and a
+    # backend that cannot cut the network (the GH job is already running
+    # when we get it) could not honor an offline declaration anyway.
+    sandbox=DockerHostSandboxConfig(network=True),
+    retries=_UNIT_TEST_RETRIES,
+    inputs=inputs,
   )
 
 
@@ -217,7 +215,7 @@ SUPERVISOR_WINDOW = 8
 
 
 def _segmented_policy(
-    cooldown: int, base_url: str, api_key_env: str
+  cooldown: int, base_url: str, api_key_env: str
 ) -> SpeakPolicy:
   """Build the segmented loop's policy for one run, against one upstream.
 
@@ -238,17 +236,17 @@ def _segmented_policy(
     The policy for this run.
   """
   return supervising_policy(
-      model=SUPERVISOR_MODEL,
-      transport=functools.partial(
-          messages_transport, base_url=base_url, api_key_env=api_key_env
-      ),
-      budget=SUPERVISOR_BUDGET,
-      cooldown=cooldown,
-      window=SUPERVISOR_WINDOW,
-      said_visibility=SUPERVISOR_SAID_VISIBILITY,
-      # The one thing only a live run can record: how many turns late each
-      # correction was.
-      locate_deviation=True,
+    model=SUPERVISOR_MODEL,
+    transport=functools.partial(
+      messages_transport, base_url=base_url, api_key_env=api_key_env
+    ),
+    budget=SUPERVISOR_BUDGET,
+    cooldown=cooldown,
+    window=SUPERVISOR_WINDOW,
+    said_visibility=SUPERVISOR_SAID_VISIBILITY,
+    # The one thing only a live run can record: how many turns late each
+    # correction was.
+    locate_deviation=True,
   )
 
 
@@ -272,59 +270,57 @@ def _guided_rollout_entry(key: str) -> WorkflowEntry:
     The guided rollout entry.
   """
   return WorkflowEntry(
-      key,
-      CodingAgentTask(
-          harness=ClaudeCodeHarness(
-              model=DEFAULT_MODEL,
-              bare=False,
-              capture="stream",
-              segmented=SegmentedSupervision(
-                  policy_factory=_segmented_policy,
-                  guidebook_name=GUIDEBOOK_NAME,
-              ),
-          ),
-          extra_inputs=(
-              ArtifactSchema(
-                  GUIDEBOOK_NAME,
-                  description="the Oracle's phase-B guidebook",
-              ),
-          ),
+    key,
+    CodingAgentTask(
+      harness=ClaudeCodeHarness(
+        model=DEFAULT_MODEL,
+        bare=False,
+        capture="stream",
+        segmented=SegmentedSupervision(
+          policy_factory=_segmented_policy,
+          guidebook_name=GUIDEBOOK_NAME,
+        ),
       ),
-      timeout=_AGENT_TIMEOUT_S,
-      sandbox=DockerHostSandboxConfig(
-          network=True, pass_env=(OAUTH_TOKEN_ENV,)
+      extra_inputs=(
+        ArtifactSchema(
+          GUIDEBOOK_NAME,
+          description="the Oracle's phase-B guidebook",
+        ),
       ),
+    ),
+    timeout=_AGENT_TIMEOUT_S,
+    sandbox=DockerHostSandboxConfig(network=True, pass_env=(OAUTH_TOKEN_ENV,)),
   )
 
 
 GOLD_UNIT_TEST: WorkflowDef = (
-    WorkflowEntry(
-        UNIT_TEST_KEY,
-        # The dataset's own reference solution, built from the instance — so
-        # this one runs from a name alone. It is a *separate* definition and
-        # not a flag on ``UNIT_TEST`` precisely because a task that builds its
-        # own patch cannot also be handed one: the two suppliers collide, on
-        # purpose, and the collision is the reason there are two names.
-        # `patch_baseline=False` against the default (ADR-0014): the
-        # dataset's gold patch is authored against `base_commit`, so
-        # `base_commit` is its base — there is no pre-agent tree here,
-        # and no recorded base ref for a verify to compare against.
-        UnitTestTask(inputs_builder=gold_patch, patch_baseline=False),
-        timeout=_UNIT_TEST_TIMEOUT_S,
-        sandbox=DockerHostSandboxConfig(network=True),
-        retries=_UNIT_TEST_RETRIES,
-    ),
+  WorkflowEntry(
+    UNIT_TEST_KEY,
+    # The dataset's own reference solution, built from the instance — so
+    # this one runs from a name alone. It is a *separate* definition and
+    # not a flag on ``UNIT_TEST`` precisely because a task that builds its
+    # own patch cannot also be handed one: the two suppliers collide, on
+    # purpose, and the collision is the reason there are two names.
+    # `patch_baseline=False` against the default (ADR-0014): the
+    # dataset's gold patch is authored against `base_commit`, so
+    # `base_commit` is its base — there is no pre-agent tree here,
+    # and no recorded base ref for a verify to compare against.
+    UnitTestTask(inputs_builder=gold_patch, patch_baseline=False),
+    timeout=_UNIT_TEST_TIMEOUT_S,
+    sandbox=DockerHostSandboxConfig(network=True),
+    retries=_UNIT_TEST_RETRIES,
+  ),
 )
 
 GIT_INTEGRITY_AUDIT: WorkflowDef = (
-    WorkflowEntry(
-        GIT_INTEGRITY_KEY,
-        GitIntegrityAuditTask(),
-        timeout=_GIT_INTEGRITY_TIMEOUT_S,
-        # Offline on purpose. Nothing here needs egress, and running the audit
-        # exactly as constrained as the rollout should be keeps it honest.
-        sandbox=DockerHostSandboxConfig(network=False),
-    ),
+  WorkflowEntry(
+    GIT_INTEGRITY_KEY,
+    GitIntegrityAuditTask(),
+    timeout=_GIT_INTEGRITY_TIMEOUT_S,
+    # Offline on purpose. Nothing here needs egress, and running the audit
+    # exactly as constrained as the rollout should be keeps it honest.
+    sandbox=DockerHostSandboxConfig(network=False),
+  ),
 )
 
 
@@ -339,15 +335,13 @@ def _oracle_analysis_entry(*, inputs: tuple[str, ...]) -> WorkflowEntry:
     authentication, as the rollout's.
   """
   return WorkflowEntry(
-      ORACLE_ANALYSIS_KEY,
-      OracleAnalysisTask(
-          harness=ClaudeCodeHarness(model=DEFAULT_MODEL, bare=False)
-      ),
-      timeout=_ORACLE_ANALYSIS_TIMEOUT_S,
-      sandbox=DockerHostSandboxConfig(
-          network=True, pass_env=(OAUTH_TOKEN_ENV,)
-      ),
-      inputs=inputs,
+    ORACLE_ANALYSIS_KEY,
+    OracleAnalysisTask(
+      harness=ClaudeCodeHarness(model=DEFAULT_MODEL, bare=False)
+    ),
+    timeout=_ORACLE_ANALYSIS_TIMEOUT_S,
+    sandbox=DockerHostSandboxConfig(network=True, pass_env=(OAUTH_TOKEN_ENV,)),
+    inputs=inputs,
   )
 
 
@@ -370,33 +364,33 @@ def _edge(producer: str, name: str) -> str:
 # entries produce `patch.diff` and `patch.base_ref.txt`, and an unbound name
 # with two producers is refused rather than resolved nearest-wins.
 FROM_SCRATCH_GUIDED_TRACE: WorkflowDef = (
-    _rollout_entry(BASELINE_ROLLOUT_KEY),
-    _unit_test_entry(
+  _rollout_entry(BASELINE_ROLLOUT_KEY),
+  _unit_test_entry(
+    BASELINE_UNIT_TEST_KEY,
+    inputs=(
+      _edge(BASELINE_ROLLOUT_KEY, PATCH_NAME),
+      _edge(BASELINE_ROLLOUT_KEY, BASE_REF_NAME),
+    ),
+  ),
+  _oracle_analysis_entry(
+    inputs=(
+      _edge(BASELINE_ROLLOUT_KEY, CONVERSATION_NAME),
+      _edge(BASELINE_ROLLOUT_KEY, PATCH_NAME),
+      _edge(BASELINE_ROLLOUT_KEY, BASE_REF_NAME),
+      _edge(
         BASELINE_UNIT_TEST_KEY,
-        inputs=(
-            _edge(BASELINE_ROLLOUT_KEY, PATCH_NAME),
-            _edge(BASELINE_ROLLOUT_KEY, BASE_REF_NAME),
-        ),
+        qualified_name(ARTIFACT_NAMESPACE, VERDICT_NAME),
+      ),
     ),
-    _oracle_analysis_entry(
-        inputs=(
-            _edge(BASELINE_ROLLOUT_KEY, CONVERSATION_NAME),
-            _edge(BASELINE_ROLLOUT_KEY, PATCH_NAME),
-            _edge(BASELINE_ROLLOUT_KEY, BASE_REF_NAME),
-            _edge(
-                BASELINE_UNIT_TEST_KEY,
-                qualified_name(ARTIFACT_NAMESPACE, VERDICT_NAME),
-            ),
-        ),
+  ),
+  _guided_rollout_entry(GUIDED_ROLLOUT_KEY),
+  _unit_test_entry(
+    GUIDED_UNIT_TEST_KEY,
+    inputs=(
+      _edge(GUIDED_ROLLOUT_KEY, PATCH_NAME),
+      _edge(GUIDED_ROLLOUT_KEY, BASE_REF_NAME),
     ),
-    _guided_rollout_entry(GUIDED_ROLLOUT_KEY),
-    _unit_test_entry(
-        GUIDED_UNIT_TEST_KEY,
-        inputs=(
-            _edge(GUIDED_ROLLOUT_KEY, PATCH_NAME),
-            _edge(GUIDED_ROLLOUT_KEY, BASE_REF_NAME),
-        ),
-    ),
+  ),
 )
 
 register_workflow("git_integrity_audit", GIT_INTEGRITY_AUDIT)

@@ -14,46 +14,46 @@ from etils import epath
 import pytest
 
 from swe_lab.conversation import (
-    Conversation,
-    ReasoningBlock,
-    Role,
-    TextBlock,
-    ToolResultBlock,
-    ToolUseBlock,
+  Conversation,
+  ReasoningBlock,
+  Role,
+  TextBlock,
+  ToolResultBlock,
+  ToolUseBlock,
 )
 from swe_lab.harnesses import AgentOutcome
 from swe_lab.harnesses.claude_code import (
-    Capture,
-    ClaudeCodeHarness,
-    Effort,
-    event_stream_outcome,
-    event_stream_to_conversation,
-    event_stream_usage,
+  Capture,
+  ClaudeCodeHarness,
+  Effort,
+  event_stream_outcome,
+  event_stream_to_conversation,
+  event_stream_usage,
 )
 from swe_lab.harnesses.claude_code.constants import (
-    AGENT_ENV_NAME,
-    AGENT_INFO_NAME,
-    AGENT_SCRIPT_NAME,
-    BINARY_AT,
-    EVENT_STREAM_NAME,
-    INFO_ARTIFACT,
-    PROMPT_FILENAME,
-    PROXY_BASE_URL,
-    PROXY_BINARY_AT,
-    PROXY_LOG_NAME,
-    PROXY_PORT,
-    PROXY_STDERR_NAME,
-    STREAM_JSON_PROMPT_NAME,
+  AGENT_ENV_NAME,
+  AGENT_INFO_NAME,
+  AGENT_SCRIPT_NAME,
+  BINARY_AT,
+  EVENT_STREAM_NAME,
+  INFO_ARTIFACT,
+  PROMPT_FILENAME,
+  PROXY_BASE_URL,
+  PROXY_BINARY_AT,
+  PROXY_LOG_NAME,
+  PROXY_PORT,
+  PROXY_STDERR_NAME,
+  STREAM_JSON_PROMPT_NAME,
 )
 from swe_lab.harnesses.claude_code.harness import _reap
 from swe_lab.harnesses.claude_code.proxy import PROXY_SOURCE_ENV
 from swe_lab.harnesses.common import AgentInfoObserver, home_fallback_lines
 from swe_lab.sandbox import (
-    Contribution,
-    ExecResult,
-    Inline,
-    SandboxError,
-    SandboxSpec,
+  Contribution,
+  ExecResult,
+  Inline,
+  SandboxError,
+  SandboxSpec,
 )
 from swe_lab.sandbox.testing import FakeSandbox
 from swe_lab.trace_synthesis.segmented_loop import SegmentedSupervision
@@ -64,45 +64,45 @@ from .policies import SilentPolicy
 _SPEC = SandboxSpec("x", "img:tag", "/app", "abc")
 
 _EVENTS: list[dict[str, object]] = [
-    {"type": "system", "subtype": "init"},
-    {
-        "type": "assistant",
-        "message": {
-            "role": "assistant",
-            "content": [
-                {"type": "thinking", "thinking": "look", "signature": "sig"},
-                {"type": "text", "text": "editing"},
-                {
-                    "type": "tool_use",
-                    "id": "t1",
-                    "name": "Bash",
-                    "input": {"command": "ls"},
-                },
-            ],
+  {"type": "system", "subtype": "init"},
+  {
+    "type": "assistant",
+    "message": {
+      "role": "assistant",
+      "content": [
+        {"type": "thinking", "thinking": "look", "signature": "sig"},
+        {"type": "text", "text": "editing"},
+        {
+          "type": "tool_use",
+          "id": "t1",
+          "name": "Bash",
+          "input": {"command": "ls"},
         },
+      ],
     },
-    {
-        "type": "user",
-        "message": {
-            "role": "user",
-            "content": [
-                {
-                    "type": "tool_result",
-                    "tool_use_id": "t1",
-                    "content": "a.py\nb.py",
-                    "is_error": False,
-                },
-            ],
+  },
+  {
+    "type": "user",
+    "message": {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "t1",
+          "content": "a.py\nb.py",
+          "is_error": False,
         },
+      ],
     },
-    {
-        "type": "assistant",
-        "message": {
-            "role": "assistant",
-            "content": [{"type": "text", "text": "done"}],
-        },
+  },
+  {
+    "type": "assistant",
+    "message": {
+      "role": "assistant",
+      "content": [{"type": "text", "text": "done"}],
     },
-    {"type": "result", "subtype": "success", "is_error": False},
+  },
+  {"type": "result", "subtype": "success", "is_error": False},
 ]
 
 
@@ -146,7 +146,7 @@ def test_invocation_script_shape_and_quoting():
   # every interactive/plan-mode tool denied — none is covered by
   # --dangerously-skip-permissions, and each hangs an unattended run
   assert (
-      "--disallowedTools EnterPlanMode,ExitPlanMode,AskUserQuestion" in script
+    "--disallowedTools EnterPlanMode,ExitPlanMode,AskUserQuestion" in script
   )
   assert "--max-turns 500" in script  # agent-loop runaway guard
   # the agent's status is reported out-of-band; the script itself exits 0 so
@@ -164,16 +164,16 @@ def test_invocation_script_shape_and_quoting():
 
 
 _ARGV_CONFIGURATIONS = (
-    ClaudeCodeHarness(),
-    ClaudeCodeHarness(capture="proxy"),
-    ClaudeCodeHarness(bare=False, max_budget_usd=1.5),
-    ClaudeCodeHarness(model="a model", effort="low", max_turns=7),
+  ClaudeCodeHarness(),
+  ClaudeCodeHarness(capture="proxy"),
+  ClaudeCodeHarness(bare=False, max_budget_usd=1.5),
+  ClaudeCodeHarness(model="a model", effort="low", max_turns=7),
 )
 
 
 @pytest.mark.parametrize("harness", _ARGV_CONFIGURATIONS)
 def test_the_script_runs_exactly_the_argv_the_harness_hands_out(
-    harness: ClaudeCodeHarness,
+  harness: ClaudeCodeHarness,
 ) -> None:
   """The invocation script is a consumer of `actor_argv`, not a second one.
 
@@ -188,7 +188,7 @@ def test_the_script_runs_exactly_the_argv_the_harness_hands_out(
   script = _script("/app", harness)
 
   command = next(
-      line for line in script.splitlines() if line.startswith(BINARY_AT)
+    line for line in script.splitlines() if line.startswith(BINARY_AT)
   )
 
   assert shlex.split(command.split(" < ")[0]) == list(harness.actor_argv())
@@ -196,7 +196,7 @@ def test_the_script_runs_exactly_the_argv_the_harness_hands_out(
 
 @pytest.mark.parametrize("harness", _ARGV_CONFIGURATIONS)
 def test_the_actor_argv_needs_no_shell_to_mean_what_it_says(
-    harness: ClaudeCodeHarness,
+  harness: ClaudeCodeHarness,
 ) -> None:
   """Every token is one a wrapper can `exec` without interpreting it.
 
@@ -252,8 +252,8 @@ def test_optional_bounds_are_omitted_unless_asked_for():
   assert "--max-budget-usd" not in plain
   assert "CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS" not in plain
   bounded = _script(
-      "/app",
-      ClaudeCodeHarness(max_budget_usd=2.5, subagent_wait_ceiling_ms=90_000),
+    "/app",
+    ClaudeCodeHarness(max_budget_usd=2.5, subagent_wait_ceiling_ms=90_000),
   )
   assert "--max-budget-usd 2.5" in bounded
   assert "export CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=90000" in bounded
@@ -265,7 +265,7 @@ def test_an_oversized_prompt_is_refused_before_it_is_staged(tmp_path: Path):
   sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
   with pytest.raises(SandboxError, match="caps piped stdin"):
     ClaudeCodeHarness().run(
-        sb, prompt="x" * (10 * 1024 * 1024 + 1), timeout=1.0
+      sb, prompt="x" * (10 * 1024 * 1024 + 1), timeout=1.0
     )
   assert not (tmp_path / "prompt.txt").exists()  # never staged
 
@@ -276,9 +276,9 @@ def test_binary_is_never_staged_by_the_harness():
   # must hold for every harness configuration — otherwise a backend that
   # downloads its own copy would collide with a mount it never wanted.
   for harness in (
-      ClaudeCodeHarness(),
-      ClaudeCodeHarness(bare=True),
-      _proxy_harness(),
+    ClaudeCodeHarness(),
+    ClaudeCodeHarness(bare=True),
+    _proxy_harness(),
   ):
     assert BINARY_AT not in harness.mounts("/app")
     assert BINARY_AT in _script("/app", harness)  # …but it is still invoked
@@ -286,9 +286,9 @@ def test_binary_is_never_staged_by_the_harness():
 
 def test_native_outputs():
   assert ClaudeCodeHarness().native_outputs() == {
-      "event_stream.jsonl": "claude.event_stream.jsonl",
-      "stderr.log": "claude.stderr.log",
-      "exit_code.txt": "claude.exit_code",
+    "event_stream.jsonl": "claude.event_stream.jsonl",
+    "stderr.log": "claude.stderr.log",
+    "exit_code.txt": "claude.exit_code",
   }
 
 
@@ -331,10 +331,10 @@ def test_the_proxy_target_is_the_run_s_upstream():
   # Not cosmetic: the proxy injects OpenRouter provider preferences and mirrors
   # Anthropic-Beta into X-Anthropic-Beta only when the target is OpenRouter.
   assert "--target https://api.anthropic.com" in _script(
-      "/app", _proxy_harness()
+    "/app", _proxy_harness()
   )
   openrouter = ClaudeCodeHarness(
-      capture="proxy", proxy_target="https://openrouter.ai/api"
+    capture="proxy", proxy_target="https://openrouter.ai/api"
   )
   assert "--target https://openrouter.ai/api" in _script("/app", openrouter)
 
@@ -344,20 +344,20 @@ def test_proxy_capture_composes_no_extra_observer():
   # sandbox lifecycle. With the proxy inside the sandbox there is nothing to
   # order: the script has already reaped it when `run` returns.
   assert [type(o).__name__ for o in _proxy_harness().observers()] == [
-      type(o).__name__ for o in ClaudeCodeHarness().observers()
+    type(o).__name__ for o in ClaudeCodeHarness().observers()
   ]
   assert [type(o).__name__ for o in ClaudeCodeHarness().observers()] == [
-      "AgentInfoObserver",
-      "ConversationObserver",
-      "HarnessOutcomeObserver",
-      # Last, and on every capture: the one record here the agent writes
-      # itself, and the one that dies with the container's writable layer.
-      "NativeTranscriptObserver",
+    "AgentInfoObserver",
+    "ConversationObserver",
+    "HarnessOutcomeObserver",
+    # Last, and on every capture: the one record here the agent writes
+    # itself, and the one that dies with the container's writable layer.
+    "NativeTranscriptObserver",
   ]
 
 
 def test_proxy_capture_declares_the_proxy_binary_as_an_asset(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+  tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
   # The proxy travels the same seam as the agent binary — declared here,
   # placed by whichever backend is running — and only when it is used.
@@ -378,10 +378,10 @@ def test_proxy_capture_declares_the_proxy_binary_as_an_asset(
 
 def test_proxy_native_outputs_registers_the_log_and_the_proxy_s_own_output():
   assert _proxy_harness().native_outputs() == {
-      "proxy_log.jsonl": PROXY_LOG_NAME,
-      "proxy_stderr.log": PROXY_STDERR_NAME,
-      "stderr.log": "claude.stderr.log",
-      "exit_code.txt": "claude.exit_code",
+    "proxy_log.jsonl": PROXY_LOG_NAME,
+    "proxy_stderr.log": PROXY_STDERR_NAME,
+    "stderr.log": "claude.stderr.log",
+    "exit_code.txt": "claude.exit_code",
   }
 
 
@@ -389,28 +389,28 @@ def test_proxy_to_conversation_reads_proxy_log(tmp_path: Path):
   # the proxy branch reads the proxy log, not the (absent) event stream
   sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
   (tmp_path / PROXY_LOG_NAME).write_text(
-      json.dumps(
-          {
-              "request": {
-                  "body": {
-                      "messages": [
-                          {
-                              "role": "user",
-                              "content": [{"type": "text", "text": "hi"}],
-                          }
-                      ]
-                  }
-              },
-              "response": {
-                  "message": {
-                      "role": "assistant",
-                      "content": [{"type": "text", "text": "yo"}],
-                  }
-              },
-              "complete": True,
+    json.dumps(
+      {
+        "request": {
+          "body": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [{"type": "text", "text": "hi"}],
+              }
+            ]
           }
-      )
-      + "\n"
+        },
+        "response": {
+          "message": {
+            "role": "assistant",
+            "content": [{"type": "text", "text": "yo"}],
+          }
+        },
+        "complete": True,
+      }
+    )
+    + "\n"
   )
   conv = _proxy_harness().to_conversation(sb)
   assert [m.role.value for m in conv.messages] == ["user", "assistant"]
@@ -447,10 +447,10 @@ def test_proxy_url_is_not_overridable_by_injected_env():
 def test_run_writes_injected_env_as_quoted_exports(tmp_path: Path):
   sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
   ClaudeCodeHarness().run(
-      sb,
-      prompt="PROMPT",
-      timeout=30.0,
-      env={"MY_FLAG": "1", "ENDPOINT": "http://host:8080/x y"},
+    sb,
+    prompt="PROMPT",
+    timeout=30.0,
+    env={"MY_FLAG": "1", "ENDPOINT": "http://host:8080/x y"},
   )
   written = sb.read(AGENT_ENV_NAME).decode()
   assert "export MY_FLAG=1" in written
@@ -465,7 +465,7 @@ def test_run_rejects_an_invalid_env_name(tmp_path: Path):
   # `set -u` would surface as a silent no-run — fail loudly instead
   with pytest.raises(SandboxError, match="invalid environment variable name"):
     ClaudeCodeHarness().run(
-        sb, prompt="PROMPT", timeout=30.0, env={"BAD NAME": "x"}
+      sb, prompt="PROMPT", timeout=30.0, env={"BAD NAME": "x"}
     )
   assert sb.scripts == []  # nothing ran
 
@@ -474,9 +474,9 @@ def test_to_conversation_maps_roles_and_blocks():
   conv = event_stream_to_conversation(_stream_text(_EVENTS))
 
   assert [m.role for m in conv.messages] == [
-      Role.ASSISTANT,
-      Role.USER,
-      Role.ASSISTANT,
+    Role.ASSISTANT,
+    Role.USER,
+    Role.ASSISTANT,
   ]
   first = conv.messages[0].content
   assert first[0] == ReasoningBlock(text="look", signature="sig")
@@ -484,7 +484,7 @@ def test_to_conversation_maps_roles_and_blocks():
   assert first[2] == ToolUseBlock(id="t1", name="Bash", input={"command": "ls"})
   result = conv.messages[1].content[0]
   assert result == ToolResultBlock(
-      tool_use_id="t1", content="a.py\nb.py", is_error=False
+    tool_use_id="t1", content="a.py\nb.py", is_error=False
   )
 
 
@@ -499,20 +499,20 @@ def test_event_stream_usage_aggregates_each_figure_its_own_way():
   # segmented run's total is the last cost and the sum of the turns. Summing
   # the cost would count the earlier segments twice.
   segmented = _stream_text(
-      [
-          {
-              "type": "result",
-              "subtype": "success",
-              "total_cost_usd": 0.03,
-              "num_turns": 3,
-          },
-          {
-              "type": "result",
-              "subtype": "success",
-              "total_cost_usd": 0.05,
-              "num_turns": 1,
-          },
-      ]
+    [
+      {
+        "type": "result",
+        "subtype": "success",
+        "total_cost_usd": 0.03,
+        "num_turns": 3,
+      },
+      {
+        "type": "result",
+        "subtype": "success",
+        "total_cost_usd": 0.05,
+        "num_turns": 1,
+      },
+    ]
   )
 
   assert event_stream_usage(segmented) == {"cost_usd": 0.05, "num_turns": 4}
@@ -523,25 +523,25 @@ def test_event_stream_usage_reports_a_partial_aggregate_as_absent():
   # these would otherwise enter a cost average as though measured: the first as
   # a stale earlier segment, the second as a sum over some of the segments.
   final_without_cost = _stream_text(
-      [
-          {"type": "result", "total_cost_usd": 0.03, "num_turns": 3},
-          {"type": "result", "num_turns": 1},
-      ]
+    [
+      {"type": "result", "total_cost_usd": 0.03, "num_turns": 3},
+      {"type": "result", "num_turns": 1},
+    ]
   )
   assert event_stream_usage(final_without_cost) == {
-      "cost_usd": None,
-      "num_turns": 4,
+    "cost_usd": None,
+    "num_turns": 4,
   }
 
   segment_without_turns = _stream_text(
-      [
-          {"type": "result", "total_cost_usd": 0.03, "num_turns": 3},
-          {"type": "result", "total_cost_usd": 0.05},
-      ]
+    [
+      {"type": "result", "total_cost_usd": 0.03, "num_turns": 3},
+      {"type": "result", "total_cost_usd": 0.05},
+    ]
   )
   assert event_stream_usage(segment_without_turns) == {
-      "cost_usd": 0.05,
-      "num_turns": None,
+    "cost_usd": 0.05,
+    "num_turns": None,
   }
 
 
@@ -558,7 +558,7 @@ def test_event_stream_outcome_reads_the_terminal_result():
   assert event_stream_outcome(_stream_text(_EVENTS)) is AgentOutcome.FINISHED
 
   errored = _stream_text(
-      [{"type": "result", "subtype": "error", "is_error": True}]
+    [{"type": "result", "subtype": "error", "is_error": True}]
   )
   # an unrecognized error subtype falls back to the catch-all it is a flavour
   # of, rather than reading as a clean finish
@@ -568,19 +568,19 @@ def test_event_stream_outcome_reads_the_terminal_result():
 
 
 @pytest.mark.parametrize(
-    ("subtype", "expected"),
-    [
-        ("error_max_turns", AgentOutcome.MAX_TURNS),
-        ("error_max_budget_usd", AgentOutcome.MAX_BUDGET),
-        (
-            "error_max_structured_output_retries",
-            AgentOutcome.MAX_OUTPUT_RETRIES,
-        ),
-        ("error_during_execution", AgentOutcome.EXECUTION_ERROR),
-    ],
+  ("subtype", "expected"),
+  [
+    ("error_max_turns", AgentOutcome.MAX_TURNS),
+    ("error_max_budget_usd", AgentOutcome.MAX_BUDGET),
+    (
+      "error_max_structured_output_retries",
+      AgentOutcome.MAX_OUTPUT_RETRIES,
+    ),
+    ("error_during_execution", AgentOutcome.EXECUTION_ERROR),
+  ],
 )
 def test_every_error_subtype_maps_to_its_own_outcome(
-    subtype: str, expected: AgentOutcome
+  subtype: str, expected: AgentOutcome
 ):
   # SDKResultErrorSchema enumerates exactly these four; collapsing them would
   # lose the budget-vs-infrastructure distinction the retry policy is built on.
@@ -592,7 +592,7 @@ def test_success_carrying_is_error_is_not_a_clean_finish():
   # is_error is independent of the subtype: the loop ended, but its final turn
   # was an API error — ours, and so retryable, unlike a clean finish.
   raw = _stream_text(
-      [{"type": "result", "subtype": "success", "is_error": True}]
+    [{"type": "result", "subtype": "success", "is_error": True}]
   )
   assert event_stream_outcome(raw) is AgentOutcome.FINISHED_WITH_API_ERROR
   assert AgentOutcome.FINISHED_WITH_API_ERROR.retryable is True
@@ -619,11 +619,11 @@ def test_budget_endings_are_never_retryable():
 
 
 def _info_run(
-    tmp_path: Path, results: list[ExecResult]
+  tmp_path: Path, results: list[ExecResult]
 ) -> tuple[FakeSandbox, Contribution | None]:
   """Drive the observer's hooks the way the manager does."""
   sb = FakeSandbox(
-      spec=_SPEC, workspace=epath.Path(tmp_path), run_results=results
+    spec=_SPEC, workspace=epath.Path(tmp_path), run_results=results
   )
   observer = AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT)
   observer.after_create(sb)
@@ -632,11 +632,11 @@ def _info_run(
 
 def test_agent_info_captures_version_and_help_as_an_artifact(tmp_path: Path):
   sb, contribution = _info_run(
-      tmp_path,
-      [
-          ExecResult(0, "2.1.220 (Claude Code)\n", ""),
-          ExecResult(0, "Usage: claude\n", ""),
-      ],
+    tmp_path,
+    [
+      ExecResult(0, "2.1.220 (Claude Code)\n", ""),
+      ExecResult(0, "Usage: claude\n", ""),
+    ],
   )
   # both flags were asked for, against the agreed path
   assert len(sb.commands) == 2
@@ -656,8 +656,8 @@ def test_agent_info_records_a_binary_that_cannot_run(tmp_path: Path):
   # libc, bad mode). The failure text is the artifact's whole value, so it must
   # be captured, not swallowed.
   sb, contribution = _info_run(
-      tmp_path,
-      [ExecResult(126, "", "cannot execute: no such file\n")] * 2,
+    tmp_path,
+    [ExecResult(126, "", "cannot execute: no such file\n")] * 2,
   )
   assert contribution is not None
   text = (tmp_path / AGENT_INFO_NAME).read_text()
@@ -669,9 +669,9 @@ def test_agent_info_records_a_binary_that_cannot_run(tmp_path: Path):
 def test_agent_info_never_fails_the_run(tmp_path: Path):
   # A diagnostic that can abort the thing it documents is worse than none.
   sb = FakeSandbox(
-      spec=_SPEC,
-      workspace=epath.Path(tmp_path),
-      run_error=SandboxError("exec is broken"),
+    spec=_SPEC,
+    workspace=epath.Path(tmp_path),
+    run_error=SandboxError("exec is broken"),
   )
   observer = AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT)
   observer.after_create(sb)  # must not raise
@@ -684,7 +684,7 @@ def test_agent_info_never_fails_the_run(tmp_path: Path):
 def test_agent_info_output_is_declared_but_not_required(tmp_path: Path):
   del tmp_path
   (schema,) = AgentInfoObserver(
-      binary=BINARY_AT, artifact=INFO_ARTIFACT
+    binary=BINARY_AT, artifact=INFO_ARTIFACT
   ).output_schema()
   assert schema.name == INFO_ARTIFACT
   assert schema.required is False  # a run without it is still a valid run
@@ -707,11 +707,11 @@ def test_effort_carries_exactly_the_values_the_pinned_agent_accepts():
   # CLI override boundary — see
   # `test_effort_is_overridable_and_a_typo_is_refused`.
   assert get_args(Effort.__value__) == (
-      "low",
-      "medium",
-      "high",
-      "xhigh",
-      "max",
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max",
   )
 
 
@@ -734,11 +734,11 @@ def test_the_prompt_becomes_the_first_stream_json_message(tmp_path: Path):
   sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
   _ = harness.run(sb, prompt="solve it", timeout=1.0)
   assert json.loads(sb.read(STREAM_JSON_PROMPT_NAME).decode()) == {
-      "type": "user",
-      "message": {
-          "role": "user",
-          "content": [{"type": "text", "text": "solve it"}],
-      },
+    "type": "user",
+    "message": {
+      "role": "user",
+      "content": [{"type": "text", "text": "solve it"}],
+    },
   }
   assert sb.read(PROMPT_FILENAME) == b"solve it"
 
@@ -781,26 +781,26 @@ def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
 
   pid_file = tmp_path / "pids"
   script = "\n".join(
-      [
-          *_reaper_lines(),
-          "sleep 300 >/dev/null 2>&1 &",
-          "proxy_pid=$!",
-          _reap("proxy_pid"),
-          "sleep 300 >/dev/null 2>&1 &",
-          "relay_pid=$!",
-          _reap("relay_pid"),
-          # A **stopped** child, which is the reliable way to model one that
-          # does not die on TERM: the signal stays pending and is never
-          # delivered, so only the KILL escalation removes it. `bash -c 'trap
-          # "" TERM; sleep 300'` does not model it — the shell execs the
-          # trailing command and the trap goes with it.
-          "sleep 300 >/dev/null 2>&1 &",
-          "stubborn_pid=$!",
-          'kill -STOP "$stubborn_pid"',
-          _reap("stubborn_pid"),
-          f'printf "%s %s %s" "$proxy_pid" "$relay_pid" "$stubborn_pid"'
-          f" > {pid_file}",
-      ]
+    [
+      *_reaper_lines(),
+      "sleep 300 >/dev/null 2>&1 &",
+      "proxy_pid=$!",
+      _reap("proxy_pid"),
+      "sleep 300 >/dev/null 2>&1 &",
+      "relay_pid=$!",
+      _reap("relay_pid"),
+      # A **stopped** child, which is the reliable way to model one that
+      # does not die on TERM: the signal stays pending and is never
+      # delivered, so only the KILL escalation removes it. `bash -c 'trap
+      # "" TERM; sleep 300'` does not model it — the shell execs the
+      # trailing command and the trap goes with it.
+      "sleep 300 >/dev/null 2>&1 &",
+      "stubborn_pid=$!",
+      'kill -STOP "$stubborn_pid"',
+      _reap("stubborn_pid"),
+      f'printf "%s %s %s" "$proxy_pid" "$relay_pid" "$stubborn_pid"'
+      f" > {pid_file}",
+    ]
   )
   # Staged as a file and run like the harness runs its own script, rather than
   # through `bash -c`.
@@ -812,20 +812,20 @@ def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
   timed_out = False
   try:
     subprocess.run(
-        ["bash", str(script_file)],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        timeout=30,
-        check=True,
+      ["bash", str(script_file)],
+      stdout=subprocess.DEVNULL,
+      stderr=subprocess.DEVNULL,
+      timeout=30,
+      check=True,
     )
   except subprocess.TimeoutExpired:
     timed_out = True
 
   survivors: list[str] = []
   for name, pid in zip(
-      ("proxy", "relay", "stopped"),
-      (int(p) for p in pid_file.read_text().split()),
-      strict=True,
+    ("proxy", "relay", "stopped"),
+    (int(p) for p in pid_file.read_text().split()),
+    strict=True,
   ):
     try:
       os.kill(pid, 0)
@@ -889,7 +889,7 @@ def test_a_supervised_run_streams_its_events_to_the_file_the_supervisor_reads():
   two decisions back together.
   """
   supervised = ClaudeCodeHarness(
-      capture="proxy", segmented=_segmented()
+    capture="proxy", segmented=_segmented()
   )._invocation_script("/app")
   assert f'> "$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}' in supervised
   assert "--output-format stream-json --verbose" in supervised
@@ -913,8 +913,8 @@ def test_a_supervised_run_persists_the_stream_its_supervisor_read():
   assert supervised.native_outputs()["event_stream.jsonl"] == EVENT_STREAM_NAME
   assert "proxy_log.jsonl" in supervised.native_outputs()
   assert (
-      "event_stream.jsonl"
-      not in ClaudeCodeHarness(capture="proxy").native_outputs()
+    "event_stream.jsonl"
+    not in ClaudeCodeHarness(capture="proxy").native_outputs()
   )
 
 
@@ -931,11 +931,11 @@ def _segmented(*, turns_per_segment: int = 5) -> SegmentedSupervision:
     The plan.
   """
   return SegmentedSupervision(
-      policy_factory=lambda cooldown, base_url, api_key_env: SilentPolicy(),
-      max_segments=4,
-      wall_clock_seconds=1_000.0,
-      max_cost_usd=10.0,
-      turns_per_segment=turns_per_segment,
+    policy_factory=lambda cooldown, base_url, api_key_env: SilentPolicy(),
+    max_segments=4,
+    wall_clock_seconds=1_000.0,
+    max_cost_usd=10.0,
+    turns_per_segment=turns_per_segment,
   )
 
 
@@ -952,7 +952,7 @@ def test_a_segment_carries_its_own_turn_budget_and_its_resume():
   # The control arm: unsegmented, the flag still bounds the whole run.
   assert "--max-turns" in plain.actor_argv()
   assert plain.actor_argv()[plain.actor_argv().index("--max-turns") + 1] == (
-      str(plain.max_turns)
+    str(plain.max_turns)
   )
   assert "--resume" not in plain.actor_argv()
 
@@ -974,7 +974,7 @@ def test_the_segmented_script_appends_the_event_stream():
 
 
 def test_a_segmented_run_runs_one_script_per_segment_and_records_its_seams(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """End to end over a fake actor: cut, resume, stop, and account for it.
 
@@ -988,43 +988,43 @@ def test_a_segmented_run_runs_one_script_per_segment_and_records_its_seams(
 
     @override
     def run_script(
-        self,
-        name: str,
-        *,
-        timeout: float,
-        env: Mapping[str, str] | None = None,
+      self,
+      name: str,
+      *,
+      timeout: float,
+      env: Mapping[str, str] | None = None,
     ) -> ExecResult:
       result = super().run_script(name, timeout=timeout, env=env)
       if name == AGENT_SCRIPT_NAME:
         done = len([s for s in self.scripts if s == AGENT_SCRIPT_NAME]) > 1
         events: list[dict[str, object]] = [
-            {
-                "type": "assistant",
-                # The anchor a resumed segment is given; without it this test
-                # would silently exercise the unanchored path.
-                "uuid": f"msg-{len(self.scripts)}-uuid",
-                "message": {
-                    "id": f"msg-{len(self.scripts)}",
-                    "role": "assistant",
-                    "content": [{"type": "text", "text": "working"}],
-                },
+          {
+            "type": "assistant",
+            # The anchor a resumed segment is given; without it this test
+            # would silently exercise the unanchored path.
+            "uuid": f"msg-{len(self.scripts)}-uuid",
+            "message": {
+              "id": f"msg-{len(self.scripts)}",
+              "role": "assistant",
+              "content": [{"type": "text", "text": "working"}],
             },
-            {
-                "type": "result",
-                "subtype": "success" if done else "error_max_turns",
-                "session_id": "sess-1",
-                "uuid": f"result-{len(self.scripts)}",
-                "total_cost_usd": 0.02,
-            },
+          },
+          {
+            "type": "result",
+            "subtype": "success" if done else "error_max_turns",
+            "session_id": "sess-1",
+            "uuid": f"result-{len(self.scripts)}",
+            "total_cost_usd": 0.02,
+          },
         ]
         existing = (
-            self.read(EVENT_STREAM_NAME).decode()
-            if self.exists(EVENT_STREAM_NAME)
-            else ""
+          self.read(EVENT_STREAM_NAME).decode()
+          if self.exists(EVENT_STREAM_NAME)
+          else ""
         )
         self.write(
-            EVENT_STREAM_NAME,
-            (existing + _stream_text(events)).encode(),
+          EVENT_STREAM_NAME,
+          (existing + _stream_text(events)).encode(),
         )
       return result
 
@@ -1032,10 +1032,10 @@ def test_a_segmented_run_runs_one_script_per_segment_and_records_its_seams(
   # Proxy capture, because the seam guard reads the wire and nothing else —
   # an anchored run that captured none is refused rather than trusted.
   sb.write(
-      PROXY_LOG_NAME,
-      (
-          Path(__file__).resolve().parent / "data/proxy_seam_anchored.jsonl"
-      ).read_bytes(),
+    PROXY_LOG_NAME,
+    (
+      Path(__file__).resolve().parent / "data/proxy_seam_anchored.jsonl"
+    ).read_bytes(),
   )
   harness = ClaudeCodeHarness(capture="proxy", segmented=_segmented())
 
@@ -1043,14 +1043,14 @@ def test_a_segmented_run_runs_one_script_per_segment_and_records_its_seams(
 
   assert sb.scripts == [AGENT_SCRIPT_NAME, AGENT_SCRIPT_NAME]
   rows = [
-      json.loads(line)
-      for line in sb.read(SUPERVISOR_LOG_NAME).decode().splitlines()
+    json.loads(line)
+    for line in sb.read(SUPERVISOR_LOG_NAME).decode().splitlines()
   ]
   segments = [row for row in rows if row["kind"] == "segment"]
   assert [row["resumed"] for row in segments] == [False, True]
   assert [row["stop_subtype"] for row in segments] == [
-      "error_max_turns",
-      "success",
+    "error_max_turns",
+    "success",
   ]
   assert segments[0]["anchor_result_uuid"] == "result-1"
   # The second segment's script carries the resume the first one's result
@@ -1067,17 +1067,17 @@ def test_a_segmented_run_runs_one_script_per_segment_and_records_its_seams(
   # "creates no separate sandbox artifact" invariant is the half that needs a
   # test able to go red.
   assert harness.native_outputs() == {
-      "proxy_log.jsonl": PROXY_LOG_NAME,
-      "proxy_stderr.log": PROXY_STDERR_NAME,
-      "event_stream.jsonl": EVENT_STREAM_NAME,
-      "supervisor.jsonl": SUPERVISOR_LOG_NAME,
-      "stderr.log": "claude.stderr.log",
-      "exit_code.txt": "claude.exit_code",
+    "proxy_log.jsonl": PROXY_LOG_NAME,
+    "proxy_stderr.log": PROXY_STDERR_NAME,
+    "event_stream.jsonl": EVENT_STREAM_NAME,
+    "supervisor.jsonl": SUPERVISOR_LOG_NAME,
+    "stderr.log": "claude.stderr.log",
+    "exit_code.txt": "claude.exit_code",
   }
 
 
 def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
-    tmp_path: Path,
+  tmp_path: Path,
 ) -> None:
   """Drive the registered handoff through the harness and segmented loop."""
   from swe_lab.rollout import CodingAgentTask
@@ -1090,52 +1090,52 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
 
     @override
     def run_script(
-        self,
-        name: str,
-        *,
-        timeout: float,
-        env: Mapping[str, str] | None = None,
+      self,
+      name: str,
+      *,
+      timeout: float,
+      env: Mapping[str, str] | None = None,
     ) -> ExecResult:
       result = super().run_script(name, timeout=timeout, env=env)
       if name == AGENT_SCRIPT_NAME:
         done = len([s for s in self.scripts if s == AGENT_SCRIPT_NAME]) > 1
         events: list[dict[str, object]] = [
-            {
-                "type": "user",
-                "message": {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": self.read(PROMPT_FILENAME).decode(),
-                        }
-                    ],
-                },
+          {
+            "type": "user",
+            "message": {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": self.read(PROMPT_FILENAME).decode(),
+                }
+              ],
             },
-            {
-                "type": "assistant",
-                "uuid": f"message-{len(self.scripts)}-uuid",
-                "message": {
-                    "id": f"message-{len(self.scripts)}",
-                    "role": "assistant",
-                    "content": [{"type": "text", "text": "working"}],
-                },
+          },
+          {
+            "type": "assistant",
+            "uuid": f"message-{len(self.scripts)}-uuid",
+            "message": {
+              "id": f"message-{len(self.scripts)}",
+              "role": "assistant",
+              "content": [{"type": "text", "text": "working"}],
             },
-            {
-                "type": "result",
-                "subtype": "success" if done else "error_max_turns",
-                "session_id": "session-1",
-                "uuid": f"result-{len(self.scripts)}",
-                "total_cost_usd": 0.02,
-            },
+          },
+          {
+            "type": "result",
+            "subtype": "success" if done else "error_max_turns",
+            "session_id": "session-1",
+            "uuid": f"result-{len(self.scripts)}",
+            "total_cost_usd": 0.02,
+          },
         ]
         existing = (
-            self.read(EVENT_STREAM_NAME).decode()
-            if self.exists(EVENT_STREAM_NAME)
-            else ""
+          self.read(EVENT_STREAM_NAME).decode()
+          if self.exists(EVENT_STREAM_NAME)
+          else ""
         )
         self.write(
-            EVENT_STREAM_NAME, (existing + _stream_text(events)).encode()
+          EVENT_STREAM_NAME, (existing + _stream_text(events)).encode()
         )
       return result
 
@@ -1144,33 +1144,33 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
   def transport(payload: Mapping[str, Any]) -> Mapping[str, Any]:
     payloads.append(dict(payload))
     content = (
-        [
-            {
-                "type": "tool_use",
-                "id": "toolu_test",
-                "name": JUDGE_TOOL_NAME,
-                "input": {
-                    "off_track": True,
-                    "reason": "drift",
-                    "running_state": "Current checkpoint: inspect parser",
-                },
-            }
-        ]
-        if len(payloads) == 1
-        else [{"type": "text", "text": "look again"}]
+      [
+        {
+          "type": "tool_use",
+          "id": "toolu_test",
+          "name": JUDGE_TOOL_NAME,
+          "input": {
+            "off_track": True,
+            "reason": "drift",
+            "running_state": "Current checkpoint: inspect parser",
+          },
+        }
+      ]
+      if len(payloads) == 1
+      else [{"type": "text", "text": "look again"}]
     )
     return {
-        "model": "served/model",
-        "content": content,
-        "stop_reason": "end_turn",
+      "model": "served/model",
+      "content": content,
+      "stop_reason": "end_turn",
     }
 
   registered_workflow = workflow_definition("from_scratch_guided_trace")
   assert registered_workflow is definitions.FROM_SCRATCH_GUIDED_TRACE
   (rollout,) = (
-      entry
-      for entry in registered_workflow
-      if entry.key == definitions.GUIDED_ROLLOUT_KEY
+    entry
+    for entry in registered_workflow
+    if entry.key == definitions.GUIDED_ROLLOUT_KEY
   )
   assert isinstance(rollout.task, CodingAgentTask)
   registered = rollout.task.harness
@@ -1179,25 +1179,25 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
 
   def policy_factory(_cooldown: int, _base_url: str, _api_key_env: str):
     return supervising_policy(
-        model="model", transport=transport, budget=1, cooldown=0
+      model="model", transport=transport, budget=1, cooldown=0
     )
 
   supervision = dataclasses.replace(
-      registered.segmented,
-      policy_factory=policy_factory,
+    registered.segmented,
+    policy_factory=policy_factory,
   )
   harness = dataclasses.replace(registered, segmented=supervision)
   task = (
-      "Please inspect the failing parser boundary before changing any code in "
-      "this repository today"
+    "Please inspect the failing parser boundary before changing any code in "
+    "this repository today"
   )
   rubric_only = (
-      "opal quartz river saffron timber umber violet willow xenon yellow "
-      "zephyr alder"
+    "opal quartz river saffron timber umber violet willow xenon yellow "
+    "zephyr alder"
   )
   tutorial_only = (
-      "amber cobalt delta ember fable garnet harbor ivory juniper kelp lunar "
-      "marble nectar"
+    "amber cobalt delta ember fable garnet harbor ivory juniper kelp lunar "
+    "marble nectar"
   )
   sentinel = f"""\
 # Guidebook
@@ -1242,12 +1242,12 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
     assert tutorial_only not in messages[0]["content"]
 
   rows = [
-      json.loads(line)
-      for line in sb.read(SUPERVISOR_LOG_NAME).decode().splitlines()
+    json.loads(line)
+    for line in sb.read(SUPERVISOR_LOG_NAME).decode().splitlines()
   ]
   spoke = next(row for row in rows if row["kind"] == "spoke")
   assert (
-      spoke["guidebook_sha256"] == hashlib.sha256(sentinel.encode()).hexdigest()
+    spoke["guidebook_sha256"] == hashlib.sha256(sentinel.encode()).hexdigest()
   )
   assert spoke["judge_reason"] == "drift"
   assert spoke["running_state"] == "Current checkpoint: inspect parser"
@@ -1255,14 +1255,14 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
   assert spoke["judge_input"] == payloads[0]
   assert spoke["text"] == "look again"
   assert any(
-      command.startswith("rm -f") and GUIDEBOOK_NAME in command
-      for command in sb.commands
+    command.startswith("rm -f") and GUIDEBOOK_NAME in command
+    for command in sb.commands
   )
 
   def shingles(text: str) -> set[tuple[str, ...]]:
     words = text.lower().split()
     return {
-        tuple(words[index : index + 12]) for index in range(len(words) - 11)
+      tuple(words[index : index + 12]) for index in range(len(words) - 11)
     }
 
   conversation_text = harness.to_conversation(sb).model_dump_json()
@@ -1271,7 +1271,7 @@ def test_the_registered_guided_harness_hands_the_guidebook_to_both_calls(
   assert shared  # the task-derived text is the false-positive control
   assert leaked == set()
   assert (
-      shingles(sentinel) & shingles(conversation_text + " " + tutorial_only)
+    shingles(sentinel) & shingles(conversation_text + " " + tutorial_only)
   ) - shingles(task)
 
 
@@ -1284,15 +1284,13 @@ def _guided_harness() -> ClaudeCodeHarness:
   from swe_lab.trace_synthesis.guidebook import GUIDEBOOK_NAME
 
   return ClaudeCodeHarness(
-      capture="proxy",
-      segmented=dataclasses.replace(
-          _segmented(), guidebook_name=GUIDEBOOK_NAME
-      ),
+    capture="proxy",
+    segmented=dataclasses.replace(_segmented(), guidebook_name=GUIDEBOOK_NAME),
   )
 
 
 def test_a_guided_run_starts_with_a_guidebook_the_schema_would_reject(
-    tmp_path: Path,
+  tmp_path: Path,
 ) -> None:
   """An imperfect guidebook is supervision material, not a stop (ADR-0027).
 
@@ -1313,8 +1311,8 @@ def test_a_guided_run_starts_with_a_guidebook_the_schema_would_reject(
 
   assert AGENT_SCRIPT_NAME in sb.scripts
   rows = [
-      json.loads(line)
-      for line in sb.read(SUPERVISOR_LOG_NAME).decode().splitlines()
+    json.loads(line)
+    for line in sb.read(SUPERVISOR_LOG_NAME).decode().splitlines()
   ]
   assert rows
   # The identity on every row is the malformed artifact's own: what the
@@ -1322,13 +1320,13 @@ def test_a_guided_run_starts_with_a_guidebook_the_schema_would_reject(
   digest = hashlib.sha256(malformed.encode()).hexdigest()
   assert {row["guidebook_sha256"] for row in rows} == {digest}
   assert any(
-      command.startswith("rm -f") and GUIDEBOOK_NAME in command
-      for command in sb.commands
+    command.startswith("rm -f") and GUIDEBOOK_NAME in command
+    for command in sb.commands
   )
 
 
 def test_a_guided_run_with_no_guidebook_at_all_refuses_to_start(
-    tmp_path: Path,
+  tmp_path: Path,
 ) -> None:
   """The control arm: absence is not an imperfect guidebook, it is none.
 

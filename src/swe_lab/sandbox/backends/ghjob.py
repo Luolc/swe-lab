@@ -73,8 +73,8 @@ class GitHubJobSandbox(Sandbox):
     self.workspace.mkdir(parents=True, exist_ok=True)
     if not self.reuse and any(self.workspace.iterdir()):
       raise SandboxError(
-          f"workspace {self.workspace} is not empty; pass reuse=True to run "
-          "in it anyway"
+        f"workspace {self.workspace} is not empty; pass reuse=True to run "
+        "in it anyway"
       )
 
   @override
@@ -92,7 +92,7 @@ class GitHubJobSandbox(Sandbox):
 
   @override
   def asset_observer(
-      self, assets: Sequence[AgentAsset]
+    self, assets: Sequence[AgentAsset]
   ) -> SandboxObserver | None:
     """Install declared assets straight to their final paths.
 
@@ -166,20 +166,18 @@ class GitHubJobSandbox(Sandbox):
   def _dest(self, target: str) -> epath.Path:
     """Resolve a mount target: absolute as-is, else workspace-relative."""
     return (
-        epath.Path(target)
-        if target.startswith("/")
-        else self.workspace / target
+      epath.Path(target) if target.startswith("/") else self.workspace / target
     )
 
   # --- exec ----------------------------------------------------------------
 
   @override
   def run_script(
-      self,
-      name: str,
-      *,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    name: str,
+    *,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     """Run ``$SANDBOX_WORKSPACE/<name>`` under the shell in the job.
 
@@ -195,32 +193,32 @@ class GitHubJobSandbox(Sandbox):
       The script's exit status and output; exit code 124 on timeout.
     """
     return self._run(
-        [self.shell, str(self.workspace / name)],
-        timeout=timeout,
-        env=env,
+      [self.shell, str(self.workspace / name)],
+      timeout=timeout,
+      env=env,
     )
 
   @override
   def run_command(
-      self,
-      command: str,
-      *,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    command: str,
+    *,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     """Run an inline command (``<shell> -c command``) in the job."""
     return self._run(
-        [self.shell, "-c", command],
-        timeout=timeout,
-        env=env,
+      [self.shell, "-c", command],
+      timeout=timeout,
+      env=env,
     )
 
   def _run(
-      self,
-      argv: Sequence[str],
-      *,
-      timeout: float,
-      env: Mapping[str, str] | None,
+    self,
+    argv: Sequence[str],
+    *,
+    timeout: float,
+    env: Mapping[str, str] | None,
   ) -> ExecResult:
     """Run one command in the job, ending its whole process tree on timeout.
 
@@ -245,12 +243,12 @@ class GitHubJobSandbox(Sandbox):
     """
     run_env = self._exec_env(env)
     with subprocess.Popen(
-        list(argv),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=run_env,
-        start_new_session=True,
+      list(argv),
+      stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE,
+      text=True,
+      env=run_env,
+      start_new_session=True,
     ) as process:
       try:
         stdout, stderr = process.communicate(timeout=timeout)

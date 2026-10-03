@@ -19,17 +19,17 @@ import pytest
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec, Verdict
 from swe_lab.git.history import (
-    build_purge_script,
-    build_report_script,
-    GitHistoryReport,
+  build_purge_script,
+  build_report_script,
+  GitHistoryReport,
 )
 from swe_lab.sandbox import ExecResult, SandboxSpec
 from swe_lab.sandbox.observers.git_history_purge import (
-    CLEAN_METRIC,
-    FUTURE_BEFORE_METRIC,
-    GitHistoryLeakError,
-    GitHistoryPurgeObserver,
-    INTEGRITY_ARTIFACT,
+  CLEAN_METRIC,
+  FUTURE_BEFORE_METRIC,
+  GitHistoryLeakError,
+  GitHistoryPurgeObserver,
+  INTEGRITY_ARTIFACT,
 )
 from swe_lab.sandbox.testing import FakeSandbox
 
@@ -76,10 +76,10 @@ class _PurgeInstance(TaskInstance[Any]):
     """
     del kwargs
     return UnitTestSpec(
-        eval_script="true\n",
-        mounts={},
-        grader=_NullGrader(),
-        native_outputs={},
+      eval_script="true\n",
+      mounts={},
+      grader=_NullGrader(),
+      native_outputs={},
     )
 
 
@@ -88,17 +88,17 @@ _FIX = "f" * 40
 
 # The baseline every report in this file is a variation of — see _report_json.
 _CLEAN_REPORT = GitHistoryReport(
-    base_sha="basesha",
-    refs=0,
-    tags=0,
-    heads=0,
-    remote_refs=0,
-    remotes=0,
-    reflog=0,
-    future_commits=0,
-    base_reachable=True,
-    solution_reachable=False,
-    solution_is_future=None,
+  base_sha="basesha",
+  refs=0,
+  tags=0,
+  heads=0,
+  remote_refs=0,
+  remotes=0,
+  reflog=0,
+  future_commits=0,
+  base_reachable=True,
+  solution_reachable=False,
+  solution_is_future=None,
 )
 
 
@@ -111,22 +111,22 @@ def _pro_instance(**overrides: Any) -> Any:
   from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
 
   fields: dict[str, Any] = {
-      "repo": "acme/widget",
-      "instance_id": f"instance_acme__widget-{'b' * 40}-vnan",
-      "base_commit": "c" * 40,
-      "patch": "",
-      "test_patch": "",
-      "problem_statement": "",
-      "requirements": "",
-      "interface": "",
-      "repo_language": "python",
-      "fail_to_pass": (),
-      "pass_to_pass": (),
-      "issue_specificity": "",
-      "issue_categories": (),
-      "before_repo_set_cmd": "",
-      "selected_test_files_to_run": (),
-      "dockerhub_tag": "acme.widget-tag",
+    "repo": "acme/widget",
+    "instance_id": f"instance_acme__widget-{'b' * 40}-vnan",
+    "base_commit": "c" * 40,
+    "patch": "",
+    "test_patch": "",
+    "problem_statement": "",
+    "requirements": "",
+    "interface": "",
+    "repo_language": "python",
+    "fail_to_pass": (),
+    "pass_to_pass": (),
+    "issue_specificity": "",
+    "issue_categories": (),
+    "before_repo_set_cmd": "",
+    "selected_test_files_to_run": (),
+    "dockerhub_tag": "acme.widget-tag",
   }
   fields.update(overrides)
   return SweBenchProInstance(**fields)
@@ -144,11 +144,11 @@ def _report_json(**overrides: Any) -> str:
 
 def _sandbox(tmp_path: Path, *outputs: str) -> FakeSandbox:
   return FakeSandbox(
-      spec=SPEC,
-      workspace=epath.Path(tmp_path / "ws"),
-      run_results=[ExecResult(0, out, "") for out in outputs],
-      # These tests drive the purge itself, so the fake must not answer for it.
-      git_report=None,
+    spec=SPEC,
+    workspace=epath.Path(tmp_path / "ws"),
+    run_results=[ExecResult(0, out, "") for out in outputs],
+    # These tests drive the purge itself, so the fake must not answer for it.
+    git_report=None,
   )
 
 
@@ -175,8 +175,8 @@ def test_a_failed_cd_aborts_before_anything_destructive():
   # none of them names a directory, so the cd is the only thing standing
   # between "purge the sandbox" and "purge the caller's checkout".
   for script in (
-      build_purge_script(workdir="/app"),
-      build_report_script(workdir="/app"),
+    build_purge_script(workdir="/app"),
+    build_report_script(workdir="/app"),
   ):
     head = script.split("cd /app")[0]
     assert "set -eu" in head  # strict mode is in force BEFORE the cd
@@ -227,8 +227,8 @@ def test_the_scripts_never_shell_out_to_date():
   # with busybox (upstream #75), where the reference assertion breaks. We
   # compare committer timestamps as integers instead.
   for script in (
-      build_purge_script(workdir="/app"),
-      build_report_script(workdir="/app", solution_sha=_FIX),
+    build_purge_script(workdir="/app"),
+    build_report_script(workdir="/app", solution_sha=_FIX),
   ):
     assert "date -d" not in script
 
@@ -249,7 +249,7 @@ def test_the_report_script_always_exits_zero():
 def test_solution_reachability_is_null_when_no_sha_is_known():
   assert "SOL=null" in build_report_script(workdir="/app")
   assert f"git cat-file -e {_FIX}" in build_report_script(
-      workdir="/app", solution_sha=_FIX
+    workdir="/app", solution_sha=_FIX
   )
 
 
@@ -277,9 +277,9 @@ def test_the_report_script_quotes_only_its_string_fields():
   # SOURCE TEXT, so a `is str` check silently fails and base_sha loses its
   # quotes — emitting invalid JSON. It did, once.
   printf = next(
-      line
-      for line in build_report_script(workdir="/app").splitlines()
-      if line.startswith("printf")
+    line
+    for line in build_report_script(workdir="/app").splitlines()
+    if line.startswith("printf")
   )
   assert '"base_sha":"%s"' in printf  # a string: quoted
   assert '"refs":%s' in printf  # a number: bare
@@ -290,17 +290,17 @@ def test_the_reports_json_round_trips_over_every_field():
   # The guard the manual mapping used to need: this covers any field added
   # later without anyone editing a parser or a serializer.
   report = GitHistoryReport(
-      base_sha="deadbeef",
-      refs=237,
-      tags=214,
-      heads=1,
-      remote_refs=22,
-      remotes=1,
-      reflog=4,
-      future_commits=3426,
-      base_reachable=True,
-      solution_reachable=True,
-      solution_is_future=True,
+    base_sha="deadbeef",
+    refs=237,
+    tags=214,
+    heads=1,
+    remote_refs=22,
+    remotes=1,
+    reflog=4,
+    future_commits=3426,
+    base_reachable=True,
+    solution_reachable=True,
+    solution_is_future=True,
   )
   assert GitHistoryReport.from_json(json.dumps(report.to_dict())) == report
 
@@ -336,10 +336,10 @@ def test_a_missing_base_commit_is_a_violation():
 def test_future_commits_are_a_violation_even_with_no_solution_sha():
   # The load-bearing assertion: it catches leaks whose sha we never knew.
   report = GitHistoryReport.from_json(
-      _report_json(future_commits=12, solution_reachable=None)
+    _report_json(future_commits=12, solution_reachable=None)
   )
   assert report.violations() == (
-      "12 reachable commit(s) postdate the base commit",
+    "12 reachable commit(s) postdate the base commit",
   )
 
 
@@ -350,7 +350,7 @@ def test_a_fix_dated_exactly_at_the_base_is_still_a_leak():
   # only solution_reachable noticed. Counting by graph reachability makes the
   # two agree.
   report = GitHistoryReport.from_json(
-      _report_json(future_commits=4, solution_reachable=True)
+    _report_json(future_commits=4, solution_reachable=True)
   )
   assert len(report.violations()) == 2
 
@@ -369,18 +369,18 @@ def test_a_report_without_json_is_an_error():
 
 
 def test_the_purge_runs_before_the_agent_and_reports_both_sides(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   sb = _sandbox(
-      tmp_path,
-      _report_json(
-          refs=237,
-          future_commits=3426,
-          solution_reachable=True,
-          solution_is_future=True,
-      ),
-      "",  # the purge itself
-      _report_json(refs=68, future_commits=0),
+    tmp_path,
+    _report_json(
+      refs=237,
+      future_commits=3426,
+      solution_reachable=True,
+      solution_is_future=True,
+    ),
+    "",  # the purge itself
+    _report_json(refs=68, future_commits=0),
   )
   observer = GitHistoryPurgeObserver(solution_sha=_FIX)
   observer.after_create(sb)
@@ -404,7 +404,7 @@ def test_a_fix_sha_that_is_not_in_the_repo_is_refused(tmp_path: Path):
   # would report "solution unreachable" having proved nothing. Confirm it was
   # there to begin with, or the assertion is decoration.
   sb = _sandbox(
-      tmp_path, _report_json(future_commits=3426, solution_reachable=False)
+    tmp_path, _report_json(future_commits=3426, solution_reachable=False)
   )
   with pytest.raises(GitHistoryLeakError, match="is not in this repo"):
     GitHistoryPurgeObserver(solution_sha=_FIX).after_create(sb)
@@ -416,10 +416,10 @@ def test_an_already_clean_image_is_not_mistaken_for_a_bad_sha(tmp_path: Path):
   # legitimately absent from the start. A repo with no future history has
   # nothing for this observer to prove, and must not be failed for it.
   sb = _sandbox(
-      tmp_path,
-      _report_json(future_commits=0, solution_reachable=False),
-      "",
-      _report_json(future_commits=0, solution_reachable=False),
+    tmp_path,
+    _report_json(future_commits=0, solution_reachable=False),
+    "",
+    _report_json(future_commits=0, solution_reachable=False),
   )
   GitHistoryPurgeObserver(solution_sha=_FIX).after_create(sb)  # no raise
 
@@ -428,14 +428,14 @@ def test_a_leak_that_survives_the_purge_stops_the_run(tmp_path: Path):
   # The whole point: refuse to run the agent against a contaminated repo,
   # rather than produce a number that looks real and is not.
   sb = _sandbox(
-      tmp_path,
-      _report_json(
-          solution_reachable=True, solution_is_future=True, future_commits=3426
-      ),
-      "",
-      _report_json(
-          solution_reachable=True, solution_is_future=True, future_commits=3426
-      ),
+    tmp_path,
+    _report_json(
+      solution_reachable=True, solution_is_future=True, future_commits=3426
+    ),
+    "",
+    _report_json(
+      solution_reachable=True, solution_is_future=True, future_commits=3426
+    ),
   )
   with pytest.raises(GitHistoryLeakError, match="still reachable"):
     GitHistoryPurgeObserver(solution_sha=_FIX).after_create(sb)
@@ -446,21 +446,21 @@ def test_a_purge_that_fails_to_run_is_itself_a_leak(tmp_path: Path):
   # transaction rolls back, and nothing is purged. A non-zero exit must never
   # be shrugged off as a best-effort setup step.
   sb = FakeSandbox(
-      spec=SPEC,
-      workspace=epath.Path(tmp_path / "ws"),
-      run_results=[
-          ExecResult(
-              0,
-              _report_json(
-                  solution_reachable=True,
-                  solution_is_future=True,
-                  future_commits=3426,
-              ),
-              "",
-          ),
-          ExecResult(128, "fatal: multiple updates for 'refs/...'", ""),
-      ],
-      git_report=None,
+    spec=SPEC,
+    workspace=epath.Path(tmp_path / "ws"),
+    run_results=[
+      ExecResult(
+        0,
+        _report_json(
+          solution_reachable=True,
+          solution_is_future=True,
+          future_commits=3426,
+        ),
+        "",
+      ),
+      ExecResult(128, "fatal: multiple updates for 'refs/...'", ""),
+    ],
+    git_report=None,
   )
   with pytest.raises(GitHistoryLeakError, match="purge failed"):
     GitHistoryPurgeObserver(solution_sha=_FIX).after_create(sb)
@@ -521,15 +521,13 @@ def test_the_purge_runs_before_the_baseline_it_would_otherwise_prune():
   from swe_lab.sandbox.observers.diff_extract import DiffExtractObserver
 
   observers = CodingAgentTask(
-      harness=ClaudeCodeHarness(), patch_baseline=True
+    harness=ClaudeCodeHarness(), patch_baseline=True
   ).observers(_PurgeInstance())
   purge = next(
-      i
-      for i, o in enumerate(observers)
-      if isinstance(o, GitHistoryPurgeObserver)
+    i for i, o in enumerate(observers) if isinstance(o, GitHistoryPurgeObserver)
   )
   diff = next(
-      i for i, o in enumerate(observers) if isinstance(o, DiffExtractObserver)
+    i for i, o in enumerate(observers) if isinstance(o, DiffExtractObserver)
   )
   assert purge < diff, "the baseline must be committed after the purge"
   extractor = observers[diff]
@@ -588,7 +586,7 @@ def test_an_unreadable_instance_id_raises_instead_of_returning_none():
   # And a sha that IS parsed but equals base_commit means the id is carrying
   # something else now — also a moved convention, not a value to default around.
   collided = _pro_instance(
-      instance_id=f"instance_acme__widget-{'a' * 40}", base_commit="a" * 40
+    instance_id=f"instance_acme__widget-{'a' * 40}", base_commit="a" * 40
   )
   with pytest.raises(ValueError, match="equal to its base_commit"):
     _ = collided.solution_sha()
@@ -633,19 +631,19 @@ def test_an_integrity_failure_is_never_retried():
   from swe_lab.workflow import AttemptResult
 
   leaked = AttemptResult(
-      run=RunResult(
-          label="x",
-          status=RunStatus.SETUP_ERROR,
-          artifacts={},
-          metrics={},
-          error=GitHistoryLeakError("still reachable"),
-      ),
-      exec_result=None,
-      output_schema=(),
-      observers=(),
+    run=RunResult(
+      label="x",
+      status=RunStatus.SETUP_ERROR,
+      artifacts={},
+      metrics={},
+      error=GitHistoryLeakError("still reachable"),
+    ),
+    exec_result=None,
+    output_schema=(),
+    observers=(),
   )
   assert (
-      CodingAgentTask(harness=ClaudeCodeHarness()).should_retry(leaked) is False
+    CodingAgentTask(harness=ClaudeCodeHarness()).should_retry(leaked) is False
   )
   assert GitIntegrityAuditTask().should_retry(leaked) is False
 
@@ -670,12 +668,12 @@ def test_an_env_setup_sha_mistaken_for_the_fix_is_refused(tmp_path: Path):
   # ancestor of HEAD. If the id format ever reorders them we would extract it,
   # find it present, and "prove" a purge that never had anything to remove.
   sb = _sandbox(
-      tmp_path,
-      _report_json(
-          future_commits=3426,
-          solution_reachable=True,
-          solution_is_future=False,
-      ),
+    tmp_path,
+    _report_json(
+      future_commits=3426,
+      solution_reachable=True,
+      solution_is_future=False,
+    ),
   )
   with pytest.raises(GitHistoryLeakError, match="ancestor of HEAD"):
     GitHistoryPurgeObserver(solution_sha=_FIX).after_create(sb)
@@ -688,17 +686,17 @@ def test_a_purge_that_timed_out_is_not_reported_as_a_leak(tmp_path: Path):
   # while a timeout is exactly the kind of thing that passes on a second try.
   # Both still fail the attempt closed.
   from swe_lab.sandbox.observers.git_history_purge import (
-      GitHistoryPurgeTimeoutError,
+    GitHistoryPurgeTimeoutError,
   )
 
   sb = FakeSandbox(
-      spec=SPEC,
-      workspace=epath.Path(tmp_path / "ws"),
-      run_results=[
-          ExecResult(0, _report_json(future_commits=99), ""),
-          ExecResult(124, "", "", timed_out=True),
-      ],
-      git_report=None,
+    spec=SPEC,
+    workspace=epath.Path(tmp_path / "ws"),
+    run_results=[
+      ExecResult(0, _report_json(future_commits=99), ""),
+      ExecResult(124, "", "", timed_out=True),
+    ],
+    git_report=None,
   )
   with pytest.raises(GitHistoryPurgeTimeoutError, match="did not finish"):
     GitHistoryPurgeObserver(solution_sha=None).after_create(sb)
@@ -709,22 +707,22 @@ def test_a_timeout_is_retryable_while_a_leak_is_not():
   from swe_lab.rollout import CodingAgentTask
   from swe_lab.sandbox import RunResult, RunStatus
   from swe_lab.sandbox.observers.git_history_purge import (
-      GitHistoryPurgeTimeoutError,
+    GitHistoryPurgeTimeoutError,
   )
   from swe_lab.workflow import AttemptResult
 
   def attempt(error: Exception) -> AttemptResult:
     return AttemptResult(
-        run=RunResult(
-            label="x",
-            status=RunStatus.SETUP_ERROR,
-            artifacts={},
-            metrics={},
-            error=error,
-        ),
-        exec_result=None,
-        output_schema=(),
-        observers=(),
+      run=RunResult(
+        label="x",
+        status=RunStatus.SETUP_ERROR,
+        artifacts={},
+        metrics={},
+        error=error,
+      ),
+      exec_result=None,
+      output_schema=(),
+      observers=(),
     )
 
   task = CodingAgentTask(harness=ClaudeCodeHarness())

@@ -16,62 +16,62 @@ from swe_lab.harnesses.claude_code.capture import Capture
 from swe_lab.repo.provider import GitCheckoutProvider
 
 from .agent_run import (
-    DEFAULT_CLAUDE_TIMEOUT_S,
-    DEFAULT_MAX_ATTEMPTS,
-    DEFAULT_MODEL,
-    run_agent,
-    RunResult,
+  DEFAULT_CLAUDE_TIMEOUT_S,
+  DEFAULT_MAX_ATTEMPTS,
+  DEFAULT_MODEL,
+  run_agent,
+  RunResult,
 )
 from .annotation_prompt import build_annotation_prompt
 from .host_proxy import DEFAULT_BASE_PORT
 
 __all__ = [
-    "DEFAULT_MODEL",
-    "RunResult",
-    "annotate_by_id",
-    "annotate_instance",
+  "DEFAULT_MODEL",
+  "RunResult",
+  "annotate_by_id",
+  "annotate_instance",
 ]
 
 
 def annotate_instance(
-    instance: SweBenchProInstance,
-    index: int,
-    *,
-    repo_root: epath.PathLike | None = None,
-    provider: GitCheckoutProvider | None = None,
-    model: str = DEFAULT_MODEL,
-    base_port: int = DEFAULT_BASE_PORT,
-    port: int | None = None,
-    variant: str = "",
-    max_attempts: int = DEFAULT_MAX_ATTEMPTS,
-    claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
-    capture: Capture = "stream",
+  instance: SweBenchProInstance,
+  index: int,
+  *,
+  repo_root: epath.PathLike | None = None,
+  provider: GitCheckoutProvider | None = None,
+  model: str = DEFAULT_MODEL,
+  base_port: int = DEFAULT_BASE_PORT,
+  port: int | None = None,
+  variant: str = "",
+  max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+  claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
+  capture: Capture = "stream",
 ) -> RunResult:
   """Annotate one instance; return the result (the caller persists it)."""
   return run_agent(
-      instance,
-      index,
-      prompt=build_annotation_prompt(instance),
-      kind="annotation",
-      repo_root=repo_root,
-      provider=provider,
-      model=model,
-      base_port=base_port,
-      port=port,
-      variant=variant,
-      max_attempts=max_attempts,
-      claude_timeout=claude_timeout,
-      capture=capture,
+    instance,
+    index,
+    prompt=build_annotation_prompt(instance),
+    kind="annotation",
+    repo_root=repo_root,
+    provider=provider,
+    model=model,
+    base_port=base_port,
+    port=port,
+    variant=variant,
+    max_attempts=max_attempts,
+    claude_timeout=claude_timeout,
+    capture=capture,
   )
 
 
 def annotate_by_id(
-    instance_id: str,
-    *,
-    dataset: Dataset | None = None,
-    model: str = DEFAULT_MODEL,
-    base_port: int = DEFAULT_BASE_PORT,
-    capture: Capture = "stream",
+  instance_id: str,
+  *,
+  dataset: Dataset | None = None,
+  model: str = DEFAULT_MODEL,
+  base_port: int = DEFAULT_BASE_PORT,
+  capture: Capture = "stream",
 ) -> RunResult:
   """Look an instance up by id and annotate it (using its dataset index)."""
   dataset = dataset or load_dataset()
@@ -80,5 +80,5 @@ def annotate_by_id(
     raise TypeError(f"Unexpected record type: {type(record).__name__}")
   index = dataset.index_of(instance_id)
   return annotate_instance(
-      record, index, model=model, base_port=base_port, capture=capture
+    record, index, model=model, base_port=base_port, capture=capture
   )

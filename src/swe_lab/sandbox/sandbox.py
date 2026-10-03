@@ -81,11 +81,11 @@ class SandboxFs(ABC):
 
   @abstractmethod
   def run_script(
-      self,
-      name: str,
-      *,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    name: str,
+    *,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     """Run a staged workspace file by name (``<shell> $WORKSPACE/name``).
 
@@ -103,11 +103,11 @@ class SandboxFs(ABC):
 
   @abstractmethod
   def run_command(
-      self,
-      command: str,
-      *,
-      timeout: float,
-      env: Mapping[str, str] | None = None,
+    self,
+    command: str,
+    *,
+    timeout: float,
+    env: Mapping[str, str] | None = None,
   ) -> ExecResult:
     """Run an inline command string (``<shell> -c command``).
 
@@ -172,7 +172,7 @@ class Sandbox(SandboxFs, ABC):
     return ()
 
   def asset_observer(
-      self, assets: Sequence[AgentAsset]
+    self, assets: Sequence[AgentAsset]
   ) -> SandboxObserver | None:
     """Return the observer that materializes ``assets`` for this backend.
 
@@ -250,7 +250,7 @@ class Sandbox(SandboxFs, ABC):
       self._put_file(target, resource.path, mount)
     else:
       raise SandboxError(
-          f"{type(self).__name__} cannot mount {type(resource).__name__}"
+        f"{type(self).__name__} cannot mount {type(resource).__name__}"
       )
 
   @abstractmethod

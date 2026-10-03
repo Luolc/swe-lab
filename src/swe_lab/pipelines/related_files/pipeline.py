@@ -18,8 +18,8 @@ from swe_lab.datasets.loader import Dataset, load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
 from swe_lab.harnesses.claude_code.capture import Capture
 from swe_lab.harnesses.claude_code.errors import (
-    AnnotationError,
-    UsageLimitError,
+  AnnotationError,
+  UsageLimitError,
 )
 from swe_lab.paths import find_repo_root
 
@@ -28,11 +28,11 @@ from .aggregator import aggregate_instance
 from .annotator import annotate_instance
 from .host_proxy import DEFAULT_BASE_PORT
 from .storage import (
-    AGGREGATE_LABEL,
-    candidate_label,
-    DEFAULT_DATASET,
-    instance_dir,
-    store_run,
+  AGGREGATE_LABEL,
+  candidate_label,
+  DEFAULT_DATASET,
+  instance_dir,
+  store_run,
 )
 
 DEFAULT_SAMPLES = 3
@@ -61,15 +61,15 @@ class PipelineResult:
 
 
 def annotate_with_aggregation(
-    instance: SweBenchProInstance,
-    index: int,
-    *,
-    dataset: str = DEFAULT_DATASET,
-    samples: int = DEFAULT_SAMPLES,
-    repo_root: epath.PathLike | None = None,
-    model: str = DEFAULT_MODEL,
-    base_port: int = DEFAULT_BASE_PORT,
-    capture: Capture = "stream",
+  instance: SweBenchProInstance,
+  index: int,
+  *,
+  dataset: str = DEFAULT_DATASET,
+  samples: int = DEFAULT_SAMPLES,
+  repo_root: epath.PathLike | None = None,
+  model: str = DEFAULT_MODEL,
+  base_port: int = DEFAULT_BASE_PORT,
+  capture: Capture = "stream",
 ) -> PipelineResult:
   """Sample ``instance`` ``samples`` times (in parallel), then aggregate.
 
@@ -111,13 +111,13 @@ def annotate_with_aggregation(
 
   def _sample(k: int) -> RunResult:
     return annotate_instance(
-        instance,
-        index,
-        repo_root=root,
-        model=model,
-        port=block + (k - 1),
-        variant=f"sample{k}",
-        capture=capture,
+      instance,
+      index,
+      repo_root=root,
+      model=model,
+      port=block + (k - 1),
+      variant=f"sample{k}",
+      capture=capture,
     )
 
   candidates: list[RunResult] = []
@@ -132,56 +132,56 @@ def annotate_with_aggregation(
         pass  # a sample failed after its own retries; aggregate the survivors
   if not candidates:
     raise AnnotationError(
-        f"all {samples} samples failed for {instance.instance_id}"
+      f"all {samples} samples failed for {instance.instance_id}"
     )
 
   for k, candidate in enumerate(candidates, start=1):
     _ = store_run(
-        instance.instance_id,
-        candidate_label(k),
-        candidate,
-        dataset=dataset,
-        repo_root=root,
+      instance.instance_id,
+      candidate_label(k),
+      candidate,
+      dataset=dataset,
+      repo_root=root,
     )
 
   payload = [
-      {"snippets": [s.to_dict() for s in c.annotation.snippets]}
-      for c in candidates
+    {"snippets": [s.to_dict() for s in c.annotation.snippets]}
+    for c in candidates
   ]
   aggregate = aggregate_instance(
-      instance,
-      index,
-      payload,
-      repo_root=root,
-      model=model,
-      port=block + samples,
-      capture=capture,
+    instance,
+    index,
+    payload,
+    repo_root=root,
+    model=model,
+    port=block + samples,
+    capture=capture,
   )
   _ = store_run(
-      instance.instance_id,
-      AGGREGATE_LABEL,
-      aggregate,
-      dataset=dataset,
-      repo_root=root,
+    instance.instance_id,
+    AGGREGATE_LABEL,
+    aggregate,
+    dataset=dataset,
+    repo_root=root,
   )
   return PipelineResult(
-      instance_id=instance.instance_id,
-      candidates=candidates,
-      aggregate=aggregate,
-      directory=instance_dir(
-          instance.instance_id, dataset=dataset, repo_root=root
-      ),
+    instance_id=instance.instance_id,
+    candidates=candidates,
+    aggregate=aggregate,
+    directory=instance_dir(
+      instance.instance_id, dataset=dataset, repo_root=root
+    ),
   )
 
 
 def annotate_by_id_with_aggregation(
-    instance_id: str,
-    *,
-    dataset_obj: Dataset | None = None,
-    dataset: str = DEFAULT_DATASET,
-    samples: int = DEFAULT_SAMPLES,
-    model: str = DEFAULT_MODEL,
-    capture: Capture = "stream",
+  instance_id: str,
+  *,
+  dataset_obj: Dataset | None = None,
+  dataset: str = DEFAULT_DATASET,
+  samples: int = DEFAULT_SAMPLES,
+  model: str = DEFAULT_MODEL,
+  capture: Capture = "stream",
 ) -> PipelineResult:
   """Look an instance up by id and run the sample-and-aggregate pipeline.
 
@@ -207,10 +207,10 @@ def annotate_by_id_with_aggregation(
     raise TypeError(f"Unexpected record type: {type(record).__name__}")
   index = dataset_obj.index_of(instance_id)
   return annotate_with_aggregation(
-      record,
-      index,
-      dataset=dataset,
-      samples=samples,
-      model=model,
-      capture=capture,
+    record,
+    index,
+    dataset=dataset,
+    samples=samples,
+    model=model,
+    capture=capture,
   )

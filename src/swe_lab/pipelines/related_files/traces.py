@@ -49,8 +49,8 @@ from huggingface_hub.errors import HfHubHTTPError
 from swe_lab.paths import find_repo_root, outputs_root
 
 from .exchange import (
-    exchange_publication_blockers,
-    OperatorIdentity,
+  exchange_publication_blockers,
+  OperatorIdentity,
 )
 from .storage import DEFAULT_DATASET, TASK_DIRNAME
 
@@ -70,7 +70,7 @@ class UnpublishableTraceError(RuntimeError):
 
 
 def refuse_unpublishable_traces(
-    base: epath.PathLike, *, identity: OperatorIdentity | None = None
+  base: epath.PathLike, *, identity: OperatorIdentity | None = None
 ) -> None:
   """Check every trace that would be uploaded; raise if any must not be.
 
@@ -101,13 +101,13 @@ def refuse_unpublishable_traces(
       blockers.append(f"{path.name}: not an object")
       continue
     blockers += [
-        f"{path.name}: {finding}"
-        for finding in exchange_publication_blockers(record, identity=who)
+      f"{path.name}: {finding}"
+      for finding in exchange_publication_blockers(record, identity=who)
     ]
   if blockers:
     raise UnpublishableTraceError(
-        f"{len(blockers)} trace(s) must not be published:\n  "
-        + "\n  ".join(blockers)
+      f"{len(blockers)} trace(s) must not be published:\n  "
+      + "\n  ".join(blockers)
     )
 
 
@@ -117,14 +117,14 @@ def _task_dir(repo_root: epath.PathLike | None = None) -> epath.Path:
 
 
 def manifest_path(
-    dataset: str = DEFAULT_DATASET, *, repo_root: epath.PathLike | None = None
+  dataset: str = DEFAULT_DATASET, *, repo_root: epath.PathLike | None = None
 ) -> epath.Path:
   """Return the path of a dataset's version-controlled trace manifest."""
   return _task_dir(repo_root) / dataset / MANIFEST_NAME
 
 
 def iter_trace_files(
-    dataset: str = DEFAULT_DATASET, *, repo_root: epath.PathLike | None = None
+  dataset: str = DEFAULT_DATASET, *, repo_root: epath.PathLike | None = None
 ) -> Iterator[epath.Path]:
   """Yield every trace file for a dataset, sorted for deterministic output."""
   base = _task_dir(repo_root) / dataset / "intermediate"
@@ -133,7 +133,7 @@ def iter_trace_files(
   # ``epath.Path`` has no working recursive glob (its ``rglob`` / ``**`` raises
   # NotImplementedError), so recurse via ``pathlib`` and wrap the results back.
   yield from (
-      epath.Path(path) for path in sorted(Path(base).rglob(f"*{TRACE_SUFFIX}"))
+    epath.Path(path) for path in sorted(Path(base).rglob(f"*{TRACE_SUFFIX}"))
   )
 
 
@@ -149,11 +149,11 @@ def _git_head(root: epath.PathLike) -> str | None:
   """Return the repo's current commit sha, or None if git is unavailable."""
   try:
     out = subprocess.run(
-        ["git", "-C", str(root), "rev-parse", "HEAD"],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        check=False,
+      ["git", "-C", str(root), "rev-parse", "HEAD"],
+      capture_output=True,
+      text=True,
+      timeout=10,
+      check=False,
     )
   except (OSError, subprocess.SubprocessError):
     return None
@@ -170,7 +170,7 @@ def _hf_head(repo_id: str, api: HfApi) -> str | None:
 
 
 def _load_manifest(
-    dataset: str, root: epath.PathLike
+  dataset: str, root: epath.PathLike
 ) -> dict[str, object] | None:
   path = manifest_path(dataset, repo_root=root)
   if not path.is_file():
@@ -179,11 +179,11 @@ def _load_manifest(
 
 
 def _build_manifest(
-    dataset: str,
-    repo_id: str,
-    revision: str | None,
-    base: epath.PathLike,
-    root: epath.PathLike,
+  dataset: str,
+  repo_id: str,
+  revision: str | None,
+  base: epath.PathLike,
+  root: epath.PathLike,
 ) -> dict[str, object]:
   traces: dict[str, object] = {}
   total = 0
@@ -193,20 +193,20 @@ def _build_manifest(
     traces[rel] = {"sha256": _sha256(path), "bytes": size}
     total += size
   return {
-      "repo_id": repo_id,
-      "repo_type": REPO_TYPE,
-      "revision": revision,
-      "git_commit": _git_head(root),
-      "dataset": dataset,
-      "generated_at": datetime.now(UTC).isoformat(),
-      "num_traces": len(traces),
-      "total_bytes": total,
-      "traces": traces,
+    "repo_id": repo_id,
+    "repo_type": REPO_TYPE,
+    "revision": revision,
+    "git_commit": _git_head(root),
+    "dataset": dataset,
+    "generated_at": datetime.now(UTC).isoformat(),
+    "num_traces": len(traces),
+    "total_bytes": total,
+    "traces": traces,
   }
 
 
 def _write_manifest(
-    manifest: dict[str, object], dataset: str, root: epath.PathLike
+  manifest: dict[str, object], dataset: str, root: epath.PathLike
 ) -> epath.Path:
   out = manifest_path(dataset, repo_root=root)
   _ = out.write_text(json.dumps(manifest, indent=2) + "\n")
@@ -214,13 +214,13 @@ def _write_manifest(
 
 
 def push_traces(
-    dataset: str = DEFAULT_DATASET,
-    *,
-    repo_id: str = DEFAULT_REPO_ID,
-    repo_root: epath.PathLike | None = None,
-    private: bool = True,
-    mirror: bool = False,
-    force: bool = False,
+  dataset: str = DEFAULT_DATASET,
+  *,
+  repo_id: str = DEFAULT_REPO_ID,
+  repo_root: epath.PathLike | None = None,
+  private: bool = True,
+  mirror: bool = False,
+  force: bool = False,
 ) -> epath.Path:
   """Upload all trace files to the HF dataset repo; write the git manifest.
 
@@ -262,26 +262,26 @@ def push_traces(
     head = _hf_head(repo_id, api)
     if head is not None and head != parent:
       raise SyncError(
-          f"HF head {head[:12]} has advanced past your manifest revision "
-          f"{parent[:12]} — someone pushed since your last sync. Run `status`, "
-          "then `git pull` + `fetch` (or `adopt-remote`) to take remote, or "
-          "`push --force` / `push --mirror` to overwrite it with local."
+        f"HF head {head[:12]} has advanced past your manifest revision "
+        f"{parent[:12]} — someone pushed since your last sync. Run `status`, "
+        "then `git pull` + `fetch` (or `adopt-remote`) to take remote, or "
+        "`push --force` / `push --mirror` to overwrite it with local."
       )
 
   _ = api.create_repo(
-      repo_id, repo_type=REPO_TYPE, private=private, exist_ok=True
+    repo_id, repo_type=REPO_TYPE, private=private, exist_ok=True
   )
   commit = api.upload_folder(
-      repo_id=repo_id,
-      repo_type=REPO_TYPE,
-      folder_path=str(base),
-      allow_patterns=[_UPLOAD_PATTERN],
-      delete_patterns=[_UPLOAD_PATTERN] if mirror else None,
-      # Optimistic-concurrency guard: atomically fail if HF head != parent.
-      parent_commit=None
-      if force
-      else (parent if isinstance(parent, str) else None),
-      commit_message=f"Sync {dataset} conversation traces",
+    repo_id=repo_id,
+    repo_type=REPO_TYPE,
+    folder_path=str(base),
+    allow_patterns=[_UPLOAD_PATTERN],
+    delete_patterns=[_UPLOAD_PATTERN] if mirror else None,
+    # Optimistic-concurrency guard: atomically fail if HF head != parent.
+    parent_commit=None
+    if force
+    else (parent if isinstance(parent, str) else None),
+    commit_message=f"Sync {dataset} conversation traces",
   )
   revision = getattr(commit, "oid", None)
   manifest = _build_manifest(dataset, repo_id, revision, base, root)
@@ -289,7 +289,7 @@ def push_traces(
 
 
 def fetch_traces(
-    dataset: str = DEFAULT_DATASET, *, repo_root: epath.PathLike | None = None
+  dataset: str = DEFAULT_DATASET, *, repo_root: epath.PathLike | None = None
 ) -> tuple[int, int]:
   """Download every trace named in the manifest, verifying sha256.
 
@@ -311,8 +311,8 @@ def fetch_traces(
   manifest = _load_manifest(dataset, root)
   if manifest is None:
     raise FileNotFoundError(
-        f"No manifest at {manifest_path(dataset, repo_root=root)}; nothing to"
-        " fetch."
+      f"No manifest at {manifest_path(dataset, repo_root=root)}; nothing to"
+      " fetch."
     )
   repo_id = str(manifest["repo_id"])
   revision = manifest.get("revision")
@@ -328,10 +328,10 @@ def fetch_traces(
       ok += 1
       continue
     cached = hf_hub_download(
-        repo_id=repo_id,
-        repo_type=REPO_TYPE,
-        filename=rel,
-        revision=revision if isinstance(revision, str) else None,
+      repo_id=repo_id,
+      repo_type=REPO_TYPE,
+      filename=rel,
+      revision=revision if isinstance(revision, str) else None,
     )
     dest.parent.mkdir(parents=True, exist_ok=True)
     _ = epath.Path(cached).copy(dest, overwrite=True)
@@ -343,10 +343,10 @@ def fetch_traces(
 
 
 def adopt_remote(
-    dataset: str = DEFAULT_DATASET,
-    *,
-    repo_id: str = DEFAULT_REPO_ID,
-    repo_root: epath.PathLike | None = None,
+  dataset: str = DEFAULT_DATASET,
+  *,
+  repo_id: str = DEFAULT_REPO_ID,
+  repo_root: epath.PathLike | None = None,
 ) -> epath.Path:
   """Take HF head as truth: download its traces and rewrite the manifest.
 
@@ -371,13 +371,13 @@ def adopt_remote(
   if head is None:
     raise SyncError(f"HF repo {repo_id} does not exist / is unreachable.")
   remote = [
-      f
-      for f in api.list_repo_files(repo_id, repo_type=REPO_TYPE, revision=head)
-      if f.endswith(TRACE_SUFFIX)
+    f
+    for f in api.list_repo_files(repo_id, repo_type=REPO_TYPE, revision=head)
+    if f.endswith(TRACE_SUFFIX)
   ]
   for rel in remote:
     cached = hf_hub_download(
-        repo_id=repo_id, repo_type=REPO_TYPE, filename=rel, revision=head
+      repo_id=repo_id, repo_type=REPO_TYPE, filename=rel, revision=head
     )
     dest = base / rel
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -412,9 +412,9 @@ class Status:
   def local_clean(self) -> bool:
     """Whether local files match the manifest exactly."""
     return (
-        self.local_changed == 0
-        and self.local_missing == 0
-        and self.local_extra == 0
+      self.local_changed == 0
+      and self.local_missing == 0
+      and self.local_extra == 0
     )
 
   @property
@@ -432,25 +432,25 @@ class Status:
       return "in sync — local, manifest, and HF all agree."
     if self.local_clean and not self.in_sync_with_hf:
       return (
-          "HF is ahead of your manifest — `git pull` then `fetch` to take it "
-          "(or `adopt-remote` if the newer manifest was never committed)."
+        "HF is ahead of your manifest — `git pull` then `fetch` to take it "
+        "(or `adopt-remote` if the newer manifest was never committed)."
       )
     if not self.local_clean and self.in_sync_with_hf:
       return (
-          "local has un-pushed changes — `push` (add `--mirror` to also "
-          "purge remote-only)."
+        "local has un-pushed changes — `push` (add `--mirror` to also "
+        "purge remote-only)."
       )
     return (
-        "DIVERGED — local changed AND HF advanced. Decide the source of truth: "
-        "`adopt-remote` (take HF) or `push --force`/`--mirror` (take local)."
+      "DIVERGED — local changed AND HF advanced. Decide the source of truth: "
+      "`adopt-remote` (take HF) or `push --force`/`--mirror` (take local)."
     )
 
 
 def status(
-    dataset: str = DEFAULT_DATASET,
-    *,
-    repo_id: str = DEFAULT_REPO_ID,
-    repo_root: epath.PathLike | None = None,
+  dataset: str = DEFAULT_DATASET,
+  *,
+  repo_id: str = DEFAULT_REPO_ID,
+  repo_root: epath.PathLike | None = None,
 ) -> Status:
   """Compare local files, the git manifest, and the HF head."""
   root = repo_root or find_repo_root()
@@ -465,8 +465,8 @@ def status(
   traces = manifest["traces"]
   assert isinstance(traces, dict)
   local_rels = {
-      p.relative_to(base).as_posix()
-      for p in iter_trace_files(dataset, repo_root=root)
+    p.relative_to(base).as_posix()
+    for p in iter_trace_files(dataset, repo_root=root)
   }
   ok = changed = missing = 0
   for rel, meta in traces.items():
@@ -480,13 +480,13 @@ def status(
   extra = len(local_rels - set(traces))
   rev = manifest.get("revision")
   return Status(
-      True,
-      rev if isinstance(rev, str) else None,
-      hf_head,
-      ok,
-      changed,
-      missing,
-      extra,
+    True,
+    rev if isinstance(rev, str) else None,
+    hf_head,
+    ok,
+    changed,
+    missing,
+    extra,
   )
 
 
@@ -494,8 +494,8 @@ def _print_status(st: Status) -> None:
   rev = st.manifest_revision[:12] if st.manifest_revision else "(none)"
   head = st.hf_head[:12] if st.hf_head else "(unreachable)"
   print(
-      f"local vs manifest : {st.local_ok} ok, {st.local_changed} changed, "
-      f"{st.local_missing} missing, {st.local_extra} extra"
+    f"local vs manifest : {st.local_ok} ok, {st.local_changed} changed, "
+    f"{st.local_missing} missing, {st.local_extra} extra"
   )
   print(f"manifest revision : {rev}")
   print(f"HF head           : {head}")
@@ -505,39 +505,39 @@ def _print_status(st: Status) -> None:
 def main() -> int:
   """Run the traces CLI and return the process exit status."""
   parser = argparse.ArgumentParser(
-      prog="python -m swe_lab.pipelines.related_files.traces",
-      description="Push/fetch/reconcile HF-stored conversation traces.",
+    prog="python -m swe_lab.pipelines.related_files.traces",
+    description="Push/fetch/reconcile HF-stored conversation traces.",
   )
   _ = parser.add_argument(
-      "action", choices=("push", "fetch", "status", "adopt-remote")
+    "action", choices=("push", "fetch", "status", "adopt-remote")
   )
   _ = parser.add_argument("--dataset", default=DEFAULT_DATASET)
   _ = parser.add_argument("--repo-id", default=DEFAULT_REPO_ID)
   _ = parser.add_argument(
-      "--mirror", action="store_true", help="push: delete remote-only traces"
+    "--mirror", action="store_true", help="push: delete remote-only traces"
   )
   _ = parser.add_argument(
-      "--force", action="store_true", help="push: skip the concurrency guard"
+    "--force", action="store_true", help="push: skip the concurrency guard"
   )
   args = parser.parse_args()
 
   if args.action == "push":
     out = push_traces(
-        args.dataset, repo_id=args.repo_id, mirror=args.mirror, force=args.force
+      args.dataset, repo_id=args.repo_id, mirror=args.mirror, force=args.force
     )
     manifest = json.loads(out.read_text())
     print(
-        f"pushed {manifest['num_traces']} traces"
-        f" ({manifest['total_bytes'] / 1024 / 1024:.1f} MB)"
-        f" to {manifest['repo_id']}@{str(manifest['revision'])[:12]}"
+      f"pushed {manifest['num_traces']} traces"
+      f" ({manifest['total_bytes'] / 1024 / 1024:.1f} MB)"
+      f" to {manifest['repo_id']}@{str(manifest['revision'])[:12]}"
     )
     print(f"manifest: {out}")
   elif args.action == "adopt-remote":
     out = adopt_remote(args.dataset, repo_id=args.repo_id)
     manifest = json.loads(out.read_text())
     print(
-        f"adopted HF head @{str(manifest['revision'])[:12]}"
-        f" ({manifest['num_traces']} traces); manifest: {out}"
+      f"adopted HF head @{str(manifest['revision'])[:12]}"
+      f" ({manifest['num_traces']} traces); manifest: {out}"
     )
   elif args.action == "status":
     _print_status(status(args.dataset, repo_id=args.repo_id))

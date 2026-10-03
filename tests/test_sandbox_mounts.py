@@ -6,12 +6,12 @@ from etils import epath
 import pytest
 
 from swe_lab.sandbox import (
-    Inline,
-    LocalFile,
-    merge_mounts,
-    Mount,
-    SandboxError,
-    SandboxSpec,
+  Inline,
+  LocalFile,
+  merge_mounts,
+  Mount,
+  SandboxError,
+  SandboxSpec,
 )
 from swe_lab.sandbox.testing import FakeSandbox
 
@@ -44,11 +44,11 @@ def test_mount_stages_inline_localfile_and_executable(tmp_path: Path):
   sb = FakeSandbox(spec=SPEC, workspace=epath.Path(workspace))
   sb.up()
   sb.mount(
-      {
-          "run.sh": Mount(Inline(b"#!/bin/bash\n"), executable=True),
-          "nested/dir/parser.py": Mount(Inline(b"print()")),
-          "agent": Mount(LocalFile(epath.Path(src))),
-      }
+    {
+      "run.sh": Mount(Inline(b"#!/bin/bash\n"), executable=True),
+      "nested/dir/parser.py": Mount(Inline(b"print()")),
+      "agent": Mount(LocalFile(epath.Path(src))),
+    }
   )
   assert (workspace / "run.sh").read_bytes() == b"#!/bin/bash\n"
   assert (workspace / "run.sh").stat().st_mode & 0o111  # executable

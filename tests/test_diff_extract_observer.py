@@ -7,12 +7,12 @@ import pytest
 
 from swe_lab.sandbox import ExecResult, SandboxError, SandboxSpec
 from swe_lab.sandbox.observers.diff_extract import (
-    BASE_REF_NAME,
-    BASELINE_SCRIPT_NAME,
-    DiffExtractObserver,
-    EXTRACT_SCRIPT_NAME,
-    PATCH_NAME,
-    RAW_PATCH_NAME,
+  BASE_REF_NAME,
+  BASELINE_SCRIPT_NAME,
+  DiffExtractObserver,
+  EXTRACT_SCRIPT_NAME,
+  PATCH_NAME,
+  RAW_PATCH_NAME,
 )
 from swe_lab.sandbox.testing import FakeSandbox
 
@@ -22,9 +22,9 @@ def _sandbox(workspace: Path) -> FakeSandbox:
   # baseline script: this file drives that script itself — its sha, its exit
   # code, its absence — which is the whole subject here.
   return FakeSandbox(
-      spec=SandboxSpec("x", "img:tag", "/app", "base"),
-      workspace=epath.Path(workspace),
-      baseline_sha=None,
+    spec=SandboxSpec("x", "img:tag", "/app", "base"),
+    workspace=epath.Path(workspace),
+    baseline_sha=None,
   )
 
 
@@ -99,7 +99,7 @@ def test_the_default_base_is_still_the_instances_base_commit(tmp_path: Path):
 
 
 def test_the_baseline_commits_the_tree_the_agent_found_and_diffs_that(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   """For an image whose worktree ships already different from base_commit.
 
@@ -144,7 +144,7 @@ def test_the_baseline_commits_the_tree_the_agent_found_and_diffs_that(
 
 
 def test_a_baseline_that_cannot_be_made_aborts_rather_than_falling_back(
-    tmp_path: Path,
+  tmp_path: Path,
 ):
   # Falling back to base_commit would silently produce exactly the
   # contaminated patch this mode exists to prevent, so it fails closed —

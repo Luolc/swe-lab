@@ -7,15 +7,15 @@ from etils import epath
 from swe_lab.sandbox import Inline, Mount
 
 from .._seam import (
-    RegisteredFix,
-    render,
-    SweBenchProUnitTestSpec,
-    with_setup,
+  RegisteredFix,
+  render,
+  SweBenchProUnitTestSpec,
+  with_setup,
 )
 
 _TUTANOTA_CLOCK_INSTANCE = (
-    "instance_tutao__tutanota-f373ac3808deefce8183dad8d16729839cc330c1"
-    "-v2939aa9f4356f0dc9f523ee5ce19d09e08ab979b"
+  "instance_tutao__tutanota-f373ac3808deefce8183dad8d16729839cc330c1"
+  "-v2939aa9f4356f0dc9f523ee5ce19d09e08ab979b"
 )
 _CLOCK_TEST = "test/tests/calendar/eventeditor/CalendarEventWhenModelTest.ts"
 # The line that reads the clock. Its presence is what makes this fix necessary;
@@ -55,7 +55,7 @@ def clock_shim() -> bytes:
 
 
 def _fix_instance_tutanota_f373ac38(
-    spec: SweBenchProUnitTestSpec,
+  spec: SweBenchProUnitTestSpec,
 ) -> SweBenchProUnitTestSpec:
   """Pin the suite's wall clock, so its outcome stops depending on the hour.
 
@@ -135,19 +135,19 @@ def _fix_instance_tutanota_f373ac38(
     The spec with the clock preload staged and exported for the test run.
   """
   return with_setup(
-      spec,
-      mounts={_SHIM_NAME: Mount(Inline(clock_shim()))},
-      setup=render(
-          _TUTANOTA_CLOCK_SETUP,
-          TEST=_CLOCK_TEST,
-          MARKER=_CLOCK_MARKER,
-          SHIM=_SHIM_NAME,
-          SHIM_PATH=_SHIM_PATH,
-      ),
+    spec,
+    mounts={_SHIM_NAME: Mount(Inline(clock_shim()))},
+    setup=render(
+      _TUTANOTA_CLOCK_SETUP,
+      TEST=_CLOCK_TEST,
+      MARKER=_CLOCK_MARKER,
+      SHIM=_SHIM_NAME,
+      SHIM_PATH=_SHIM_PATH,
+    ),
   )
 
 
 TUTANOTA_CLOCK = RegisteredFix(
-    instances=(_TUTANOTA_CLOCK_INSTANCE,),
-    fix=_fix_instance_tutanota_f373ac38,
+  instances=(_TUTANOTA_CLOCK_INSTANCE,),
+  fix=_fix_instance_tutanota_f373ac38,
 )

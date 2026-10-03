@@ -15,7 +15,7 @@ runner = CliRunner()
 
 
 def test_promote_uploads_workspace_and_shard(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   ws = tmp_path / "ws"
   (ws / "diagnostics").mkdir(parents=True)
@@ -24,15 +24,15 @@ def test_promote_uploads_workspace_and_shard(
   monkeypatch.setattr(promote_mod, "find_repo_root", lambda: tmp_path)
 
   result = runner.invoke(
-      app,
-      [
-          "promote",
-          "acme__widget-1",
-          "--workspace",
-          str(ws),
-          "--sweep",
-          "sw1",
-      ],
+    app,
+    [
+      "promote",
+      "acme__widget-1",
+      "--workspace",
+      str(ws),
+      "--sweep",
+      "sw1",
+    ],
   )
 
   assert result.exit_code == 0
@@ -44,11 +44,11 @@ def test_promote_uploads_workspace_and_shard(
 
 
 def test_promote_missing_workspace_errors(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+  monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   monkeypatch.setattr(promote_mod, "find_repo_root", lambda: tmp_path)
   result = runner.invoke(
-      app,
-      ["promote", "x", "--workspace", str(tmp_path / "nope")],
+    app,
+    ["promote", "x", "--workspace", str(tmp_path / "nope")],
   )
   assert result.exit_code != 0

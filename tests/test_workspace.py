@@ -8,13 +8,13 @@ from typing import final, override
 from etils import epath
 
 from swe_lab.datasets.swebench_pro import (
-    COLUMNS,
-    SweBenchProInstance,
+  COLUMNS,
+  SweBenchProInstance,
 )
 from swe_lab.pipelines.related_files.workspace import (
-    ANNOTATION_OUTPUT,
-    CONTEXT_DIR,
-    prepare_workspace,
+  ANNOTATION_OUTPUT,
+  CONTEXT_DIR,
+  prepare_workspace,
 )
 from swe_lab.repo.provider import RepoInstance, RepoProvider
 
@@ -28,7 +28,7 @@ class _StubProvider(RepoProvider):
 
   @override
   def provision(
-      self, instance: RepoInstance, *, variant: str = ""
+    self, instance: RepoInstance, *, variant: str = ""
   ) -> epath.Path:
     _ = (instance, variant)
     return epath.Path(self._checkout)
@@ -37,19 +37,19 @@ class _StubProvider(RepoProvider):
 def _instance() -> SweBenchProInstance:
   raw = dict.fromkeys(COLUMNS, "")
   raw.update(
-      repo="acme/widget",
-      instance_id="inst-1",
-      base_commit="0" * 40,
-      problem_statement="the problem",
-      requirements="the requirements",
-      interface="the interface",
-      patch="gold patch body",
-      test_patch="test patch body",
-      fail_to_pass="[]",
-      pass_to_pass="[]",
-      issue_specificity="[]",
-      issue_categories="[]",
-      selected_test_files_to_run="[]",
+    repo="acme/widget",
+    instance_id="inst-1",
+    base_commit="0" * 40,
+    problem_statement="the problem",
+    requirements="the requirements",
+    interface="the interface",
+    patch="gold patch body",
+    test_patch="test patch body",
+    fail_to_pass="[]",
+    pass_to_pass="[]",
+    issue_specificity="[]",
+    issue_categories="[]",
+    selected_test_files_to_run="[]",
   )
   return SweBenchProInstance.from_raw(raw)
 
@@ -64,7 +64,7 @@ def test_prepare_workspace_writes_context(tmp_path: Path) -> None:
   assert ws.checkout == checkout
   context = checkout / CONTEXT_DIR
   assert (
-      (context / "problem_statement.md").read_text().startswith("the problem")
+    (context / "problem_statement.md").read_text().startswith("the problem")
   )
   assert (context / "gold_patch.diff").read_text().startswith("gold patch")
   assert (context / "test_patch.diff").is_file()

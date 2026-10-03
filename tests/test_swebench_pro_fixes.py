@@ -18,32 +18,32 @@ import subprocess
 import pytest
 
 from swe_lab.datasets.swebench_pro.constants import (
-    PARSER_NAME,
-    RUN_SCRIPT_NAME,
+  PARSER_NAME,
+  RUN_SCRIPT_NAME,
 )
 from swe_lab.datasets.swebench_pro.fixes import (
-    _FIXES,
-    applied_fix_name,
-    apply_instance_fix,
-    fixed_instances,
-    register_fix,
-    SweBenchProUnitTestSpec,
-    with_setup,
+  _FIXES,
+  applied_fix_name,
+  apply_instance_fix,
+  fixed_instances,
+  register_fix,
+  SweBenchProUnitTestSpec,
+  with_setup,
 )
 from swe_lab.datasets.swebench_pro.fixes._seam import _RUN_MARKER
 from swe_lab.datasets.swebench_pro.fixes.element_web_wysiwyg import (
-    _WYSIWYG_INSTANCE,
-    _WYSIWYG_TARBALL_NAME,
-    wysiwyg_tarball,
+  _WYSIWYG_INSTANCE,
+  _WYSIWYG_TARBALL_NAME,
+  wysiwyg_tarball,
 )
 from swe_lab.datasets.swebench_pro.fixes.tutanota_build_server import (
-    _ATTEMPTS,
-    _BUILD_SERVER_INSTANCE,
+  _ATTEMPTS,
+  _BUILD_SERVER_INSTANCE,
 )
 from swe_lab.datasets.swebench_pro.fixes.tutanota_clock import (
-    _SHIM_NAME,
-    _TUTANOTA_CLOCK_INSTANCE,
-    clock_shim,
+  _SHIM_NAME,
+  _TUTANOTA_CLOCK_INSTANCE,
+  clock_shim,
 )
 from swe_lab.datasets.swebench_pro.known_flaky import flaky_instances
 from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
@@ -52,22 +52,22 @@ from swe_lab.sandbox import Inline
 
 # npm's published ``dist.integrity`` for @matrix-org/matrix-wysiwyg@1.4.1.
 _NPM_INTEGRITY = (
-    "sha512-B8sxY3pE2XyRyQ1g7cx0YjGaDZ1A0Uh5XxS/lNdxQ/0ctRJj6IBy7Kti"
-    "UjxDRdA15ioZnf6aoJBRkBSr02qhaw=="
+  "sha512-B8sxY3pE2XyRyQ1g7cx0YjGaDZ1A0Uh5XxS/lNdxQ/0ctRJj6IBy7Kti"
+  "UjxDRdA15ioZnf6aoJBRkBSr02qhaw=="
 )
 _GOLDEN_CHECKOUT = "git checkout deadbeef -- test/a-test.ts"
 
 
 def _spec(instance_id: str):
   spec = compile_unit_test(
-      apply_patch=True,
-      base_commit="abc123",
-      selected_test_files_to_run=("test/a-test.ts",),
-      golden_test_checkout_cmd=_GOLDEN_CHECKOUT,
-      fail_to_pass=("a",),
-      pass_to_pass=("b",),
-      run_script=b"#!/bin/bash\n",
-      parser=b"print()\n",
+    apply_patch=True,
+    base_commit="abc123",
+    selected_test_files_to_run=("test/a-test.ts",),
+    golden_test_checkout_cmd=_GOLDEN_CHECKOUT,
+    fail_to_pass=("a",),
+    pass_to_pass=("b",),
+    run_script=b"#!/bin/bash\n",
+    parser=b"print()\n",
   )
   return apply_instance_fix(instance_id, spec)
 
@@ -84,14 +84,14 @@ def test_vendored_tarball_is_the_published_artifact():
 
 def test_an_instance_without_a_fix_is_returned_untouched():
   plain = compile_unit_test(
-      apply_patch=False,
-      base_commit="abc123",
-      selected_test_files_to_run=("test/a-test.ts",),
-      golden_test_checkout_cmd="",
-      fail_to_pass=(),
-      pass_to_pass=(),
-      run_script=b"",
-      parser=b"",
+    apply_patch=False,
+    base_commit="abc123",
+    selected_test_files_to_run=("test/a-test.ts",),
+    golden_test_checkout_cmd="",
+    fail_to_pass=(),
+    pass_to_pass=(),
+    run_script=b"",
+    parser=b"",
   )
   assert apply_instance_fix("instance_someone__else-1234", plain) is plain
 
@@ -113,7 +113,7 @@ def test_fix_bash_lands_after_the_golden_checkout_and_before_the_run():
   checkout = lines.index(_GOLDEN_CHECKOUT)
   marker = lines.index(_RUN_MARKER)
   patch_line = next(
-      i for i, line in enumerate(lines) if _WYSIWYG_TARBALL_NAME in line
+    i for i, line in enumerate(lines) if _WYSIWYG_TARBALL_NAME in line
   )
   assert checkout < patch_line < marker
   # ...and still under `set -e`, so a failed fix aborts rather than grading a
@@ -137,21 +137,21 @@ def test_the_fix_touches_no_test_expectations():
   # what counts as passing.
   fixed = _spec(_WYSIWYG_INSTANCE)
   plain = compile_unit_test(
-      apply_patch=True,
-      base_commit="abc123",
-      selected_test_files_to_run=("test/a-test.ts",),
-      golden_test_checkout_cmd=_GOLDEN_CHECKOUT,
-      fail_to_pass=("a",),
-      pass_to_pass=("b",),
-      run_script=b"#!/bin/bash\n",
-      parser=b"print()\n",
+    apply_patch=True,
+    base_commit="abc123",
+    selected_test_files_to_run=("test/a-test.ts",),
+    golden_test_checkout_cmd=_GOLDEN_CHECKOUT,
+    fail_to_pass=("a",),
+    pass_to_pass=("b",),
+    run_script=b"#!/bin/bash\n",
+    parser=b"print()\n",
   )
   assert fixed.grader == plain.grader
   assert fixed.native_outputs == plain.native_outputs
   # every line of the original script survives, in order
   original = plain.eval_script.splitlines()
   assert [
-      line for line in fixed.eval_script.splitlines() if line in original
+    line for line in fixed.eval_script.splitlines() if line in original
   ] == original
 
 
@@ -170,11 +170,11 @@ def test_every_fix_produces_a_script_bash_can_parse():
   # without executing, so catching it here costs nothing.
   for instance_id in fixed_instances():
     parsed = subprocess.run(
-        ["bash", "-n"],
-        input=_spec(instance_id).eval_script,
-        capture_output=True,
-        text=True,
-        check=False,
+      ["bash", "-n"],
+      input=_spec(instance_id).eval_script,
+      capture_output=True,
+      text=True,
+      check=False,
     )
     assert parsed.returncode == 0, f"{instance_id}: {parsed.stderr}"
 
@@ -186,36 +186,36 @@ def test_every_workspace_file_a_script_names_is_staged_or_produced():
   for instance_id in fixed_instances():
     spec = _spec(instance_id)
     named = set(
-        re.findall(r'\$SANDBOX_WORKSPACE"?/([\w.-]+)', spec.eval_script)
+      re.findall(r'\$SANDBOX_WORKSPACE"?/([\w.-]+)', spec.eval_script)
     )
     # The patch is the eval task's declared *input*: staged by whoever
     # supplies it (an edge, a caller, a builder), never by the spec.
     available = (
-        set(spec.mounts) | set(spec.native_outputs.values()) | {spec.patch_name}
+      set(spec.mounts) | set(spec.native_outputs.values()) | {spec.patch_name}
     )
     assert named <= available, f"{instance_id}: {sorted(named - available)}"
 
 
 def _plain():
   return compile_unit_test(
-      apply_patch=False,
-      base_commit="abc123",
-      selected_test_files_to_run=("test/a-test.ts",),
-      golden_test_checkout_cmd=_GOLDEN_CHECKOUT,
-      fail_to_pass=(),
-      pass_to_pass=(),
-      run_script=b"",
-      parser=b"",
+    apply_patch=False,
+    base_commit="abc123",
+    selected_test_files_to_run=("test/a-test.ts",),
+    golden_test_checkout_cmd=_GOLDEN_CHECKOUT,
+    fail_to_pass=(),
+    pass_to_pass=(),
+    run_script=b"",
+    parser=b"",
   )
 
 
 def test_splice_refuses_a_script_it_cannot_place_the_fix_in():
   spec = _plain()
   broken = type(spec)(
-      eval_script="echo hi\n",  # no run marker
-      mounts=spec.mounts,
-      grader=spec.grader,
-      native_outputs=spec.native_outputs,
+    eval_script="echo hi\n",  # no run marker
+    mounts=spec.mounts,
+    grader=spec.grader,
+    native_outputs=spec.native_outputs,
   )
   with pytest.raises(ValueError, match="exactly one"):
     _ = with_setup(broken, setup="echo patched", mounts={})
@@ -226,22 +226,22 @@ def test_splice_refuses_a_script_it_cannot_place_the_fix_in():
 
 def _instance(instance_id: str) -> SweBenchProInstance:
   return SweBenchProInstance(
-      repo="acme/widget",
-      instance_id=instance_id,
-      base_commit="abc123",
-      patch="",
-      test_patch="",
-      problem_statement="",
-      requirements="",
-      interface="",
-      repo_language="js",
-      fail_to_pass=(),
-      pass_to_pass=(),
-      issue_specificity=(),
-      issue_categories=(),
-      before_repo_set_cmd="",
-      selected_test_files_to_run=(),
-      dockerhub_tag="tag",
+    repo="acme/widget",
+    instance_id=instance_id,
+    base_commit="abc123",
+    patch="",
+    test_patch="",
+    problem_statement="",
+    requirements="",
+    interface="",
+    repo_language="js",
+    fail_to_pass=(),
+    pass_to_pass=(),
+    issue_specificity=(),
+    issue_categories=(),
+    before_repo_set_cmd="",
+    selected_test_files_to_run=(),
+    dockerhub_tag="tag",
   )
 
 
@@ -313,12 +313,12 @@ def clean_registry() -> Iterator[None]:
 
 
 def test_a_downstream_fix_registers_without_touching_this_module(
-    clean_registry: None,
+  clean_registry: None,
 ):
   del clean_registry
 
   def _fix_instance_acme_widget(
-      spec: SweBenchProUnitTestSpec,
+    spec: SweBenchProUnitTestSpec,
   ) -> SweBenchProUnitTestSpec:
     return with_setup(spec, setup='echo "downstream"', mounts={})
 
@@ -328,9 +328,9 @@ def test_a_downstream_fix_registers_without_touching_this_module(
   assert 'echo "downstream"' in lines
   # ...and it lands in the same window the built-in fixes get, for free
   assert (
-      lines.index(_GOLDEN_CHECKOUT)
-      < lines.index('echo "downstream"')
-      < lines.index(_RUN_MARKER)
+    lines.index(_GOLDEN_CHECKOUT)
+    < lines.index('echo "downstream"')
+    < lines.index(_RUN_MARKER)
   )
   assert "instance_acme__widget-1234" in fixed_instances()
 
@@ -345,14 +345,13 @@ def test_a_downstream_fix_can_replace_a_built_in_one(clean_registry: None):
 
 
 def test_a_fix_that_is_not_a_plain_function_is_still_named(
-    clean_registry: None,
+  clean_registry: None,
 ):
   del clean_registry
 
   class _Callable:
-
     def __call__(
-        self, spec: SweBenchProUnitTestSpec
+      self, spec: SweBenchProUnitTestSpec
     ) -> SweBenchProUnitTestSpec:
       return spec
 
@@ -366,7 +365,7 @@ def test_with_setup_preserves_every_field_it_does_not_change():
   # field added later was silently dropped. This asserts the general rule
   # rather than any one field, so the next addition cannot repeat it.
   spec = replace(
-      _plain(), patch_name="candidate.diff", native_outputs={"log": "out.log"}
+    _plain(), patch_name="candidate.diff", native_outputs={"log": "out.log"}
   )
   fixed = with_setup(spec, setup="echo patched", mounts={})
   changed = {"eval_script", "mounts"}
@@ -392,7 +391,7 @@ def test_the_clock_probe_expects_the_hour_the_shim_actually_pins():
   # fix aborts *every* run of the instance in setup — so they are checked
   # against each other rather than trusted to stay in step.
   (hour,) = re.findall(
-      r"^const TARGET_UTC_HOUR = (\d+)$", clock_shim().decode(), re.MULTILINE
+    r"^const TARGET_UTC_HOUR = (\d+)$", clock_shim().decode(), re.MULTILINE
   )
   script = _spec(_TUTANOTA_CLOCK_INSTANCE).eval_script
   assert f'if [ "$probe" != "{hour} 0 true" ]; then' in script

@@ -61,29 +61,29 @@ from swe_lab.sandbox import ExecResult
 from .guidebook import guidebook_context_mode
 from .judge import DEFAULT_API_KEY_ENV, default_supervisor_base_url
 from .seam_shape import (
-    DirtySeamError,
-    read_seam,
-    seam_is_clean,
-    SeamReading,
+  DirtySeamError,
+  read_seam,
+  seam_is_clean,
+  SeamReading,
 )
 from .supervisor import (
-    evidence_of,
-    Intervention,
-    judge_prompt_sha256,
-    lapsed_judge_request,
-    LOG_KIND_GAP,
-    LOG_KIND_LAPSE,
-    LOG_KIND_SILENT,
-    LOG_KIND_SPOKE,
-    LOG_KIND_UNJUDGED,
-    LogWriter,
-    Observation,
-    PolicyLapseError,
-    said_visibility_of,
-    SpeakPolicy,
-    SpeakWhenOffTrack,
-    Unjudged,
-    Verdict,
+  evidence_of,
+  Intervention,
+  judge_prompt_sha256,
+  lapsed_judge_request,
+  LOG_KIND_GAP,
+  LOG_KIND_LAPSE,
+  LOG_KIND_SILENT,
+  LOG_KIND_SPOKE,
+  LOG_KIND_UNJUDGED,
+  LogWriter,
+  Observation,
+  PolicyLapseError,
+  said_visibility_of,
+  SpeakPolicy,
+  SpeakWhenOffTrack,
+  Unjudged,
+  Verdict,
 )
 
 #: The row recording one segment's ending: what it was cut by, where it was cut,
@@ -199,8 +199,8 @@ class SegmentedSupervision:
     """
     if not self.api_key_env:
       raise ValueError(
-          "api_key_env must name the environment variable holding the"
-          " supervisor's key"
+        "api_key_env must name the environment variable holding the"
+        " supervisor's key"
       )
 
 
@@ -329,17 +329,17 @@ def turns_taken(events: Sequence[Mapping[str, Any]]) -> int:
     How many turns the actor has taken across every segment so far.
   """
   ids = {
-      message.get("id")
-      for event in events
-      if event.get("type") == "assistant"
-      for message in [event.get("message")]
-      if isinstance(message, Mapping) and message.get("id") is not None
+    message.get("id")
+    for event in events
+    if event.get("type") == "assistant"
+    for message in [event.get("message")]
+    if isinstance(message, Mapping) and message.get("id") is not None
   }
   return len(ids)
 
 
 def last_ending(
-    events: Sequence[Mapping[str, Any]], *, since: int = 0
+  events: Sequence[Mapping[str, Any]], *, since: int = 0
 ) -> SegmentEnding:
   """Read one segment's terminal ``result`` event.
 
@@ -368,18 +368,18 @@ def last_ending(
     session = event.get("session_id")
     subtype = event.get("subtype")
     return SegmentEnding(
-        subtype=str(subtype) if subtype is not None else None,
-        session_id=str(session) if session is not None else None,
-        cost_usd=float(cost) if isinstance(cost, (int, float)) else None,
-        result_uuid=str(uuid) if uuid is not None else None,
-        event_index=index,
+      subtype=str(subtype) if subtype is not None else None,
+      session_id=str(session) if session is not None else None,
+      cost_usd=float(cost) if isinstance(cost, (int, float)) else None,
+      result_uuid=str(uuid) if uuid is not None else None,
+      event_index=index,
     )
   return SegmentEnding(
-      subtype=None,
-      session_id=None,
-      cost_usd=None,
-      result_uuid=None,
-      event_index=None,
+    subtype=None,
+    session_id=None,
+    cost_usd=None,
+    result_uuid=None,
+    event_index=None,
   )
 
 
@@ -438,7 +438,7 @@ class SegmentedRun:
   read_wire: StreamReader | None = None
   guidebook: str | None = None
   now: Callable[[], datetime.datetime] = lambda: datetime.datetime.now(
-      datetime.UTC
+    datetime.UTC
   )
 
   _said: list[Intervention] = dataclasses.field(default_factory=list)
@@ -499,9 +499,9 @@ class SegmentedRun:
     # One policy per run, built here rather than shared by the definition —
     # see `SegmentedSupervision.policy_factory`.
     self._policy = self.supervision.policy_factory(
-        self.supervision.cooldown,
-        self.supervision.base_url,
-        self.supervision.api_key_env,
+      self.supervision.cooldown,
+      self.supervision.base_url,
+      self.supervision.api_key_env,
     )
     started = self.now()
     prompt = self.task
@@ -518,17 +518,17 @@ class SegmentedRun:
     while True:
       elapsed = (self.now() - started).total_seconds()
       budget = min(
-          timeout - elapsed, self.supervision.wall_clock_seconds - elapsed
+        timeout - elapsed, self.supervision.wall_clock_seconds - elapsed
       )
       request = SegmentRequest(
-          index=self._segments,
-          prompt=prompt,
-          resume_session_id=session_id,
-          resume_at_message_id=(
-              anchor if self.supervision.anchor_resume else None
-          ),
-          turns=self.supervision.turns_per_segment,
-          timeout=max(budget, 0.0),
+        index=self._segments,
+        prompt=prompt,
+        resume_session_id=session_id,
+        resume_at_message_id=(
+          anchor if self.supervision.anchor_resume else None
+        ),
+        turns=self.supervision.turns_per_segment,
+        timeout=max(budget, 0.0),
       )
       last = self.launch(request)
       self._segments += 1
@@ -545,33 +545,32 @@ class SegmentedRun:
       dirty = self._seam_reading(request)
       if dirty is not None and self.supervision.guard_seam:
         self._segment_row(
-            request,
-            ending,
-            turns=turns,
-            cost=cost,
-            stop=STOP_DIRTY_SEAM,
-            seam=dataclasses.asdict(dirty),
-        )
-        raise DirtySeamError(
-            f"the resume seam did not hold on segment {request.index}:"
-            f" {dirty}"
-        )
-      self._segment_row(
           request,
           ending,
           turns=turns,
           cost=cost,
-          stop=stop,
-          seam=None if dirty is None else dataclasses.asdict(dirty),
+          stop=STOP_DIRTY_SEAM,
+          seam=dataclasses.asdict(dirty),
+        )
+        raise DirtySeamError(
+          f"the resume seam did not hold on segment {request.index}: {dirty}"
+        )
+      self._segment_row(
+        request,
+        ending,
+        turns=turns,
+        cost=cost,
+        stop=stop,
+        seam=None if dirty is None else dataclasses.asdict(dirty),
       )
       if stop is not None:
         return last
 
       prompt = self._seam_prompt(
-          events[consumed:],
-          cursor=len(events),
-          turns=turns,
-          index=request.index,
+        events[consumed:],
+        cursor=len(events),
+        turns=turns,
+        index=request.index,
       )
       consumed = len(events)
 
@@ -598,11 +597,11 @@ class SegmentedRun:
     return None if seam_is_clean(reading) else reading
 
   def _stop_reason(
-      self,
-      ending: SegmentEnding,
-      *,
-      started: datetime.datetime,
-      cost: float,
+    self,
+    ending: SegmentEnding,
+    *,
+    started: datetime.datetime,
+    cost: float,
   ) -> str | None:
     """Decide whether this segment is the last one, and why.
 
@@ -634,12 +633,12 @@ class SegmentedRun:
     return None
 
   def _seam_prompt(
-      self,
-      events: Sequence[Mapping[str, Any]],
-      *,
-      cursor: int,
-      turns: int,
-      index: int,
+    self,
+    events: Sequence[Mapping[str, Any]],
+    *,
+    cursor: int,
+    turns: int,
+    index: int,
   ) -> str:
     """Consult the policy at this seam and return the next segment's prompt.
 
@@ -660,11 +659,11 @@ class SegmentedRun:
       The correction, rendered, or the neutral continue.
     """
     observation = Observation(
-        task=self.task,
-        evidence=evidence_of(events),
-        cursor=cursor,
-        said=tuple(self._said),
-        guidebook=self.guidebook,
+      task=self.task,
+      evidence=evidence_of(events),
+      cursor=cursor,
+      said=tuple(self._said),
+      guidebook=self.guidebook,
     )
     # Read the valid judgement back from the concrete policy. `SpeakPolicy`
     # returns a decision rather than a verdict, and widening it would change
@@ -674,23 +673,23 @@ class SegmentedRun:
       decision = self.policy.consider(observation)
     except PolicyLapseError as error:
       self._decision_row(
-          LOG_KIND_LAPSE,
-          index=index,
-          turns=turns,
-          said_count=len(observation.said),
-          reason=f"policy lapsed: {error!r}",
-          finish_reason=error.finish_reason,
-          **(lapsed_judge_request(error) | self._verdict_audit_after(before)),
+        LOG_KIND_LAPSE,
+        index=index,
+        turns=turns,
+        said_count=len(observation.said),
+        reason=f"policy lapsed: {error!r}",
+        finish_reason=error.finish_reason,
+        **(lapsed_judge_request(error) | self._verdict_audit_after(before)),
       )
       return self.supervision.neutral_continue
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
       self._decision_row(
-          LOG_KIND_GAP,
-          index=index,
-          turns=turns,
-          said_count=len(observation.said),
-          reason=f"policy raised: {error!r}",
-          **self._verdict_audit_after(before),
+        LOG_KIND_GAP,
+        index=index,
+        turns=turns,
+        said_count=len(observation.said),
+        reason=f"policy raised: {error!r}",
+        **self._verdict_audit_after(before),
       )
       return self.supervision.neutral_continue
 
@@ -699,47 +698,47 @@ class SegmentedRun:
     verdicts = _verdicts_of(self.policy)
     found = verdicts[-1] if len(verdicts) > before else None
     located = {
-        "deviation_started_steps_ago": (
-            found.deviation_started_steps_ago if found is not None else None
-        ),
-        # The denominator for reading the number above: it counts rendered
-        # steps and this counts turns, and one turn renders as several steps.
-        "evidence_records": len(observation.evidence),
-        **self._verdict_audit_after(before, decision=True),
+      "deviation_started_steps_ago": (
+        found.deviation_started_steps_ago if found is not None else None
+      ),
+      # The denominator for reading the number above: it counts rendered
+      # steps and this counts turns, and one turn renders as several steps.
+      "evidence_records": len(observation.evidence),
+      **self._verdict_audit_after(before, decision=True),
     }
 
     if isinstance(decision, Unjudged):
       self._decision_row(
-          LOG_KIND_UNJUDGED,
-          index=index,
-          turns=turns,
-          said_count=len(observation.said),
-          reason=decision.reason,
+        LOG_KIND_UNJUDGED,
+        index=index,
+        turns=turns,
+        said_count=len(observation.said),
+        reason=decision.reason,
       )
       return self.supervision.neutral_continue
     if decision is None:
       self._decision_row(
-          LOG_KIND_SILENT,
-          index=index,
-          turns=turns,
-          said_count=len(observation.said),
-          **located,
+        LOG_KIND_SILENT,
+        index=index,
+        turns=turns,
+        said_count=len(observation.said),
+        **located,
       )
       return self.supervision.neutral_continue
 
     self._said.append(decision)
     self._decision_row(
-        LOG_KIND_SPOKE,
-        index=index,
-        turns=turns,
-        said_count=len(observation.said),
-        text=decision.text,
-        **located,
+      LOG_KIND_SPOKE,
+      index=index,
+      turns=turns,
+      said_count=len(observation.said),
+      text=decision.text,
+      **located,
     )
     return decision.rendered()
 
   def _verdict_audit_after(
-      self, count: int, *, decision: bool = False
+    self, count: int, *, decision: bool = False
   ) -> dict[str, object]:
     """Return audit fields for the valid verdict created by this decision."""
     verdicts = _verdicts_of(self.policy)
@@ -747,25 +746,25 @@ class SegmentedRun:
       return {}
     verdict = verdicts[-1]
     audit: dict[str, object] = {
-        "judge_input": verdict.judge_input,
-        "judge_prompt_sha256": judge_prompt_sha256(verdict.judge_input),
-        "judge_reason": verdict.reason,
-        "off_track": verdict.off_track,
-        "running_state": verdict.running_state,
+      "judge_input": verdict.judge_input,
+      "judge_prompt_sha256": judge_prompt_sha256(verdict.judge_input),
+      "judge_reason": verdict.reason,
+      "off_track": verdict.off_track,
+      "running_state": verdict.running_state,
     }
     if decision:
       audit["reason"] = verdict.reason
     return audit
 
   def _segment_row(
-      self,
-      request: SegmentRequest,
-      ending: SegmentEnding,
-      *,
-      turns: int,
-      cost: float,
-      stop: str | None,
-      **extra: object,
+    self,
+    request: SegmentRequest,
+    ending: SegmentEnding,
+    *,
+    turns: int,
+    cost: float,
+    stop: str | None,
+    **extra: object,
   ) -> None:
     """Record one segment's ending, and what its resume fabricated.
 
@@ -785,40 +784,40 @@ class SegmentedRun:
         refused it.
     """
     self.log(
-        {
-            "kind": LOG_KIND_SEGMENT,
-            "at": self.now().isoformat(),
-            "policy": self.policy.name,
-            "guidebook_sha256": self._guidebook_sha256(),
-            "segment": request.index,
-            "turns_requested": request.turns,
-            "turns_total": turns,
-            "stop_subtype": ending.subtype,
-            "session_id": ending.session_id,
-            "cost_usd": cost,
-            "resumed": request.resume_session_id is not None,
-            "resume_artifact_expected": request.resume_session_id is not None,
-            "anchor_event_index": ending.event_index,
-            "anchor_result_uuid": ending.result_uuid,
-            "resume_at_message_id": request.resume_at_message_id,
-            # Which resume flavour this segment used, stated rather than left
-            # to a reader who would otherwise have to know what the flag
-            # means. Both are supported; the anchored one leaves a cleaner
-            # seam, and seam shape is post-processing's problem.
-            "anchored": request.resume_at_message_id is not None,
-            "stop_reason": stop,
-            **extra,
-        }
+      {
+        "kind": LOG_KIND_SEGMENT,
+        "at": self.now().isoformat(),
+        "policy": self.policy.name,
+        "guidebook_sha256": self._guidebook_sha256(),
+        "segment": request.index,
+        "turns_requested": request.turns,
+        "turns_total": turns,
+        "stop_subtype": ending.subtype,
+        "session_id": ending.session_id,
+        "cost_usd": cost,
+        "resumed": request.resume_session_id is not None,
+        "resume_artifact_expected": request.resume_session_id is not None,
+        "anchor_event_index": ending.event_index,
+        "anchor_result_uuid": ending.result_uuid,
+        "resume_at_message_id": request.resume_at_message_id,
+        # Which resume flavour this segment used, stated rather than left
+        # to a reader who would otherwise have to know what the flag
+        # means. Both are supported; the anchored one leaves a cleaner
+        # seam, and seam shape is post-processing's problem.
+        "anchored": request.resume_at_message_id is not None,
+        "stop_reason": stop,
+        **extra,
+      }
     )
 
   def _decision_row(
-      self,
-      kind: str,
-      *,
-      index: int,
-      turns: int,
-      said_count: int,
-      **extra: object,
+    self,
+    kind: str,
+    *,
+    index: int,
+    turns: int,
+    said_count: int,
+    **extra: object,
   ) -> None:
     """Record what the policy decided at one seam.
 
@@ -833,26 +832,26 @@ class SegmentedRun:
       **extra: Fields specific to the kind.
     """
     self.log(
-        {
-            "kind": kind,
-            "at": self.now().isoformat(),
-            "policy": self.policy.name,
-            # Which upstream this invocation was *pointed at* — not proof
-            # that anything answered: a `lapse`, `gap` or `unjudged` row
-            # carries it too, and those are the rows where nobody did. The URL
-            # itself rather than a label, because a label would need a registry
-            # and there is none. No credential goes next to it: the key's
-            # variable *name* is configuration, its value never leaves the
-            # environment, and neither belongs on a row.
-            "supervisor_base_url": self.supervision.base_url,
-            "guidebook_sha256": self._guidebook_sha256(),
-            "guidebook_context_mode": guidebook_context_mode(self.guidebook),
-            "said_visibility": said_visibility_of(self.policy),
-            "said_count": said_count,
-            "segment": index,
-            "cut_at_turn": turns,
-            **extra,
-        }
+      {
+        "kind": kind,
+        "at": self.now().isoformat(),
+        "policy": self.policy.name,
+        # Which upstream this invocation was *pointed at* — not proof
+        # that anything answered: a `lapse`, `gap` or `unjudged` row
+        # carries it too, and those are the rows where nobody did. The URL
+        # itself rather than a label, because a label would need a registry
+        # and there is none. No credential goes next to it: the key's
+        # variable *name* is configuration, its value never leaves the
+        # environment, and neither belongs on a row.
+        "supervisor_base_url": self.supervision.base_url,
+        "guidebook_sha256": self._guidebook_sha256(),
+        "guidebook_context_mode": guidebook_context_mode(self.guidebook),
+        "said_visibility": said_visibility_of(self.policy),
+        "said_count": said_count,
+        "segment": index,
+        "cut_at_turn": turns,
+        **extra,
+      }
     )
 
   def _guidebook_sha256(self) -> str | None:
