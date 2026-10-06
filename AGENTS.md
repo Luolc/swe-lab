@@ -54,9 +54,9 @@ implemented; a doc known to have drifted is superseded or demoted — e.g.
 `docs/patch-extraction.md` is non-authoritative background and the
 patch-extraction decisions are settled in
 [ADR-0001](docs/decisions/ADR-0001-patch-extraction-and-grading.md). Record
-decisions worth remembering in [`docs/decisions/`](docs/decisions/) — and **don't
-re-litigate an accepted ADR; if a decision must change, write a new ADR that
-supersedes it.**
+decisions worth remembering in [`docs/decisions/`](docs/decisions/). This path
+is a deliberate deviation from the cross-repo `docs/adr/` (owner decision,
+2026-10-06).
 
 ## Git & GitHub workflow
 
