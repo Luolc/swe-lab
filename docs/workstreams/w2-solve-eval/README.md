@@ -103,7 +103,7 @@ subsystems. **General code never learns a dataset's specifics** — each dataset
   - **eval → B (shipped).** Harness (grading) stays on the host; one job can
     `docker run` many instances sequentially (economical for the 731 gold sweep);
     same code path as local; full control of `--platform` / `--network none` /
-    `--rm`. golden grading runs on `ubuntu-latest` (native amd64) via `verify-golden.yml`.
+    `--rm`. golden grading runs on `ubuntu-24.04` (native amd64) via `verify-golden.yml`.
   - **rollout → A (shipped since this was written).** It is naturally
     one-instance-per-job (the agent runs minutes → one patch). The Claude Code binary runs in the job shell
     (which *is* the sandbox), edits the repo, runs tests, then `git diff` — no
