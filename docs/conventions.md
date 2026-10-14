@@ -302,8 +302,9 @@ the one prose copy of it (`AGENTS.md` links here rather than restating it):
 
 - **gitleaks** — credential scan, deliberately **first** so a leak is caught
   before any other hook rewrites the staged files. It scans the **staged diff**
-  only; the full-history scan is CI's step of the same name, and the two input
-  domains are complementary (see the comments in both files). `--redact` is
+  only; CI's gitleaks step scans the commits of each PR or push and
+  `gitleaks.yml` the full history weekly, and the input domains are
+  complementary (see the comments in those files). `--redact` is
   spelled out in `args` even though the upstream entry already passes it —
   inherited it would be invisible here and a `rev` bump could drop it, and an
   unredacted scanner prints the credential it finds into the terminal and the
@@ -609,7 +610,7 @@ frozen document. Precedent: [#468](https://github.com/Luolc/swe-lab/pull/468).
 
 **None of this loosens what is absolute.** Independent of size or usefulness,
 and enforced elsewhere rather than judged here: **no secrets** (the gitleaks
-hook and the CI history scan — see [Quality bar](../AGENTS.md#quality-bar)) and
+hook and the CI commit scan — see [Quality bar](../AGENTS.md#quality-bar)) and
 **no operator PII** in any committed record — home paths, names, emails,
 account or organization identifiers. The home-path half of that is mechanical
 and is now checked as such, in the same two domains as the secret scan: the

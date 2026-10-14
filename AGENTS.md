@@ -121,8 +121,9 @@ how it went stale before.
 **Credential scanning runs in both places, over different inputs.** The
 `gitleaks` pre-commit hook (first in `.pre-commit-config.yaml`, before any hook
 that rewrites files) scans the **staged diff** — the only input domain that
-contains a secret that has not been committed yet. CI scans the **full history**
-— the only domain that catches one already in. Neither replaces the other.
+contains a secret that has not been committed yet. CI scans the **commits of
+each PR or push** — the only domain that catches one that got in anyway — and a
+weekly workflow scans the **full history**. Neither replaces the other.
 
 `--no-verify` skips **all** hooks, gitleaks included. If you must use it, stage
 your files and then run the staged scan by hand before committing:
@@ -210,7 +211,7 @@ test for is a wish, and it silently decays into a lie.
   every decision row. How, and the three knobs that move the actor too, are in
   [`docs/conventions.md`](docs/conventions.md#secrets).
 - **Never:** commit `.envrc.local` (credentials are enforced by the gitleaks
-  hook + the CI history scan — see [Quality bar](#quality-bar));
+  hook + the CI commit scan — see [Quality bar](#quality-bar));
   commit dataset data files or large trace records (gitignored / off-repo on HF
   by design — what that covers, and why an experiment's own committed evidence
   is not it, is in
