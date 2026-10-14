@@ -15,9 +15,11 @@ repos:
   # First on purpose: a leaked credential has to be caught before any other
   # hook rewrites the staged files. This half scans the STAGED DIFF only (the
   # upstream entry ends in `--staged`), which is the only input domain that can
-  # see a secret that is being committed right now; CI scans the full history
-  # instead, and the two domains are complementary, not redundant — see the
-  # gitleaks step in .github/workflows/ci.yml.
+  # see a secret that is being committed right now; CI scans the commits of each
+  # pull request or push instead, and the two domains are complementary, not
+  # redundant — see the gitleaks step in .github/workflows/ci.yml. The whole
+  # history is scanned weekly by .github/workflows/gitleaks.yml. Bump `rev`
+  # together with GITLEAKS_VERSION in both workflows.
   #
   # `--redact` is repeated here although the upstream entry already carries it:
   # inherited, it is invisible in this file and one `rev` bump could drop it
