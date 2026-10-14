@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Operator home paths in committed files: the rule, and its two domains.
 
 `docs/conventions.md` forbids operator PII — a home directory path included —
