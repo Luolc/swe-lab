@@ -342,10 +342,12 @@ The Python hooks (`no-operator-home-paths`, `ruff-check`, `ruff-format`,
 `basedpyright`, `pydoclint`) are `repo: local` and run
 `uv run --frozen --no-sync <tool>`: their versions come from the `dev` group
 in `pyproject.toml` and `uv.lock`, nowhere else, and they run against `.venv`
-as it is. A tool missing from `.venv` fails with `Failed to spawn: <tool>`
-rather than being installed; a stale `.venv` is not caught, so after a
-dependency changes run `uv sync`, or the hooks keep running the old versions
-(CI runs `uv sync --locked` every time). They check the files they are given, so a
+as it is. Nothing is installed for them: a tool missing from `.venv` falls
+back to `PATH`, and fails with `Failed to spawn: <tool>` only when `PATH` has
+no other copy; with one (another venv activated in the shell, a global
+install) the hook runs that copy, whatever its version. A stale `.venv` is not
+caught either, so after a dependency changes run `uv sync`, or the hooks keep
+running the old versions (CI runs `uv sync --locked` every time). They check the files they are given, so a
 commit checks its staged files and `--all-files` checks everything; a
 whole-repo basedpyright run is too slow for a commit hook.
 
