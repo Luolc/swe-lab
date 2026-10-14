@@ -62,8 +62,10 @@ jobs:
         with:
           enable-cache: true
 
+      # `--locked` fails when uv.lock is out of date with pyproject.toml
+      # instead of rewriting it, so CI checks the lock that was committed.
       - name: Sync deps (creates .venv, installs dev group)
-        run: uv sync
+        run: uv sync --locked
 
       - name: Tests
         # `-rs` lists every skip with its reason. Without it a green run
@@ -74,9 +76,10 @@ jobs:
         run: uv run pytest -q -rs
 
       # ruff (lint, imports, format) + basedpyright + pydoclint + uv-lock.
-      # basedpyright type-checks against .venv, so this runs after `uv sync`.
+      # The Python hooks run `uv run --frozen --no-sync` out of .venv, so this
+      # runs after `uv sync`, the same order as locally.
       - name: Format / lint / type-check
-        run: uv run pre-commit run --all-files --show-diff-on-failure
+        run: uv run --no-sync pre-commit run --all-files --show-diff-on-failure
 
   # The one status branch protection requires. It exists so that the required
   # check keeps its name however the work behind it is split into jobs; it

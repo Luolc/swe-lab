@@ -17,7 +17,8 @@ behavior rules) and [`README.md`](README.md) (the map — roadmap / status).
 ## Commands
 
 ```bash
-uv sync                              # create .venv + install all (incl. dev) deps
+uv sync                              # create .venv + install all (incl. dev) deps;
+                                     # the Python hooks need it and never sync
 direnv allow                         # auto-activate venv on cd (or: source .venv/bin/activate)
 uv run pre-commit install            # install the hooks (once)
 
@@ -336,6 +337,17 @@ the one prose copy of it (`AGENTS.md` links here rather than restating it):
   module/symbol reappears under `src/`, `tests/` or `experiments/`; add a token to it
   whenever you remove one. `docs/` is exempt on purpose (point-in-time
   records are supposed to name retired code).
+
+The Python hooks (`no-operator-home-paths`, `ruff-check`, `ruff-format`,
+`basedpyright`, `pydoclint`) are `repo: local` and run
+`uv run --frozen --no-sync <tool>`: their versions come from the `dev` group
+in `pyproject.toml` and `uv.lock`, nowhere else, and they run against `.venv`
+as it is. A tool missing from `.venv` fails with `Failed to spawn: <tool>`
+rather than being installed; a stale `.venv` is not caught, so after a
+dependency changes run `uv sync`, or the hooks keep running the old versions
+(CI runs `uv sync --locked` every time). They check the files they are given, so a
+commit checks its staged files and `--all-files` checks everything; a
+whole-repo basedpyright run is too slow for a commit hook.
 
 `experiments/` is **exempt** from the code-quality hooks — `ruff-check`,
 `ruff-format`, `basedpyright`, `pydoclint` (it holds exploratory scripts +
