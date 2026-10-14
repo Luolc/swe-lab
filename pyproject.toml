@@ -66,6 +66,9 @@ include = [
 dev = [
     "basedpyright>=1.40.1",
     "pre-commit>=4.6.2",
+    # Docstring Args/Returns/Raises vs signature, which ruff's D rules do not
+    # check; a dev dependency so the pre-commit hook runs the locked version.
+    "pydoclint>=0.11.0",
     "pytest>=9.0.3",
     "ruff>=0.16.10",
 ]
@@ -76,12 +79,11 @@ markers = [
 ]
 
 [tool.basedpyright]
-# Pinned rather than read off whichever interpreter basedpyright finds: a
-# pre-commit hook environment can be older than .venv, and 3.14 syntax
-# (PEP 758 except clauses) is an error under an older version.
+# Pinned rather than read off whichever interpreter basedpyright finds: 3.14
+# syntax (PEP 758 except clauses) is an error under an older version. The
+# interpreter, and with it the installed packages, is .venv's, because the hook
+# runs basedpyright through `uv run`.
 pythonVersion = "3.14"
-venvPath = "."
-venv = ".venv"
 include = ["src", "tests"]
 exclude = ["**/__pycache__", "build"]
 reportAny = false

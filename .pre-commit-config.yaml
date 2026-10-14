@@ -53,39 +53,65 @@ repos:
         language: system
         # The project interpreter, not whatever `python3` is on PATH: the
         # script is formatted for the Python pyproject.toml requires.
-        entry: uv run python tests/operator_home_paths.py
+        # `--frozen --no-sync` as for the Python checkers below.
+        entry: uv run --frozen --no-sync python tests/operator_home_paths.py
         # Binary files cannot hold a record anybody reads, and the scanner
         # skips what it cannot decode anyway; this keeps them off its argv.
         types: [text]
-  # Lint (import sorting included, via `I`) before format: a lint fix can
-  # leave code the formatter then settles, never the other way round.
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.10
+  # The Python checkers run from the project's .venv, so their versions live
+  # once, in pyproject.toml's dev group and uv.lock, and basedpyright resolves
+  # imports against the packages actually installed. `--frozen --no-sync`
+  # keeps a hook from touching uv.lock or .venv: a tool missing from .venv
+  # fails with `Failed to spawn` instead of being quietly installed, but a
+  # stale .venv is used as it is, so run `uv sync` after changing a dependency
+  # (CI runs `uv sync --locked` every time).
+  #
+  # Each hook checks the files it is given, not the whole repo: a full
+  # basedpyright run takes about 19 s against the 5 s budget of a commit hook,
+  # and `--all-files` (CI, the quality bar) hands every file over anyway.
+  - repo: local
     hooks:
+      # Lint (import sorting included, via `I`) before format: a lint fix can
+      # leave code the formatter then settles, never the other way round.
       - id: ruff-check
-        args: ["--fix"]
+        name: ruff check
+        language: system
+        entry: uv run --frozen --no-sync ruff check --force-exclude --fix
+        types_or: [python, pyi, jupyter]
+        require_serial: true
         exclude: ^experiments/
       - id: ruff-format
+        name: ruff format
+        language: system
+        entry: uv run --frozen --no-sync ruff format --force-exclude
+        # Markdown too, as upstream's hook does; pyproject.toml's
+        # [tool.ruff.format] exclude is what keeps the formatter off it.
+        types_or: [python, pyi, jupyter, markdown]
+        require_serial: true
         exclude: ^experiments/
-  - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
-    rev: 1.40.1
-    hooks:
       - id: basedpyright
+        name: basedpyright
+        language: system
+        entry: uv run --frozen --no-sync basedpyright
+        types_or: [python, pyi]
+        require_serial: true
         exclude: ^experiments/
-  # Docstring Args:/Returns:/Raises: must match the actual signature. Types are
-  # deliberately NOT checked in docstrings (basedpyright owns types; docstrings
-  # never repeat them). "Sections must exist at all" is D417's job (ruff),
-  # enabled at the end of horizontal task 01.
-  - repo: https://github.com/jsh9/pydoclint
-    rev: 0.11.0
-    hooks:
+      # Docstring Args:/Returns:/Raises: must match the actual signature. Types
+      # are deliberately NOT checked in docstrings (basedpyright owns types;
+      # docstrings never repeat them). "Sections must exist at all" is D417's
+      # job (ruff), enabled at the end of horizontal task 01.
       - id: pydoclint
+        name: pydoclint
+        language: system
+        entry: uv run --frozen --no-sync pydoclint
         args:
           - --style=google
           - --arg-type-hints-in-docstring=False
           - --check-return-types=False
           - --check-yield-types=False
           - --show-filenames-in-every-violation-message=True
+        types: [python]
+        require_serial: true
         exclude: ^experiments/
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.12.22
