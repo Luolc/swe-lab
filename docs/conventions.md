@@ -340,9 +340,9 @@ the one prose copy of it (`AGENTS.md` links here rather than restating it):
 
 The Python hooks (`no-operator-home-paths`, `ruff-check`, `ruff-format`,
 `basedpyright`, `pydoclint`) are `repo: local` and run
-`uv run --frozen --no-sync <tool>`: their versions come from the `dev` group
-in `pyproject.toml` and `uv.lock`, nowhere else, and they run against `.venv`
-as it is. Nothing is installed for them: a tool missing from `.venv` falls
+`uv run --frozen --no-sync <tool>`: when `.venv` has the tool, its version comes
+from the `dev` group in `pyproject.toml` and `uv.lock`, nowhere else, and they
+run against `.venv` as it is. Nothing is installed for them: a tool missing from `.venv` falls
 back to `PATH`, and fails with `Failed to spawn: <tool>` only when `PATH` has
 no other copy; with one (another venv activated in the shell, a global
 install) the hook runs that copy, whatever its version. A stale `.venv` is not
